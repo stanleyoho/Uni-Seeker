@@ -50,3 +50,72 @@ export async function fetchIndicatorList(): Promise<string[]> {
   const data = await res.json();
   return data.indicators;
 }
+
+// --- Screener ---
+
+export interface ScreenCondition {
+  indicator: string;
+  params: Record<string, unknown>;
+  op: string;
+  value: unknown;
+}
+
+export interface ScreenResult {
+  symbol: string;
+  indicator_values: Record<string, number>;
+}
+
+export interface ScreenResponse {
+  results: ScreenResult[];
+  total: number;
+}
+
+export async function screenStocks(
+  conditions: ScreenCondition[],
+  operator = "AND",
+  sortBy?: string,
+  limit = 50,
+): Promise<ScreenResponse> {
+  const res = await fetch(`${API_BASE}/screener/screen`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ conditions, operator, sort_by: sortBy, limit }),
+  });
+  if (!res.ok) throw new Error(`Screen failed: ${res.status}`);
+  return res.json();
+}
+
+// --- Notifications ---
+
+export interface NotificationRule {
+  id: number;
+  name: string;
+  rule_type: string;
+  symbol: string;
+  conditions: Record<string, unknown>;
+  is_active: boolean;
+}
+
+export async function fetchNotificationRules(): Promise<NotificationRule[]> {
+  const res = await fetch(`${API_BASE}/notifications/rules`);
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  const data = await res.json();
+  return data.rules;
+}
+
+export async function createNotificationRule(
+  rule: { name: string; rule_type: string; symbol: string; conditions: Record<string, unknown> },
+): Promise<NotificationRule> {
+  const res = await fetch(`${API_BASE}/notifications/rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rule),
+  });
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteNotificationRule(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/notifications/rules/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+}

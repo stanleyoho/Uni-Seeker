@@ -16,6 +16,7 @@ select = [
     "RUF",    # ruff-specific
     "PT",     # flake8-pytest-style
 ]
+allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "ANN", "ARG", "PLR2004"]
