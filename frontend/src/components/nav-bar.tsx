@@ -25,6 +25,9 @@ export function NavBar() {
         <Link href="/notifications" className="text-gray-400 hover:text-white transition">
           {t.nav.notifications}
         </Link>
+        <Link href="/backtest" className="text-gray-400 hover:text-white transition">
+          {t.nav.backtest}
+        </Link>
         <div className="ml-auto">
           <button
             onClick={toggleLocale}

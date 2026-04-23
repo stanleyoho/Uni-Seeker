@@ -5,44 +5,42 @@ import zhTW from "./locales/zh-TW.json";
 import en from "./locales/en.json";
 
 type Locale = "zh-TW" | "en";
-type Translations = typeof zhTW;
 
-const translations: Record<Locale, Translations> = { "zh-TW": zhTW, en };
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const messages: Record<Locale, Record<string, any>> = { "zh-TW": zhTW, en };
 
-interface I18nContextType {
+function resolve(obj: Record<string, any>, path: string): string {
+  const keys = path.split(".");
+  let cur: any = obj;
+  for (const k of keys) {
+    if (cur == null || typeof cur !== "object") return path;
+    cur = cur[k];
+  }
+  return typeof cur === "string" ? cur : path;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+interface I18nContextValue {
   locale: Locale;
-  t: Translations;
-  setLocale: (locale: Locale) => void;
+  setLocale: (l: Locale) => void;
+  t: (key: string) => string;
 }
 
-const I18nContext = createContext<I18nContextType>({
-  locale: "zh-TW",
-  t: zhTW,
-  setLocale: () => {},
-});
+const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("locale") as Locale) || "zh-TW";
-    }
-    return "zh-TW";
-  });
-
-  const setLocale = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("locale", newLocale);
-    }
-  }, []);
+  const [locale, setLocale] = useState<Locale>("zh-TW");
+  const t = useCallback((key: string) => resolve(messages[locale], key), [locale]);
 
   return (
-    <I18nContext.Provider value={{ locale, t: translations[locale], setLocale }}>
+    <I18nContext.Provider value={{ locale, setLocale, t }}>
       {children}
     </I18nContext.Provider>
   );
 }
 
 export function useI18n() {
-  return useContext(I18nContext);
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useI18n must be used inside I18nProvider");
+  return ctx;
 }

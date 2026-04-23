@@ -7,6 +7,7 @@
     "home": "首頁",
     "screener": "篩選器",
     "notifications": "通知設定",
+    "backtest": "回測",
     "language": "語言"
   },
   "search": {
@@ -88,5 +89,33 @@
     "conditionsPlaceholder": "條件 JSON，例: {\"price_above\": 100}",
     "loading": "載入中...",
     "nameSymbolRequired": "名稱和股票代號為必填"
+  },
+  "backtest": {
+    "title": "策略回測",
+    "symbol": "股票代號",
+    "strategy": "策略",
+    "initialCapital": "初始資金",
+    "positionSize": "部位比例",
+    "run": "執行回測",
+    "running": "回測中...",
+    "results": "回測結果",
+    "equityCurve": "權益曲線",
+    "tradeLog": "交易紀錄",
+    "metrics": "績效指標",
+    "totalReturn": "總報酬率",
+    "annualizedReturn": "年化報酬率",
+    "maxDrawdown": "最大回撤",
+    "sharpeRatio": "夏普比率",
+    "winRate": "勝率",
+    "totalTrades": "交易次數",
+    "profitFactor": "盈虧比",
+    "buy": "買進",
+    "sell": "賣出",
+    "date": "日期",
+    "price": "價格",
+    "shares": "股數",
+    "reason": "原因",
+    "noResults": "尚無回測結果",
+    "insufficientData": "資料不足，請先回補歷史股價"
   }
 }

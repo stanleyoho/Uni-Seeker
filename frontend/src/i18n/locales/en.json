@@ -7,6 +7,7 @@
     "home": "Home",
     "screener": "Screener",
     "notifications": "Notifications",
+    "backtest": "Backtest",
     "language": "Language"
   },
   "search": {
@@ -88,5 +89,33 @@
     "conditionsPlaceholder": "Conditions JSON, e.g. {\"price_above\": 100}",
     "loading": "Loading...",
     "nameSymbolRequired": "Name and symbol are required."
+  },
+  "backtest": {
+    "title": "Strategy Backtest",
+    "symbol": "Symbol",
+    "strategy": "Strategy",
+    "initialCapital": "Initial Capital",
+    "positionSize": "Position Size",
+    "run": "Run Backtest",
+    "running": "Running...",
+    "results": "Results",
+    "equityCurve": "Equity Curve",
+    "tradeLog": "Trade Log",
+    "metrics": "Performance Metrics",
+    "totalReturn": "Total Return",
+    "annualizedReturn": "Annualized Return",
+    "maxDrawdown": "Max Drawdown",
+    "sharpeRatio": "Sharpe Ratio",
+    "winRate": "Win Rate",
+    "totalTrades": "Total Trades",
+    "profitFactor": "Profit Factor",
+    "buy": "Buy",
+    "sell": "Sell",
+    "date": "Date",
+    "price": "Price",
+    "shares": "Shares",
+    "reason": "Reason",
+    "noResults": "No backtest results yet",
+    "insufficientData": "Insufficient data. Please backfill historical prices first."
   }
 }
