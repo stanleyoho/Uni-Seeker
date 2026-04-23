@@ -10,7 +10,13 @@ from app.models.price import StockPrice
 from app.modules.price_updater.twse import TWSEProvider
 from app.modules.price_updater.tpex import TPEXProvider
 from app.modules.price_updater.updater import PriceUpdater
-from app.schemas.price import PriceUpdateResponse, StockPriceListResponse, StockPriceResponse
+from app.schemas.price import (
+    BackfillRequest,
+    BackfillResponse,
+    PriceUpdateResponse,
+    StockPriceListResponse,
+    StockPriceResponse,
+)
 
 router = APIRouter(prefix="/prices", tags=["prices"])
 
@@ -33,6 +39,78 @@ async def trigger_price_update(
         invalid_skipped=result.invalid_skipped,
         saved=result.saved,
         errors=result.errors,
+    )
+
+
+@router.post("/backfill", response_model=BackfillResponse)
+async def backfill_prices(
+    req: BackfillRequest,
+    db: DbSession,
+) -> BackfillResponse:
+    """Backfill historical prices using yfinance."""
+    import asyncio
+
+    from app.modules.price_updater.yfinance_provider import YFinanceProvider
+
+    provider = YFinanceProvider()
+    errors: list[str] = []
+    total_saved = 0
+
+    for symbol in req.symbols:
+        try:
+            prices = await provider.fetch_history(symbol, req.period)
+            if prices:
+                updater = PriceUpdater(providers=[], session=db)
+                await updater._persist_prices(prices)
+                await updater._persist_stocks(prices)
+                total_saved += len(prices)
+        except Exception as e:
+            errors.append(f"{symbol}: {str(e)}")
+        # Small delay to avoid rate limiting
+        await asyncio.sleep(0.5)
+
+    return BackfillResponse(
+        total_symbols=len(req.symbols),
+        total_prices_saved=total_saved,
+        errors=errors,
+    )
+
+
+@router.post("/backfill/tw-popular", response_model=BackfillResponse)
+async def backfill_tw_popular(
+    db: DbSession,
+    period: str = Query(default="1y"),
+) -> BackfillResponse:
+    """Backfill historical prices for stocks in DB via yfinance."""
+    import asyncio
+
+    from sqlalchemy import select as sa_select
+
+    from app.models.stock import Stock
+    from app.modules.price_updater.yfinance_provider import YFinanceProvider
+
+    result = await db.execute(sa_select(Stock.symbol).limit(100))
+    symbols = [row[0] for row in result.all()]
+
+    provider = YFinanceProvider()
+    errors: list[str] = []
+    total_saved = 0
+
+    for symbol in symbols:
+        try:
+            prices = await provider.fetch_history(symbol, period)
+            if prices:
+                updater = PriceUpdater(providers=[], session=db)
+                await updater._persist_prices(prices)
+                total_saved += len(prices)
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            errors.append(f"{symbol}: {str(e)}")
+
+    return BackfillResponse(
+        total_symbols=len(symbols),
+        total_prices_saved=total_saved,
+        errors=errors,
     )
 
 

@@ -37,3 +37,14 @@ class PriceUpdateResponse(BaseModel):
     invalid_skipped: int
     saved: int
     errors: list[str]
+
+
+class BackfillRequest(BaseModel):
+    symbols: list[str]  # e.g. ["2330.TW", "AAPL"]
+    period: str = "1y"  # yfinance period: 1mo, 3mo, 6mo, 1y, 2y, 5y, max
+
+
+class BackfillResponse(BaseModel):
+    total_symbols: int
+    total_prices_saved: int
+    errors: list[str]
