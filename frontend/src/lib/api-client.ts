@@ -185,3 +185,63 @@ export async function fetchFinancialAnalysis(symbol: string): Promise<FullAnalys
   if (!res.ok) throw new Error(`Failed to fetch financials: ${res.status}`);
   return res.json();
 }
+
+// --- Backtest ---
+
+export interface StrategyInfo {
+  name: string;
+  description: string;
+  params: Record<string, unknown>;
+}
+
+export interface BacktestMetrics {
+  total_return: number;
+  annualized_return: number;
+  max_drawdown: number;
+  sharpe_ratio: number;
+  win_rate: number;
+  total_trades: number;
+  profit_factor: number;
+}
+
+export interface TradeRecord {
+  action: string;
+  date: string;
+  price: number;
+  shares: number;
+  reason: string;
+}
+
+export interface BacktestResult {
+  symbol: string;
+  strategy: string;
+  metrics: BacktestMetrics;
+  equity_curve: number[];
+  trades: TradeRecord[];
+}
+
+export async function fetchStrategies(): Promise<StrategyInfo[]> {
+  const res = await fetch(`${API_BASE}/strategies/`);
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  const data = await res.json();
+  return data.strategies;
+}
+
+export async function runBacktest(params: {
+  symbol: string;
+  strategy: string;
+  params?: Record<string, unknown>;
+  initial_capital?: number;
+  position_size?: number;
+}): Promise<BacktestResult> {
+  const res = await fetch(`${API_BASE}/backtest/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
+    throw new Error(err.detail || `Backtest failed: ${res.status}`);
+  }
+  return res.json();
+}

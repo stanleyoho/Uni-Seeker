@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { I18nProvider } from "@/i18n/context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,9 +44,12 @@ export default function RootLayout({
             <Link href="/notifications" className="text-gray-400 hover:text-white transition">
               Notifications
             </Link>
+            <Link href="/backtest" className="text-gray-400 hover:text-white transition">
+              Backtest
+            </Link>
           </div>
         </nav>
-        {children}
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   );
