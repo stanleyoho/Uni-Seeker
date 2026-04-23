@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,6 +59,60 @@ async def screen_stocks(
 
     # Apply limit
     limited = results[:req.limit]
+
+    return ScreenResponse(
+        results=[ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited],
+        total=len(results),
+    )
+
+
+@router.get("/presets")
+def list_presets() -> list[dict]:
+    """List all available screener presets."""
+    from app.modules.screener.presets import PRESETS
+
+    return [
+        {
+            "key": p.key,
+            "name_zh": p.name_zh,
+            "name_en": p.name_en,
+            "description_zh": p.description_zh,
+            "description_en": p.description_en,
+            "sort_by": p.sort_by,
+        }
+        for p in PRESETS.values()
+    ]
+
+
+@router.post("/presets/{preset_key}", response_model=ScreenResponse)
+async def run_preset(
+    preset_key: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    registry: IndicatorRegistry = Depends(get_indicator_registry),
+    limit: int = Query(default=20, le=100),
+) -> ScreenResponse:
+    """Run a built-in screener preset."""
+    from app.modules.screener.presets import PRESETS
+
+    preset = PRESETS.get(preset_key)
+    if not preset:
+        raise HTTPException(status_code=404, detail=f"Preset '{preset_key}' not found")
+
+    # Fetch all prices (same logic as screen_stocks)
+    query = select(StockPrice).order_by(StockPrice.symbol, StockPrice.date.asc())
+    result = await db.execute(query)
+    all_prices = list(result.scalars().all())
+
+    stocks_prices: dict[str, list[StockPrice]] = {}
+    for price in all_prices:
+        stocks_prices.setdefault(price.symbol, []).append(price)
+
+    engine = ScreenerEngine(registry=registry)
+    results = engine.screen(
+        stocks_prices, preset.conditions,
+        sort_by=preset.sort_by, sort_order=preset.sort_order,
+    )
+    limited = results[:limit]
 
     return ScreenResponse(
         results=[ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited],
