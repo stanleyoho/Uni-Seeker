@@ -11,6 +11,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.backtest import router as backtest_router
 from app.api.v1.revenue import router as revenue_router
 from app.api.v1.low_base import router as low_base_router
+from app.api.v1.margin import router as margin_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -24,3 +25,4 @@ v1_router.include_router(strategies_router)
 v1_router.include_router(backtest_router)
 v1_router.include_router(revenue_router)
 v1_router.include_router(low_base_router)
+v1_router.include_router(margin_router)
