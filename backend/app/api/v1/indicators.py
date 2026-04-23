@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_indicator_registry
+from app.cache import cache_delete_pattern, cache_get, cache_set, make_cache_key
 from app.models.price import StockPrice
 from app.modules.indicators.registry import IndicatorRegistry
 from app.schemas.indicator import IndicatorListResponse, IndicatorRequest, IndicatorResponse
@@ -28,6 +29,11 @@ async def calculate_indicator(
     db: DbSession,
     registry: Registry,
 ) -> IndicatorResponse:
+    cache_key = make_cache_key("indicator", req.symbol, req.indicator, req.params)
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return IndicatorResponse(**cached)
+
     try:
         indicator = registry.get(req.indicator)
     except KeyError as err:
@@ -56,8 +62,17 @@ async def calculate_indicator(
 
     indicator_result = indicator.calculate(closes, **params)
 
-    return IndicatorResponse(
+    response = IndicatorResponse(
         symbol=req.symbol,
         indicator=req.indicator,
         values=indicator_result.values,
     )
+    await cache_set(cache_key, response.model_dump(), ttl=1800)
+    return response
+
+
+@router.post("/cache/clear")
+async def clear_indicator_cache() -> dict[str, str]:
+    """Clear all cached indicator results."""
+    await cache_delete_pattern("indicator")
+    return {"status": "indicator cache cleared"}
