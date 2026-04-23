@@ -51,6 +51,22 @@ export async function fetchIndicatorList(): Promise<string[]> {
   return data.indicators;
 }
 
+// --- Stock Search ---
+
+export interface StockSearchResult {
+  symbol: string;
+  name: string;
+  market: string;
+}
+
+export async function searchStocks(query: string, limit = 10): Promise<StockSearchResult[]> {
+  if (!query.trim()) return [];
+  const res = await fetch(`${API_BASE}/stocks/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.results;
+}
+
 // --- Screener ---
 
 export interface ScreenCondition {

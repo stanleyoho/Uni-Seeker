@@ -3,10 +3,23 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 import structlog
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import Market
+from app.models.price import StockPrice
+from app.models.stock import Stock
 from app.modules.price_updater.base import DataProvider, StockPriceData
 
 logger = structlog.get_logger()
+
+MARKET_MAP: dict[str, Market] = {
+    "TW_TWSE": Market.TW_TWSE,
+    "TW_TPEX": Market.TW_TPEX,
+    "US_NYSE": Market.US_NYSE,
+    "US_NASDAQ": Market.US_NASDAQ,
+}
 
 
 @dataclass
@@ -22,7 +35,7 @@ class PriceUpdater:
     def __init__(
         self,
         providers: list[DataProvider],
-        session: object,
+        session: AsyncSession,
         max_retries: int = 3,
         retry_delay: float = 0.0,
     ) -> None:
@@ -57,8 +70,81 @@ class PriceUpdater:
 
             unique_prices.append(price)
 
+        # Persist to database
+        await self._persist_prices(unique_prices)
+        await self._persist_stocks(unique_prices)
+
         result.saved = len(unique_prices)
         return result
+
+    async def _persist_prices(self, prices: list[StockPriceData]) -> None:
+        """Upsert prices into stock_prices table."""
+        if not prices:
+            return
+
+        for batch_start in range(0, len(prices), 500):
+            batch = prices[batch_start : batch_start + 500]
+            values = [
+                {
+                    "symbol": p.symbol,
+                    "market": MARKET_MAP.get(p.market, Market.TW_TWSE),
+                    "date": p.date,
+                    "open": p.open,
+                    "high": p.high,
+                    "low": p.low,
+                    "close": p.close,
+                    "volume": p.volume,
+                    "change": p.change,
+                    "change_percent": p.change_percent,
+                }
+                for p in batch
+            ]
+            stmt = pg_insert(StockPrice).values(values)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_symbol_date",
+                set_={
+                    "open": stmt.excluded.open,
+                    "high": stmt.excluded.high,
+                    "low": stmt.excluded.low,
+                    "close": stmt.excluded.close,
+                    "volume": stmt.excluded.volume,
+                    "change": stmt.excluded.change,
+                    "change_percent": stmt.excluded.change_percent,
+                },
+            )
+            await self._session.execute(stmt)
+
+        await self._session.commit()
+        logger.info("prices_persisted", count=len(prices))
+
+    async def _persist_stocks(self, prices: list[StockPriceData]) -> None:
+        """Upsert stocks into stocks table (for search)."""
+        if not prices:
+            return
+
+        seen_symbols: set[str] = set()
+        stock_data: list[dict[str, object]] = []
+        for p in prices:
+            if p.symbol in seen_symbols:
+                continue
+            seen_symbols.add(p.symbol)
+            stock_data.append({
+                "symbol": p.symbol,
+                "name": p.name or p.symbol,
+                "market": MARKET_MAP.get(p.market, Market.TW_TWSE),
+            })
+
+        for batch_start in range(0, len(stock_data), 500):
+            batch = stock_data[batch_start : batch_start + 500]
+            stmt = pg_insert(Stock).values(batch)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["symbol"],
+                set_={"name": stmt.excluded.name},
+            )
+            await self._session.execute(stmt)
+
+        await self._session.commit()
+        logger.info("stocks_persisted", count=len(stock_data))
 
     async def _fetch_with_retry(
         self,
