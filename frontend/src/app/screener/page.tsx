@@ -8,8 +8,10 @@ import {
   type ScreenCondition,
   type ScreenResult,
 } from "@/lib/api-client";
+import { useI18n } from "@/i18n/context";
 
 export default function ScreenerPage() {
+  const { t } = useI18n();
   const [conditions, setConditions] = useState<ScreenCondition[]>([]);
   const [logicOp, setLogicOp] = useState<"AND" | "OR">("AND");
   const [results, setResults] = useState<ScreenResult[]>([]);
@@ -20,7 +22,7 @@ export default function ScreenerPage() {
 
   const handleScreen = async () => {
     if (conditions.length === 0) {
-      setError("Add at least one condition.");
+      setError(t.screener.addAtLeastOne);
       return;
     }
     setLoading(true);
@@ -38,10 +40,10 @@ export default function ScreenerPage() {
 
   return (
     <div className="p-4 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Stock Screener</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.screener.title}</h1>
 
       <div className="bg-gray-800 rounded-lg p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Conditions</h2>
+        <h2 className="text-lg font-semibold mb-3">{t.screener.conditions}</h2>
         <ConditionBuilder
           conditions={conditions}
           onChange={setConditions}
@@ -51,7 +53,7 @@ export default function ScreenerPage() {
 
         <div className="flex items-center gap-4 mt-4">
           <label className="text-sm text-gray-400">
-            Limit:
+            {t.screener.limit}:
             <input
               type="number"
               value={limit}
@@ -64,7 +66,7 @@ export default function ScreenerPage() {
             disabled={loading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {loading ? "Screening..." : "Screen"}
+            {loading ? t.screener.screening : t.screener.screen}
           </button>
         </div>
 
@@ -72,7 +74,7 @@ export default function ScreenerPage() {
       </div>
 
       <div className="bg-gray-800 rounded-lg p-4">
-        <h2 className="text-lg font-semibold mb-3">Results</h2>
+        <h2 className="text-lg font-semibold mb-3">{t.screener.results}</h2>
         <ResultsTable results={results} total={total} />
       </div>
     </div>

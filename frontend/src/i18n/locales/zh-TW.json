@@ -1,0 +1,92 @@
+{
+  "app": {
+    "title": "Uni-Seeker",
+    "subtitle": "台美股分析平台"
+  },
+  "nav": {
+    "home": "首頁",
+    "screener": "篩選器",
+    "notifications": "通知設定",
+    "language": "語言"
+  },
+  "search": {
+    "placeholder": "輸入代號或名稱 (例: 2330、台積電、AAPL)",
+    "button": "搜尋",
+    "listed": "上市",
+    "otc": "上櫃"
+  },
+  "stock": {
+    "chart": "走勢圖",
+    "financials": "財報分析",
+    "open": "開盤",
+    "close": "收盤",
+    "high": "最高",
+    "low": "最低",
+    "volume": "成交量",
+    "loading": "載入中...",
+    "noData": "無資料"
+  },
+  "financial": {
+    "healthScore": "健康度評分",
+    "overallHealth": "綜合健康度",
+    "profitability": "獲利能力",
+    "efficiency": "經營效率",
+    "leverage": "償債能力",
+    "growth": "成長性",
+    "keyRatios": "關鍵財務比率",
+    "grossMargin": "毛利率",
+    "operatingMargin": "營業利益率",
+    "netMargin": "淨利率",
+    "roe": "股東權益報酬率",
+    "roa": "資產報酬率",
+    "currentRatio": "流動比率",
+    "debtRatio": "負債比率",
+    "revenueGrowth": "營收成長率",
+    "netIncomeGrowth": "淨利成長率",
+    "quarterlyTrend": "季度趨勢",
+    "metric": "指標",
+    "noFinancialData": "無法取得財報資料",
+    "period": "期間",
+    "loadingFinancial": "載入財報資料中...",
+    "noDataFor": "無法取得 {symbol} 的財報分析資料"
+  },
+  "screener": {
+    "title": "股票篩選器",
+    "conditions": "篩選條件",
+    "addCondition": "新增條件",
+    "removeCondition": "移除",
+    "screen": "開始篩選",
+    "screening": "篩選中...",
+    "results": "篩選結果",
+    "noResults": "無符合條件的股票",
+    "indicator": "指標",
+    "operator": "運算子",
+    "value": "數值",
+    "sortBy": "排序依據",
+    "limit": "筆數限制",
+    "addAtLeastOne": "請至少新增一個條件"
+  },
+  "notifications": {
+    "title": "通知規則管理",
+    "addRule": "新增規則",
+    "existingRules": "現有規則",
+    "name": "名稱",
+    "type": "類型",
+    "symbol": "股票代號",
+    "conditions": "條件 (JSON)",
+    "create": "建立規則",
+    "creating": "建立中...",
+    "delete": "刪除",
+    "noRules": "尚無通知規則",
+    "priceAlert": "到價通知",
+    "indicatorAlert": "指標通知",
+    "screenerAlert": "篩選通知",
+    "active": "啟用中",
+    "inactive": "已停用",
+    "ruleName": "規則名稱",
+    "symbolPlaceholder": "股票代號 (例: 2330.TW, AAPL)",
+    "conditionsPlaceholder": "條件 JSON，例: {\"price_above\": 100}",
+    "loading": "載入中...",
+    "nameSymbolRequired": "名稱和股票代號為必填"
+  }
+}

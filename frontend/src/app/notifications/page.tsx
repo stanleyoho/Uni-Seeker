@@ -7,8 +7,10 @@ import {
   deleteNotificationRule,
   type NotificationRule,
 } from "@/lib/api-client";
+import { useI18n } from "@/i18n/context";
 
 export default function NotificationsPage() {
+  const { t } = useI18n();
   const [rules, setRules] = useState<NotificationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export default function NotificationsPage() {
     setFormError(null);
 
     if (!name.trim() || !symbol.trim()) {
-      setFormError("Name and symbol are required.");
+      setFormError(t.notifications.nameSymbolRequired);
       return;
     }
 
@@ -84,18 +86,18 @@ export default function NotificationsPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Notification Rules</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.notifications.title}</h1>
 
       {/* Add Rule Form */}
       <div className="bg-gray-800 rounded-lg p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Add Rule</h2>
+        <h2 className="text-lg font-semibold mb-3">{t.notifications.addRule}</h2>
         <form onSubmit={handleCreate} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Rule name"
+              placeholder={t.notifications.ruleName}
               className="px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white text-sm placeholder-gray-500"
             />
             <select
@@ -103,22 +105,22 @@ export default function NotificationsPage() {
               onChange={(e) => setRuleType(e.target.value)}
               className="px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white text-sm"
             >
-              <option value="price_alert">Price Alert</option>
-              <option value="indicator_alert">Indicator Alert</option>
-              <option value="screener_alert">Screener Alert</option>
+              <option value="price_alert">{t.notifications.priceAlert}</option>
+              <option value="indicator_alert">{t.notifications.indicatorAlert}</option>
+              <option value="screener_alert">{t.notifications.screenerAlert}</option>
             </select>
             <input
               type="text"
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              placeholder="Symbol (e.g., 2330.TW, AAPL)"
+              placeholder={t.notifications.symbolPlaceholder}
               className="px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white text-sm placeholder-gray-500"
             />
           </div>
           <textarea
             value={conditionsJson}
             onChange={(e) => setConditionsJson(e.target.value)}
-            placeholder='Conditions JSON, e.g. {"price_above": 100}'
+            placeholder={t.notifications.conditionsPlaceholder}
             rows={3}
             className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white text-sm placeholder-gray-500 font-mono"
           />
@@ -128,18 +130,18 @@ export default function NotificationsPage() {
             disabled={submitting}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm"
           >
-            {submitting ? "Creating..." : "Create Rule"}
+            {submitting ? t.notifications.creating : t.notifications.create}
           </button>
         </form>
       </div>
 
       {/* Rules List */}
       <div className="bg-gray-800 rounded-lg p-4">
-        <h2 className="text-lg font-semibold mb-3">Existing Rules</h2>
-        {loading && <p className="text-gray-400 text-sm">Loading...</p>}
+        <h2 className="text-lg font-semibold mb-3">{t.notifications.existingRules}</h2>
+        {loading && <p className="text-gray-400 text-sm">{t.notifications.loading}</p>}
         {error && <p className="text-red-500 text-sm">{error}</p>}
         {!loading && rules.length === 0 && (
-          <p className="text-gray-400 text-sm">No notification rules configured.</p>
+          <p className="text-gray-400 text-sm">{t.notifications.noRules}</p>
         )}
         {rules.length > 0 && (
           <div className="space-y-2">
@@ -156,9 +158,9 @@ export default function NotificationsPage() {
                     </span>
                     <span className="text-sm text-blue-400">{rule.symbol}</span>
                     {rule.is_active ? (
-                      <span className="text-xs text-green-400">Active</span>
+                      <span className="text-xs text-green-400">{t.notifications.active}</span>
                     ) : (
-                      <span className="text-xs text-gray-500">Inactive</span>
+                      <span className="text-xs text-gray-500">{t.notifications.inactive}</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1 truncate font-mono">
@@ -169,7 +171,7 @@ export default function NotificationsPage() {
                   onClick={() => handleDelete(rule.id)}
                   className="text-red-500 hover:text-red-400 text-sm ml-3 shrink-0"
                 >
-                  Delete
+                  {t.notifications.delete}
                 </button>
               </div>
             ))}

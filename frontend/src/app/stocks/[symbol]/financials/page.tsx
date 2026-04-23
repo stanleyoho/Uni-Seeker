@@ -9,6 +9,7 @@ import {
   type FinancialRatios,
   type HealthScore,
 } from "@/lib/api-client";
+import { useI18n } from "@/i18n/context";
 
 function scoreColor(score: number, max: number): string {
   const pct = (score / max) * 100;
@@ -109,17 +110,17 @@ function CategoryBar({
   );
 }
 
-function RatiosTable({ ratios }: { ratios: FinancialRatios }) {
+function RatiosTable({ ratios, t }: { ratios: FinancialRatios; t: ReturnType<typeof useI18n>["t"] }) {
   const items: { label: string; value: string }[] = [
-    { label: "Gross Margin", value: formatPct(ratios.gross_margin) },
-    { label: "Operating Margin", value: formatPct(ratios.operating_margin) },
-    { label: "Net Margin", value: formatPct(ratios.net_margin) },
-    { label: "ROE", value: formatPct(ratios.roe) },
-    { label: "ROA", value: formatPct(ratios.roa) },
-    { label: "Current Ratio", value: formatNumber(ratios.current_ratio) },
-    { label: "Debt Ratio", value: formatNumber(ratios.debt_ratio) },
-    { label: "Revenue Growth", value: formatPct(ratios.revenue_growth) },
-    { label: "Net Income Growth", value: formatPct(ratios.net_income_growth) },
+    { label: t.financial.grossMargin, value: formatPct(ratios.gross_margin) },
+    { label: t.financial.operatingMargin, value: formatPct(ratios.operating_margin) },
+    { label: t.financial.netMargin, value: formatPct(ratios.net_margin) },
+    { label: t.financial.roe, value: formatPct(ratios.roe) },
+    { label: t.financial.roa, value: formatPct(ratios.roa) },
+    { label: t.financial.currentRatio, value: formatNumber(ratios.current_ratio) },
+    { label: t.financial.debtRatio, value: formatNumber(ratios.debt_ratio) },
+    { label: t.financial.revenueGrowth, value: formatPct(ratios.revenue_growth) },
+    { label: t.financial.netIncomeGrowth, value: formatPct(ratios.net_income_growth) },
   ];
 
   return (
@@ -137,7 +138,7 @@ function RatiosTable({ ratios }: { ratios: FinancialRatios }) {
   );
 }
 
-function QuarterlyTrend({ ratios }: { ratios: FinancialRatios[] }) {
+function QuarterlyTrend({ ratios, t }: { ratios: FinancialRatios[]; t: ReturnType<typeof useI18n>["t"] }) {
   if (ratios.length < 2) return null;
 
   const sorted = [...ratios].sort(
@@ -145,13 +146,13 @@ function QuarterlyTrend({ ratios }: { ratios: FinancialRatios[] }) {
   );
 
   const metrics: { key: keyof FinancialRatios; label: string; isPct: boolean }[] = [
-    { key: "gross_margin", label: "Gross Margin", isPct: true },
-    { key: "operating_margin", label: "Operating Margin", isPct: true },
-    { key: "net_margin", label: "Net Margin", isPct: true },
-    { key: "roe", label: "ROE", isPct: true },
-    { key: "roa", label: "ROA", isPct: true },
-    { key: "current_ratio", label: "Current Ratio", isPct: false },
-    { key: "debt_ratio", label: "Debt Ratio", isPct: false },
+    { key: "gross_margin", label: t.financial.grossMargin, isPct: true },
+    { key: "operating_margin", label: t.financial.operatingMargin, isPct: true },
+    { key: "net_margin", label: t.financial.netMargin, isPct: true },
+    { key: "roe", label: t.financial.roe, isPct: true },
+    { key: "roa", label: t.financial.roa, isPct: true },
+    { key: "current_ratio", label: t.financial.currentRatio, isPct: false },
+    { key: "debt_ratio", label: t.financial.debtRatio, isPct: false },
   ];
 
   return (
@@ -160,7 +161,7 @@ function QuarterlyTrend({ ratios }: { ratios: FinancialRatios[] }) {
         <thead>
           <tr className="border-b border-gray-700">
             <th className="text-left py-2 px-3 text-gray-400 font-medium">
-              Metric
+              {t.financial.metric}
             </th>
             {sorted.map((r) => (
               <th
@@ -193,6 +194,7 @@ function QuarterlyTrend({ ratios }: { ratios: FinancialRatios[] }) {
 }
 
 export default function FinancialsPage() {
+  const { t } = useI18n();
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol);
   const [data, setData] = useState<FullAnalysis | null>(null);
@@ -216,9 +218,9 @@ export default function FinancialsPage() {
     };
   }, [symbol]);
 
-  if (loading) return <div className="p-8 text-center">Loading financial data...</div>;
+  if (loading) return <div className="p-8 text-center">{t.financial.loadingFinancial}</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
-  if (!data) return <div className="p-8 text-center text-gray-400">No data available</div>;
+  if (!data) return <div className="p-8 text-center text-gray-400">{t.stock.noData}</div>;
 
   const latestScore =
     data.health_scores.length > 0 ? data.health_scores[0] : null;
@@ -234,10 +236,10 @@ export default function FinancialsPage() {
             href={`/stocks/${encodeURIComponent(symbol)}`}
             className="px-4 py-2 text-sm rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition"
           >
-            Chart
+            {t.stock.chart}
           </Link>
           <span className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white">
-            Financials
+            {t.stock.financials}
           </span>
         </div>
       </div>
@@ -246,34 +248,34 @@ export default function FinancialsPage() {
       {latestScore && (
         <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
           <h2 className="text-lg font-semibold mb-4">
-            Health Score
+            {t.financial.healthScore}
             <span className="text-sm text-gray-400 ml-2 font-normal">
-              Period: {latestScore.period}
+              {t.financial.period}: {latestScore.period}
             </span>
           </h2>
           <div className="flex flex-col md:flex-row items-center gap-8">
             <CircularScore
               score={Math.round(latestScore.total_score)}
-              label="Overall Health"
+              label={t.financial.overallHealth}
             />
             <div className="flex-1 w-full space-y-3">
               <CategoryBar
-                label="Profitability"
+                label={t.financial.profitability}
                 score={latestScore.profitability_score}
                 max={25}
               />
               <CategoryBar
-                label="Efficiency"
+                label={t.financial.efficiency}
                 score={latestScore.efficiency_score}
                 max={25}
               />
               <CategoryBar
-                label="Leverage"
+                label={t.financial.leverage}
                 score={latestScore.leverage_score}
                 max={25}
               />
               <CategoryBar
-                label="Growth"
+                label={t.financial.growth}
                 score={latestScore.growth_score}
                 max={25}
               />
@@ -286,27 +288,27 @@ export default function FinancialsPage() {
       {latestRatios && (
         <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
           <h2 className="text-lg font-semibold mb-4">
-            Key Ratios
+            {t.financial.keyRatios}
             <span className="text-sm text-gray-400 ml-2 font-normal">
-              Period: {latestRatios.period}
+              {t.financial.period}: {latestRatios.period}
             </span>
           </h2>
-          <RatiosTable ratios={latestRatios} />
+          <RatiosTable ratios={latestRatios} t={t} />
         </div>
       )}
 
       {/* Quarterly Trend */}
       {data.ratios.length > 1 && (
         <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
-          <h2 className="text-lg font-semibold mb-4">Quarterly Trend</h2>
-          <QuarterlyTrend ratios={data.ratios} />
+          <h2 className="text-lg font-semibold mb-4">{t.financial.quarterlyTrend}</h2>
+          <QuarterlyTrend ratios={data.ratios} t={t} />
         </div>
       )}
 
       {/* No data fallback */}
       {!latestScore && !latestRatios && (
         <div className="text-center text-gray-400 py-12">
-          No financial analysis data available for {symbol}.
+          {t.financial.noDataFor.replace("{symbol}", symbol)}
         </div>
       )}
     </div>

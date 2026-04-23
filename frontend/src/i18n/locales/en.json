@@ -1,0 +1,92 @@
+{
+  "app": {
+    "title": "Uni-Seeker",
+    "subtitle": "TW + US Stock Analysis Platform"
+  },
+  "nav": {
+    "home": "Home",
+    "screener": "Screener",
+    "notifications": "Notifications",
+    "language": "Language"
+  },
+  "search": {
+    "placeholder": "Enter symbol or name (e.g., 2330, TSMC, AAPL)",
+    "button": "Search",
+    "listed": "Listed",
+    "otc": "OTC"
+  },
+  "stock": {
+    "chart": "Chart",
+    "financials": "Financials",
+    "open": "Open",
+    "close": "Close",
+    "high": "High",
+    "low": "Low",
+    "volume": "Volume",
+    "loading": "Loading...",
+    "noData": "No data available"
+  },
+  "financial": {
+    "healthScore": "Health Score",
+    "overallHealth": "Overall Health",
+    "profitability": "Profitability",
+    "efficiency": "Efficiency",
+    "leverage": "Leverage",
+    "growth": "Growth",
+    "keyRatios": "Key Financial Ratios",
+    "grossMargin": "Gross Margin",
+    "operatingMargin": "Operating Margin",
+    "netMargin": "Net Margin",
+    "roe": "Return on Equity",
+    "roa": "Return on Assets",
+    "currentRatio": "Current Ratio",
+    "debtRatio": "Debt Ratio",
+    "revenueGrowth": "Revenue Growth",
+    "netIncomeGrowth": "Net Income Growth",
+    "quarterlyTrend": "Quarterly Trend",
+    "metric": "Metric",
+    "noFinancialData": "No financial data available",
+    "period": "Period",
+    "loadingFinancial": "Loading financial data...",
+    "noDataFor": "No financial analysis data available for {symbol}"
+  },
+  "screener": {
+    "title": "Stock Screener",
+    "conditions": "Conditions",
+    "addCondition": "Add Condition",
+    "removeCondition": "Remove",
+    "screen": "Screen",
+    "screening": "Screening...",
+    "results": "Results",
+    "noResults": "No stocks match the criteria",
+    "indicator": "Indicator",
+    "operator": "Operator",
+    "value": "Value",
+    "sortBy": "Sort by",
+    "limit": "Limit",
+    "addAtLeastOne": "Add at least one condition."
+  },
+  "notifications": {
+    "title": "Notification Rules",
+    "addRule": "Add Rule",
+    "existingRules": "Existing Rules",
+    "name": "Name",
+    "type": "Type",
+    "symbol": "Symbol",
+    "conditions": "Conditions (JSON)",
+    "create": "Create Rule",
+    "creating": "Creating...",
+    "delete": "Delete",
+    "noRules": "No notification rules configured.",
+    "priceAlert": "Price Alert",
+    "indicatorAlert": "Indicator Alert",
+    "screenerAlert": "Screener Alert",
+    "active": "Active",
+    "inactive": "Inactive",
+    "ruleName": "Rule name",
+    "symbolPlaceholder": "Symbol (e.g., 2330.TW, AAPL)",
+    "conditionsPlaceholder": "Conditions JSON, e.g. {\"price_above\": 100}",
+    "loading": "Loading...",
+    "nameSymbolRequired": "Name and symbol are required."
+  }
+}

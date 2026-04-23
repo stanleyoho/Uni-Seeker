@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { searchStocks, type StockSearchResult } from "@/lib/api-client";
+import { useI18n } from "@/i18n/context";
 
 export default function HomePage() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<StockSearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -75,8 +77,8 @@ export default function HomePage() {
   };
 
   const marketLabel = (market: string) => {
-    if (market.startsWith("TW_TWSE")) return "上市";
-    if (market.startsWith("TW_TPEX")) return "上櫃";
+    if (market.startsWith("TW_TWSE")) return t.search.listed;
+    if (market.startsWith("TW_TPEX")) return t.search.otc;
     if (market.includes("NASDAQ")) return "NASDAQ";
     if (market.includes("NYSE")) return "NYSE";
     return market;
@@ -84,8 +86,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <h1 className="text-4xl font-bold mb-2">Uni-Seeker</h1>
-      <p className="text-gray-400 mb-8">Taiwan + US Stock Analysis Platform</p>
+      <h1 className="text-4xl font-bold mb-2">{t.app.title}</h1>
+      <p className="text-gray-400 mb-8">{t.app.subtitle}</p>
 
       <div ref={dropdownRef} className="relative w-full max-w-md">
         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -95,7 +97,7 @@ export default function HomePage() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-            placeholder="輸入代號或名稱 (例: 2330、台積電、AAPL)"
+            placeholder={t.search.placeholder}
             className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             autoComplete="off"
           />
@@ -103,7 +105,7 @@ export default function HomePage() {
             type="submit"
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
-            搜尋
+            {t.search.button}
           </button>
         </form>
 
