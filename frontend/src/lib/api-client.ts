@@ -186,6 +186,51 @@ export async function fetchFinancialAnalysis(symbol: string): Promise<FullAnalys
   return res.json();
 }
 
+// --- Auth ---
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  username: string;
+  tier: string;
+}
+
+export async function register(email: string, password: string, username: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, username }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Registration failed");
+  }
+  const data = await res.json();
+  return data.access_token;
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Login failed");
+  }
+  const data = await res.json();
+  return data.access_token;
+}
+
+export async function fetchMe(token: string): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Not authenticated");
+  return res.json();
+}
+
 // --- Backtest ---
 
 export interface StrategyInfo {

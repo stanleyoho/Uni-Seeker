@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { I18nProvider } from "@/i18n/context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { NavBar } from "@/components/nav-bar";
 import "./globals.css";
 
@@ -31,8 +32,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-gray-900 text-white">
         <I18nProvider>
-          <NavBar />
-          {children}
+          <AuthProvider>
+            <NavBar />
+            {children}
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

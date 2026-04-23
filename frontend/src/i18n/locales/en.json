@@ -90,6 +90,18 @@
     "loading": "Loading...",
     "nameSymbolRequired": "Name and symbol are required."
   },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "logout": "Logout",
+    "loginFailed": "Login failed",
+    "registerFailed": "Registration failed"
+  },
   "backtest": {
     "title": "Strategy Backtest",
     "symbol": "Symbol",

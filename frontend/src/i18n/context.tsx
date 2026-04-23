@@ -20,20 +20,24 @@ function resolve(obj: Record<string, any>, path: string): string {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface I18nContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (key: string) => string;
+  t: Record<string, any>;
+  tr: (key: string) => string;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("zh-TW");
-  const t = useCallback((key: string) => resolve(messages[locale], key), [locale]);
+  const t = messages[locale];
+  const tr = useCallback((key: string) => resolve(messages[locale], key), [locale]);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, tr }}>
       {children}
     </I18nContext.Provider>
   );

@@ -137,7 +137,7 @@ export default function BacktestPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       if (msg.toLowerCase().includes("insufficient") || msg.toLowerCase().includes("not enough")) {
-        setError(t("backtest.insufficientData"));
+        setError(t.backtest.insufficientData);
       } else {
         setError(msg);
       }
@@ -148,14 +148,14 @@ export default function BacktestPage() {
 
   return (
     <div className="p-4 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">{t("backtest.title")}</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.backtest.title}</h1>
 
       {/* Configuration form */}
       <div className="bg-gray-800 rounded-lg p-4 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Symbol */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t("backtest.symbol")}</label>
+            <label className="block text-sm text-gray-400 mb-1">{t.backtest.symbol}</label>
             <input
               type="text"
               value={symbol}
@@ -167,7 +167,7 @@ export default function BacktestPage() {
 
           {/* Strategy */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t("backtest.strategy")}</label>
+            <label className="block text-sm text-gray-400 mb-1">{t.backtest.strategy}</label>
             <select
               value={strategy}
               onChange={(e) => setStrategy(e.target.value)}
@@ -184,7 +184,7 @@ export default function BacktestPage() {
 
           {/* Initial Capital */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t("backtest.initialCapital")}</label>
+            <label className="block text-sm text-gray-400 mb-1">{t.backtest.initialCapital}</label>
             <input
               type="number"
               value={initialCapital}
@@ -196,7 +196,7 @@ export default function BacktestPage() {
           {/* Position Size */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">
-              {t("backtest.positionSize")}: {(positionSize * 100).toFixed(0)}%
+              {t.backtest.positionSize}: {(positionSize * 100).toFixed(0)}%
             </label>
             <input
               type="range"
@@ -215,7 +215,7 @@ export default function BacktestPage() {
           disabled={loading || !symbol.trim() || !strategy}
           className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
-          {loading ? t("backtest.running") : t("backtest.run")}
+          {loading ? t.backtest.running : t.backtest.run}
         </button>
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
@@ -223,43 +223,43 @@ export default function BacktestPage() {
 
       {/* Results */}
       {!result && !loading && (
-        <p className="text-gray-500 text-center py-12">{t("backtest.noResults")}</p>
+        <p className="text-gray-500 text-center py-12">{t.backtest.noResults}</p>
       )}
 
       {result && (
         <>
           {/* Metrics */}
-          <h2 className="text-lg font-semibold mb-3">{t("backtest.metrics")}</h2>
+          <h2 className="text-lg font-semibold mb-3">{t.backtest.metrics}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <MetricCard label={t("backtest.totalReturn")} value={result.metrics.total_return} isPercent />
-            <MetricCard label={t("backtest.annualizedReturn")} value={result.metrics.annualized_return} isPercent />
-            <MetricCard label={t("backtest.maxDrawdown")} value={result.metrics.max_drawdown} isPercent invertColor />
-            <MetricCard label={t("backtest.sharpeRatio")} value={result.metrics.sharpe_ratio} />
-            <MetricCard label={t("backtest.winRate")} value={result.metrics.win_rate} isPercent />
-            <MetricCard label={t("backtest.totalTrades")} value={result.metrics.total_trades} />
-            <MetricCard label={t("backtest.profitFactor")} value={result.metrics.profit_factor} />
+            <MetricCard label={t.backtest.totalReturn} value={result.metrics.total_return} isPercent />
+            <MetricCard label={t.backtest.annualizedReturn} value={result.metrics.annualized_return} isPercent />
+            <MetricCard label={t.backtest.maxDrawdown} value={result.metrics.max_drawdown} isPercent invertColor />
+            <MetricCard label={t.backtest.sharpeRatio} value={result.metrics.sharpe_ratio} />
+            <MetricCard label={t.backtest.winRate} value={result.metrics.win_rate} isPercent />
+            <MetricCard label={t.backtest.totalTrades} value={result.metrics.total_trades} />
+            <MetricCard label={t.backtest.profitFactor} value={result.metrics.profit_factor} />
           </div>
 
           {/* Equity Curve */}
           <div className="bg-gray-800 rounded-lg p-4 mb-6">
-            <EquityCurve data={result.equity_curve} label={t("backtest.equityCurve")} />
+            <EquityCurve data={result.equity_curve} label={t.backtest.equityCurve} />
           </div>
 
           {/* Trade Log */}
           <div className="bg-gray-800 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-3">{t("backtest.tradeLog")}</h3>
+            <h3 className="text-lg font-semibold mb-3">{t.backtest.tradeLog}</h3>
             {result.trades.length === 0 ? (
-              <p className="text-gray-500">{t("backtest.noResults")}</p>
+              <p className="text-gray-500">{t.backtest.noResults}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-400 border-b border-gray-700">
-                      <th className="py-2 pr-4">{t("backtest.date")}</th>
-                      <th className="py-2 pr-4">{t("backtest.strategy")}</th>
-                      <th className="py-2 pr-4">{t("backtest.price")}</th>
-                      <th className="py-2 pr-4">{t("backtest.shares")}</th>
-                      <th className="py-2">{t("backtest.reason")}</th>
+                      <th className="py-2 pr-4">{t.backtest.date}</th>
+                      <th className="py-2 pr-4">{t.backtest.strategy}</th>
+                      <th className="py-2 pr-4">{t.backtest.price}</th>
+                      <th className="py-2 pr-4">{t.backtest.shares}</th>
+                      <th className="py-2">{t.backtest.reason}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -276,7 +276,7 @@ export default function BacktestPage() {
                                   : "bg-red-900/50 text-red-400"
                               }`}
                             >
-                              {isBuy ? t("backtest.buy") : t("backtest.sell")}
+                              {isBuy ? t.backtest.buy : t.backtest.sell}
                             </span>
                           </td>
                           <td className="py-2 pr-4 font-mono">{formatNum(trade.price)}</td>

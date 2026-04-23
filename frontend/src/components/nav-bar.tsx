@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useI18n } from "@/i18n/context";
+import { useAuth } from "@/contexts/auth-context";
 
 export function NavBar() {
   const { locale, t, setLocale } = useI18n();
+  const { user, logout } = useAuth();
 
   const toggleLocale = () => {
     setLocale(locale === "zh-TW" ? "en" : "zh-TW");
@@ -28,13 +30,31 @@ export function NavBar() {
         <Link href="/backtest" className="text-gray-400 hover:text-white transition">
           {t.nav.backtest}
         </Link>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
           <button
             onClick={toggleLocale}
             className="text-gray-400 hover:text-white transition text-xs px-2 py-1 rounded border border-gray-700 hover:border-gray-500"
           >
             {locale === "zh-TW" ? "EN" : "繁中"}
           </button>
+          {user ? (
+            <>
+              <span className="text-gray-300 text-xs">{user.username}</span>
+              <button
+                onClick={logout}
+                className="text-gray-400 hover:text-white transition text-xs px-2 py-1 rounded border border-gray-700 hover:border-gray-500"
+              >
+                {t.auth.logout}
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="text-gray-400 hover:text-white transition text-xs px-2 py-1 rounded border border-gray-700 hover:border-gray-500"
+            >
+              {t.auth.login}
+            </Link>
+          )}
         </div>
       </div>
     </nav>
