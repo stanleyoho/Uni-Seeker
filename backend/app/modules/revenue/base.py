@@ -9,6 +9,9 @@ class RevenueRecord:
     period_type: str  # "quarterly" or "monthly"
     revenue: float
     currency: str = "TWD"
+    mom_growth: float | None = None  # month-over-month %
+    yoy_growth: float | None = None  # year-over-year %
+    industry: str = ""
 
 
 @runtime_checkable

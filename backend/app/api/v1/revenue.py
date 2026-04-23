@@ -1,7 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.revenue.yfinance_revenue import YFinanceRevenueProvider
+import httpx
+
+from app.api.deps import get_db
+from app.models.revenue import MonthlyRevenue
 from app.modules.revenue.analyzer import analyze_revenue
+from app.modules.revenue.twse_revenue import TWSERevenueProvider
+from app.modules.revenue.yfinance_revenue import YFinanceRevenueProvider
 from app.schemas.revenue import RevenueAnalysisResponse, RevenueRecordResponse
 
 router = APIRouter(prefix="/revenue", tags=["revenue"])
@@ -33,3 +40,39 @@ async def get_revenue_analysis(symbol: str) -> RevenueAnalysisResponse:
             for r in records
         ],
     )
+
+
+@router.post("/update-tw")
+async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict:
+    """Fetch latest TWSE monthly revenue and store in database."""
+    async with httpx.AsyncClient(timeout=60, verify=False) as client:
+        provider = TWSERevenueProvider(client=client)
+        records = await provider.fetch_all_revenue()
+
+    stored = 0
+    for rec in records:
+        # Upsert: skip if already exists for this symbol+period
+        existing = await db.execute(
+            select(MonthlyRevenue).where(
+                MonthlyRevenue.symbol == rec.symbol,
+                MonthlyRevenue.period == rec.period,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            continue
+
+        db.add(
+            MonthlyRevenue(
+                symbol=rec.symbol,
+                period=rec.period,
+                revenue=rec.revenue,
+                mom_growth=rec.mom_growth,
+                yoy_growth=rec.yoy_growth,
+                industry=rec.industry,
+                currency=rec.currency,
+            )
+        )
+        stored += 1
+
+    await db.commit()
+    return {"fetched": len(records), "stored": stored}
