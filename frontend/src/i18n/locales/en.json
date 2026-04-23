@@ -8,6 +8,7 @@
     "screener": "Screener",
     "notifications": "Notifications",
     "backtest": "Backtest",
+    "lowBase": "Low Base",
     "language": "Language"
   },
   "search": {
@@ -101,6 +102,26 @@
     "logout": "Logout",
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed"
+  },
+  "lowBase": {
+    "title": "Low-Base Ranking",
+    "subtitle": "Composite scoring: valuation, price position, quality",
+    "scanning": "Scanning...",
+    "totalScore": "Total Score",
+    "valuationScore": "Valuation",
+    "priceScore": "Price Position",
+    "qualityScore": "Quality",
+    "scanned": "Stocks Scanned",
+    "qualified": "Qualified",
+    "rank": "Rank",
+    "stock": "Stock",
+    "score": "Score",
+    "pePercentile": "PE Percentile",
+    "maDeviation": "MA240 Deviation",
+    "peg": "PEG",
+    "details": "Details",
+    "noData": "No data. Please update stock prices first.",
+    "viewDetail": "View Stock"
   },
   "backtest": {
     "title": "Strategy Backtest",

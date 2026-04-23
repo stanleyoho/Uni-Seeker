@@ -231,6 +231,39 @@ export async function fetchMe(token: string): Promise<AuthUser> {
   return res.json();
 }
 
+// --- Low Base ---
+
+export interface LowBaseScore {
+  symbol: string;
+  name: string;
+  total_score: number;
+  valuation_score: number;
+  price_position_score: number;
+  quality_score: number;
+  pe_percentile: number | null;
+  ma240_deviation: number | null;
+  peg: number | null;
+  details: Record<string, unknown>;
+}
+
+export interface LowBaseRanking {
+  results: LowBaseScore[];
+  total_scanned: number;
+  total_qualified: number;
+}
+
+export async function fetchLowBaseRanking(limit = 20): Promise<LowBaseRanking> {
+  const res = await fetch(`${API_BASE}/low-base/scan?limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchLowBaseScore(symbol: string): Promise<LowBaseScore> {
+  const res = await fetch(`${API_BASE}/low-base/${symbol}`);
+  if (!res.ok) throw new Error(`Failed: ${res.status}`);
+  return res.json();
+}
+
 // --- Backtest ---
 
 export interface StrategyInfo {

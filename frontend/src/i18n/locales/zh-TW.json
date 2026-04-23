@@ -8,6 +8,7 @@
     "screener": "篩選器",
     "notifications": "通知設定",
     "backtest": "回測",
+    "lowBase": "低基期",
     "language": "語言"
   },
   "search": {
@@ -101,6 +102,26 @@
     "logout": "登出",
     "loginFailed": "登入失敗",
     "registerFailed": "註冊失敗"
+  },
+  "lowBase": {
+    "title": "低基期排行榜",
+    "subtitle": "綜合估值、價格位階、基本面品質篩選",
+    "scanning": "掃描中...",
+    "totalScore": "綜合分數",
+    "valuationScore": "估值分數",
+    "priceScore": "價格位階",
+    "qualityScore": "品質分數",
+    "scanned": "掃描股票",
+    "qualified": "符合資格",
+    "rank": "排名",
+    "stock": "股票",
+    "score": "分數",
+    "pePercentile": "PE 歷史百分位",
+    "maDeviation": "年線乖離率",
+    "peg": "PEG",
+    "details": "詳細指標",
+    "noData": "無資料，請先更新股價",
+    "viewDetail": "查看個股"
   },
   "backtest": {
     "title": "策略回測",

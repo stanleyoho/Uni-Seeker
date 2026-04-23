@@ -21,6 +21,7 @@ export function NavBar() {
     { href: "/screener", label: t.nav.screener },
     { href: "/notifications", label: t.nav.notifications },
     { href: "/backtest", label: t.nav.backtest },
+    { href: "/low-base", label: t.nav.lowBase },
   ];
 
   const isActive = (href: string) => {
