@@ -5,6 +5,7 @@ from app.modules.indicators.moving_average import MovingAverageIndicator
 from app.modules.indicators.registry import IndicatorRegistry
 from app.modules.indicators.rsi import RSIIndicator
 from app.modules.indicators.volume import VolumeIndicator
+from app.modules.indicators.price_volume import PriceVolumeIndicator
 
 
 def create_default_registry() -> IndicatorRegistry:
@@ -15,4 +16,5 @@ def create_default_registry() -> IndicatorRegistry:
     registry.register(MovingAverageIndicator())
     registry.register(BollingerBandsIndicator())
     registry.register(VolumeIndicator())
+    registry.register(PriceVolumeIndicator())
     return registry
