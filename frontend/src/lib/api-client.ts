@@ -135,3 +135,53 @@ export async function deleteNotificationRule(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/notifications/rules/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
 }
+
+// --- Financials ---
+
+export interface FinancialRatios {
+  symbol: string;
+  period: string;
+  gross_margin: number | null;
+  operating_margin: number | null;
+  net_margin: number | null;
+  roe: number | null;
+  roa: number | null;
+  current_ratio: number | null;
+  debt_ratio: number | null;
+  revenue_growth: number | null;
+  net_income_growth: number | null;
+}
+
+export interface HealthScore {
+  symbol: string;
+  period: string;
+  total_score: number;
+  profitability_score: number;
+  efficiency_score: number;
+  leverage_score: number;
+  growth_score: number;
+}
+
+export interface FinancialStatement {
+  period: string;
+  period_type: string;
+  data: Record<string, number>;
+}
+
+export interface FullAnalysis {
+  financials: {
+    symbol: string;
+    currency: string;
+    income_statements: FinancialStatement[];
+    balance_sheets: FinancialStatement[];
+    cash_flows: FinancialStatement[];
+  };
+  ratios: FinancialRatios[];
+  health_scores: HealthScore[];
+}
+
+export async function fetchFinancialAnalysis(symbol: string): Promise<FullAnalysis> {
+  const res = await fetch(`${API_BASE}/financials/${symbol}`);
+  if (!res.ok) throw new Error(`Failed to fetch financials: ${res.status}`);
+  return res.json();
+}
