@@ -8,8 +8,12 @@ if TYPE_CHECKING:
 from app.config import Settings
 
 
-def test_settings_defaults() -> None:
-    s = Settings()
+def test_settings_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Clear env vars that .env file may set
+    monkeypatch.delenv("UNI_DEBUG", raising=False)
+    monkeypatch.delenv("UNI_DATABASE_URL", raising=False)
+    monkeypatch.delenv("UNI_APP_NAME", raising=False)
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
     assert s.app_name == "Uni-Seeker"
     assert "postgresql+asyncpg" in s.database_url
     assert s.debug is False
