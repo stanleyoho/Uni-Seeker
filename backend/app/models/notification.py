@@ -14,6 +14,8 @@ class NotificationRule(Base):
     rule_type: Mapped[str] = mapped_column(String(50))  # price_alert, indicator_alert, schedule
     symbol: Mapped[str] = mapped_column(String(20), default="")
     conditions: Mapped[dict] = mapped_column(JSON, default_factory=dict)
+    condition_logic: Mapped[str] = mapped_column(String(10), default="AND")
+    channels: Mapped[str] = mapped_column(String(200), default='["telegram"]')
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now(),

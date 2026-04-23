@@ -36,7 +36,7 @@ async def test_create_and_list_rules(app_with_notifications) -> None:
             "name": "RSI Alert",
             "rule_type": "indicator_alert",
             "symbol": "2330.TW",
-            "conditions": {"indicator": "RSI", "op": "<", "value": 30},
+            "conditions": [{"indicator": "RSI", "operator": "<", "value": 30}],
         })
         assert resp.status_code == 201
         rule_id = resp.json()["id"]
