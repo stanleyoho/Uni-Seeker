@@ -26,12 +26,22 @@ export function StockChart({ prices, height = 400 }: StockChartProps) {
       width: containerRef.current.clientWidth,
       height,
       layout: {
-        background: { color: "#1a1a2e" },
-        textColor: "#e0e0e0",
+        background: { color: "#1a2332" },
+        textColor: "#94a3b8",
       },
       grid: {
-        vertLines: { color: "#2a2a3e" },
-        horzLines: { color: "#2a2a3e" },
+        vertLines: { color: "#1e293b" },
+        horzLines: { color: "#1e293b" },
+      },
+      crosshair: {
+        vertLine: { color: "#3b82f6", width: 1, labelBackgroundColor: "#3b82f6" },
+        horzLine: { color: "#3b82f6", width: 1, labelBackgroundColor: "#3b82f6" },
+      },
+      rightPriceScale: {
+        borderColor: "#1e293b",
+      },
+      timeScale: {
+        borderColor: "#1e293b",
       },
     });
 
@@ -70,5 +80,5 @@ export function StockChart({ prices, height = 400 }: StockChartProps) {
     };
   }, [prices, height]);
 
-  return <div ref={containerRef} className="w-full" />;
+  return <div ref={containerRef} className="w-full rounded-xl overflow-hidden" />;
 }

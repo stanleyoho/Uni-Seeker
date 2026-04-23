@@ -29,55 +29,77 @@ function formatNumber(value: number | null): string {
 }
 
 function CircularScore({ score, label }: { score: number; label: string }) {
-  const radius = 54;
+  const radius = 60;
   const circumference = 2 * Math.PI * radius;
   const progress = (score / 100) * circumference;
   const color = scoreColor(score, 100);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width="140" height="140" viewBox="0 0 140 140">
+    <div className="flex flex-col items-center gap-3">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        {/* Background track */}
         <circle
-          cx="70"
-          cy="70"
+          cx="80"
+          cy="80"
           r={radius}
           fill="none"
-          stroke="#374151"
-          strokeWidth="10"
+          stroke="#1e293b"
+          strokeWidth="12"
         />
+        {/* Progress arc */}
         <circle
-          cx="70"
-          cy="70"
+          cx="80"
+          cy="80"
           r={radius}
           fill="none"
           stroke={color}
-          strokeWidth="10"
+          strokeWidth="12"
           strokeDasharray={circumference}
           strokeDashoffset={circumference - progress}
           strokeLinecap="round"
-          transform="rotate(-90 70 70)"
-          className="transition-all duration-700"
+          transform="rotate(-90 80 80)"
+          className="transition-all duration-1000"
+          style={
+            { "--ring-circumference": circumference } as React.CSSProperties
+          }
         />
+        {/* Glow effect */}
+        <circle
+          cx="80"
+          cy="80"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="12"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - progress}
+          strokeLinecap="round"
+          transform="rotate(-90 80 80)"
+          opacity="0.3"
+          filter="blur(4px)"
+        />
+        {/* Score text */}
         <text
-          x="70"
-          y="66"
+          x="80"
+          y="74"
           textAnchor="middle"
-          className="fill-white text-3xl font-bold"
-          fontSize="32"
+          className="fill-white font-bold"
+          fontSize="36"
+          fontFamily="monospace"
         >
           {score}
         </text>
         <text
-          x="70"
-          y="88"
+          x="80"
+          y="98"
           textAnchor="middle"
-          className="fill-gray-400"
-          fontSize="12"
+          fill="#64748b"
+          fontSize="13"
         >
           / 100
         </text>
       </svg>
-      <span className="text-sm text-gray-400">{label}</span>
+      <span className="text-sm text-[#94a3b8] font-medium">{label}</span>
     </div>
   );
 }
@@ -96,14 +118,14 @@ function CategoryBar({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-28 text-sm text-gray-300 shrink-0">{label}</span>
-      <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+      <span className="w-28 text-sm text-[#94a3b8] shrink-0 font-medium">{label}</span>
+      <div className="flex-1 h-2.5 bg-[#111827] rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full rounded-full transition-all duration-700"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-sm font-mono w-14 text-right" style={{ color }}>
+      <span className="text-sm font-mono w-16 text-right font-medium" style={{ color }}>
         {score.toFixed(1)}/{max}
       </span>
     </div>
@@ -124,16 +146,27 @@ function RatiosTable({ ratios, t }: { ratios: FinancialRatios; t: ReturnType<typ
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="bg-gray-800 rounded-lg p-4 border border-gray-700"
-        >
-          <div className="text-xs text-gray-400 mb-1">{item.label}</div>
-          <div className="text-lg font-semibold">{item.value}</div>
-        </div>
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {items.map((item, i) => {
+        const numVal = parseFloat(item.value);
+        const isPositive = !isNaN(numVal) && numVal > 0;
+        const isNegative = !isNaN(numVal) && numVal < 0;
+
+        return (
+          <div
+            key={item.label}
+            className="bg-[#111827] rounded-xl p-4 border border-[#1e293b] transition-all duration-200 hover:border-[#253449]"
+            style={{ animationDelay: `${i * 50}ms` }}
+          >
+            <div className="text-xs text-[#64748b] uppercase tracking-wider font-medium mb-1.5">{item.label}</div>
+            <div className={`text-lg font-semibold font-mono ${
+              isPositive ? "text-green-400" : isNegative ? "text-red-400" : "text-white"
+            }`}>
+              {item.value}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -156,17 +189,17 @@ function QuarterlyTrend({ ratios, t }: { ratios: FinancialRatios[]; t: ReturnTyp
   ];
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl border border-[#1e293b]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-700">
-            <th className="text-left py-2 px-3 text-gray-400 font-medium">
+          <tr className="bg-[#111827]">
+            <th className="text-left py-3 px-4 text-[#64748b] text-xs uppercase tracking-wider font-medium">
               {t.financial.metric}
             </th>
             {sorted.map((r) => (
               <th
                 key={r.period}
-                className="text-right py-2 px-3 text-gray-400 font-medium"
+                className="text-right py-3 px-4 text-[#64748b] text-xs uppercase tracking-wider font-medium"
               >
                 {r.period}
               </th>
@@ -174,13 +207,18 @@ function QuarterlyTrend({ ratios, t }: { ratios: FinancialRatios[]; t: ReturnTyp
           </tr>
         </thead>
         <tbody>
-          {metrics.map((m) => (
-            <tr key={m.key} className="border-b border-gray-800">
-              <td className="py-2 px-3 text-gray-300">{m.label}</td>
+          {metrics.map((m, i) => (
+            <tr
+              key={m.key}
+              className={`border-t border-[#1e293b] transition-colors duration-150 hover:bg-[#1e293b] ${
+                i % 2 === 0 ? "bg-[#1a2332]" : "bg-[#111827]/50"
+              }`}
+            >
+              <td className="py-3 px-4 text-[#94a3b8] font-medium">{m.label}</td>
               {sorted.map((r) => {
                 const val = r[m.key] as number | null;
                 return (
-                  <td key={r.period} className="text-right py-2 px-3 font-mono">
+                  <td key={r.period} className="text-right py-3 px-4 font-mono text-white">
                     {m.isPct ? formatPct(val) : formatNumber(val)}
                   </td>
                 );
@@ -218,27 +256,44 @@ export default function FinancialsPage() {
     };
   }, [symbol]);
 
-  if (loading) return <div className="p-8 text-center">{t.financial.loadingFinancial}</div>;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
-  if (!data) return <div className="p-8 text-center text-gray-400">{t.stock.noData}</div>;
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#1e293b] border-t-blue-500 rounded-full animate-spin" />
+          <span className="text-[#94a3b8]">{t.financial.loadingFinancial}</span>
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 max-w-md mx-auto">
+          <p className="text-red-400">{error}</p>
+        </div>
+      </div>
+    );
+  }
+  if (!data) return <div className="p-8 text-center text-[#64748b]">{t.stock.noData}</div>;
 
   const latestScore =
     data.health_scores.length > 0 ? data.health_scores[0] : null;
   const latestRatios = data.ratios.length > 0 ? data.ratios[0] : null;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
       {/* Header with navigation tabs */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{symbol}</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-white tracking-tight">{symbol}</h1>
+        <div className="flex gap-1 bg-[#111827] p-1 rounded-xl">
           <Link
             href={`/stocks/${encodeURIComponent(symbol)}`}
-            className="px-4 py-2 text-sm rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition"
+            className="px-4 py-2 text-sm font-medium rounded-lg text-[#94a3b8] hover:text-white hover:bg-[#1e293b] transition-all duration-200"
           >
             {t.stock.chart}
           </Link>
-          <span className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white">
+          <span className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20">
             {t.stock.financials}
           </span>
         </div>
@@ -246,19 +301,21 @@ export default function FinancialsPage() {
 
       {/* Health Score Section */}
       {latestScore && (
-        <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
-          <h2 className="text-lg font-semibold mb-4">
-            {t.financial.healthScore}
-            <span className="text-sm text-gray-400 ml-2 font-normal">
+        <div className="bg-[#1a2332] rounded-2xl p-6 mb-6 border border-[#1e293b]">
+          <div className="flex items-center gap-3 mb-5">
+            <h2 className="text-lg font-semibold text-white">
+              {t.financial.healthScore}
+            </h2>
+            <span className="text-xs text-[#64748b] bg-[#111827] rounded-lg px-2.5 py-1 border border-[#1e293b]">
               {t.financial.period}: {latestScore.period}
             </span>
-          </h2>
+          </div>
           <div className="flex flex-col md:flex-row items-center gap-8">
             <CircularScore
               score={Math.round(latestScore.total_score)}
               label={t.financial.overallHealth}
             />
-            <div className="flex-1 w-full space-y-3">
+            <div className="flex-1 w-full space-y-4">
               <CategoryBar
                 label={t.financial.profitability}
                 score={latestScore.profitability_score}
@@ -286,29 +343,36 @@ export default function FinancialsPage() {
 
       {/* Key Ratios */}
       {latestRatios && (
-        <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
-          <h2 className="text-lg font-semibold mb-4">
-            {t.financial.keyRatios}
-            <span className="text-sm text-gray-400 ml-2 font-normal">
+        <div className="bg-[#1a2332] rounded-2xl p-6 mb-6 border border-[#1e293b]">
+          <div className="flex items-center gap-3 mb-5">
+            <h2 className="text-lg font-semibold text-white">
+              {t.financial.keyRatios}
+            </h2>
+            <span className="text-xs text-[#64748b] bg-[#111827] rounded-lg px-2.5 py-1 border border-[#1e293b]">
               {t.financial.period}: {latestRatios.period}
             </span>
-          </h2>
+          </div>
           <RatiosTable ratios={latestRatios} t={t} />
         </div>
       )}
 
       {/* Quarterly Trend */}
       {data.ratios.length > 1 && (
-        <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
-          <h2 className="text-lg font-semibold mb-4">{t.financial.quarterlyTrend}</h2>
+        <div className="bg-[#1a2332] rounded-2xl p-6 mb-6 border border-[#1e293b]">
+          <h2 className="text-lg font-semibold mb-4 text-white">{t.financial.quarterlyTrend}</h2>
           <QuarterlyTrend ratios={data.ratios} t={t} />
         </div>
       )}
 
       {/* No data fallback */}
       {!latestScore && !latestRatios && (
-        <div className="text-center text-gray-400 py-12">
-          {t.financial.noDataFor.replace("{symbol}", symbol)}
+        <div className="text-center py-20">
+          <svg className="w-16 h-16 mx-auto text-[#1e293b] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-[#64748b] text-lg">
+            {t.financial.noDataFor.replace("{symbol}", symbol)}
+          </p>
         </div>
       )}
     </div>
