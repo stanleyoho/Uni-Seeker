@@ -1,179 +1,202 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { searchStocks, type StockSearchResult } from "@/lib/api-client";
+import { useState } from "react";
+import Link from "next/link";
+import {
+  type MarketIndex,
+  type MarketMover,
+} from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
+import { TabGroup } from "@/components/ui/tab-group";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { useMarketIndices, useMarketMovers } from "@/hooks/use-market-data";
+
+// ── Market Index Ticker ─────────────────────────────────────────
+
+function IndexTicker({ indices }: { indices: MarketIndex[] }) {
+  if (indices.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {indices.map((idx) => {
+        const isUp = idx.change >= 0;
+        return (
+          <div
+            key={idx.symbol}
+            className="flex items-center gap-3 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 min-w-[180px] hover:bg-[var(--card-hover)] transition-colors duration-150"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider truncate">{idx.name}</div>
+              <div className="text-base font-bold text-white mono-nums">
+                {idx.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className={`text-xs font-semibold mono-nums ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
+                {isUp ? "+" : ""}{idx.change_percent.toFixed(2)}%
+              </div>
+              <div className={`text-[10px] mono-nums ${isUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"}`}>
+                {isUp ? "+" : ""}{idx.change.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Mover Row ───────────────────────────────────────────────────
+
+function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
+  const isUp = mover.change >= 0;
+
+  return (
+    <Link
+      href={`/stocks/${encodeURIComponent(mover.symbol)}`}
+      className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-[var(--card-hover)] rounded-md transition-colors duration-100 group"
+    >
+      <span className="text-[var(--text-muted)] text-[10px] mono-nums w-4 shrink-0">{rank}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-white font-semibold text-xs group-hover:text-[var(--accent-blue)] transition-colors">
+            {mover.symbol.replace(".TW", "").replace(".TWO", "")}
+          </span>
+          <span className="text-[var(--text-muted)] text-[10px] truncate">{mover.name}</span>
+        </div>
+      </div>
+      <div className="text-right shrink-0 flex items-center gap-2">
+        <span className="text-white text-xs mono-nums">{mover.close.toFixed(2)}</span>
+        <span className={`text-[10px] font-semibold mono-nums min-w-[48px] text-right ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
+          {isUp ? "+" : ""}
+          {mover.change_percent.toFixed(2)}%
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ── Movers Card ─────────────────────────────────────────────────
+
+function MoversCard({
+  title,
+  movers,
+}: {
+  title: string;
+  movers: MarketMover[];
+}) {
+  if (movers.length === 0) return null;
+
+  return (
+    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg overflow-hidden">
+      <div className="px-3 py-2 border-b border-[var(--border-subtle)]">
+        <h3 className="text-[var(--text-secondary)] font-medium text-xs uppercase tracking-wider">{title}</h3>
+      </div>
+      <div className="p-1 space-y-0">
+        {movers.slice(0, 10).map((m, i) => (
+          <MoverRow key={m.symbol} mover={m} rank={i + 1} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ───────────────────────────────────────────────────
 
 export default function HomePage() {
   const { t } = useI18n();
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<StockSearchResult[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const router = useRouter();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+  // Market data via React Query
+  const [marketFilter, setMarketFilter] = useState<string>("all");
 
-    if (query.trim().length === 0) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      return;
-    }
+  const m = t.market;
 
-    debounceRef.current = setTimeout(async () => {
-      const results = await searchStocks(query, 8);
-      setSuggestions(results);
-      setShowDropdown(results.length > 0);
-      setSelectedIndex(-1);
-    }, 200);
+  const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
+  const filter = marketFilter === "all" ? undefined : marketFilter;
+  const { data: movers, isLoading: moversLoading } = useMarketMovers(filter);
+  const marketLoading = indicesLoading || moversLoading;
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const navigateToStock = (symbol: string) => {
-    setShowDropdown(false);
-    setQuery(symbol);
-    router.push(`/stocks/${encodeURIComponent(symbol)}`);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-      navigateToStock(suggestions[selectedIndex].symbol);
-    } else if (query.trim()) {
-      navigateToStock(query.trim().toUpperCase());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-    }
-  };
-
-  const marketLabel = (market: string) => {
-    if (market.startsWith("TW_TWSE")) return t.search.listed;
-    if (market.startsWith("TW_TPEX")) return t.search.otc;
-    if (market.includes("NASDAQ")) return "NASDAQ";
-    if (market.includes("NYSE")) return "NYSE";
-    return market;
-  };
+  const marketTabs = [
+    { key: "all", label: m.allMarkets },
+    { key: "TW_TWSE", label: m.twse },
+    { key: "TW_TPEX", label: m.tpex },
+    { key: "US_NYSE", label: m.us },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center w-full">
-        {/* Hero */}
-        <h1 className="text-5xl md:text-6xl font-bold mb-3 gradient-text tracking-tight">
+    <div className="min-h-screen flex flex-col p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+      {/* Compact Hero + Search hint */}
+      <div className="flex flex-col items-center py-4 md:py-6">
+        <h1 className="text-2xl md:text-3xl font-bold mb-1 gradient-text tracking-tight">
           {t.app.title}
         </h1>
-        <p className="text-[#94a3b8] mb-10 text-lg">{t.app.subtitle}</p>
+        <p className="text-[var(--text-muted)] mb-4 text-sm">{t.app.subtitle}</p>
 
-        {/* Search */}
-        <div ref={dropdownRef} className="relative w-full max-w-lg">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <svg
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-                placeholder={t.search.placeholder}
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#1a2332] border border-[#1e293b] text-white placeholder-[#64748b] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all duration-200"
-                autoComplete="off"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-medium shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30"
-            >
-              {t.search.button}
-            </button>
-          </form>
+        <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
+          {t.search.hint}
+          <kbd className="inline-flex items-center justify-center text-[10px] text-[var(--text-muted)] border border-[var(--border-color)] rounded px-1.5 py-0.5 font-mono leading-none">F</kbd>
+        </p>
+      </div>
 
-          {showDropdown && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a2332] border border-[#1e293b] rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-slide-down">
-              {suggestions.map((stock, index) => (
-                <button
-                  key={stock.symbol}
-                  type="button"
-                  onClick={() => navigateToStock(stock.symbol)}
-                  className={`w-full px-4 py-3 flex items-center justify-between text-left transition-all duration-150 ${
-                    index === selectedIndex
-                      ? "bg-[#253449]"
-                      : "hover:bg-[#1e293b]"
-                  } ${index > 0 ? "border-t border-[#1e293b]/50" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-white font-mono font-semibold text-sm bg-[#253449] px-2 py-0.5 rounded">
-                      {stock.symbol.replace(".TW", "").replace(".TWO", "")}
-                    </span>
-                    <span className="text-[#94a3b8] text-sm">{stock.name}</span>
-                  </div>
-                  <span className="text-xs text-[#64748b] px-2 py-0.5 border border-[#1e293b] rounded-md">
-                    {marketLabel(stock.market)}
-                  </span>
-                </button>
-              ))}
+      {/* Market Index Ticker */}
+      {marketLoading ? (
+        <LoadingSpinner size="sm" />
+      ) : (
+        <>
+          {indices.length > 0 && (
+            <div className="mb-4">
+              <IndexTicker indices={indices} />
             </div>
           )}
-        </div>
 
-        {/* Quick stats */}
-        <div className="mt-16 flex items-center gap-6 text-[#64748b] text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            <span>TW + US Markets</span>
-          </div>
-          <div className="w-px h-4 bg-[#1e293b]" />
-          <span>15+ Indicators</span>
-          <div className="w-px h-4 bg-[#1e293b]" />
-          <span>Real-time Analysis</span>
+          {/* Market Movers */}
+          {movers && (movers.gainers.length > 0 || movers.losers.length > 0 || movers.most_active.length > 0) && (
+            <div className="mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{m.overview}</h2>
+                <div className="flex items-center gap-2">
+                  <TabGroup tabs={marketTabs} active={marketFilter} onChange={setMarketFilter} size="sm" />
+                  {movers.date && (
+                    <span className="text-[10px] text-[var(--text-muted)] mono-nums">
+                      {movers.date}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <MoversCard title={m.gainers} movers={movers.gainers} />
+                <MoversCard title={m.losers} movers={movers.losers} />
+                <MoversCard title={m.mostActive} movers={movers.most_active} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Quick Access - simplified text links */}
+      <div className="border-t border-[var(--border-subtle)] pt-3 mb-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <span className="text-[var(--text-muted)] uppercase tracking-wider mr-1">Quick</span>
+          <Link href="/screener" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.screener}</Link>
+          <Link href="/backtest" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.backtest}</Link>
+          <Link href="/low-base" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.lowBase}</Link>
+          <Link href="/heatmap" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.heatmap}</Link>
+          <Link href="/compare" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.compare}</Link>
+          <Link href="/watchlist" className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">{t.nav.watchlist}</Link>
         </div>
+      </div>
+
+      {/* Footer stats */}
+      <div className="flex items-center justify-center gap-4 text-[var(--text-muted)] text-[10px] py-2 border-t border-[var(--border-subtle)]">
+        <div className="flex items-center gap-1.5">
+          <span className="status-dot" />
+          <span>TW + US Markets</span>
+        </div>
+        <span className="text-[var(--border-color)]">|</span>
+        <span>15+ Indicators</span>
+        <span className="text-[var(--border-color)]">|</span>
+        <span>Real-time Analysis</span>
       </div>
     </div>
   );

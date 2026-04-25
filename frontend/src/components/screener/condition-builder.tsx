@@ -45,18 +45,21 @@ export function ConditionBuilder({
     onChange(updated);
   };
 
+  const selectClass =
+    "px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200";
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-[#64748b]">Logic:</span>
-        <div className="flex bg-[#111827] p-0.5 rounded-lg">
+        <span className="text-sm text-[var(--text-muted)]">Logic:</span>
+        <div className="flex bg-[var(--bg-secondary)] p-0.5 rounded-lg">
           <button
             type="button"
             onClick={() => onLogicChange("AND")}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
               logicOperator === "AND"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-[#94a3b8] hover:text-white"
+                ? "bg-[var(--accent-blue)] text-white shadow-sm"
+                : "text-[var(--text-secondary)] hover:text-white"
             }`}
           >
             AND
@@ -66,8 +69,8 @@ export function ConditionBuilder({
             onClick={() => onLogicChange("OR")}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
               logicOperator === "OR"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-[#94a3b8] hover:text-white"
+                ? "bg-[var(--accent-blue)] text-white shadow-sm"
+                : "text-[var(--text-secondary)] hover:text-white"
             }`}
           >
             OR
@@ -78,29 +81,17 @@ export function ConditionBuilder({
       {conditions.map((cond, i) => (
         <div
           key={i}
-          className="flex items-center gap-2 flex-wrap p-3 bg-[#111827] rounded-xl border border-[#1e293b] animate-fade-in"
+          className="flex items-center gap-2 flex-wrap p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] animate-fade-in"
         >
-          <select
-            value={cond.indicator}
-            onChange={(e) => updateCondition(i, "indicator", e.target.value)}
-            className="px-3 py-2 rounded-lg bg-[#1a2332] border border-[#1e293b] text-white text-sm focus:outline-none focus:border-blue-500 transition-all duration-200"
-          >
+          <select value={cond.indicator} onChange={(e) => updateCondition(i, "indicator", e.target.value)} className={selectClass}>
             {indicators.map((ind) => (
-              <option key={ind} value={ind}>
-                {ind}
-              </option>
+              <option key={ind} value={ind}>{ind}</option>
             ))}
           </select>
 
-          <select
-            value={cond.op}
-            onChange={(e) => updateCondition(i, "op", e.target.value)}
-            className="px-3 py-2 rounded-lg bg-[#1a2332] border border-[#1e293b] text-white text-sm font-mono focus:outline-none focus:border-blue-500 transition-all duration-200"
-          >
+          <select value={cond.op} onChange={(e) => updateCondition(i, "op", e.target.value)} className={`${selectClass} font-mono`}>
             {OPERATORS.map((op) => (
-              <option key={op} value={op}>
-                {op}
-              </option>
+              <option key={op} value={op}>{op}</option>
             ))}
           </select>
 
@@ -108,14 +99,14 @@ export function ConditionBuilder({
             type="number"
             value={String(cond.value)}
             onChange={(e) => updateCondition(i, "value", Number(e.target.value))}
-            className="w-24 px-3 py-2 rounded-lg bg-[#1a2332] border border-[#1e293b] text-white text-sm font-mono focus:outline-none focus:border-blue-500 transition-all duration-200"
+            className={`w-24 ${selectClass} font-mono`}
             placeholder="Value"
           />
 
           <button
             type="button"
             onClick={() => removeCondition(i)}
-            className="text-[#64748b] hover:text-red-400 transition-all duration-200 text-sm px-2 py-1 rounded-lg hover:bg-red-500/10"
+            className="text-[var(--text-muted)] hover:text-red-400 transition-all duration-200 text-sm px-2 py-1 rounded-lg hover:bg-red-500/10"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -127,7 +118,7 @@ export function ConditionBuilder({
       <button
         type="button"
         onClick={addCondition}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[#111827] border border-dashed border-[#1e293b] text-[#94a3b8] rounded-xl hover:border-blue-500/50 hover:text-white hover:bg-[#1e293b] transition-all duration-200 text-sm"
+        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl hover:border-[var(--accent-blue)]/50 hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200 text-sm"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

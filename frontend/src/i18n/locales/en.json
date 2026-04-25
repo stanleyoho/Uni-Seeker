@@ -8,25 +8,50 @@
     "screener": "Screener",
     "notifications": "Notifications",
     "backtest": "Backtest",
+    "watchlist": "Watchlist",
+    "compare": "Compare",
+    "heatmap": "Heatmap",
     "lowBase": "Low Base",
+    "institutional": "Institutional",
     "language": "Language"
   },
   "search": {
     "placeholder": "Enter symbol or name (e.g., 2330, TSMC, AAPL)",
     "button": "Search",
     "listed": "Listed",
-    "otc": "OTC"
+    "otc": "OTC",
+    "noResults": "No results found",
+    "hint": "Press F to search stocks"
   },
   "stock": {
     "chart": "Chart",
     "financials": "Financials",
+    "margin": "Margin",
     "open": "Open",
     "close": "Close",
     "high": "High",
     "low": "Low",
     "volume": "Volume",
     "loading": "Loading...",
-    "noData": "No data available"
+    "noData": "No data available",
+    "industry": "Industry",
+    "marginBuy": "Margin Buy",
+    "marginSell": "Margin Sell",
+    "marginBalance": "Margin Balance",
+    "marginLimit": "Margin Limit",
+    "marginUsage": "Margin Usage",
+    "shortBuy": "Short Buy",
+    "shortSell": "Short Sell",
+    "shortBalance": "Short Balance",
+    "shortLimit": "Short Limit",
+    "shortUsage": "Short Usage",
+    "marginShortRatio": "Short/Margin Ratio",
+    "offset": "Offset",
+    "revenue": "Revenue",
+    "latestRevenue": "Latest Revenue",
+    "trend": "Trend",
+    "revenueHigh": "Revenue High",
+    "revenueLow": "Revenue Low"
   },
   "financial": {
     "healthScore": "Health Score",
@@ -88,6 +113,13 @@
     "ruleName": "Rule name",
     "symbolPlaceholder": "Symbol (e.g., 2330.TW, AAPL)",
     "conditionsPlaceholder": "Conditions JSON, e.g. {\"price_above\": 100}",
+    "conditionType": "Condition Type",
+    "conditionPriceAlert": "Price Alert",
+    "conditionIndicatorAlert": "Indicator Alert",
+    "conditionDailyChange": "Daily Change",
+    "above": "Above",
+    "below": "Below",
+    "addCondition": "Add Condition",
     "loading": "Loading...",
     "nameSymbolRequired": "Name and symbol are required."
   },
@@ -102,6 +134,48 @@
     "logout": "Logout",
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed"
+  },
+  "watchlist": {
+    "title": "Watchlist",
+    "subtitle": "Tracked stocks",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "loading": "Loading prices...",
+    "remove": "Remove from watchlist",
+    "add": "Add to watchlist",
+    "emptyTitle": "No stocks in watchlist",
+    "emptyMessage": "Search for a stock and click the star icon to add it here",
+    "goSearch": "Search Stocks"
+  },
+  "compare": {
+    "title": "Stock Comparison",
+    "subtitle": "Compare up to 5 stocks side by side",
+    "add": "Add",
+    "addPlaceholder": "Add stock (e.g. 2330.TW, AAPL)",
+    "emptyTitle": "Add stocks to compare",
+    "emptyMessage": "Enter stock symbols above to compare financial metrics side by side"
+  },
+  "heatmap": {
+    "title": "Market Heatmap",
+    "subtitle": "Sector performance overview",
+    "legend": "Change",
+    "loading": "Loading heatmap...",
+    "noData": "No heatmap data available"
+  },
+  "market": {
+    "overview": "Market Overview",
+    "indices": "Major Indices",
+    "gainers": "Top Gainers",
+    "losers": "Top Losers",
+    "mostActive": "Most Active",
+    "allMarkets": "All",
+    "twse": "TWSE",
+    "tpex": "TPEX",
+    "us": "US",
+    "change": "Change",
+    "volume": "Volume",
+    "noData": "No market data available",
+    "asOf": "As of"
   },
   "lowBase": {
     "title": "Low-Base Ranking",
@@ -122,6 +196,21 @@
     "details": "Details",
     "noData": "No data. Please update stock prices first.",
     "viewDetail": "View Stock"
+  },
+  "institutional": {
+    "title": "Institutional Investors",
+    "subtitle": "Daily buy/sell data for foreign investors, investment trust, and dealers",
+    "foreign": "Foreign",
+    "trust": "Investment Trust",
+    "dealer": "Dealer",
+    "total": "Total",
+    "netBuy": "Net Buy",
+    "buy": "Buy",
+    "sell": "Sell",
+    "date": "Date",
+    "loading": "Loading...",
+    "noData": "No institutional data available",
+    "searchPlaceholder": "Enter stock symbol (e.g. 2330)"
   },
   "backtest": {
     "title": "Strategy Backtest",

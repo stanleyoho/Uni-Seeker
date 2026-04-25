@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
+from app.models.stock import Stock
 from app.modules.price_updater.twse import TWSEProvider
 from app.modules.price_updater.tpex import TPEXProvider
 from app.modules.price_updater.updater import PriceUpdater
@@ -86,7 +87,6 @@ async def backfill_tw_popular(
 
     from sqlalchemy import select as sa_select
 
-    from app.models.stock import Stock
     from app.modules.price_updater.yfinance_provider import YFinanceProvider
 
     result = await db.execute(sa_select(Stock.symbol).limit(100))
@@ -121,9 +121,11 @@ async def get_stock_prices(
     limit: int = Query(default=30, le=365),
     offset: int = Query(default=0, ge=0),
 ) -> StockPriceListResponse:
+    stock = await get_stock_or_404(db, symbol)
+
     query = (
         select(StockPrice)
-        .where(StockPrice.symbol == symbol)
+        .where(StockPrice.stock_id == stock.id)
         .order_by(StockPrice.date.desc())
         .offset(offset)
         .limit(limit)
@@ -131,11 +133,29 @@ async def get_stock_prices(
     result = await db.execute(query)
     prices = list(result.scalars().all())
 
-    count_query = select(func.count()).select_from(StockPrice).where(StockPrice.symbol == symbol)
+    count_query = (
+        select(func.count())
+        .select_from(StockPrice)
+        .where(StockPrice.stock_id == stock.id)
+    )
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
 
     return StockPriceListResponse(
-        data=[StockPriceResponse.model_validate(p) for p in prices],
+        data=[
+            StockPriceResponse(
+                symbol=stock.symbol,
+                market=stock.market.value if stock.market else "",
+                date=p.date,
+                open=p.open,
+                high=p.high,
+                low=p.low,
+                close=p.close,
+                volume=p.volume,
+                change=p.change,
+                change_percent=p.change_percent,
+            )
+            for p in prices
+        ],
         total=total,
     )

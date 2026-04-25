@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/contexts/auth-context";
 import { login, register } from "@/lib/api-client";
+import { TabGroup } from "@/components/ui/tab-group";
 
 export default function LoginPage() {
   const { t } = useI18n();
@@ -42,101 +43,76 @@ export default function LoginPage() {
     }
   };
 
+  const inputClass =
+    "w-full px-3 py-2.5 bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200 placeholder-[var(--text-muted)]";
+
   return (
     <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
+      {/* Background decoration - enhanced shimmer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/3 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-purple-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/8 rounded-full blur-[100px] animate-pulse-glow" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/8 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 animate-shimmer" />
       </div>
 
-      <div className="relative w-full max-w-md glass border border-[#1e293b] rounded-2xl p-8 shadow-2xl shadow-black/40 animate-fade-in">
+      <div className="relative w-full max-w-sm glass border border-[var(--border-color)] rounded-xl p-6 shadow-2xl shadow-black/50 animate-fade-in" style={{ backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
         {/* Logo */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold gradient-text">Uni-Seeker</h1>
+        <div className="text-center mb-5">
+          <h1 className="text-xl font-bold gradient-text">Uni-Seeker</h1>
         </div>
 
         {/* Tabs */}
-        <div className="flex mb-6 bg-[#111827] p-1 rounded-xl">
-          <button
-            className={`flex-1 py-2.5 text-center text-sm font-medium rounded-lg transition-all duration-200 ${
-              tab === "login"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-[#94a3b8] hover:text-white"
-            }`}
-            onClick={() => { setTab("login"); setError(""); }}
-          >
-            {t.auth.login}
-          </button>
-          <button
-            className={`flex-1 py-2.5 text-center text-sm font-medium rounded-lg transition-all duration-200 ${
-              tab === "register"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-[#94a3b8] hover:text-white"
-            }`}
-            onClick={() => { setTab("register"); setError(""); }}
-          >
-            {t.auth.register}
-          </button>
+        <div className="flex justify-center mb-5">
+          <TabGroup
+            tabs={[
+              { key: "login", label: t.auth.login },
+              { key: "register", label: t.auth.register },
+            ]}
+            active={tab}
+            onChange={(key) => { setTab(key as "login" | "register"); setError(""); }}
+            size="sm"
+          />
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs text-[#64748b] uppercase tracking-wider font-medium mb-1.5">
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
               {t.auth.email}
             </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e293b] rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all duration-200 placeholder-[#64748b]"
-            />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
           </div>
 
           {tab === "register" && (
             <div className="animate-fade-in">
-              <label className="block text-xs text-[#64748b] uppercase tracking-wider font-medium mb-1.5">
+              <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
                 {t.auth.username}
               </label>
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e293b] rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all duration-200 placeholder-[#64748b]"
-              />
+              <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
             </div>
           )}
 
           <div>
-            <label className="block text-xs text-[#64748b] uppercase tracking-wider font-medium mb-1.5">
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
               {t.auth.password}
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e293b] rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all duration-200 placeholder-[#64748b]"
-            />
+            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
           </div>
 
           {error && (
-            <div className="px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl animate-slide-down">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="px-2.5 py-2 bg-[var(--stock-up)]/10 border border-[var(--stock-up)]/20 rounded-lg animate-slide-down">
+              <p className="text-red-400 text-xs">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30"
+            className="w-full py-2.5 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-hover)] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ...
               </span>
             ) : tab === "login" ? (

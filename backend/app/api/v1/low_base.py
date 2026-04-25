@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_indicator_registry
+from app.api.deps import get_db, get_indicator_registry, get_stock_or_404
 from app.models.price import StockPrice
+from app.models.stock import Stock
 from app.modules.low_base.scorer import calculate_low_base_score
 from app.modules.indicators.rsi import RSIIndicator
 from app.schemas.low_base import LowBaseRankingResponse, LowBaseScoreResponse
@@ -20,23 +21,29 @@ async def scan_low_base(
     min_data_days: int = Query(default=60),
 ) -> LowBaseRankingResponse:
     """Scan all stocks and rank by low-base composite score."""
-    # Get all symbols with enough data
+    # Get all stock_ids with enough data, along with their symbol/name
     symbol_query = (
-        select(StockPrice.symbol, func.count(StockPrice.id).label("cnt"))
-        .group_by(StockPrice.symbol)
+        select(
+            StockPrice.stock_id,
+            Stock.symbol,
+            Stock.name,
+            func.count(StockPrice.id).label("cnt"),
+        )
+        .join(Stock, Stock.id == StockPrice.stock_id)
+        .group_by(StockPrice.stock_id, Stock.symbol, Stock.name)
         .having(func.count(StockPrice.id) >= min_data_days)
     )
     result = await db.execute(symbol_query)
-    symbols = [(row[0], row[1]) for row in result.all()]
+    stock_rows = result.all()
 
     scores: list[LowBaseScoreResponse] = []
     rsi_calc = RSIIndicator()
 
-    for symbol, count in symbols:
+    for stock_id, symbol, name, count in stock_rows:
         # Fetch prices
         price_query = (
             select(StockPrice)
-            .where(StockPrice.symbol == symbol)
+            .where(StockPrice.stock_id == stock_id)
             .order_by(StockPrice.date.asc())
         )
         price_result = await db.execute(price_query)
@@ -46,14 +53,7 @@ async def scan_low_base(
             continue
 
         closes = [float(p.close) for p in prices]
-        name = symbol  # We'll get name from Stock table if available
-
-        # Get stock name
-        from app.models.stock import Stock
-        stock_q = await db.execute(select(Stock.name).where(Stock.symbol == symbol))
-        stock_row = stock_q.first()
-        if stock_row:
-            name = stock_row[0]
+        display_name = name or symbol
 
         # Calculate RSI
         rsi_result = rsi_calc.calculate(closes, period=14)
@@ -64,10 +64,10 @@ async def scan_low_base(
                 current_rsi = v
                 break
 
-        # Calculate score (simplified — no financial data from DB yet, use price-only)
+        # Calculate score
         score = calculate_low_base_score(
             symbol=symbol,
-            name=name,
+            name=display_name,
             closes=closes,
             rsi=current_rsi,
         )
@@ -91,7 +91,7 @@ async def scan_low_base(
 
     return LowBaseRankingResponse(
         results=scores[:limit],
-        total_scanned=len(symbols),
+        total_scanned=len(stock_rows),
         total_qualified=len(scores),
     )
 
@@ -102,11 +102,11 @@ async def get_stock_low_base_score(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LowBaseScoreResponse:
     """Get low-base score for a single stock."""
-    from fastapi import HTTPException
+    stock = await get_stock_or_404(db, symbol)
 
     price_query = (
         select(StockPrice)
-        .where(StockPrice.symbol == symbol)
+        .where(StockPrice.stock_id == stock.id)
         .order_by(StockPrice.date.asc())
     )
     result = await db.execute(price_query)
@@ -116,11 +116,7 @@ async def get_stock_low_base_score(
         raise HTTPException(status_code=404, detail=f"Insufficient data for '{symbol}'")
 
     closes = [float(p.close) for p in prices]
-
-    from app.models.stock import Stock
-    stock_q = await db.execute(select(Stock.name).where(Stock.symbol == symbol))
-    stock_row = stock_q.first()
-    name = stock_row[0] if stock_row else symbol
+    name = stock.name or symbol
 
     rsi_result = RSIIndicator().calculate(closes, period=14)
     current_rsi = None

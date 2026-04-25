@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     twse_base_url: str = "https://openapi.twse.com.tw/v1"
     tpex_base_url: str = "https://www.tpex.org.tw/openapi/v1"
 
+    # FinMind
+    finmind_api_url: str = "https://api.finmindtrade.com/api/v4"
+    finmind_api_token: str = ""
+
     # Telegram
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

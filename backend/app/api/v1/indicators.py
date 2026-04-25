@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_indicator_registry
+from app.api.deps import get_db, get_indicator_registry, get_stock_or_404
 from app.cache import cache_delete_pattern, cache_get, cache_set, make_cache_key
 from app.models.price import StockPrice
 from app.modules.indicators.registry import IndicatorRegistry
@@ -41,9 +41,11 @@ async def calculate_indicator(
             status_code=404, detail=f"Indicator '{req.indicator}' not found"
         ) from err
 
+    stock = await get_stock_or_404(db, req.symbol)
+
     query = (
         select(StockPrice)
-        .where(StockPrice.symbol == req.symbol)
+        .where(StockPrice.stock_id == stock.id)
         .order_by(StockPrice.date.asc())
     )
     result = await db.execute(query)

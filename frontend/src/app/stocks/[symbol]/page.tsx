@@ -1,25 +1,161 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { StockChart } from "@/components/charts/stock-chart";
-import { fetchPrices, type StockPrice } from "@/lib/api-client";
+import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
+import { StatCard } from "@/components/ui/stat-card";
+import { ChangeBadge, Badge } from "@/components/ui/badge";
+import { TabGroup } from "@/components/ui/tab-group";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { ErrorState } from "@/components/ui/empty-state";
+import { ScoreBar } from "@/components/ui/score-bar";
+import { useWatchlist } from "@/hooks/use-watchlist";
+import { usePrices, useCompanyInfo, useMarginData, useRevenue } from "@/hooks/use-market-data";
 
-function PriceStatCard({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) {
+const TIMEFRAMES = [
+  { key: "30", label: "1M" },
+  { key: "90", label: "3M" },
+  { key: "120", label: "6M" },
+  { key: "250", label: "1Y" },
+  { key: "500", label: "2Y" },
+];
+
+function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any> }) {
+  const s = t.stock;
   return (
-    <div className={`bg-[#1a2332] border border-[#1e293b] rounded-xl p-4 transition-all duration-200 hover:border-[#253449] ${className || ""}`}>
-      <span className="text-[#64748b] text-xs uppercase tracking-wider font-medium">{label}</span>
-      <p className="text-xl font-semibold text-white mt-1 font-mono">{value}</p>
+    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
+      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{s.margin}</h3>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+        <StatCard label={s.marginBalance} value={margin.margin_balance.toLocaleString()} size="sm" />
+        <StatCard label={s.shortBalance} value={margin.short_balance.toLocaleString()} size="sm" />
+        <StatCard label={s.marginShortRatio} value={`${margin.margin_short_ratio}%`} size="sm" />
+        <StatCard label={s.offset} value={margin.offset.toLocaleString()} size="sm" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Margin */}
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-subtle)]">
+          <h4 className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider font-medium mb-2">
+            {s.marginBalance} ({s.marginUsage})
+          </h4>
+          <ScoreBar label={s.marginUsage} value={margin.margin_usage_pct} size="md" />
+          <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
+            <div>
+              <span className="text-[var(--text-muted)]">{s.marginBuy}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.margin_buy.toLocaleString()}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">{s.marginSell}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.margin_sell.toLocaleString()}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">{s.marginLimit}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.margin_limit.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Short */}
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-subtle)]">
+          <h4 className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider font-medium mb-2">
+            {s.shortBalance} ({s.shortUsage})
+          </h4>
+          <ScoreBar label={s.shortUsage} value={margin.short_usage_pct} size="md" />
+          <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
+            <div>
+              <span className="text-[var(--text-muted)]">{s.shortBuy}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.short_buy.toLocaleString()}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">{s.shortSell}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.short_sell.toLocaleString()}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">{s.shortLimit}</span>
+              <p className="text-white mono-nums mt-0.5">{margin.short_limit.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<string, any> }) {
+  const formatRevenue = (v: number) => {
+    if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
+    if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+    if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
+    return v.toFixed(0);
+  };
+
+  const formatPct = (v: number | null) => {
+    if (v == null) return "-";
+    return `${(v * 100).toFixed(1)}%`;
+  };
+
+  return (
+    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
+      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{t.stock?.revenue ?? "Revenue"}</h3>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+        <StatCard label={t.stock?.latestRevenue ?? "Latest Revenue"} value={formatRevenue(revenue.latest_revenue)} size="sm" />
+        <StatCard
+          label="QoQ"
+          value={formatPct(revenue.qoq_growth)}
+          change={revenue.qoq_growth != null ? revenue.qoq_growth * 100 : undefined}
+          size="sm"
+        />
+        <StatCard
+          label="YoY"
+          value={formatPct(revenue.yoy_growth)}
+          change={revenue.yoy_growth != null ? revenue.yoy_growth * 100 : undefined}
+          size="sm"
+        />
+        <StatCard
+          label={t.stock?.trend ?? "Trend"}
+          value={`${revenue.trend} (${revenue.consecutive_growth_quarters}Q)`}
+          size="sm"
+        />
+      </div>
+
+      {/* Revenue badges */}
+      <div className="flex gap-1.5 mb-3">
+        {revenue.is_revenue_high && (
+          <Badge variant="up">{t.stock?.revenueHigh ?? "Revenue High"}</Badge>
+        )}
+        {revenue.is_revenue_low && (
+          <Badge variant="down">{t.stock?.revenueLow ?? "Revenue Low"}</Badge>
+        )}
+      </div>
+
+      {/* Revenue bar chart (last 8 periods) */}
+      {revenue.records.length > 0 && (
+        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-subtle)]">
+          <div className="flex items-end gap-1 h-28">
+            {revenue.records.slice(-8).map((rec) => {
+              const maxRev = Math.max(...revenue.records.slice(-8).map((r) => r.revenue));
+              const height = maxRev > 0 ? (rec.revenue / maxRev) * 100 : 0;
+              return (
+                <div key={rec.period} className="flex-1 flex flex-col items-center gap-0.5">
+                  <div
+                    className="w-full bg-[var(--accent-blue)]/50 hover:bg-[var(--accent-blue)] rounded-t transition-all duration-200"
+                    style={{ height: `${height}%`, minHeight: "2px" }}
+                    title={`${rec.period}: ${formatRevenue(rec.revenue)}`}
+                  />
+                  <span className="text-[var(--text-muted)] text-[8px] mono-nums truncate w-full text-center">
+                    {rec.period.slice(-5)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -28,45 +164,27 @@ export default function StockDetailPage() {
   const { t } = useI18n();
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol);
-  const [prices, setPrices] = useState<StockPrice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"chart" | "financials">("chart");
+  const [timeframe, setTimeframe] = useState("120");
+  const [activeTab, setActiveTab] = useState("chart");
+  const watchlist = useWatchlist();
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchPrices(symbol, 120)
-      .then((res) => {
-        if (!cancelled) setPrices(res.data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [symbol]);
+  const { data: priceData, isLoading: loading, error: priceError } = usePrices(symbol, Number(timeframe));
+  const { data: companyInfo } = useCompanyInfo(symbol);
+  const isTWSymbol = symbol.includes(".TW");
+  const { data: marginData, isLoading: marginLoading } = useMarginData(symbol, activeTab === "margin" && isTWSymbol);
+  const { data: revenueData, isLoading: revenueLoading } = useRevenue(symbol, activeTab === "revenue");
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#1e293b] border-t-blue-500 rounded-full animate-spin" />
-          <span className="text-[#94a3b8]">{t.stock.loading}</span>
-        </div>
-      </div>
-    );
+  const prices = priceData?.data ?? [];
+  const error = priceError ? (priceError as Error).message : null;
+
+  if (loading && prices.length === 0) {
+    return <LoadingSpinner text={t.stock.loading} fullPage />;
   }
 
-  if (error) {
+  if (error && prices.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 max-w-md mx-auto">
-          <p className="text-red-400">{error}</p>
-        </div>
+      <div className="p-6 max-w-md mx-auto">
+        <ErrorState message={error} />
       </div>
     );
   }
@@ -76,48 +194,59 @@ export default function StockDetailPage() {
   const changePct = latestPrice ? latestPrice.change_percent : "0";
   const isUp = change >= 0;
 
+  const tabs = [
+    { key: "chart", label: t.stock.chart },
+    { key: "revenue", label: t.stock?.revenue ?? "Revenue" },
+    ...(isTWSymbol ? [{ key: "margin", label: t.stock.margin }] : []),
+  ];
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">{symbol}</h1>
+      <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-white tracking-tight">{symbol}</h1>
+            <button
+              onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
+              className="transition-colors duration-200"
+              title={watchlist.has(symbol) ? (t.watchlist?.remove ?? "Remove") : (t.watchlist?.add ?? "Add")}
+            >
+              <svg className="w-5 h-5" fill={watchlist.has(symbol) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                  className={watchlist.has(symbol) ? "text-yellow-400" : "text-[var(--text-muted)] hover:text-yellow-400"}
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Price line */}
+          <div className="flex items-center gap-3 flex-wrap">
             {latestPrice && (
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-2xl font-mono font-bold text-white">
-                  {parseFloat(latestPrice.close).toLocaleString()}
-                </span>
-                <span
-                  className={`text-sm font-semibold px-2.5 py-1 rounded-lg ${
-                    isUp
-                      ? "text-red-400 bg-red-500/10"
-                      : "text-green-400 bg-green-500/10"
-                  }`}
-                >
-                  {isUp ? "+" : ""}
-                  {change.toFixed(2)} ({changePct}%)
-                </span>
-              </div>
+              <span className={`text-3xl font-bold mono-nums ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
+                {parseFloat(latestPrice.close).toLocaleString()}
+              </span>
+            )}
+            {latestPrice && <ChangeBadge change={change} changePct={changePct} />}
+            {companyInfo?.name && (
+              <span className="text-[var(--text-muted)] text-sm">{companyInfo.name}</span>
+            )}
+            {companyInfo?.industry && (
+              <Badge variant="blue">{companyInfo.industry}</Badge>
             )}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-[#111827] p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab("chart")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-              activeTab === "chart"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-[#94a3b8] hover:text-white hover:bg-[#1e293b]"
-            }`}
-          >
-            {t.stock.chart}
-          </button>
+        {/* Navigation tabs */}
+        <div className="flex items-center gap-2">
+          <TabGroup tabs={tabs} active={activeTab} onChange={setActiveTab} size="sm" />
           <Link
             href={`/stocks/${encodeURIComponent(symbol)}/financials`}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-[#94a3b8] hover:text-white hover:bg-[#1e293b] transition-all duration-200"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200"
           >
             {t.stock.financials}
           </Link>
@@ -127,39 +256,71 @@ export default function StockDetailPage() {
       {prices.length > 0 ? (
         <>
           {/* Price stats grid */}
-          <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-            <PriceStatCard label={t.stock.open} value={parseFloat(latestPrice!.open).toLocaleString()} />
-            <PriceStatCard label={t.stock.close} value={parseFloat(latestPrice!.close).toLocaleString()} />
-            <PriceStatCard label={t.stock.high} value={parseFloat(latestPrice!.high).toLocaleString()} />
-            <PriceStatCard label={t.stock.low} value={parseFloat(latestPrice!.low).toLocaleString()} />
-            <PriceStatCard
+          <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
+            <StatCard label={t.stock.open} value={parseFloat(latestPrice!.open).toLocaleString()} size="sm" />
+            <StatCard label={t.stock.close} value={parseFloat(latestPrice!.close).toLocaleString()} size="sm" />
+            <StatCard label={t.stock.high} value={parseFloat(latestPrice!.high).toLocaleString()} size="sm" />
+            <StatCard label={t.stock.low} value={parseFloat(latestPrice!.low).toLocaleString()} size="sm" />
+            <StatCard
               label={t.stock.volume}
               value={latestPrice!.volume.toLocaleString()}
               className="col-span-2 md:col-span-1"
+              size="sm"
             />
           </div>
 
-          {/* Low-Base Score link */}
-          <div className="mb-6">
+          {/* Chart tab */}
+          {activeTab === "chart" && (
+            <div className="bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg">
+              <div className="flex items-center justify-between px-3 pt-3">
+                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{t.stock.chart}</h3>
+                <TabGroup tabs={TIMEFRAMES} active={timeframe} onChange={setTimeframe} size="sm" />
+              </div>
+              <div className="p-3">
+                <StockChart prices={prices} height={500} />
+              </div>
+            </div>
+          )}
+
+          {/* Margin tab */}
+          {activeTab === "margin" && (
+            marginLoading ? (
+              <LoadingSpinner text={t.stock.loading} size="sm" />
+            ) : marginData ? (
+              <MarginPanel margin={marginData} t={t} />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+              </div>
+            )
+          )}
+
+          {/* Revenue tab */}
+          {activeTab === "revenue" && (
+            revenueLoading ? (
+              <LoadingSpinner text={t.stock.loading} size="sm" />
+            ) : revenueData ? (
+              <RevenuePanel revenue={revenueData} t={t} />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+              </div>
+            )
+          )}
+
+          {/* Quick links */}
+          <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
             <Link
               href="/low-base"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1a2332] border border-[#1e293b] rounded-xl text-sm text-[#94a3b8] hover:text-white hover:border-[#3b82f6]/40 transition-all duration-200"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-colors duration-150"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
               {t.lowBase?.viewDetail ?? "View Low-Base Score"}
             </Link>
           </div>
-
-          {/* Chart container */}
-          <div className="bg-[#1a2332] border border-[#1e293b] rounded-2xl p-4 shadow-xl shadow-black/20">
-            <StockChart prices={prices} height={500} />
-          </div>
         </>
       ) : (
-        <div className="text-center py-20">
-          <p className="text-[#64748b] text-lg">{t.stock.noData}</p>
+        <div className="text-center py-16">
+          <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
         </div>
       )}
     </div>

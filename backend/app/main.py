@@ -9,11 +9,17 @@ from app.api.v1.router import v1_router
 from app.config import settings
 from app.logging_config import setup_logging
 from app.middleware.error_handler import register_error_handlers
+from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
+
+auto_scheduler = AutoSyncScheduler()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    auto_scheduler.start()
     yield
+    auto_scheduler.stop()
+
     from app.cache import close_redis
 
     await close_redis()

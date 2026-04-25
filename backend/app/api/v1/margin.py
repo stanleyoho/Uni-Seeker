@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
@@ -52,3 +52,37 @@ async def get_margin_data(
         ))
 
     return MarginListResponse(data=results, total=len(results))
+
+
+@router.get("/{symbol}", response_model=MarginDataResponse)
+async def get_margin_by_symbol(
+    symbol: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MarginDataResponse:
+    """Get margin trading data for a single stock."""
+    async with httpx.AsyncClient(timeout=60, verify=False) as client:
+        provider = TWSEMarginProvider(client=client)
+        data = await provider.fetch_margin_data()
+
+    # Find the matching symbol
+    clean = symbol.replace(".TW", "").replace(".TWO", "")
+    for d in data:
+        d_clean = d.symbol.replace(".TW", "").replace(".TWO", "")
+        if d_clean == clean or d.symbol == symbol:
+            margin_usage = (d.margin_balance / d.margin_limit * 100) if d.margin_limit > 0 else 0
+            short_usage = (d.short_balance / d.short_limit * 100) if d.short_limit > 0 else 0
+            ms_ratio = (d.short_balance / d.margin_balance * 100) if d.margin_balance > 0 else 0
+
+            return MarginDataResponse(
+                symbol=d.symbol, name=d.name,
+                margin_buy=d.margin_buy, margin_sell=d.margin_sell,
+                margin_balance=d.margin_balance, margin_limit=d.margin_limit,
+                margin_usage_pct=round(margin_usage, 2),
+                short_buy=d.short_buy, short_sell=d.short_sell,
+                short_balance=d.short_balance, short_limit=d.short_limit,
+                short_usage_pct=round(short_usage, 2),
+                offset=d.offset,
+                margin_short_ratio=round(ms_ratio, 2),
+            )
+
+    raise HTTPException(status_code=404, detail=f"Margin data not found for {symbol}")

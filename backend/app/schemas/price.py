@@ -8,7 +8,7 @@ from app.models.enums import Market
 
 class StockPriceResponse(BaseModel):
     symbol: str
-    market: Market
+    market: str
     date: date
     open: Decimal
     high: Decimal
@@ -17,8 +17,6 @@ class StockPriceResponse(BaseModel):
     volume: int
     change: Decimal
     change_percent: Decimal
-
-    model_config = {"from_attributes": True}
 
 
 class StockPriceListResponse(BaseModel):

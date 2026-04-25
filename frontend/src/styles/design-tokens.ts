@@ -1,10 +1,10 @@
 export const colors = {
   bg: {
-    primary: '#0a0e17',    // deep navy-black
-    secondary: '#111827',   // slightly lighter
-    card: '#1a2332',        // card background
-    hover: '#1e293b',       // hover state
-    active: '#253449',      // active/selected
+    primary: '#08090d',    // Glint extreme dark
+    secondary: '#0e1018',   // slightly lighter
+    card: '#12141e',        // card background
+    hover: '#181b28',       // hover state
+    active: '#1e2235',      // active/selected
   },
   text: {
     primary: '#e2e8f0',
@@ -14,6 +14,7 @@ export const colors = {
   accent: {
     blue: '#3b82f6',
     blueHover: '#2563eb',
+    amber: '#f59e0b',
   },
   stock: {
     up: '#ef4444',      // TW convention: red = up
@@ -26,5 +27,5 @@ export const colors = {
     good: '#eab308',       // 40-70
     poor: '#ef4444',       // <40
   },
-  border: '#1e293b',
+  border: 'rgba(255, 255, 255, 0.06)',
 };

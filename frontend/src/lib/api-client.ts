@@ -231,6 +231,146 @@ export async function fetchMe(token: string): Promise<AuthUser> {
   return res.json();
 }
 
+// --- Company Info ---
+
+export interface CompanyInfo {
+  symbol: string;
+  name: string;
+  market: string;
+  industry: string;
+}
+
+export async function fetchCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
+  const res = await fetch(`${API_BASE}/company/${encodeURIComponent(symbol)}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// --- Margin Trading ---
+
+export interface MarginData {
+  symbol: string;
+  name: string;
+  margin_buy: number;
+  margin_sell: number;
+  margin_balance: number;
+  margin_limit: number;
+  margin_usage_pct: number;
+  short_buy: number;
+  short_sell: number;
+  short_balance: number;
+  short_limit: number;
+  short_usage_pct: number;
+  offset: number;
+  margin_short_ratio: number;
+}
+
+export async function fetchMarginData(symbol: string): Promise<MarginData | null> {
+  const res = await fetch(`${API_BASE}/margin/${encodeURIComponent(symbol)}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// --- Market Overview ---
+
+export interface MarketIndex {
+  symbol: string;
+  name: string;
+  value: number;
+  change: number;
+  change_percent: number;
+}
+
+export interface MarketMover {
+  symbol: string;
+  name: string;
+  market: string;
+  close: number;
+  change: number;
+  change_percent: number;
+  volume: number;
+}
+
+export interface MarketMoversResponse {
+  gainers: MarketMover[];
+  losers: MarketMover[];
+  most_active: MarketMover[];
+  date: string | null;
+}
+
+export async function fetchMarketIndices(): Promise<MarketIndex[]> {
+  const res = await fetch(`${API_BASE}/market/indices`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.indices;
+}
+
+export async function fetchMarketMovers(marketFilter?: string, limit = 10): Promise<MarketMoversResponse> {
+  const params = new URLSearchParams();
+  if (marketFilter) params.set("market_filter", marketFilter);
+  params.set("limit", String(limit));
+  const res = await fetch(`${API_BASE}/market/movers?${params}`);
+  if (!res.ok) return { gainers: [], losers: [], most_active: [], date: null };
+  return res.json();
+}
+
+// --- Revenue ---
+
+export interface RevenueRecord {
+  period: string;
+  revenue: number;
+  currency: string;
+}
+
+export interface RevenueAnalysis {
+  symbol: string;
+  latest_revenue: number;
+  qoq_growth: number | null;
+  yoy_growth: number | null;
+  is_revenue_high: boolean;
+  is_revenue_low: boolean;
+  trend: string;
+  consecutive_growth_quarters: number;
+  records: RevenueRecord[];
+}
+
+export async function fetchRevenueAnalysis(symbol: string): Promise<RevenueAnalysis | null> {
+  const res = await fetch(`${API_BASE}/revenue/${encodeURIComponent(symbol)}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// --- Heatmap ---
+
+export interface HeatmapStock {
+  symbol: string;
+  name: string;
+  close: number;
+  change_percent: number;
+  volume: number;
+}
+
+export interface HeatmapSector {
+  industry: string;
+  stock_count: number;
+  avg_change_percent: number;
+  total_volume: number;
+  stocks: HeatmapStock[];
+}
+
+export interface HeatmapResponse {
+  sectors: HeatmapSector[];
+  date: string | null;
+}
+
+export async function fetchHeatmapData(marketFilter?: string): Promise<HeatmapResponse> {
+  const params = new URLSearchParams();
+  if (marketFilter) params.set("market_filter", marketFilter);
+  const res = await fetch(`${API_BASE}/heatmap/sectors?${params}`);
+  if (!res.ok) return { sectors: [], date: null };
+  return res.json();
+}
+
 // --- Low Base ---
 
 export interface LowBaseScore {
@@ -262,6 +402,44 @@ export async function fetchLowBaseScore(symbol: string): Promise<LowBaseScore> {
   const res = await fetch(`${API_BASE}/low-base/${symbol}`);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
   return res.json();
+}
+
+// --- Institutional Investors ---
+
+export interface InstitutionalData {
+  date: string;
+  foreign_buy: number;
+  foreign_sell: number;
+  foreign_net: number;
+  trust_buy: number;
+  trust_sell: number;
+  trust_net: number;
+  dealer_buy: number;
+  dealer_sell: number;
+  dealer_net: number;
+  total_net: number;
+}
+
+export interface InstitutionalResponse {
+  symbol: string;
+  data: InstitutionalData[];
+}
+
+export async function fetchInstitutional(
+  symbol: string,
+  startDate: string,
+  endDate: string,
+): Promise<InstitutionalData[]> {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  });
+  const res = await fetch(
+    `${API_BASE}/institutional/${encodeURIComponent(symbol)}?${params}`,
+  );
+  if (!res.ok) throw new Error(`Failed to fetch institutional data: ${res.status}`);
+  const json: InstitutionalResponse = await res.json();
+  return json.data;
 }
 
 // --- Backtest ---

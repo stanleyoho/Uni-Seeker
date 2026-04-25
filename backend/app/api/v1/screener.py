@@ -3,10 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.api.deps import get_db, get_indicator_registry
-from app.models.enums import Market
 from app.models.price import StockPrice
+from app.models.stock import Stock
 from app.modules.indicators.registry import IndicatorRegistry
 from app.modules.screener.conditions import Condition, ConditionGroup
 from app.modules.screener.engine import ScreenerEngine
@@ -17,6 +18,29 @@ from app.schemas.screener import (
 )
 
 router = APIRouter(prefix="/screener", tags=["screener"])
+
+
+async def _fetch_prices_grouped(
+    db: AsyncSession,
+    market_filter: str | None = None,
+) -> dict[str, list[StockPrice]]:
+    """Fetch all prices grouped by symbol string, with optional market filter."""
+    query = (
+        select(StockPrice, Stock.symbol.label("stock_symbol"))
+        .join(Stock, Stock.id == StockPrice.stock_id)
+        .order_by(Stock.symbol, StockPrice.date.asc())
+    )
+    if market_filter:
+        query = query.where(Stock.market == market_filter)
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    stocks_prices: dict[str, list[StockPrice]] = {}
+    for price, symbol in rows:
+        stocks_prices.setdefault(symbol, []).append(price)
+
+    return stocks_prices
 
 
 @router.post("/screen", response_model=ScreenResponse)
@@ -34,21 +58,7 @@ async def screen_stocks(
         ],
     )
 
-    # Fetch all prices grouped by symbol
-    query = select(StockPrice).order_by(StockPrice.symbol, StockPrice.date.asc())
-    if req.market:
-        market_prefix = req.market + "_"
-        query = query.where(StockPrice.market.in_([
-            m for m in Market if m.value.startswith(market_prefix)
-        ]))
-
-    result = await db.execute(query)
-    all_prices = list(result.scalars().all())
-
-    # Group by symbol
-    stocks_prices: dict[str, list[StockPrice]] = {}
-    for price in all_prices:
-        stocks_prices.setdefault(price.symbol, []).append(price)
+    stocks_prices = await _fetch_prices_grouped(db, market_filter=req.market)
 
     # Run screener
     engine = ScreenerEngine(registry=registry)
@@ -98,14 +108,7 @@ async def run_preset(
     if not preset:
         raise HTTPException(status_code=404, detail=f"Preset '{preset_key}' not found")
 
-    # Fetch all prices (same logic as screen_stocks)
-    query = select(StockPrice).order_by(StockPrice.symbol, StockPrice.date.asc())
-    result = await db.execute(query)
-    all_prices = list(result.scalars().all())
-
-    stocks_prices: dict[str, list[StockPrice]] = {}
-    for price in all_prices:
-        stocks_prices.setdefault(price.symbol, []).append(price)
+    stocks_prices = await _fetch_prices_grouped(db)
 
     engine = ScreenerEngine(registry=registry)
     results = engine.screen(

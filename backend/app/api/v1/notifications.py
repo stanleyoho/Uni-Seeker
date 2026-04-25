@@ -1,6 +1,7 @@
 import json
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -114,8 +115,11 @@ def list_notification_templates() -> list[dict]:
 @router.get("/rules", response_model=NotificationRuleListResponse)
 async def list_rules(
     db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="Filter by user ID (optional for now)"),
 ) -> NotificationRuleListResponse:
     query = select(NotificationRule).where(NotificationRule.is_active.is_(True))
+    if user_id is not None:
+        query = query.where(NotificationRule.user_id == user_id)
     result = await db.execute(query)
     rules = list(result.scalars().all())
 
@@ -129,8 +133,14 @@ async def list_rules(
 async def create_rule(
     req: NotificationRuleCreate,
     db: AsyncSession = Depends(get_db),
+    user_id: int | None = Query(None, description="Owner user ID (optional for now)"),
 ) -> NotificationRuleResponse:
+    # user_id is required by the DB schema; use a default placeholder when
+    # authentication is not yet wired up.
+    effective_user_id = user_id if user_id is not None else 0
+
     rule = NotificationRule(
+        user_id=effective_user_id,
         name=req.name,
         rule_type=req.rule_type,
         symbol=req.symbol,

@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import httpx
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_stock_or_404
 from app.models.revenue import MonthlyRevenue
+from app.models.stock import Stock
 from app.modules.revenue.analyzer import analyze_revenue
 from app.modules.revenue.twse_revenue import TWSERevenueProvider
 from app.modules.revenue.yfinance_revenue import YFinanceRevenueProvider
@@ -51,10 +52,18 @@ async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict:
 
     stored = 0
     for rec in records:
-        # Upsert: skip if already exists for this symbol+period
+        # Look up stock_id from symbol
+        stock_result = await db.execute(
+            select(Stock).where(Stock.symbol == rec.symbol)
+        )
+        stock = stock_result.scalar_one_or_none()
+        if not stock:
+            continue  # Skip if stock not in stocks table
+
+        # Upsert: skip if already exists for this stock_id+period
         existing = await db.execute(
             select(MonthlyRevenue).where(
-                MonthlyRevenue.symbol == rec.symbol,
+                MonthlyRevenue.stock_id == stock.id,
                 MonthlyRevenue.period == rec.period,
             )
         )
@@ -63,12 +72,11 @@ async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict:
 
         db.add(
             MonthlyRevenue(
-                symbol=rec.symbol,
+                stock_id=stock.id,
                 period=rec.period,
                 revenue=rec.revenue,
                 mom_growth=rec.mom_growth,
                 yoy_growth=rec.yoy_growth,
-                industry=rec.industry,
                 currency=rec.currency,
             )
         )

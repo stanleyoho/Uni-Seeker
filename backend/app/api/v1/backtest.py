@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine
 from app.modules.strategy.builtin import MACrossoverStrategy, RSIOversoldStrategy
@@ -33,10 +33,12 @@ async def run_backtest(
 
     strategy = strategy_cls(**{k: v for k, v in req.params.items() if v is not None})
 
-    # Fetch prices
+    # Fetch prices via stock_id lookup
+    stock = await get_stock_or_404(db, req.symbol)
+
     query = (
         select(StockPrice)
-        .where(StockPrice.symbol == req.symbol)
+        .where(StockPrice.stock_id == stock.id)
         .order_by(StockPrice.date.asc())
     )
     result = await db.execute(query)

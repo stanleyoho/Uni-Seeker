@@ -8,25 +8,50 @@
     "screener": "篩選器",
     "notifications": "通知設定",
     "backtest": "回測",
+    "watchlist": "自選股",
+    "compare": "比較",
+    "heatmap": "熱力圖",
     "lowBase": "低基期",
+    "institutional": "三大法人",
     "language": "語言"
   },
   "search": {
     "placeholder": "輸入代號或名稱 (例: 2330、台積電、AAPL)",
     "button": "搜尋",
     "listed": "上市",
-    "otc": "上櫃"
+    "otc": "上櫃",
+    "noResults": "查無結果",
+    "hint": "按 F 搜尋股票"
   },
   "stock": {
     "chart": "走勢圖",
     "financials": "財報分析",
+    "margin": "融資融券",
     "open": "開盤",
     "close": "收盤",
     "high": "最高",
     "low": "最低",
     "volume": "成交量",
     "loading": "載入中...",
-    "noData": "無資料"
+    "noData": "無資料",
+    "industry": "產業別",
+    "marginBuy": "融資買進",
+    "marginSell": "融資賣出",
+    "marginBalance": "融資餘額",
+    "marginLimit": "融資限額",
+    "marginUsage": "融資使用率",
+    "shortBuy": "融券買進",
+    "shortSell": "融券賣出",
+    "shortBalance": "融券餘額",
+    "shortLimit": "融券限額",
+    "shortUsage": "融券使用率",
+    "marginShortRatio": "券資比",
+    "offset": "資券互抵",
+    "revenue": "營收",
+    "latestRevenue": "最新營收",
+    "trend": "趨勢",
+    "revenueHigh": "營收新高",
+    "revenueLow": "營收新低"
   },
   "financial": {
     "healthScore": "健康度評分",
@@ -88,6 +113,13 @@
     "ruleName": "規則名稱",
     "symbolPlaceholder": "股票代號 (例: 2330.TW, AAPL)",
     "conditionsPlaceholder": "條件 JSON，例: {\"price_above\": 100}",
+    "conditionType": "條件類型",
+    "conditionPriceAlert": "到價通知",
+    "conditionIndicatorAlert": "指標通知",
+    "conditionDailyChange": "漲跌幅",
+    "above": "高於",
+    "below": "低於",
+    "addCondition": "新增條件",
     "loading": "載入中...",
     "nameSymbolRequired": "名稱和股票代號為必填"
   },
@@ -102,6 +134,48 @@
     "logout": "登出",
     "loginFailed": "登入失敗",
     "registerFailed": "註冊失敗"
+  },
+  "watchlist": {
+    "title": "自選股",
+    "subtitle": "追蹤中的股票",
+    "refresh": "重新整理",
+    "refreshing": "更新中...",
+    "loading": "載入報價中...",
+    "remove": "移除自選",
+    "add": "加入自選",
+    "emptyTitle": "尚無自選股",
+    "emptyMessage": "搜尋股票後點擊星號圖示即可加入自選清單",
+    "goSearch": "搜尋股票"
+  },
+  "compare": {
+    "title": "股票比較",
+    "subtitle": "最多同時比較 5 檔股票",
+    "add": "加入",
+    "addPlaceholder": "輸入代號 (例: 2330.TW, AAPL)",
+    "emptyTitle": "尚未加入股票",
+    "emptyMessage": "輸入股票代號即可並排比較財務指標"
+  },
+  "heatmap": {
+    "title": "產業熱力圖",
+    "subtitle": "各產業漲跌幅總覽",
+    "legend": "漲跌幅",
+    "loading": "載入熱力圖...",
+    "noData": "無熱力圖資料"
+  },
+  "market": {
+    "overview": "市場總覽",
+    "indices": "主要指數",
+    "gainers": "漲幅排行",
+    "losers": "跌幅排行",
+    "mostActive": "成交量排行",
+    "allMarkets": "全部",
+    "twse": "上市",
+    "tpex": "上櫃",
+    "us": "美股",
+    "change": "漲跌",
+    "volume": "成交量",
+    "noData": "目前無市場資料",
+    "asOf": "資料日期"
   },
   "lowBase": {
     "title": "低基期排行榜",
@@ -122,6 +196,21 @@
     "details": "詳細指標",
     "noData": "無資料，請先更新股價",
     "viewDetail": "查看個股"
+  },
+  "institutional": {
+    "title": "三大法人買賣超",
+    "subtitle": "外資、投信、自營商每日買賣超統計",
+    "foreign": "外資",
+    "trust": "投信",
+    "dealer": "自營商",
+    "total": "合計",
+    "netBuy": "淨買超",
+    "buy": "買進",
+    "sell": "賣出",
+    "date": "日期",
+    "loading": "載入中...",
+    "noData": "查無三大法人資料",
+    "searchPlaceholder": "輸入股票代號 (例: 2330)"
   },
   "backtest": {
     "title": "策略回測",

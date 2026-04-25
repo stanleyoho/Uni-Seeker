@@ -30,3 +30,10 @@ coverage.xml
 
 # OS
 .DS_Store
+.playwright-mcp/
+demo-*.png
+ref-*.png
+task_plan.md
+findings.md
+progress.md
+.claude/worktrees/
