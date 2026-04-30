@@ -77,10 +77,22 @@ body {
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* Custom focus ring */
-*:focus-visible {
+/* Ensure focus-visible is consistent across all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline for mouse clicks */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* =========================================

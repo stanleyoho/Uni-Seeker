@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const STORAGE_KEY = "uni-seeker-watchlist";
 
@@ -28,6 +28,20 @@ function save(items: WatchlistItem[]) {
 export function useWatchlist() {
   const [items, setItems] = useState<WatchlistItem[]>(load);
 
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        // Another tab updated the watchlist — sync state
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setItems(parsed);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const add = useCallback((symbol: string, name: string, market: string) => {
     setItems((prev) => {
       if (prev.some((i) => i.symbol === symbol)) return prev;
@@ -40,6 +54,14 @@ export function useWatchlist() {
   const remove = useCallback((symbol: string) => {
     setItems((prev) => {
       const next = prev.filter((i) => i.symbol !== symbol);
+      save(next);
+      return next;
+    });
+  }, []);
+
+  const removeMany = useCallback((symbols: Set<string>) => {
+    setItems((prev) => {
+      const next = prev.filter((i) => !symbols.has(i.symbol));
       save(next);
       return next;
     });
@@ -58,5 +80,5 @@ export function useWatchlist() {
     [add, remove, has],
   );
 
-  return { items, add, remove, has, toggle };
+  return { items, add, remove, removeMany, has, toggle };
 }
