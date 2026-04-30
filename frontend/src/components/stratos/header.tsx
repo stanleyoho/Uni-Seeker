@@ -360,6 +360,26 @@ function TickerStrip() {
     );
   }
 
+  // If fewer than 3 indices, render a static row instead of scrolling marquee
+  if (indices.length < 3) {
+    return (
+      <div className="h-10 flex items-center justify-center gap-6" style={{
+        background: "var(--bg-secondary)",
+        borderBottom: "1px solid var(--border-subtle)",
+      }}>
+        {indices.map((item) => (
+          <div key={item.symbol} className="flex items-center gap-2">
+            <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>{item.name}</span>
+            <span className="text-[12px]" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span className="text-[12px] font-medium" style={{ color: item.change_percent >= 0 ? "var(--stock-up)" : "var(--stock-down)", fontVariantNumeric: "tabular-nums" }}>
+              {item.change_percent >= 0 ? "+" : ""}{item.change_percent.toFixed(2)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   // Duplicate for seamless loop
   const items: MarketIndex[] = [...indices, ...indices];
 
