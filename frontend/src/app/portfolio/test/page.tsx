@@ -21,20 +21,20 @@ const MOCK_STRATEGIES = [
 ];
 
 export default function PortfolioTestPage() {
-  /* ── Allocation state ── */
+  /* -- Allocation state -- */
   const [allocations, setAllocations] = useState<PortfolioAllocation[]>([
     { symbol: "2330.TW", weight: 40, strategy: "sma_cross" },
     { symbol: "AAPL", weight: 30, strategy: "buy_and_hold" },
     { symbol: "0050.TW", weight: 30, strategy: "buy_and_hold" },
   ]);
 
-  /* ── Rebalance state ── */
+  /* -- Rebalance state -- */
   const [rebalanceMode, setRebalanceMode] = useState<RebalanceMode>("periodic");
   const [periodDays, setPeriodDays] = useState(30);
   const [thresholdPct, setThresholdPct] = useState(5);
   const [initialCapital, setInitialCapital] = useState(1_000_000);
 
-  /* ── Result state ── */
+  /* -- Result state -- */
   const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
   const backtest = usePortfolioBacktest();
 
@@ -66,23 +66,22 @@ export default function PortfolioTestPage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      <h1
-        style={{
-          fontSize: 22,
-          fontWeight: 700,
-          letterSpacing: "-0.04em",
-          color: "#fff",
-          marginBottom: 20,
-        }}
-      >
-        組合回測
-      </h1>
-
-      <div className="flex flex-col lg:flex-row gap-4 mb-4">
-        {/* ── Left Panel: Configuration ── */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left Panel: Configuration (4col equivalent) */}
         <div className="lg:w-[380px] lg:shrink-0">
           <GlassPanel className="sticky top-20">
             <div className="space-y-4">
+              {/* Panel title */}
+              <div className="flex items-center gap-2 pb-3" style={{ borderBottom: "1px solid var(--border-color)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                </svg>
+                <span className="text-[13px] font-bold uppercase tracking-tight text-[var(--text-muted)]">
+                  組合配置
+                </span>
+              </div>
+
               {/* Allocation Editor */}
               <AllocationEditor
                 allocations={allocations}
@@ -91,11 +90,7 @@ export default function PortfolioTestPage() {
               />
 
               {/* Divider */}
-              <div
-                style={{
-                  borderTop: "1px solid var(--border-color)",
-                }}
-              />
+              <div style={{ borderTop: "1px solid var(--border-color)" }} />
 
               {/* Rebalance Config */}
               <RebalanceConfig
@@ -129,13 +124,7 @@ export default function PortfolioTestPage() {
 
               {/* Validation hint */}
               {!isValid && allocations.length > 0 && (
-                <p
-                  style={{
-                    fontSize: 10,
-                    color: "#9CA3AF",
-                    textAlign: "center",
-                  }}
-                >
+                <p className="text-[10px] text-[var(--text-muted)] text-center">
                   {allocations.some((a) => !a.symbol.trim())
                     ? "請填入所有標的代號"
                     : `權重合計須為 100% (目前 ${totalWeight.toFixed(0)}%)`}
@@ -145,13 +134,13 @@ export default function PortfolioTestPage() {
               {/* Error display */}
               {backtest.isError && (
                 <div
+                  className="px-3 py-2"
                   style={{
-                    padding: "8px 12px",
                     background: "rgba(238,63,44,0.1)",
                     border: "1px solid rgba(238,63,44,0.2)",
                   }}
                 >
-                  <p style={{ color: "#EE3F2C", fontSize: 12 }}>
+                  <p className="text-[#EE3F2C] text-xs">
                     {backtest.error instanceof Error
                       ? backtest.error.message
                       : "回測失敗"}
@@ -162,19 +151,14 @@ export default function PortfolioTestPage() {
           </GlassPanel>
         </div>
 
-        {/* ── Right Panel: Results ── */}
+        {/* Right Panel: Results (8col equivalent) */}
         <div className="flex-1 min-w-0">
           {!result && !backtest.isPending && (
             <GlassPanel className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
                 <div
+                  className="w-16 h-16 mx-auto mb-4 flex items-center justify-center"
                   style={{
-                    width: 64,
-                    height: 64,
-                    margin: "0 auto 16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.10)",
                   }}
@@ -198,17 +182,26 @@ export default function PortfolioTestPage() {
                     />
                   </svg>
                 </div>
-                <p style={{ color: "#9CA3AF", fontSize: 14, marginBottom: 4 }}>
+                <p className="text-[var(--text-muted)] text-sm mb-1">
                   尚無回測結果
                 </p>
-                <p style={{ color: "#9CA3AF", fontSize: 12, opacity: 0.6 }}>
+                <p className="text-[var(--text-muted)] text-xs opacity-60">
                   配置標的與權重後，點擊「執行組合回測」
                 </p>
               </div>
             </GlassPanel>
           )}
 
-          {result && (
+          {backtest.isPending && (
+            <GlassPanel className="flex items-center justify-center min-h-[400px]">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-[var(--accent-cyan)]/30 border-t-[var(--accent-cyan)] rounded-full animate-spin" />
+                <span className="text-[var(--text-muted)] text-sm">回測執行中...</span>
+              </div>
+            </GlassPanel>
+          )}
+
+          {result && !backtest.isPending && (
             <GlassPanel noPadding>
               <div style={{ padding: 24 }}>
                 <PortfolioComparison
