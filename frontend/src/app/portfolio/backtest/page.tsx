@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
+import { GlassPanel, ClippedButton, KpiCard } from "@/components/stratos/primitives";
 import { StrategyBuilder, type BacktestConfig } from "@/app/backtest/components/strategy-builder";
 import { BacktestQueue, type QueueJob } from "@/app/backtest/components/backtest-queue";
 import { BacktestResults } from "@/app/backtest/components/backtest-results";
@@ -72,12 +72,26 @@ export default function BacktestPage() {
     []
   );
 
+  /* -- Derive KPI directions -- */
+  const retDir = result
+    ? result.metrics.total_return >= 0 ? "up" : "down"
+    : "flat";
+  const sharpeDir = result
+    ? result.metrics.sharpe_ratio >= 1 ? "up" : result.metrics.sharpe_ratio >= 0 ? "flat" : "down"
+    : "flat";
+  const ddDir = result
+    ? result.metrics.max_drawdown > -0.1 ? "up" : result.metrics.max_drawdown > -0.2 ? "flat" : "down"
+    : "flat";
+  const winDir = result
+    ? result.metrics.win_rate >= 0.5 ? "up" : "down"
+    : "flat";
+
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Left Panel: Strategy Config (4col equivalent) */}
+        {/* Left Panel: Strategy Config */}
         <div className="lg:w-[380px] lg:shrink-0">
-          <GlassPanel className="sticky top-20">
+          <GlassPanel className="sticky top-[104px]">
             <div className="space-y-4">
               {/* Panel title */}
               <div className="flex items-center gap-2 pb-3" style={{ borderBottom: "1px solid var(--border-color)" }}>
@@ -90,25 +104,34 @@ export default function BacktestPage() {
               </div>
 
               <StrategyBuilder onEnqueue={handleEnqueue} onRunNow={handleRunNow} />
-
-              {/* Error display */}
-              {error && (
-                <div
-                  className="px-3 py-2"
-                  style={{
-                    background: "rgba(238,63,44,0.1)",
-                    border: "1px solid rgba(238,63,44,0.2)",
-                  }}
-                >
-                  <p className="text-[#EE3F2C] text-xs">{error}</p>
-                </div>
-              )}
             </div>
           </GlassPanel>
         </div>
 
-        {/* Right Panel: Results (8col equivalent) */}
+        {/* Right Panel: Results */}
         <div className="flex-1 min-w-0">
+          {/* Error banner */}
+          {error && (
+            <div
+              className="px-4 py-3 mb-3 flex items-center gap-2"
+              style={{
+                background: "rgba(238,63,44,0.08)",
+                border: "1px solid rgba(238,63,44,0.25)",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EE3F2C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              <p className="text-[#EE3F2C] text-xs flex-1">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-[#EE3F2C]/60 hover:text-[#EE3F2C] text-xs"
+              >
+                dismiss
+              </button>
+            </div>
+          )}
+
           {/* Right panel sub-navigation */}
           <div className="flex items-center gap-2 mb-3">
             {(
@@ -141,11 +164,42 @@ export default function BacktestPage() {
                   </div>
                 </GlassPanel>
               ) : result ? (
-                <GlassPanel noPadding>
-                  <div style={{ padding: 24 }}>
-                    <BacktestResults result={result} />
+                <div className="space-y-4">
+                  {/* KPI Metrics Row */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <KpiCard
+                      label="Total Return"
+                      value={`${(result.metrics.total_return * 100).toFixed(1)}%`}
+                      delta={`${result.metrics.total_trades} trades`}
+                      direction={retDir as "up" | "down" | "flat"}
+                    />
+                    <KpiCard
+                      label="Sharpe Ratio"
+                      value={result.metrics.sharpe_ratio.toFixed(2)}
+                      delta={`ann. ${(result.metrics.annualized_return * 100).toFixed(1)}%`}
+                      direction={sharpeDir as "up" | "down" | "flat"}
+                    />
+                    <KpiCard
+                      label="Max Drawdown"
+                      value={`${(result.metrics.max_drawdown * 100).toFixed(1)}%`}
+                      delta={`PF ${result.metrics.profit_factor.toFixed(2)}`}
+                      direction={ddDir as "up" | "down" | "flat"}
+                    />
+                    <KpiCard
+                      label="Win Rate"
+                      value={`${(result.metrics.win_rate * 100).toFixed(1)}%`}
+                      delta={`${result.metrics.total_trades} trades`}
+                      direction={winDir as "up" | "down" | "flat"}
+                    />
                   </div>
-                </GlassPanel>
+
+                  {/* Equity Curve + Trade Log */}
+                  <GlassPanel noPadding>
+                    <div style={{ padding: 24 }}>
+                      <BacktestResults result={result} />
+                    </div>
+                  </GlassPanel>
+                </div>
               ) : (
                 <GlassPanel className="flex items-center justify-center min-h-[400px]">
                   <div className="text-center">
@@ -161,9 +215,9 @@ export default function BacktestPage() {
                         <path d="M4 24L10 17L14 21L20 13L24 17" stroke="#00E5FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.3" />
                       </svg>
                     </div>
-                    <p className="text-[var(--text-muted)] text-sm mb-1">請先執行回測</p>
-                    <p className="text-[var(--text-muted)] text-xs opacity-60">
-                      在左側設定策略參數後，點擊「立即執行」或「加入佇列」
+                    <p className="text-[var(--text-muted)] text-sm mb-1">Strategy Backtest Lab</p>
+                    <p className="text-[var(--text-muted)] text-xs opacity-60 max-w-xs mx-auto leading-relaxed">
+                      在左側配置股票、策略與參數後，點擊「立即執行」查看回測結果，或「加入佇列」批次執行多組參數
                     </p>
                   </div>
                 </GlassPanel>
