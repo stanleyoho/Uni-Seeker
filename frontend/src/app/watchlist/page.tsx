@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/context";
 import { useWatchlist, type WatchlistItem } from "@/hooks/use-watchlist";
@@ -14,11 +14,15 @@ interface WatchlistRowData extends WatchlistItem {
   loading: boolean;
 }
 
+type SortKey = "symbol" | "name" | "change";
+
 export default function WatchlistPage() {
   const { t } = useI18n();
-  const { items, remove } = useWatchlist();
+  const { items, remove, removeMany } = useWatchlist();
   const [rowData, setRowData] = useState<WatchlistRowData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortKey>("symbol");
 
   const loadPrices = useCallback(async () => {
     setLoading(true);
@@ -48,7 +52,72 @@ export default function WatchlistPage() {
     }
   }, [items.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Clear selection for symbols that no longer exist
+  useEffect(() => {
+    const currentSymbols = new Set(items.map((i) => i.symbol));
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((s) => currentSymbols.has(s)));
+      if (next.size !== prev.size) return next;
+      return prev;
+    });
+  }, [items]);
+
+  const sortedRows = useMemo(() => {
+    const rows = [...rowData];
+    switch (sortBy) {
+      case "symbol":
+        rows.sort((a, b) => a.symbol.localeCompare(b.symbol));
+        break;
+      case "name":
+        rows.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "change":
+        rows.sort((a, b) => {
+          const aChange = a.price ? parseFloat(a.price.change_percent) : 0;
+          const bChange = b.price ? parseFloat(b.price.change_percent) : 0;
+          return bChange - aChange;
+        });
+        break;
+    }
+    return rows;
+  }, [rowData, sortBy]);
+
+  const allSelected = rowData.length > 0 && selected.size === rowData.length;
+  const someSelected = selected.size > 0 && selected.size < rowData.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(rowData.map((r) => r.symbol)));
+    }
+  };
+
+  const toggleSelect = (symbol: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) {
+        next.delete(symbol);
+      } else {
+        next.add(symbol);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkRemove = () => {
+    if (selected.size === 0) return;
+    removeMany(selected);
+    setSelected(new Set());
+  };
+
   const wl = t.watchlist;
+
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: "symbol", label: "代號" },
+    { key: "name", label: "名稱" },
+    { key: "change", label: "漲跌幅" },
+  ];
 
   return (
     <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
@@ -59,15 +128,48 @@ export default function WatchlistPage() {
             {wl?.subtitle ?? `${items.length} stocks tracked`}
           </p>
         </div>
-        {items.length > 0 && (
-          <button
-            onClick={loadPrices}
-            disabled={loading}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-hover)] text-white transition-all duration-200 disabled:opacity-50"
-          >
-            {loading ? (wl?.refreshing ?? "...") : (wl?.refresh ?? "Refresh")}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <>
+              {/* Sort dropdown */}
+              <div className="flex items-center gap-1">
+                <label htmlFor="sort-select" className="text-[10px] text-[var(--text-muted)]">
+                  排序
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortKey)}
+                  className="px-2 py-1 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--border-subtle)] text-white focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                >
+                  {sortOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bulk remove button */}
+              {selected.size > 0 && (
+                <button
+                  onClick={handleBulkRemove}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all duration-200"
+                >
+                  刪除已選 ({selected.size})
+                </button>
+              )}
+
+              <button
+                onClick={loadPrices}
+                disabled={loading}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-hover)] text-white transition-all duration-200 disabled:opacity-50"
+              >
+                {loading ? (wl?.refreshing ?? "...") : (wl?.refresh ?? "Refresh")}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -89,21 +191,46 @@ export default function WatchlistPage() {
         <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg overflow-hidden">
           {/* Table header */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+            {/* Select all checkbox */}
+            <label className="w-5 shrink-0 flex items-center justify-center">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onChange={toggleSelectAll}
+                className="w-3.5 h-3.5 rounded border-[var(--border-subtle)] accent-[var(--accent-blue)] cursor-pointer"
+                aria-label="Select all"
+              />
+            </label>
             <span className="w-6" />
             <span className="flex-1">Symbol</span>
             <span className="w-24 text-right">Price</span>
             <span className="w-28 text-right">Change</span>
           </div>
-          {rowData.map((row) => {
+          {sortedRows.map((row) => {
             const price = row.price;
             const change = price ? parseFloat(price.change) : 0;
             const changePct = price ? price.change_percent : "0";
+            const isSelected = selected.has(row.symbol);
 
             return (
               <div
                 key={row.symbol}
-                className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--card-hover)] transition-colors duration-100 group"
+                className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--card-hover)] transition-colors duration-100 group ${isSelected ? "bg-[var(--accent-blue)]/5" : ""}`}
               >
+                {/* Per-item checkbox */}
+                <label className="w-5 shrink-0 flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelect(row.symbol)}
+                    className="w-3.5 h-3.5 rounded border-[var(--border-subtle)] accent-[var(--accent-blue)] cursor-pointer"
+                    aria-label={`Select ${row.symbol}`}
+                  />
+                </label>
+
                 {/* Remove button */}
                 <button
                   onClick={() => remove(row.symbol)}

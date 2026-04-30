@@ -23,18 +23,28 @@ function changeColor(pct: number): string {
 
 function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (symbol: string) => void }) {
   const isUp = sector.avg_change_percent >= 0;
+  const pctText = `${isUp ? "+" : ""}${sector.avg_change_percent.toFixed(2)}%`;
 
   return (
-    <div className="rounded-lg border border-[var(--border-subtle)] overflow-hidden animate-shimmer">
+    <div
+      className="rounded-lg border border-[var(--border-subtle)] overflow-hidden animate-shimmer"
+      aria-label={`${sector.industry}: ${sector.avg_change_percent.toFixed(2)}%`}
+      role="region"
+    >
       {/* Sector header */}
       <div className={`px-2.5 py-1.5 ${changeColor(sector.avg_change_percent)}`}>
         <div className="flex items-center justify-between">
           <span className="text-white font-semibold text-xs truncate">{sector.industry}</span>
           <span className={`text-[10px] font-bold mono-nums ${isUp ? "text-white glow-red" : "text-white glow-green"}`}>
-            {isUp ? "+" : ""}{sector.avg_change_percent.toFixed(2)}%
+            {pctText}
           </span>
         </div>
-        <span className="text-white/60 text-[10px] mono-nums">{sector.stock_count} stocks</span>
+        <div className="flex items-center justify-between">
+          <span className="text-white/60 text-[10px] mono-nums">{sector.stock_count} stocks</span>
+          <span className="text-white font-bold text-xs mono-nums drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            {pctText}
+          </span>
+        </div>
       </div>
 
       {/* Top stocks */}
@@ -45,6 +55,7 @@ function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (sym
             <button
               key={stock.symbol}
               onClick={() => onClick(stock.symbol)}
+              aria-label={`${stock.name} (${stock.symbol}): ${stock.change_percent >= 0 ? "+" : ""}${stock.change_percent.toFixed(2)}%`}
               className="w-full flex items-center justify-between px-2 py-1 rounded hover:bg-[var(--card-hover)] transition-colors duration-100 text-left"
             >
               <div className="flex items-center gap-1.5 min-w-0">
