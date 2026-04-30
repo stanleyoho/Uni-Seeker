@@ -1,7 +1,8 @@
+from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -19,15 +20,29 @@ from app.schemas.screener import (
 
 router = APIRouter(prefix="/screener", tags=["screener"])
 
+# Only screen stocks that have price data within the last 30 days
+_RECENT_DAYS = 30
+
 
 async def _fetch_prices_grouped(
     db: AsyncSession,
     market_filter: str | None = None,
 ) -> dict[str, list[StockPrice]]:
-    """Fetch all prices grouped by symbol string, with optional market filter."""
+    """Fetch prices grouped by symbol, limited to stocks with recent data."""
+    cutoff = date.today() - timedelta(days=_RECENT_DAYS)
+
+    # Sub-query: stock_ids that have at least one price in the last 30 days
+    recent_stocks = (
+        select(StockPrice.stock_id)
+        .where(StockPrice.date >= cutoff)
+        .group_by(StockPrice.stock_id)
+        .subquery()
+    )
+
     query = (
         select(StockPrice, Stock.symbol.label("stock_symbol"))
         .join(Stock, Stock.id == StockPrice.stock_id)
+        .join(recent_stocks, Stock.id == recent_stocks.c.stock_id)
         .order_by(Stock.symbol, StockPrice.date.asc())
     )
     if market_filter:

@@ -10,14 +10,18 @@ from app.config import settings
 from app.logging_config import setup_logging
 from app.middleware.error_handler import register_error_handlers
 from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
+from app.services.job_worker import BacktestJobWorker
 
 auto_scheduler = AutoSyncScheduler()
+job_worker = BacktestJobWorker()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     auto_scheduler.start()
+    await job_worker.start()
     yield
+    await job_worker.stop()
     auto_scheduler.stop()
 
     from app.cache import close_redis
@@ -38,12 +42,17 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
 
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
+        expose_headers=["X-Request-Id"],
     )
 
     app.include_router(v1_router)

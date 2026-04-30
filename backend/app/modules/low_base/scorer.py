@@ -18,9 +18,10 @@ class LowBaseScore:
     total_score: float  # 0-100
 
     # Sub-scores (each 0-100, then weighted)
-    valuation_score: float  # 40% weight
-    price_position_score: float  # 30% weight
-    quality_score: float  # 30% weight
+    valuation_score: float  # 40% weight (35% in enhanced mode)
+    price_position_score: float  # 30% weight (25% in enhanced mode)
+    quality_score: float  # 30% weight (25% in enhanced mode)
+    institutional_technical_score: float | None = None  # 15% in enhanced mode
 
     # Detail data
     pe_percentile: PEPercentile | None = None
@@ -55,6 +56,36 @@ def _score_linear(value: float | None, best: float, worst: float) -> float:
         return (value - worst) / (best - worst) * 100
 
 
+def _calculate_institutional_flow_score(
+    foreign_net_buy_5d: float | None,
+    trust_net_buy_5d: float | None,
+    dealer_net_buy_5d: float | None,
+) -> float:
+    """Calculate institutional flow score (0-100).
+
+    Scoring logic:
+    - All 3 net buyers -> 100
+    - 2 of 3 net buyers -> 70
+    - 1 of 3 net buyer -> 40
+    - None net buyers -> 10
+    - Bonus +10 if foreign investor is net buyer (capped at 100)
+    """
+    buyers = sum(
+        1
+        for val in (foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d)
+        if val is not None and val > 0
+    )
+
+    score_map = {3: 100, 2: 70, 1: 40, 0: 10}
+    score = score_map[buyers]
+
+    # Foreign investor bonus
+    if foreign_net_buy_5d is not None and foreign_net_buy_5d > 0:
+        score = min(score + 10, 100)
+
+    return float(score)
+
+
 def calculate_low_base_score(
     symbol: str,
     name: str,
@@ -74,6 +105,12 @@ def calculate_low_base_score(
     health_score: float | None = None,
     # Technical data
     rsi: float | None = None,
+    # Enhanced: institutional flow (5-day net buy)
+    foreign_net_buy_5d: float | None = None,
+    trust_net_buy_5d: float | None = None,
+    dealer_net_buy_5d: float | None = None,
+    # Enhanced: technical signal score (0-100)
+    technical_score: float | None = None,
 ) -> LowBaseScore:
     """Calculate composite low-base score."""
 
@@ -189,8 +226,46 @@ def calculate_low_base_score(
 
     quality_score = sum(quality_components) / len(quality_components) if quality_components else 50.0
 
+    # === 4. Institutional + Technical Score (optional, 15% in enhanced mode) ===
+    has_institutional = any(
+        v is not None
+        for v in (foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d)
+    )
+    enhanced = has_institutional or technical_score is not None
+
+    inst_tech_score: float | None = None
+    if enhanced:
+        # Institutional flow component
+        if has_institutional:
+            flow_score = _calculate_institutional_flow_score(
+                foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d,
+            )
+            details["institutional_flow_score"] = flow_score
+            details["foreign_net_buy_5d"] = foreign_net_buy_5d
+            details["trust_net_buy_5d"] = trust_net_buy_5d
+            details["dealer_net_buy_5d"] = dealer_net_buy_5d
+        else:
+            flow_score = 50.0  # neutral if not available
+
+        # Technical signal component
+        tech = technical_score if technical_score is not None else 50.0
+        details["technical_score"] = tech
+
+        inst_tech_score = flow_score * 0.6 + tech * 0.4
+        details["institutional_technical_score"] = round(inst_tech_score, 2)
+
     # === Composite ===
-    total = valuation_score * 0.4 + price_position_score * 0.3 + quality_score * 0.3
+    if enhanced and inst_tech_score is not None:
+        # Adjusted weights: 35% + 25% + 25% + 15% = 100%
+        total = (
+            valuation_score * 0.35
+            + price_position_score * 0.25
+            + quality_score * 0.25
+            + inst_tech_score * 0.15
+        )
+    else:
+        # Original weights: 40% + 30% + 30% = 100%
+        total = valuation_score * 0.4 + price_position_score * 0.3 + quality_score * 0.3
 
     return LowBaseScore(
         symbol=symbol,
@@ -199,6 +274,9 @@ def calculate_low_base_score(
         valuation_score=round(valuation_score, 2),
         price_position_score=round(price_position_score, 2),
         quality_score=round(quality_score, 2),
+        institutional_technical_score=(
+            round(inst_tech_score, 2) if inst_tech_score is not None else None
+        ),
         pe_percentile=pe_pct,
         ma_deviation=ma_dev,
         peg_ratio=peg,

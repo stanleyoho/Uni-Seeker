@@ -3,12 +3,27 @@ from pydantic import BaseModel
 
 class BacktestRequest(BaseModel):
     symbol: str
-    strategy: str  # "ma_crossover" or "rsi_oversold"
+    strategy: str  # single strategy key, e.g. "ma_crossover"
     params: dict[str, object] = {}
     initial_capital: float = 1_000_000
     position_size: float = 0.1
     fee_rate: float = 0.001425
     tax_rate: float = 0.003
+    stop_loss: float | None = None
+    take_profit: float | None = None
+
+
+class CompositeBacktestRequest(BaseModel):
+    symbol: str
+    strategies: list[str]  # e.g. ["rsi_oversold", "macd_crossover"]
+    mode: str = "majority"  # "all", "any", "majority"
+    strategy_params: dict[str, dict[str, object]] = {}  # per-strategy params
+    initial_capital: float = 1_000_000
+    position_size: float = 0.1
+    fee_rate: float = 0.001425
+    tax_rate: float = 0.003
+    stop_loss: float | None = None
+    take_profit: float | None = None
 
 
 class TradeRecord(BaseModel):

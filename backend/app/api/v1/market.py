@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -10,8 +11,11 @@ from sqlalchemy import select, func, case, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.cache import cache_get, cache_set, make_cache_key
 from app.models.price import StockPrice
 from app.models.stock import Stock
+
+MARKET_CACHE_TTL = 300  # 5 minutes
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -76,6 +80,11 @@ async def get_market_movers(
 ) -> MarketMoversResponse:
     """Top gainers, losers, and most active stocks for the latest trading day."""
 
+    cache_key = make_cache_key("market:movers", market_filter, limit)
+    cached = await cache_get(cache_key)
+    if cached:
+        return MarketMoversResponse(**cached)
+
     # Find latest date with data
     latest_q = select(func.max(StockPrice.date))
     if market_filter:
@@ -128,17 +137,24 @@ async def get_market_movers(
     active_result = await db.execute(active_q)
     most_active = [_to_mover(r) for r in active_result.all()]
 
-    return MarketMoversResponse(
+    response = MarketMoversResponse(
         gainers=gainers[:limit],
         losers=losers[:limit],
         most_active=most_active[:limit],
         date=str(latest_date),
     )
+    await cache_set(cache_key, json.loads(response.model_dump_json()), ttl=MARKET_CACHE_TTL)
+    return response
 
 
 @router.get("/indices")
 async def get_market_indices(db: DbSession) -> MarketIndicesResponse:
     """Major market index values. Uses index-tracking ETFs as proxies."""
+
+    cache_key = make_cache_key("market:indices")
+    cached = await cache_get(cache_key)
+    if cached:
+        return MarketIndicesResponse(**cached)
 
     # Use well-known ETFs as index proxies
     index_map = {
@@ -171,4 +187,6 @@ async def get_market_indices(db: DbSession) -> MarketIndicesResponse:
                 )
             )
 
-    return MarketIndicesResponse(indices=indices)
+    response = MarketIndicesResponse(indices=indices)
+    await cache_set(cache_key, json.loads(response.model_dump_json()), ttl=MARKET_CACHE_TTL)
+    return response

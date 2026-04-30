@@ -8,6 +8,7 @@ class LowBaseScoreResponse(BaseModel):
     valuation_score: float
     price_position_score: float
     quality_score: float
+    institutional_technical_score: float | None = None
     pe_percentile: float | None = None
     ma240_deviation: float | None = None
     peg: float | None = None
