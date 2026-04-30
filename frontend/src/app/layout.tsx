@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { I18nProvider } from "@/i18n/context";
 import { AuthProvider } from "@/contexts/auth-context";
+import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryProvider } from "@/lib/query-provider";
 import { NavBar, FooterStatusBar } from "@/components/nav-bar";
 import "./globals.css";
@@ -31,16 +32,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#08090d] text-[#e2e8f0]">
-        <QueryProvider>
-          <I18nProvider>
-            <AuthProvider>
-              <NavBar />
-              {children}
-              <FooterStatusBar />
-            </AuthProvider>
-          </I18nProvider>
-        </QueryProvider>
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <ThemeProvider>
+          <QueryProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <NavBar />
+                {children}
+                <FooterStatusBar />
+              </AuthProvider>
+            </I18nProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

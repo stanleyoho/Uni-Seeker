@@ -41,6 +41,32 @@
   --page-max-width: 80rem;
 }
 
+[data-theme="light"] {
+  --background: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --foreground: #0f172a;
+  --card-bg: #ffffff;
+  --card-hover: #f1f5f9;
+  --card-active: #e2e8f0;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --accent-blue: #2563eb;
+  --accent-blue-hover: #1d4ed8;
+  --accent-blue-glow: rgba(37, 99, 235, 0.2);
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  /* Stock colors stay the same convention */
+  --stock-up: #ef4444;
+  --stock-up-bg: rgba(239, 68, 68, 0.08);
+  --stock-down: #16a34a;
+  --stock-down-bg: rgba(22, 163, 74, 0.08);
+  --stock-flat: #64748b;
+  --score-excellent: #16a34a;
+  --score-good: #ca8a04;
+  --score-poor: #dc2626;
+  --amber: #d97706;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -226,6 +252,22 @@ a:focus:not(:focus-visible) {
   background: rgba(18, 20, 30, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* Gradient border bottom for nav */
