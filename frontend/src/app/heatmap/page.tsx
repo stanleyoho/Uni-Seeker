@@ -8,6 +8,7 @@ import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useHeatmap } from "@/hooks/use-market-data";
+import { GlassPanel } from "@/components/stratos/primitives";
 
 function changeColor(pct: number): string {
   if (pct > 3) return "bg-red-600/90";
@@ -91,64 +92,76 @@ export default function HeatmapPage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
-            {hm?.title ?? "Market Heatmap"}
-          </h1>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">
-            {hm?.subtitle ?? "Sector performance overview"}
-          </p>
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
+      <GlassPanel>
+        {/* Header row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h1
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "-0.04em",
+                color: "var(--foreground)",
+              }}
+            >
+              {hm?.title ?? "產業熱力圖"}
+            </h1>
+            <p className="text-[var(--text-muted)] text-xs mt-0.5">
+              {hm?.subtitle ?? "Sector performance overview"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <TabGroup tabs={marketTabs} active={marketFilter} onChange={setMarketFilter} size="sm" />
+            {data?.date && (
+              <span className="text-[10px] text-[var(--text-muted)] mono-nums">{data.date}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <TabGroup tabs={marketTabs} active={marketFilter} onChange={setMarketFilter} size="sm" />
-          {data?.date && (
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">{data.date}</span>
-          )}
-        </div>
-      </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        <span className="text-[10px] text-[var(--text-muted)]">{hm?.legend ?? "Change"}:</span>
-        <div className="flex items-center gap-0.5">
-          <div className="w-3 h-2 rounded-sm bg-green-600/90" />
-          <span className="text-[10px] text-[var(--text-muted)] mono-nums">&lt;-3%</span>
+        {/* Legend */}
+        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+          <span className="text-[10px] text-[var(--text-muted)]">{hm?.legend ?? "Change"}:</span>
+          <div className="flex items-center gap-0.5">
+            <div className="w-3 h-2 rounded-sm bg-green-600/90" />
+            <span className="text-[10px] text-[var(--text-muted)] mono-nums">&lt;-3%</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <div className="w-3 h-2 rounded-sm bg-green-500/50" />
+            <span className="text-[10px] text-[var(--text-muted)] mono-nums">-1.5%</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <div className="w-3 h-2 rounded-sm bg-[var(--card-hover)]" />
+            <span className="text-[10px] text-[var(--text-muted)] mono-nums">0%</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <div className="w-3 h-2 rounded-sm bg-red-500/50" />
+            <span className="text-[10px] text-[var(--text-muted)] mono-nums">+1.5%</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <div className="w-3 h-2 rounded-sm bg-red-600/90" />
+            <span className="text-[10px] text-[var(--text-muted)] mono-nums">&gt;+3%</span>
+          </div>
         </div>
-        <div className="flex items-center gap-0.5">
-          <div className="w-3 h-2 rounded-sm bg-green-500/50" />
-          <span className="text-[10px] text-[var(--text-muted)] mono-nums">-1.5%</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <div className="w-3 h-2 rounded-sm bg-[var(--card-hover)]" />
-          <span className="text-[10px] text-[var(--text-muted)] mono-nums">0%</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <div className="w-3 h-2 rounded-sm bg-red-500/50" />
-          <span className="text-[10px] text-[var(--text-muted)] mono-nums">+1.5%</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <div className="w-3 h-2 rounded-sm bg-red-600/90" />
-          <span className="text-[10px] text-[var(--text-muted)] mono-nums">&gt;+3%</span>
-        </div>
-      </div>
 
-      {loading ? (
-        <LoadingSpinner text={hm?.loading ?? "Loading heatmap..."} size="sm" />
-      ) : data && data.sectors.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {data.sectors.map((sector) => (
-            <SectorBlock
-              key={sector.industry}
-              sector={sector}
-              onClick={(sym) => router.push(`/stocks/${encodeURIComponent(sym)}`)}
-            />
-          ))}
-        </div>
-      ) : (
-        <EmptyState message={hm?.noData ?? "No heatmap data available"} />
-      )}
+        {/* Content */}
+        {loading ? (
+          <LoadingSpinner text={hm?.loading ?? "Loading heatmap..."} size="sm" />
+        ) : data && data.sectors.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {data.sectors.map((sector) => (
+              <SectorBlock
+                key={sector.industry}
+                sector={sector}
+                onClick={(sym) => router.push(`/stocks/${encodeURIComponent(sym)}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState message={hm?.noData ?? "No heatmap data available"} />
+        )}
+      </GlassPanel>
     </div>
   );
 }

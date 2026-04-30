@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { getErrorMessage } from "@/lib/type-guards";
+import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 
 /** Format a number with thousands separators and +/- sign. */
 function formatNet(v: number): string {
@@ -115,48 +116,71 @@ export default function InstitutionalPage() {
     [ins],
   );
 
+  const inputStyle: React.CSSProperties = {
+    background: "var(--glass-bg)",
+    border: "1px solid var(--border-color)",
+    color: "var(--foreground)",
+    outline: "none",
+  };
+
   return (
-    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">{ins.title}</h1>
+        <h1
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "-0.04em",
+            color: "var(--foreground)",
+          }}
+        >
+          {ins.title}
+        </h1>
         <p className="text-[var(--text-muted)] text-xs mt-0.5">{ins.subtitle}</p>
       </div>
 
       {/* Search bar + date range */}
-      <div className="flex flex-col md:flex-row gap-2 mb-4">
-        <div className="flex flex-1 gap-2">
-          <input
-            type="text"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={ins.searchPlaceholder}
-            className="flex-1 px-3 py-2 text-sm rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-200"
-          />
-          <button
-            onClick={handleSearch}
-            disabled={!symbol.trim() || isLoading}
-            className="px-4 py-2 text-xs font-medium rounded-lg bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-hover)] text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {isLoading ? ins.loading : t.search.button}
-          </button>
+      <GlassPanel className="mb-4">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-1 gap-2">
+            <input
+              type="text"
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={ins.searchPlaceholder}
+              className="flex-1 px-3 py-2 text-sm rounded-lg placeholder:text-[var(--text-muted)] focus:border-[var(--accent-cyan)] transition-colors duration-200"
+              style={inputStyle}
+            />
+            <ClippedButton
+              variant="red-solid"
+              size="md"
+              onClick={handleSearch}
+              disabled={!symbol.trim() || isLoading}
+            >
+              {isLoading ? ins.loading : t.search.button}
+            </ClippedButton>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-2 py-2 text-xs rounded-lg focus:border-[var(--accent-cyan)] transition-colors duration-200"
+              style={inputStyle}
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-2 py-2 text-xs rounded-lg focus:border-[var(--accent-cyan)] transition-colors duration-200"
+              style={inputStyle}
+            />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-2 py-2 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-200"
-          />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-2 py-2 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-200"
-          />
-        </div>
-      </div>
+      </GlassPanel>
 
       {/* Loading */}
       {isLoading && <LoadingSpinner text={ins.loading} size="sm" />}
@@ -166,22 +190,23 @@ export default function InstitutionalPage() {
 
       {/* Empty state when no query yet */}
       {!query && !isLoading && (
-        <EmptyState message={ins.searchPlaceholder} />
+        <GlassPanel>
+          <EmptyState message={ins.searchPlaceholder} />
+        </GlassPanel>
       )}
 
       {/* Empty result */}
       {query && data && data.length === 0 && !isLoading && (
-        <EmptyState message={ins.noData} />
+        <GlassPanel>
+          <EmptyState message={ins.noData} />
+        </GlassPanel>
       )}
 
       {/* Mobile cards */}
       {data && data.length > 0 && (
         <div className="md:hidden space-y-2">
           {data.map((row) => (
-            <div
-              key={row.date}
-              className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-3"
-            >
+            <GlassPanel key={row.date}>
               <div className="text-[var(--text-secondary)] text-xs mono-nums mb-2">{row.date}</div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                 <span className="text-[var(--text-muted)]">{ins.foreign}</span>
@@ -201,16 +226,16 @@ export default function InstitutionalPage() {
                   {formatNet(row.total_net)}
                 </span>
               </div>
-            </div>
+            </GlassPanel>
           ))}
         </div>
       )}
 
       {/* Desktop table */}
       {data && data.length > 0 && (
-        <div className="hidden md:block bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg overflow-hidden">
+        <GlassPanel className="hidden md:block" noPadding>
           <DataTable columns={columns} data={data} rowKey={(row) => row.date} compact />
-        </div>
+        </GlassPanel>
       )}
     </div>
   );
