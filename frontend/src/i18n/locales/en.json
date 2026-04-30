@@ -15,10 +15,19 @@
     "institutional": "Institutional",
     "portfolio": "Portfolio",
     "scanner": "Signal Scanner",
-    "language": "Language"
+    "analysis": "Analysis",
+    "trading": "Trading",
+    "marketGroup": "Market",
+    "language": "Language",
+    "markets": "Markets",
+    "research": "Research",
+    "alerts": "Alerts",
+    "marketOpen": "MARKET OPEN",
+    "marketClosed": "CLOSED",
+    "quickSearch": "Search"
   },
   "search": {
-    "placeholder": "Enter symbol or name (e.g., 2330, TSMC, AAPL)",
+    "placeholder": "Enter symbol or name",
     "button": "Search",
     "listed": "Listed",
     "otc": "OTC",

@@ -14,11 +14,20 @@
     "lowBase": "低基期",
     "institutional": "三大法人",
     "scanner": "訊號掃描",
-    "portfolio": "組合回測",
-    "language": "語言"
+    "portfolio": "投資組合",
+    "analysis": "分析",
+    "trading": "回測",
+    "marketGroup": "市場",
+    "language": "語言",
+    "markets": "Markets",
+    "research": "Research",
+    "alerts": "通知",
+    "marketOpen": "盤中",
+    "marketClosed": "休市",
+    "quickSearch": "搜尋"
   },
   "search": {
-    "placeholder": "輸入代號或名稱 (例: 2330、台積電、AAPL)",
+    "placeholder": "輸入代號或名稱",
     "button": "搜尋",
     "listed": "上市",
     "otc": "上櫃",
