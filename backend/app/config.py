@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
+    # Security
+    jwt_secret_key: str = ""  # MUST set via UNI_JWT_SECRET_KEY env var
+    jwt_algorithm: str = "HS256"
+    jwt_expire_hours: int = 24
+
     # App
     app_name: str = "Uni-Seeker"
     debug: bool = False
