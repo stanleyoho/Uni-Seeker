@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryProvider } from "@/lib/query-provider";
 import { NavBar, FooterStatusBar } from "@/components/nav-bar";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({
                 <NavBar />
                 {children}
                 <FooterStatusBar />
+                <ServiceWorkerRegister />
               </AuthProvider>
             </I18nProvider>
           </QueryProvider>
