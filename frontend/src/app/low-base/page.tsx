@@ -45,7 +45,7 @@ export default function LowBasePage() {
         <div>
           <Link
             href={`/stocks/${encodeURIComponent(row.symbol)}`}
-            className="text-white font-semibold text-xs hover:text-[var(--accent-blue)] transition-colors duration-150"
+            className="text-[var(--foreground)] font-semibold text-xs hover:text-[var(--accent-blue)] transition-colors duration-150"
           >
             {row.symbol}
           </Link>
@@ -102,11 +102,11 @@ export default function LowBasePage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">{lb.title}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">{lb.title}</h1>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{lb.subtitle}</p>
         </div>
         <button
@@ -147,7 +147,7 @@ export default function LowBasePage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--text-muted)] text-xs mono-nums w-5">#{idx + 1}</span>
                   <div>
-                    <span className="text-white font-semibold text-sm">{item.symbol}</span>
+                    <span className="text-[var(--foreground)] font-semibold text-sm">{item.symbol}</span>
                     <span className="text-[var(--text-muted)] text-[10px] ml-1.5">{item.name}</span>
                   </div>
                 </div>

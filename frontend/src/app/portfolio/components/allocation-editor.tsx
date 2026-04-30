@@ -58,7 +58,7 @@ export function AllocationEditor({ allocations, onChange, strategies }: Allocati
   }, [allocations, onChange]);
 
   const inputClass =
-    "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+    "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
   return (
     <div className="space-y-3">
@@ -71,7 +71,7 @@ export function AllocationEditor({ allocations, onChange, strategies }: Allocati
           <button
             onClick={autoDistribute}
             disabled={allocations.length === 0}
-            className="px-2 py-1 text-[10px] rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200 disabled:opacity-40"
+            className="px-2 py-1 text-[10px] rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200 disabled:opacity-40"
           >
             均分權重
           </button>
@@ -153,7 +153,7 @@ export function AllocationEditor({ allocations, onChange, strategies }: Allocati
                   updateAllocation(i, { symbol: e.target.value.toUpperCase() })
                 }
                 placeholder="股票代號 (e.g. 2330.TW)"
-                className="flex-1 px-2 py-1.5 rounded-md bg-[var(--background)] border border-[var(--border-subtle)] text-white text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200"
+                className="flex-1 px-2 py-1.5 rounded-md bg-[var(--background)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200"
               />
               <button
                 onClick={() => removeStock(i)}

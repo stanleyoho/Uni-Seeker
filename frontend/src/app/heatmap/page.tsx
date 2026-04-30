@@ -34,14 +34,14 @@ function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (sym
       {/* Sector header */}
       <div className={`px-2.5 py-1.5 ${changeColor(sector.avg_change_percent)}`}>
         <div className="flex items-center justify-between">
-          <span className="text-white font-semibold text-xs truncate">{sector.industry}</span>
-          <span className={`text-[10px] font-bold mono-nums ${isUp ? "text-white glow-red" : "text-white glow-green"}`}>
+          <span className="text-[var(--foreground)] font-semibold text-xs truncate">{sector.industry}</span>
+          <span className={`text-[10px] font-bold mono-nums ${isUp ? "text-[var(--foreground)] glow-red" : "text-[var(--foreground)] glow-green"}`}>
             {pctText}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-white/60 text-[10px] mono-nums">{sector.stock_count} stocks</span>
-          <span className="text-white font-bold text-xs mono-nums drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="text-[var(--foreground)]/60 text-[10px] mono-nums">{sector.stock_count} stocks</span>
+          <span className="text-[var(--foreground)] font-bold text-xs mono-nums drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {pctText}
           </span>
         </div>
@@ -59,7 +59,7 @@ function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (sym
               className="w-full flex items-center justify-between px-2 py-1 rounded hover:bg-[var(--card-hover)] transition-colors duration-100 text-left"
             >
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-white text-[10px] mono-nums font-semibold">
+                <span className="text-[var(--foreground)] text-[10px] mono-nums font-semibold">
                   {stock.symbol.replace(".TW", "").replace(".TWO", "")}
                 </span>
                 <span className="text-[var(--text-muted)] text-[10px] truncate">{stock.name}</span>
@@ -91,10 +91,10 @@ export default function HeatmapPage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
             {hm?.title ?? "Market Heatmap"}
           </h1>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">

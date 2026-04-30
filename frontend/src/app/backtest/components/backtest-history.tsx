@@ -199,7 +199,7 @@ export function BacktestHistory() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-white text-sm font-medium mono-nums">{s.symbol}</span>
+                <span className="text-[var(--foreground)] text-sm font-medium mono-nums">{s.symbol}</span>
                 <span className="text-[10px] text-[var(--text-muted)] mono-nums">{s.count} 筆</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
@@ -264,9 +264,9 @@ function SymbolDashboard({ symbol, results }: { symbol: string; results: Backtes
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-white mono-nums">{symbol}</h3>
+          <h3 className="text-lg font-bold text-[var(--foreground)] mono-nums">{symbol}</h3>
           <p className="text-xs text-[var(--text-muted)]">
-            共測試 <span className="mono-nums text-white">{totalCombos}</span> 種策略組合
+            共測試 <span className="mono-nums text-[var(--foreground)]">{totalCombos}</span> 種策略組合
           </p>
         </div>
         <button
@@ -284,7 +284,7 @@ function SymbolDashboard({ symbol, results }: { symbol: string; results: Backtes
             }));
             downloadCSV(csvData, `backtest_${symbol}_${new Date().toISOString().slice(0, 10)}.csv`);
           }}
-          className="text-[10px] px-2 py-1 rounded border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--accent-blue)] transition-colors"
+          className="text-[10px] px-2 py-1 rounded border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)] hover:border-[var(--accent-blue)] transition-colors"
         >
           ↓ 匯出 CSV
         </button>
@@ -317,11 +317,11 @@ function SymbolDashboard({ symbol, results }: { symbol: string; results: Backtes
           </div>
           <div>
             <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-0.5">勝率</p>
-            <p className="text-2xl font-bold mono-nums text-white">{fmtNum(best.win_rate, 1)}%</p>
+            <p className="text-2xl font-bold mono-nums text-[var(--foreground)]">{fmtNum(best.win_rate, 1)}%</p>
           </div>
           <div>
             <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Sharpe</p>
-            <p className="text-2xl font-bold mono-nums text-white">{fmtNum(best.sharpe_ratio, 4)}</p>
+            <p className="text-2xl font-bold mono-nums text-[var(--foreground)]">{fmtNum(best.sharpe_ratio, 4)}</p>
           </div>
         </div>
 
@@ -356,7 +356,7 @@ function SymbolDashboard({ symbol, results }: { symbol: string; results: Backtes
               {bestRules.map((rule, idx) => (
                 <div key={idx} className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
                   <div className="px-3 py-1.5 bg-[var(--bg-secondary)]">
-                    <span className="text-xs font-medium text-white">{rule.indicator}</span>
+                    <span className="text-xs font-medium text-[var(--foreground)]">{rule.indicator}</span>
                   </div>
                   <div className="px-3 py-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="flex items-start gap-2">
@@ -482,7 +482,7 @@ function SortableHeader({
 }) {
   return (
     <th
-      className="py-2 px-3 font-medium cursor-pointer select-none hover:text-white transition-colors text-right"
+      className="py-2 px-3 font-medium cursor-pointer select-none hover:text-[var(--foreground)] transition-colors text-right"
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">
@@ -507,13 +507,13 @@ function ExpandedStrategyDetail({ entry, onClose }: { entry: BacktestHistoryItem
     <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4 animate-fade-in">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-sm font-medium text-white">{entry.strategy_name}</p>
+          <p className="text-sm font-medium text-[var(--foreground)]">{entry.strategy_name}</p>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
             {entry.symbol} · {entry.created_at.split("T")[0]}
             {mode && <> · 判斷模式：{getModeLabel(mode)}</>}
           </p>
         </div>
-        <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors" aria-label="Close">
+        <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors" aria-label="Close">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -629,18 +629,18 @@ function StrategyAnalysis({ results }: { results: BacktestHistoryItem[] }) {
         <div className="space-y-2 text-xs text-[var(--text-secondary)] leading-relaxed">
           {bestReturn && bestWinRate && bestReturn.id !== bestWinRate.id && (
             <p>
-              報酬率最高的策略（<span className="text-white mono-nums">{fmtPct(bestReturn.total_return)}</span>）
-              勝率為 <span className="mono-nums text-white">{fmtNum(bestReturn.win_rate, 1)}%</span>，
-              共交易 <span className="mono-nums text-white">{bestReturn.total_trades}</span> 次。
-              而勝率最高的策略（<span className="text-white mono-nums">{fmtNum(bestWinRate.win_rate, 1)}%</span>）
-              報酬為 <span className="mono-nums text-white">{fmtPct(bestWinRate.total_return)}</span>，
-              交易僅 <span className="mono-nums text-white">{bestWinRate.total_trades}</span> 次。
+              報酬率最高的策略（<span className="text-[var(--foreground)] mono-nums">{fmtPct(bestReturn.total_return)}</span>）
+              勝率為 <span className="mono-nums text-[var(--foreground)]">{fmtNum(bestReturn.win_rate, 1)}%</span>，
+              共交易 <span className="mono-nums text-[var(--foreground)]">{bestReturn.total_trades}</span> 次。
+              而勝率最高的策略（<span className="text-[var(--foreground)] mono-nums">{fmtNum(bestWinRate.win_rate, 1)}%</span>）
+              報酬為 <span className="mono-nums text-[var(--foreground)]">{fmtPct(bestWinRate.total_return)}</span>，
+              交易僅 <span className="mono-nums text-[var(--foreground)]">{bestWinRate.total_trades}</span> 次。
               <span className="text-[var(--text-muted)]"> — 高報酬與高勝率往往難以兼得，需依風險偏好選擇。</span>
             </p>
           )}
           {hasMultiIndicator && (
             <p>
-              多指標複合策略（RSI+乖離率+布林通道）使用 <span className="text-white">[全部一致]</span> 模式時勝率最高，
+              多指標複合策略（RSI+乖離率+布林通道）使用 <span className="text-[var(--foreground)]">[全部一致]</span> 模式時勝率最高，
               因為三個指標同時確認才進場，大幅過濾假訊號。
               但交易機會較少 — 適合有耐心等待的投資人。
             </p>
@@ -703,7 +703,7 @@ function StrategyAnalysis({ results }: { results: BacktestHistoryItem[] }) {
                           : "text-[var(--stock-up)] font-bold text-sm"
                         : isNegative
                         ? "text-[var(--stock-up)]"
-                        : "text-white"
+                        : "text-[var(--foreground)]"
                     }`}
                     title={isStrategy ? e.strategy_name : undefined}
                   >
@@ -780,7 +780,7 @@ function TradeLogTable({ trades }: { trades: TradeLogEntry[] }) {
                       {isBuy ? "買進" : "賣出"}
                     </span>
                   </td>
-                  <td className="py-1.5 px-3 text-right mono-nums text-white">{t.price.toFixed(2)}</td>
+                  <td className="py-1.5 px-3 text-right mono-nums text-[var(--foreground)]">{t.price.toFixed(2)}</td>
                   <td className="py-1.5 px-3 text-right mono-nums text-[var(--text-secondary)]">{t.shares.toLocaleString()}</td>
                   <td className="py-1.5 px-3 text-[var(--text-muted)] max-w-[250px] truncate" title={t.reason}>{t.reason}</td>
                 </tr>

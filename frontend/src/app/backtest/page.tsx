@@ -86,10 +86,10 @@ export default function BacktestPage() {
   );
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
           策略回測
         </h1>
         <TabGroup tabs={TABS} active={activeTab} onChange={setActiveTab} size="sm" />

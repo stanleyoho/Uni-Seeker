@@ -19,7 +19,7 @@ export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
     <div className="text-center py-16">
       <div className="text-[var(--text-muted)] mb-3 flex justify-center">{icon ?? DefaultIcon}</div>
-      {title && <h3 className="text-white font-semibold mb-1">{title}</h3>}
+      {title && <h3 className="text-[var(--foreground)] font-semibold mb-1">{title}</h3>}
       <p className="text-[var(--text-muted)] text-sm">{message}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -39,7 +39,7 @@ export function ErrorState({ message, onRetry, retryLabel = "Retry" }: ErrorStat
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
         >
           {retryLabel}
         </button>

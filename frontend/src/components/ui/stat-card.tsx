@@ -23,7 +23,7 @@ export function StatCard({ label, value, change, changeLabel, className = "", si
         {label}
       </span>
       <div className="flex items-baseline gap-2 mt-1">
-        <p className={`font-semibold text-white mono-nums ${size === "lg" ? "text-2xl" : "text-xl"}`}>
+        <p className={`font-semibold text-[var(--foreground)] mono-nums ${size === "lg" ? "text-2xl" : "text-xl"}`}>
           {typeof value === "number" ? value.toLocaleString() : value}
         </p>
         {change != null && (

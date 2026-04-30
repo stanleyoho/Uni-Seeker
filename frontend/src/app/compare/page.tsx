@@ -40,7 +40,7 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
       {/* Header */}
       <div className="mb-2">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-white font-bold text-sm">{symbol}</span>
+          <span className="text-[var(--foreground)] font-bold text-sm">{symbol}</span>
           {price && (
             <ChangeBadge
               change={parseFloat(price.change)}
@@ -49,7 +49,7 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
           )}
         </div>
         {price && (
-          <span className="text-xl font-bold text-white mono-nums">
+          <span className="text-xl font-bold text-[var(--foreground)] mono-nums">
             {parseFloat(price.close).toLocaleString()}
           </span>
         )}
@@ -66,10 +66,10 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
             <span className="text-[var(--text-muted)] text-[10px] mono-nums">/ 100</span>
           </div>
           <div className="grid grid-cols-2 gap-0.5 mt-1.5 text-[10px]">
-            <div><span className="text-[var(--text-muted)]">{t.financial?.profitability ?? "Profit"}</span> <span className="text-white mono-nums ml-0.5">{score.profitability_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-muted)]">{t.financial?.efficiency ?? "Efficiency"}</span> <span className="text-white mono-nums ml-0.5">{score.efficiency_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-muted)]">{t.financial?.leverage ?? "Leverage"}</span> <span className="text-white mono-nums ml-0.5">{score.leverage_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-muted)]">{t.financial?.growth ?? "Growth"}</span> <span className="text-white mono-nums ml-0.5">{score.growth_score.toFixed(0)}</span></div>
+            <div><span className="text-[var(--text-muted)]">{t.financial?.profitability ?? "Profit"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.profitability_score.toFixed(0)}</span></div>
+            <div><span className="text-[var(--text-muted)]">{t.financial?.efficiency ?? "Efficiency"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.efficiency_score.toFixed(0)}</span></div>
+            <div><span className="text-[var(--text-muted)]">{t.financial?.leverage ?? "Leverage"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.leverage_score.toFixed(0)}</span></div>
+            <div><span className="text-[var(--text-muted)]">{t.financial?.growth ?? "Growth"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.growth_score.toFixed(0)}</span></div>
           </div>
         </div>
       )}
@@ -88,7 +88,7 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
               <span className="text-[var(--text-muted)]">{item.label}</span>
               <span className={`mono-nums ${
                 item.value != null && item.value > 0 ? "text-[var(--stock-down)] glow-green" :
-                item.value != null && item.value < 0 ? "text-[var(--stock-up)] glow-red" : "text-white"
+                item.value != null && item.value < 0 ? "text-[var(--stock-up)] glow-red" : "text-[var(--foreground)]"
               }`}>
                 {item.value != null ? (item.isPct ? `${(item.value * 100).toFixed(1)}%` : item.value.toFixed(2)) : "-"}
               </span>
@@ -132,9 +132,9 @@ export default function ComparePage() {
   const cmp = t.compare;
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
           {cmp?.title ?? "Stock Comparison"}
         </h1>
         <p className="text-[var(--text-muted)] text-xs mt-0.5">
@@ -155,7 +155,7 @@ export default function ComparePage() {
               }
             }}
             placeholder={cmp?.addPlaceholder ?? "Add stock (e.g. 2330.TW, AAPL)"}
-            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-white text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] transition-all"
+            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] transition-all"
           />
           <button
             onClick={() => addSymbol(input)}
@@ -175,7 +175,7 @@ export default function ComparePage() {
                 onClick={() => addSymbol(s.symbol)}
                 className="w-full px-3 py-2 text-left text-xs hover:bg-[var(--card-hover)] transition-colors flex items-center gap-2"
               >
-                <span className="text-white mono-nums font-semibold">{s.symbol}</span>
+                <span className="text-[var(--foreground)] mono-nums font-semibold">{s.symbol}</span>
                 <span className="text-[var(--text-muted)]">{s.name}</span>
               </button>
             ))}

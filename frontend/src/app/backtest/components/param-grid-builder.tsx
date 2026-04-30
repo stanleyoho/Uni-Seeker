@@ -14,7 +14,7 @@ interface ParamGridBuilderProps {
 }
 
 const inputClass =
-  "w-full px-2 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-white text-xs mono-nums placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+  "w-full px-2 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs mono-nums placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
 function getDefaultValue(val: unknown): number {
   if (typeof val === "number") return val;
@@ -74,7 +74,7 @@ export function ParamGridBuilder({ params, onChange }: ParamGridBuilderProps) {
             key={key}
             className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-lg p-3"
           >
-            <p className="text-xs font-medium text-white mb-2">{key}</p>
+            <p className="text-xs font-medium text-[var(--foreground)] mb-2">{key}</p>
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[10px] text-[var(--text-muted)] mb-0.5">
@@ -125,7 +125,7 @@ export function ParamGridBuilder({ params, onChange }: ParamGridBuilderProps) {
         <div className="w-2 h-2 rounded-full bg-[var(--accent-blue)]" />
         <p className="text-xs text-[var(--text-secondary)]">
           將測試{" "}
-          <span className="mono-nums text-white font-semibold">
+          <span className="mono-nums text-[var(--foreground)] font-semibold">
             {totalCombinations.toLocaleString()}
           </span>{" "}
           種參數組合

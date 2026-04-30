@@ -54,11 +54,11 @@ export default function ScannerPage() {
   const stocks = scanResult?.stocks ?? [];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
             訊號掃描
           </h1>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">
@@ -84,7 +84,7 @@ export default function ScannerPage() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-pointer transition-all duration-150 select-none ${
                       isActive
                         ? "bg-[var(--accent-blue)]/15 border-[var(--accent-blue)]/30 text-[var(--accent-blue)]"
-                        : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--accent-blue)]/20 hover:text-white"
+                        : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--accent-blue)]/20 hover:text-[var(--foreground)]"
                     }`}
                   >
                     <input
@@ -102,7 +102,7 @@ export default function ScannerPage() {
                       }`}
                     >
                       {isActive && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-2.5 h-2.5 text-[var(--foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -195,7 +195,7 @@ export default function ScannerPage() {
           </p>
           <button
             onClick={handleScan}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
           >
             重試
           </button>
@@ -210,7 +210,7 @@ export default function ScannerPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 className="text-white font-semibold mb-1">尚未執行掃描</h3>
+          <h3 className="text-[var(--foreground)] font-semibold mb-1">尚未執行掃描</h3>
           <p className="text-[var(--text-muted)] text-sm">
             選擇策略後點擊「開始掃描」，分析全市場技術指標訊號
           </p>
@@ -221,7 +221,7 @@ export default function ScannerPage() {
       {scanResult && !runScan.isPending && stocks.length > 0 && (
         <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-white">
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">
               掃描結果
               <span className="text-[var(--text-muted)] font-normal ml-2 text-xs">
                 共 {stocks.length} 檔
@@ -240,7 +240,7 @@ export default function ScannerPage() {
                 }));
                 downloadCSV(csvData, `scanner_${new Date().toISOString().slice(0, 10)}.csv`);
               }}
-              className="text-[10px] px-2 py-1 rounded border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--accent-blue)] transition-colors"
+              className="text-[10px] px-2 py-1 rounded border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)] hover:border-[var(--accent-blue)] transition-colors"
             >
               ↓ 匯出 CSV
             </button>

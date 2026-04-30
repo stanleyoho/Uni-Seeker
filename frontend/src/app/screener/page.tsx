@@ -117,8 +117,8 @@ export default function ScreenerPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
-      <h1 className="text-3xl font-bold mb-6 text-white tracking-tight">{t.screener.title}</h1>
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto animate-fade-in">
+      <h1 className="text-3xl font-bold mb-6 text-[var(--foreground)] tracking-tight">{t.screener.title}</h1>
 
       {/* Preset strategy cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
@@ -131,7 +131,7 @@ export default function ScreenerPage() {
             <div className="text-[var(--accent-blue)] group-hover:text-blue-300 transition-colors duration-200">
               {preset.icon}
             </div>
-            <span className="text-sm font-medium text-[var(--text-secondary)] group-hover:text-white transition-colors duration-200">
+            <span className="text-sm font-medium text-[var(--text-secondary)] group-hover:text-[var(--foreground)] transition-colors duration-200">
               {presetLabels[preset.key][locale] || presetLabels[preset.key].en}
             </span>
           </button>
@@ -153,7 +153,7 @@ export default function ScreenerPage() {
                     setLogicOp(screen.operator);
                     setError(null);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--accent-blue)]/30 transition-all"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-blue)]/30 transition-all"
                 >
                   {screen.name}
                 </button>
@@ -173,7 +173,7 @@ export default function ScreenerPage() {
 
       {/* Condition builder */}
       <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 mb-6">
-        <h2 className="text-lg font-semibold mb-4 text-white">{t.screener.conditions}</h2>
+        <h2 className="text-lg font-semibold mb-4 text-[var(--foreground)]">{t.screener.conditions}</h2>
         <ConditionBuilder
           conditions={conditions}
           onChange={setConditions}
@@ -188,7 +188,7 @@ export default function ScreenerPage() {
               type="number"
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value) || 50)}
-              className="w-20 px-2.5 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200"
+              className="w-20 px-2.5 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200"
             />
           </label>
           <button
@@ -215,7 +215,7 @@ export default function ScreenerPage() {
                     }
                   }}
                   placeholder={t.screener?.saveNamePlaceholder ?? "Screen name..."}
-                  className="px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all w-36"
+                  className="px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all w-36"
                   autoFocus
                 />
                 <button
@@ -232,7 +232,7 @@ export default function ScreenerPage() {
                 </button>
                 <button
                   onClick={() => setShowSave(false)}
-                  className="text-[var(--text-muted)] hover:text-white transition-colors text-sm"
+                  className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors text-sm"
                 >
                   {t.screener?.cancel ?? "Cancel"}
                 </button>
@@ -240,7 +240,7 @@ export default function ScreenerPage() {
             ) : (
               <button
                 onClick={() => setShowSave(true)}
-                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] border border-[var(--border-color)] rounded-xl hover:text-white hover:border-[var(--accent-blue)]/30 transition-all"
+                className="px-4 py-2.5 text-sm text-[var(--text-secondary)] border border-[var(--border-color)] rounded-xl hover:text-[var(--foreground)] hover:border-[var(--accent-blue)]/30 transition-all"
               >
                 {t.screener?.save ?? "Save Screen"}
               </button>
@@ -257,7 +257,7 @@ export default function ScreenerPage() {
 
       {/* Results */}
       <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5">
-        <h2 className="text-lg font-semibold mb-4 text-white">{t.screener.results}</h2>
+        <h2 className="text-lg font-semibold mb-4 text-[var(--foreground)]">{t.screener.results}</h2>
         <ResultsTable results={results} total={total} />
       </div>
     </div>

@@ -8,13 +8,66 @@ import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { CommandPalette } from "@/components/command-palette";
 
+function NavDropdown({
+  label,
+  links,
+  isActive,
+}: {
+  label: string;
+  links: { href: string; label: string }[];
+  isActive: (href: string) => boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasActive = links.some((l) => isActive(l.href));
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className={`flex items-center gap-0.5 px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200 ${
+          hasActive
+            ? "text-[var(--foreground)]"
+            : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
+        }`}
+      >
+        {label}
+        <svg className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+        {hasActive && (
+          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-[var(--accent-blue)] rounded-full" />
+        )}
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-xl shadow-black/40 z-50 min-w-[140px] overflow-hidden animate-slide-down">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              aria-current={isActive(link.href) ? "page" : undefined}
+              className={`block px-4 py-2 text-[13px] transition-colors duration-150 ${
+                isActive(link.href)
+                  ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function NavBar() {
   const { locale, t, setLocale } = useI18n();
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const cycleTheme = () => {
@@ -50,31 +103,36 @@ export function NavBar() {
     setLocale(locale === "zh-TW" ? "en" : "zh-TW");
   };
 
-  const primaryLinks = [
+  const directLinks = [
     { href: "/", label: t.nav.home },
     { href: "/watchlist", label: t.nav.watchlist },
+  ];
+
+  const analysisLinks = [
     { href: "/screener", label: t.nav.screener },
-    { href: "/backtest", label: t.nav.backtest },
-    { href: "/heatmap", label: t.nav.heatmap },
-  ];
-
-  const moreLinks = [
     { href: "/scanner", label: t.nav.scanner },
-    { href: "/portfolio", label: t.nav.portfolio },
-    { href: "/compare", label: t.nav.compare },
     { href: "/low-base", label: t.nav.lowBase },
-    { href: "/institutional", label: t.nav.institutional },
-    { href: "/notifications", label: t.nav.notifications },
   ];
 
-  const navLinks = [...primaryLinks, ...moreLinks];
+  const tradingLinks = [
+    { href: "/backtest", label: t.nav.backtest },
+    { href: "/portfolio", label: t.nav.portfolio },
+  ];
+
+  const marketLinks = [
+    { href: "/heatmap", label: t.nav.heatmap },
+    { href: "/institutional", label: t.nav.institutional },
+    { href: "/compare", label: t.nav.compare },
+  ];
+
+  const allLinks = [...directLinks, ...analysisLinks, ...tradingLinks, ...marketLinks, { href: "/notifications", label: t.nav.notifications }];
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  /* Keyboard shortcut: press F to focus search (placeholder for future) */
+  /* Keyboard shortcut: press F to focus search */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "f" && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -91,26 +149,26 @@ export function NavBar() {
   return (
     <>
       <nav aria-label="Main navigation" className="nav-border-gradient bg-[var(--background)]/95 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 h-12">
-          {/* Logo - text only, Glint style */}
+        <div className="max-w-[1440px] mx-auto flex items-center gap-4 px-4 h-12">
+          {/* LEFT zone: Logo */}
           <Link
             href="/"
-            className="font-bold text-base tracking-tight text-white hover:text-[var(--accent-blue)] transition-colors duration-200 shrink-0"
+            className="font-bold text-base tracking-tight text-[var(--foreground)] hover:text-[var(--accent-blue)] transition-colors duration-200 shrink-0"
           >
             <span className="gradient-text">Uni-Seeker</span>
           </Link>
 
-          {/* Desktop nav links - text only, no icons */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {primaryLinks.map((link) => (
+          {/* CENTER zone: Nav links + Search bar */}
+          <div className="hidden md:flex flex-1 items-center justify-center gap-1">
+            {directLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 aria-current={isActive(link.href) ? "page" : undefined}
                 className={`relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200 ${
                   isActive(link.href)
-                    ? "text-white"
-                    : "text-[var(--text-muted)] hover:text-white"
+                    ? "text-[var(--foreground)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
                 }`}
               >
                 {link.label}
@@ -120,52 +178,41 @@ export function NavBar() {
               </Link>
             ))}
 
-            {/* More dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setMoreOpen(!moreOpen)}
-                onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200 ${
-                  moreLinks.some((l) => isActive(l.href))
-                    ? "text-white"
-                    : "text-[var(--text-muted)] hover:text-white"
-                }`}
-              >
-                More
-              </button>
-              {moreOpen && (
-                <div className="absolute top-full right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-xl shadow-black/60 z-50 min-w-[160px] overflow-hidden animate-slide-down">
-                  {moreLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMoreOpen(false)}
-                      aria-current={isActive(link.href) ? "page" : undefined}
-                      className={`block px-4 py-2.5 text-[13px] transition-colors duration-150 ${
-                        isActive(link.href)
-                          ? "text-white bg-[var(--card-hover)]"
-                          : "text-[var(--text-muted)] hover:text-white hover:bg-[var(--card-hover)]"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
+            <NavDropdown label={t.nav.analysis} links={analysisLinks} isActive={isActive} />
+            <NavDropdown label={t.nav.trading} links={tradingLinks} isActive={isActive} />
+            <NavDropdown label={t.nav.marketGroup} links={marketLinks} isActive={isActive} />
+
+            {/* Notifications icon link */}
+            <Link
+              href="/notifications"
+              aria-current={isActive("/notifications") ? "page" : undefined}
+              className={`relative px-2 py-1.5 rounded-md transition-colors duration-200 ${
+                isActive("/notifications")
+                  ? "text-[var(--foreground)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
+              }`}
+              title={t.nav.notifications}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {isActive("/notifications") && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-[var(--accent-blue)] rounded-full" />
               )}
-            </div>
+            </Link>
+
+            {/* Search bar (integrated in center zone) */}
+            <button className="search-bar hidden lg:flex ml-2" aria-label="Search markets" onClick={() => setPaletteOpen(true)}>
+              <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="text-[var(--text-muted)]">{t.search.placeholder}</span>
+              <kbd>F</kbd>
+            </button>
           </div>
 
-          {/* Center search bar - Glint style */}
-          <button className="search-bar hidden lg:flex" aria-label="Search markets" onClick={() => setPaletteOpen(true)}>
-            <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span className="text-[var(--text-muted)]">{t.search.placeholder}</span>
-            <kbd>F</kbd>
-          </button>
-
-          {/* Right side actions */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* RIGHT zone: Theme, locale, auth */}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
             <button
               onClick={cycleTheme}
               className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors duration-200 text-xs px-2 py-1 rounded-md hover:bg-[var(--card-hover)] flex items-center gap-1"
@@ -185,7 +232,7 @@ export function NavBar() {
                 <span className="text-[var(--text-muted)] text-xs px-2">{user.username}</span>
                 <button
                   onClick={logout}
-                  className="text-[var(--text-muted)] hover:text-white transition-colors duration-200 text-xs px-2 py-1 rounded-md hover:bg-[var(--stock-up)]/10"
+                  className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors duration-200 text-xs px-2 py-1 rounded-md hover:bg-[var(--stock-up)]/10"
                 >
                   {t.auth.logout}
                 </button>
@@ -203,7 +250,7 @@ export function NavBar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 text-[var(--text-muted)] hover:text-white transition-colors duration-200"
+            className="md:hidden ml-auto p-2 text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors duration-200"
             aria-label="Toggle navigation menu"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +267,8 @@ export function NavBar() {
         {mobileOpen && (
           <div className="md:hidden border-t border-[var(--border-color)] animate-slide-down">
             <div className="px-4 py-3 space-y-1">
-              {navLinks.map((link) => (
+              {/* Direct links */}
+              {directLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -228,13 +276,54 @@ export function NavBar() {
                   aria-current={isActive(link.href) ? "page" : undefined}
                   className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
                     isActive(link.href)
-                      ? "text-white bg-[var(--card-hover)]"
-                      : "text-[var(--text-muted)] hover:text-white hover:bg-[var(--card-hover)]"
+                      ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
+
+              {/* Grouped sections */}
+              {[
+                { label: t.nav.analysis, links: analysisLinks },
+                { label: t.nav.trading, links: tradingLinks },
+                { label: t.nav.marketGroup, links: marketLinks },
+              ].map((group) => (
+                <div key={group.label}>
+                  <div className="px-3 pt-2 pb-1 text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium">{group.label}</div>
+                  {group.links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      aria-current={isActive(link.href) ? "page" : undefined}
+                      className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
+                        isActive(link.href)
+                          ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                          : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+
+              {/* Notifications */}
+              <Link
+                href="/notifications"
+                onClick={() => setMobileOpen(false)}
+                aria-current={isActive("/notifications") ? "page" : undefined}
+                className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
+                  isActive("/notifications")
+                    ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                }`}
+              >
+                {t.nav.notifications}
+              </Link>
+
               <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-color)]">
                 <button
                   onClick={cycleTheme}
@@ -253,7 +342,7 @@ export function NavBar() {
                 {user ? (
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
-                    className="text-[var(--text-muted)] hover:text-white transition-colors duration-200 text-xs px-2.5 py-1.5 rounded-md border border-[var(--border-color)]"
+                    className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors duration-200 text-xs px-2.5 py-1.5 rounded-md border border-[var(--border-color)]"
                   >
                     {t.auth.logout}
                   </button>

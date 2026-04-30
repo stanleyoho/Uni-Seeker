@@ -148,10 +148,10 @@ export default function WatchlistPage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">{wl?.title ?? "Watchlist"}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">{wl?.title ?? "Watchlist"}</h1>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">
             {wl?.subtitle ?? `${items.length} stocks tracked`}
           </p>
@@ -162,11 +162,11 @@ export default function WatchlistPage() {
             <>
               <button
                 onClick={handleExport}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--text-secondary)] transition-all duration-200"
+                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)] hover:border-[var(--text-secondary)] transition-all duration-200"
               >
                 匯出
               </button>
-              <label className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--text-secondary)] transition-all duration-200 cursor-pointer">
+              <label className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)] hover:border-[var(--text-secondary)] transition-all duration-200 cursor-pointer">
                 匯入
                 <input
                   ref={fileInputRef}
@@ -189,7 +189,7 @@ export default function WatchlistPage() {
                   id="sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortKey)}
-                  className="px-2 py-1 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--border-subtle)] text-white focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                  className="px-2 py-1 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
                 >
                   {sortOptions.map((opt) => (
                     <option key={opt.key} value={opt.key}>
@@ -297,7 +297,7 @@ export default function WatchlistPage() {
                   className="flex-1 min-w-0"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span className="text-white font-semibold text-sm group-hover:text-[var(--accent-blue)] transition-colors">
+                    <span className="text-[var(--foreground)] font-semibold text-sm group-hover:text-[var(--accent-blue)] transition-colors">
                       {row.symbol.replace(".TW", "").replace(".TWO", "")}
                     </span>
                     <span className="text-[var(--text-muted)] text-xs truncate">{row.name}</span>
@@ -310,7 +310,7 @@ export default function WatchlistPage() {
                   <div className="w-3 h-3 border-2 border-[var(--border-color)] border-t-[var(--accent-blue)] rounded-full animate-spin" />
                 ) : price ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-semibold mono-nums w-24 text-right">
+                    <span className="text-[var(--foreground)] text-sm font-semibold mono-nums w-24 text-right">
                       {parseFloat(price.close).toLocaleString()}
                     </span>
                     <div className="w-28 flex justify-end">

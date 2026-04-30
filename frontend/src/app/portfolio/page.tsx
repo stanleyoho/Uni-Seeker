@@ -50,8 +50,8 @@ export default function PortfolioPage() {
   }, [allocations, rebalanceMode, periodDays, thresholdPct, initialCapital, isValid, backtest]);
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
-      <h1 className="text-xl md:text-2xl font-bold mb-4 text-white tracking-tight">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
+      <h1 className="text-xl md:text-2xl font-bold mb-4 text-[var(--foreground)] tracking-tight">
         組合回測
       </h1>
 

@@ -85,11 +85,11 @@ export default function NotificationsPage() {
   };
 
   const inputClass =
-    "px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border-subtle)] text-white text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+    "px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
   return (
     <div className="p-3 md:p-4 max-w-5xl mx-auto animate-fade-in">
-      <h1 className="text-xl md:text-2xl font-bold mb-4 text-white tracking-tight">{t.notifications.title}</h1>
+      <h1 className="text-xl md:text-2xl font-bold mb-4 text-[var(--foreground)] tracking-tight">{t.notifications.title}</h1>
 
       {/* Add Rule Form */}
       <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4 mb-4">
@@ -167,7 +167,7 @@ export default function NotificationsPage() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-medium text-white text-sm">{rule.name}</span>
+                    <span className="font-medium text-[var(--foreground)] text-sm">{rule.name}</span>
                     <Badge>{rule.rule_type}</Badge>
                     <span className="text-xs text-[var(--accent-blue)] mono-nums font-medium">{rule.symbol}</span>
                     {rule.is_active ? (

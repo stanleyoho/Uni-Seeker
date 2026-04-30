@@ -46,7 +46,7 @@ export function ConditionBuilder({
   };
 
   const selectClass =
-    "px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200";
+    "px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200";
 
   return (
     <div className="space-y-4">
@@ -59,7 +59,7 @@ export function ConditionBuilder({
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
               logicOperator === "AND"
                 ? "bg-[var(--accent-blue)] text-white shadow-sm"
-                : "text-[var(--text-secondary)] hover:text-white"
+                : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
             }`}
           >
             AND
@@ -70,7 +70,7 @@ export function ConditionBuilder({
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
               logicOperator === "OR"
                 ? "bg-[var(--accent-blue)] text-white shadow-sm"
-                : "text-[var(--text-secondary)] hover:text-white"
+                : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
             }`}
           >
             OR
@@ -118,7 +118,7 @@ export function ConditionBuilder({
       <button
         type="button"
         onClick={addCondition}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl hover:border-[var(--accent-blue)]/50 hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200 text-sm"
+        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl hover:border-[var(--accent-blue)]/50 hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200 text-sm"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

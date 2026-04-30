@@ -252,7 +252,7 @@ function StockMetricsTable({ result }: { result: PortfolioBacktestResult }) {
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: STOCK_COLORS[i % STOCK_COLORS.length] }}
                       />
-                      <span className="mono-nums text-white font-medium">{m.symbol}</span>
+                      <span className="mono-nums text-[var(--foreground)] font-medium">{m.symbol}</span>
                     </div>
                   </td>
                   <td className="py-2 px-3 mono-nums text-[var(--text-secondary)] text-right">
@@ -316,7 +316,7 @@ function RebalanceLog({ result }: { result: PortfolioBacktestResult }) {
                         key={j}
                         className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-secondary)] border border-[var(--border-subtle)] mono-nums"
                       >
-                        <span className="text-white font-medium">{adj.symbol}</span>
+                        <span className="text-[var(--foreground)] font-medium">{adj.symbol}</span>
                         <span className="text-[var(--text-muted)] mx-1">
                           {adj.from_weight.toFixed(1)}%
                         </span>
@@ -367,7 +367,7 @@ export function PortfolioComparison({ result, initialCapital }: PortfolioCompari
             <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider font-medium mb-1">
               初始資金
             </p>
-            <p className="text-lg font-bold mono-nums text-white">
+            <p className="text-lg font-bold mono-nums text-[var(--foreground)]">
               ${formatMoney(initialCapital)}
             </p>
           </div>

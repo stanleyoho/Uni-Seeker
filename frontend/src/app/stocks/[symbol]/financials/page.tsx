@@ -169,7 +169,7 @@ function RatiosTable({ ratios, t }: { ratios: FinancialRatios; t: ReturnType<typ
           >
             <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">{item.label}</div>
             <div className={`text-base font-semibold mono-nums ${
-              isPositive ? "text-[var(--stock-down)] glow-green" : isNegative ? "text-[var(--stock-up)] glow-red" : "text-white"
+              isPositive ? "text-[var(--stock-down)] glow-green" : isNegative ? "text-[var(--stock-up)] glow-red" : "text-[var(--foreground)]"
             }`}>
               {item.value}
             </div>
@@ -227,7 +227,7 @@ function QuarterlyTrend({ ratios, t }: { ratios: FinancialRatios[]; t: ReturnTyp
               {sorted.map((r) => {
                 const val = r[m.key] as number | null;
                 return (
-                  <td key={r.period} className="text-right py-2 px-3 mono-nums text-white">
+                  <td key={r.period} className="text-right py-2 px-3 mono-nums text-[var(--foreground)]">
                     {m.isPct ? formatPct(val) : formatNumber(val)}
                   </td>
                 );
@@ -264,14 +264,14 @@ export default function FinancialsPage() {
   const latestRatios = data.ratios.length > 0 ? data.ratios[0] : null;
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       {/* Header with navigation tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">{symbol}</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">{symbol}</h1>
         <div className="flex gap-1 bg-[var(--bg-secondary)] p-0.5 rounded-lg">
           <Link
             href={`/stocks/${encodeURIComponent(symbol)}`}
-            className="px-3 py-1.5 text-xs font-medium rounded-md text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+            className="px-3 py-1.5 text-xs font-medium rounded-md text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
           >
             {t.stock.chart}
           </Link>
@@ -285,7 +285,7 @@ export default function FinancialsPage() {
       {latestScore && (
         <div className="bg-[var(--card-bg)] rounded-lg p-4 mb-4 border border-[var(--border-subtle)]">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-sm font-semibold text-white">
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">
               {t.financial.healthScore}
             </h2>
             <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-md px-2 py-0.5 border border-[var(--border-subtle)] mono-nums">
@@ -327,7 +327,7 @@ export default function FinancialsPage() {
       {latestRatios && (
         <div className="bg-[var(--card-bg)] rounded-lg p-4 mb-4 border border-[var(--border-subtle)]">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-sm font-semibold text-white">
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">
               {t.financial.keyRatios}
             </h2>
             <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-md px-2 py-0.5 border border-[var(--border-subtle)] mono-nums">
@@ -341,7 +341,7 @@ export default function FinancialsPage() {
       {/* Quarterly Trend */}
       {data.ratios.length > 1 && (
         <div className="bg-[var(--card-bg)] rounded-lg p-4 mb-4 border border-[var(--border-subtle)]">
-          <h2 className="text-sm font-semibold mb-3 text-white">{t.financial.quarterlyTrend}</h2>
+          <h2 className="text-sm font-semibold mb-3 text-[var(--foreground)]">{t.financial.quarterlyTrend}</h2>
           <QuarterlyTrend ratios={data.ratios} t={t} />
         </div>
       )}

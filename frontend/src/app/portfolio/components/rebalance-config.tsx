@@ -30,7 +30,7 @@ export function RebalanceConfig({
   onInitialCapitalChange,
 }: RebalanceConfigProps) {
   const inputClass =
-    "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+    "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
   return (
     <div className="space-y-3">
@@ -47,7 +47,7 @@ export function RebalanceConfig({
               className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
                 mode === m.key
                   ? "bg-[var(--accent-blue)] text-white shadow-lg shadow-[var(--accent-blue-glow)]"
-                  : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
               }`}
             >
               {m.label}

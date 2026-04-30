@@ -44,7 +44,7 @@ export default function LoginPage() {
   };
 
   const inputClass =
-    "w-full px-3 py-2.5 bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg text-white text-sm focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200 placeholder-[var(--text-muted)]";
+    "w-full px-3 py-2.5 bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200 placeholder-[var(--text-muted)]";
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">

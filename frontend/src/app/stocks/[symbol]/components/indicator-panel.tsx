@@ -470,7 +470,7 @@ export function IndicatorPanel({ prices, t }: IndicatorPanelProps) {
         </h3>
         <button
           onClick={() => setShowParams((p) => !p)}
-          className="text-[10px] text-[var(--text-muted)] hover:text-white transition-colors"
+          className="text-[10px] text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
           aria-expanded={showParams}
           aria-label={ind.paramToggle ?? "Toggle parameters"}
         >
@@ -505,7 +505,7 @@ export function IndicatorPanel({ prices, t }: IndicatorPanelProps) {
               aria-hidden="true"
             >
               {cfg.enabled && (
-                <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                <svg className="w-2 h-2 text-[var(--foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               )}
@@ -538,7 +538,7 @@ export function IndicatorPanel({ prices, t }: IndicatorPanelProps) {
                     value={value}
                     onChange={(e) => updateParam(cfg.key, param, Math.max(1, parseInt(e.target.value) || 1))}
                     disabled={!cfg.enabled}
-                    className="w-12 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded px-1 py-0.5 text-right text-white mono-nums focus:outline-none focus:border-[var(--accent-blue)]"
+                    className="w-12 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded px-1 py-0.5 text-right text-[var(--foreground)] mono-nums focus:outline-none focus:border-[var(--accent-blue)]"
                     aria-label={`${cfg.label} ${param}`}
                   />
                 </div>

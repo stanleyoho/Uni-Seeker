@@ -66,7 +66,7 @@ export function BacktestResults({ result }: BacktestResultsProps) {
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm font-medium text-white mono-nums">
+        <span className="text-sm font-medium text-[var(--foreground)] mono-nums">
           {result.symbol}
         </span>
         <span className="text-xs text-[var(--text-muted)]">{result.strategy}</span>
@@ -136,7 +136,7 @@ export function BacktestResults({ result }: BacktestResultsProps) {
                           {isBuy ? "買進" : "賣出"}
                         </span>
                       </td>
-                      <td className="py-2 px-3 mono-nums text-white">
+                      <td className="py-2 px-3 mono-nums text-[var(--foreground)]">
                         {formatNum(trade.price)}
                       </td>
                       <td className="py-2 px-3 mono-nums text-[var(--text-secondary)]">

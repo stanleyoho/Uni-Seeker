@@ -110,7 +110,7 @@ function SignalDetailRow({ stock }: { stock: StockSignal }) {
             className="flex flex-col gap-1 px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-subtle)]"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white">{sig.strategy}</span>
+              <span className="text-xs font-medium text-[var(--foreground)]">{sig.strategy}</span>
               <span
                 className={`text-[10px] px-1.5 py-0.5 rounded border ${ACTION_STYLES[sig.action]}`}
               >
@@ -232,7 +232,7 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <span className="text-white font-semibold text-sm">{stock.symbol}</span>
+                  <span className="text-[var(--foreground)] font-semibold text-sm">{stock.symbol}</span>
                   <span className="text-[var(--text-muted)] text-[10px] ml-1.5">
                     {stock.name}
                   </span>
@@ -267,7 +267,7 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
           <thead>
             <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
               <th
-                className="px-3 py-2 text-left cursor-pointer select-none hover:text-white transition-colors"
+                className="px-3 py-2 text-left cursor-pointer select-none hover:text-[var(--foreground)] transition-colors"
                 onClick={() => handleSort("symbol")}
               >
                 <span className="inline-flex items-center">
@@ -276,7 +276,7 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-left cursor-pointer select-none hover:text-white transition-colors"
+                className="px-3 py-2 text-left cursor-pointer select-none hover:text-[var(--foreground)] transition-colors"
                 onClick={() => handleSort("name")}
               >
                 <span className="inline-flex items-center">
@@ -286,7 +286,7 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
               </th>
               <th className="px-3 py-2 text-center">綜合訊號</th>
               <th
-                className="px-3 py-2 text-left w-48 cursor-pointer select-none hover:text-white transition-colors"
+                className="px-3 py-2 text-left w-48 cursor-pointer select-none hover:text-[var(--foreground)] transition-colors"
                 onClick={() => handleSort("score")}
               >
                 <span className="inline-flex items-center">
@@ -327,7 +327,7 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
                     <span className="px-3 py-2">
                       <Link
                         href={`/stocks/${encodeURIComponent(stock.symbol)}`}
-                        className="text-white font-semibold text-xs hover:text-[var(--accent-blue)] transition-colors duration-150"
+                        className="text-[var(--foreground)] font-semibold text-xs hover:text-[var(--accent-blue)] transition-colors duration-150"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {stock.symbol}

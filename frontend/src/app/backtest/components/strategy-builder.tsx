@@ -46,7 +46,7 @@ function StrategyCard({
           : "bg-[var(--bg-secondary)] border-[var(--border-subtle)] hover:bg-[var(--card-hover)]"
       }`}
     >
-      <div className="font-medium text-white text-xs mb-0.5">
+      <div className="font-medium text-[var(--foreground)] text-xs mb-0.5">
         {strategy.name}
       </div>
       <div className="text-[10px] text-[var(--text-muted)] leading-relaxed">
@@ -59,7 +59,7 @@ function StrategyCard({
 /* ---------- Main ---------- */
 
 const inputClass =
-  "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+  "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
 export function StrategyBuilder({ onEnqueue, onRunNow }: StrategyBuilderProps) {
   const { data: strategies = [] } = useStrategies();
@@ -188,7 +188,7 @@ export function StrategyBuilder({ onEnqueue, onRunNow }: StrategyBuilderProps) {
                   className={`px-3 py-1.5 rounded-md text-[10px] font-medium transition-all duration-200 border ${
                     compositeMerge === mode
                       ? "bg-[var(--accent-blue)] text-white border-[var(--accent-blue)]"
-                      : "bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white"
+                      : "bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)]"
                   }`}
                 >
                   {mode}
@@ -239,7 +239,7 @@ export function StrategyBuilder({ onEnqueue, onRunNow }: StrategyBuilderProps) {
               className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all duration-200 border ${
                 gridSearch
                   ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/30 text-[var(--accent-blue)]"
-                  : "bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white"
+                  : "bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--foreground)]"
               }`}
             >
               Grid Search {gridSearch ? "ON" : "OFF"}
@@ -366,7 +366,7 @@ export function StrategyBuilder({ onEnqueue, onRunNow }: StrategyBuilderProps) {
         <button
           onClick={() => isValid && onEnqueue(buildConfig())}
           disabled={!isValid}
-          className="flex-1 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-sm rounded-lg hover:bg-[var(--card-hover)] hover:text-white transition-all duration-200 disabled:opacity-40 font-medium"
+          className="flex-1 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-sm rounded-lg hover:bg-[var(--card-hover)] hover:text-[var(--foreground)] transition-all duration-200 disabled:opacity-40 font-medium"
         >
           加入佇列
         </button>

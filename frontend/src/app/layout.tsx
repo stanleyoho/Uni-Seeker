@@ -4,7 +4,7 @@ import { I18nProvider } from "@/i18n/context";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryProvider } from "@/lib/query-provider";
-import { NavBar, FooterStatusBar } from "@/components/nav-bar";
+import { StratosHeader } from "@/components/stratos/header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -34,9 +34,8 @@ export default function RootLayout({
           <QueryProvider>
             <I18nProvider>
               <AuthProvider>
-                <NavBar />
+                <StratosHeader />
                 {children}
-                <FooterStatusBar />
                 <ServiceWorkerRegister />
               </AuthProvider>
             </I18nProvider>

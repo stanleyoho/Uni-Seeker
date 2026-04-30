@@ -64,7 +64,7 @@ export function DataTable<T>({
                 aria-sort={col.sortable ? (sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : "none") : undefined}
                 tabIndex={col.sortable ? 0 : undefined}
                 className={`${cellPadding} text-${col.align || "left"} ${col.width || ""} ${
-                  col.sortable ? "cursor-pointer select-none hover:text-white transition-colors" : ""
+                  col.sortable ? "cursor-pointer select-none hover:text-[var(--foreground)] transition-colors" : ""
                 }`}
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 onKeyDown={col.sortable ? (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSort(col.key); } } : undefined}

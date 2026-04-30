@@ -147,7 +147,7 @@ export function BacktestQueue({
       {/* Summary bar */}
       <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
         <span>
-          共 <span className="mono-nums text-white">{jobs.length}</span> 個任務
+          共 <span className="mono-nums text-[var(--foreground)]">{jobs.length}</span> 個任務
         </span>
         <span>
           執行中{" "}
@@ -175,7 +175,7 @@ export function BacktestQueue({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-white mono-nums">
+                    <span className="text-sm font-medium text-[var(--foreground)] mono-nums">
                       {job.symbol}
                     </span>
                     <span className="text-xs text-[var(--text-muted)]">

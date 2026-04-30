@@ -48,15 +48,15 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.marginBuy}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginSell}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginLimit}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -70,15 +70,15 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.shortBuy}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortSell}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortLimit}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -204,12 +204,12 @@ export default function StockDetailPage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">{symbol}</h1>
+            <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">{symbol}</h1>
             <button
               onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
               className="transition-colors duration-200"
@@ -249,7 +249,7 @@ export default function StockDetailPage() {
           <TabGroup tabs={tabs} active={activeTab} onChange={setActiveTab} size="sm" />
           <Link
             href={`/stocks/${encodeURIComponent(symbol)}/financials`}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
           >
             {t.stock.financials}
           </Link>
@@ -320,7 +320,7 @@ export default function StockDetailPage() {
           <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
             <Link
               href="/low-base"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-colors duration-150"
             >
               {t.lowBase?.viewDetail ?? "View Low-Base Score"}
             </Link>
