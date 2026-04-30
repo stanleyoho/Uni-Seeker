@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AreaChart,
   Area,
   ResponsiveContainer,
 } from "recharts";
-import { GlassPanel, KpiCard } from "@/components/stratos/primitives";
+import { GlassPanel } from "@/components/stratos/primitives";
 import { Sparkline, SectorHeatmap } from "@/components/stratos/charts";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import {
@@ -86,10 +86,10 @@ function generateMockTrend(base: number): { v: number }[] {
 /** Filter indices to show major markets */
 function filterMajorIndices(indices: MarketIndex[]): MarketIndex[] {
   const matchers = [
-    (n: string) => /TAIEX|加權/i.test(n),
-    (n: string) => /SPY/i.test(n),
-    (n: string) => /QQQ/i.test(n),
-    (n: string) => /SOX|費半|Semiconductor/i.test(n),
+    (n: string) => /TAIEX|加權|0050/i.test(n),
+    (n: string) => /SPY|S&P/i.test(n),
+    (n: string) => /NASDAQ|QQQ|那斯達克/i.test(n),
+    (n: string) => /SOX|費半|Semiconductor|半導體/i.test(n),
   ];
 
   const matched: MarketIndex[] = [];
@@ -116,10 +116,10 @@ function filterMajorIndices(indices: MarketIndex[]): MarketIndex[] {
 }
 
 // ---------------------------------------------------------------------------
-// Section: Index Panel (2x2 grid of major indices)
+// Section: Index Cards (full-width 4-column row)
 // ---------------------------------------------------------------------------
 
-function IndexPanel({ indices }: { indices: MarketIndex[] }) {
+function IndexRow({ indices }: { indices: MarketIndex[] }) {
   const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
 
   if (majorIndices.length === 0) {
@@ -136,7 +136,7 @@ function IndexPanel({ indices }: { indices: MarketIndex[] }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(2, 1fr)",
+        gridTemplateColumns: "repeat(4, 1fr)",
         gap: 12,
       }}
     >
@@ -169,7 +169,7 @@ function IndexCell({ idx }: { idx: MarketIndex }) {
       </div>
       <div
         style={{
-          fontSize: 24,
+          fontSize: 28,
           fontWeight: 700,
           color: "var(--foreground)",
           fontVariantNumeric: "tabular-nums",
@@ -183,14 +183,14 @@ function IndexCell({ idx }: { idx: MarketIndex }) {
           fontSize: 13,
           fontWeight: 600,
           color,
-          marginBottom: 8,
+          marginBottom: 6,
         }}
       >
         {isUp ? "\u25B2" : "\u25BC"}{" "}
         {isUp ? "+" : ""}
         {idx.change_percent.toFixed(2)}%
       </div>
-      <div style={{ height: 100 }}>
+      <div style={{ height: 80 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={trendData}>
             <defs>
@@ -258,7 +258,6 @@ function WatchlistRow({
 }: {
   item: { symbol: string; name: string };
 }) {
-  // Generate mock sparkline data for watchlist items
   const sparkData = useMemo(() => {
     const base = 100;
     const data: number[] = [];
@@ -319,7 +318,7 @@ function WatchlistRow({
 }
 
 // ---------------------------------------------------------------------------
-// Section: Market Movers
+// Section: Market Movers (tabbed: Gainers / Losers / Most Active)
 // ---------------------------------------------------------------------------
 
 function MarketMoversPanel({
@@ -327,102 +326,121 @@ function MarketMoversPanel({
 }: {
   movers: { gainers: MarketMover[]; losers: MarketMover[]; most_active: MarketMover[] };
 }) {
+  const [activeTab, setActiveTab] = useState<"gainers" | "losers" | "most_active">("gainers");
+
+  const tabs: { key: typeof activeTab; label: string }[] = [
+    { key: "gainers", label: "\u6F32\u5E45\u6392\u884C" },
+    { key: "losers", label: "\u8DCC\u5E45\u6392\u884C" },
+    { key: "most_active", label: "\u6210\u4EA4\u91CF" },
+  ];
+
   return (
     <GlassPanel title="MARKET MOVERS">
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <MoverSection label="GAINERS" items={movers.gainers} />
-        <MoverSection label="LOSERS" items={movers.losers} />
-        <MoverSection label="MOST ACTIVE" items={movers.most_active} />
+      {/* Tab bar */}
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          marginBottom: 12,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              flex: 1,
+              padding: "6px 0",
+              fontSize: 11,
+              fontWeight: activeTab === tab.key ? 700 : 500,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              color: activeTab === tab.key ? "var(--accent-cyan, #00E5FF)" : "#6B7280",
+              background: "none",
+              border: "none",
+              borderBottom: activeTab === tab.key ? "2px solid var(--accent-cyan, #00E5FF)" : "2px solid transparent",
+              cursor: "pointer",
+              transition: "color 0.15s, border-color 0.15s",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {/* Active tab content */}
+      <MoverList items={movers[activeTab]} />
     </GlassPanel>
   );
 }
 
-function MoverSection({
-  label,
-  items,
-}: {
-  label: string;
-  items: MarketMover[];
-}) {
+function MoverList({ items }: { items: MarketMover[] }) {
+  if (items.length === 0) {
+    return <div style={{ fontSize: 12, color: "#6B7280" }}>No data</div>;
+  }
+
   return (
-    <div>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          color: "#9CA3AF",
-          letterSpacing: "0.04em",
-          marginBottom: 6,
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          paddingBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      {items.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#6B7280" }}>No data</div>
-      ) : (
-        items.slice(0, 5).map((m, i) => {
-          const isUp = m.change >= 0;
-          return (
-            <Link
-              key={m.symbol}
-              href={`/stocks/${encodeURIComponent(m.symbol)}`}
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {items.slice(0, 8).map((m, i) => {
+        const isUp = m.change >= 0;
+        return (
+          <Link
+            key={m.symbol}
+            href={`/stocks/${encodeURIComponent(m.symbol)}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "5px 2px",
+              textDecoration: "none",
+              color: "inherit",
+              fontSize: 12,
+              borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.03)" : "none",
+            }}
+          >
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "4px 2px",
-                textDecoration: "none",
-                color: "inherit",
-                fontSize: 12,
+                color: "#6B7280",
+                fontVariantNumeric: "tabular-nums",
+                width: 16,
+                fontSize: 10,
               }}
             >
-              <span
-                style={{
-                  color: "#6B7280",
-                  fontVariantNumeric: "tabular-nums",
-                  width: 16,
-                  fontSize: 10,
-                }}
-              >
-                {i + 1}
-              </span>
-              <span
-                style={{
-                  fontWeight: 600,
-                  color: "var(--foreground)",
-                  flex: 1,
-                }}
-              >
-                {m.symbol.replace(".TW", "").replace(".TWO", "")}
-              </span>
-              <span
-                style={{
-                  fontVariantNumeric: "tabular-nums",
-                  color: "var(--foreground)",
-                }}
-              >
-                {m.close.toFixed(2)}
-              </span>
-              <span
-                style={{
-                  fontVariantNumeric: "tabular-nums",
-                  fontWeight: 600,
-                  color: isUp ? "var(--stock-up)" : "var(--stock-down)",
-                  minWidth: 56,
-                  textAlign: "right",
-                }}
-              >
-                {isUp ? "+" : ""}
-                {m.change_percent.toFixed(2)}%
-              </span>
-            </Link>
-          );
-        })
-      )}
+              {i + 1}
+            </span>
+            <span
+              style={{
+                fontWeight: 600,
+                color: "var(--foreground)",
+                flex: 1,
+              }}
+            >
+              {m.symbol.replace(".TW", "").replace(".TWO", "")}
+            </span>
+            <span
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                color: "var(--foreground)",
+              }}
+            >
+              {m.close.toFixed(2)}
+            </span>
+            <span
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                fontWeight: 600,
+                color: isUp ? "var(--stock-up)" : "var(--stock-down)",
+                minWidth: 56,
+                textAlign: "right",
+              }}
+            >
+              {isUp ? "+" : ""}
+              {m.change_percent.toFixed(2)}%
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -441,35 +459,21 @@ function SectorHeatmapPanel({
       sectors.map((s) => ({
         name: s.industry,
         change: s.avg_change_percent,
-        marketCap: s.total_volume, // use volume as proxy for relative size
+        marketCap: s.total_volume,
       })),
     [sectors]
   );
 
   return (
-    <div>
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "-0.04em",
-          color: "var(--text-secondary)",
-          marginBottom: 12,
-        }}
-      >
-        SECTOR HEATMAP
-      </div>
+    <GlassPanel title="SECTOR HEATMAP">
       {heatmapData.length === 0 ? (
-        <GlassPanel>
-          <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-            No sector data available
-          </div>
-        </GlassPanel>
+        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+          No sector data available
+        </div>
       ) : (
         <SectorHeatmap data={heatmapData} />
       )}
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -558,78 +562,27 @@ export default function HomePage() {
         }}
         className="md:px-6"
       >
-        {/* ── 1. KPI Row ─────────────────────────────────────── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 16,
-            marginBottom: 24,
-          }}
-          className="grid-cols-2 sm:grid-cols-4"
-        >
-          <KpiCard
-            label="Portfolio Value"
-            value="$2,847,350"
-            delta="+3.24%"
-            direction="up"
-          />
-          <KpiCard
-            label="Daily P&L"
-            value="+$48,720"
-            delta="+1.74%"
-            direction="up"
-          />
-          <KpiCard
-            label="Win Rate"
-            value="68.4%"
-            delta="+2.1%"
-            direction="up"
-          />
-          <KpiCard
-            label="Active Positions"
-            value="12"
-            delta="-2"
-            direction="down"
-          />
-        </div>
-
-        {/* ── 2. Main Grid (Index + Watchlist) ────────────────── */}
         {isLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
             <LoadingSpinner size="lg" />
           </div>
         ) : (
           <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr",
-                gap: 16,
-                marginBottom: 24,
-              }}
-            >
-              {/* Left: Index Panel */}
-              <IndexPanel indices={indices} />
-
-              {/* Right: Watchlist */}
-              <WatchlistPanel />
+            {/* -- 1. Index Cards (full width, 4 equal columns) -- */}
+            <div style={{ marginBottom: 20 }}>
+              <IndexRow indices={indices} />
             </div>
 
-            {/* ── 3. Bottom Grid (Heatmap + Movers + News) ────── */}
+            {/* -- 2. Watchlist (5col) + Market Movers (7col) -- */}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
+                gridTemplateColumns: "5fr 7fr",
                 gap: 16,
+                marginBottom: 20,
               }}
             >
-              {/* Sector Heatmap */}
-              <SectorHeatmapPanel
-                sectors={heatmapData?.sectors ?? []}
-              />
-
-              {/* Market Movers */}
+              <WatchlistPanel />
               <MarketMoversPanel
                 movers={{
                   gainers: movers?.gainers ?? [],
@@ -637,8 +590,19 @@ export default function HomePage() {
                   most_active: movers?.most_active ?? [],
                 }}
               />
+            </div>
 
-              {/* News Feed */}
+            {/* -- 3. Sector Heatmap (5col) + News Feed (7col) -- */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "5fr 7fr",
+                gap: 16,
+              }}
+            >
+              <SectorHeatmapPanel
+                sectors={heatmapData?.sectors ?? []}
+              />
               <NewsFeedPanel />
             </div>
           </>
