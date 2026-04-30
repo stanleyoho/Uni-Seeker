@@ -8,6 +8,7 @@ import {
 import { useI18n } from "@/i18n/context";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { ErrorState } from "@/components/ui/empty-state";
+import { getErrorMessage } from "@/lib/type-guards";
 import { useFinancialAnalysis } from "@/hooks/use-market-data";
 
 function scoreColor(score: number, max: number): string {
@@ -244,7 +245,7 @@ export default function FinancialsPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol);
   const { data, isLoading: loading, error: queryError } = useFinancialAnalysis(symbol);
-  const error = queryError ? (queryError as Error).message : null;
+  const error = queryError ? getErrorMessage(queryError) : null;
 
   if (loading) {
     return <LoadingSpinner text={t.financial.loadingFinancial} fullPage />;

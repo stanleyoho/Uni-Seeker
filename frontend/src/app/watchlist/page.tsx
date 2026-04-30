@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/context";
 import { useWatchlist, type WatchlistItem } from "@/hooks/use-watchlist";
 import { fetchPrices, type StockPrice } from "@/lib/api-client";
+import { downloadCSV } from "@/lib/csv-export";
+import { parseCSV } from "@/lib/csv-import";
 import { ChangeBadge, MarketBadge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -18,7 +20,8 @@ type SortKey = "symbol" | "name" | "change";
 
 export default function WatchlistPage() {
   const { t } = useI18n();
-  const { items, remove, removeMany } = useWatchlist();
+  const { items, add, remove, removeMany } = useWatchlist();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [rowData, setRowData] = useState<WatchlistRowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -111,6 +114,31 @@ export default function WatchlistPage() {
     setSelected(new Set());
   };
 
+  const handleExport = () => {
+    const data = items.map((item) => ({
+      symbol: item.symbol,
+      name: item.name,
+      added_date: item.addedAt.split("T")[0],
+    }));
+    downloadCSV(data, "watchlist.csv");
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      const symbols = parseCSV(text);
+      for (const symbol of symbols) {
+        add(symbol, symbol, "");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so the same file can be re-imported
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const wl = t.watchlist;
 
   const sortOptions: { key: SortKey; label: string }[] = [
@@ -129,6 +157,27 @@ export default function WatchlistPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Export / Import buttons */}
+          {items.length > 0 && (
+            <>
+              <button
+                onClick={handleExport}
+                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--text-secondary)] transition-all duration-200"
+              >
+                匯出
+              </button>
+              <label className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--text-secondary)] transition-all duration-200 cursor-pointer">
+                匯入
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+              </label>
+            </>
+          )}
           {items.length > 0 && (
             <>
               {/* Sort dropdown */}

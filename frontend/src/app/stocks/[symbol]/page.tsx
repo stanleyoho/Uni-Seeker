@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/ui/empty-state";
 import { ScoreBar } from "@/components/ui/score-bar";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { usePrices, useCompanyInfo, useMarginData, useRevenue } from "@/hooks/use-market-data";
+import { getErrorMessage } from "@/lib/type-guards";
 
 const TIMEFRAMES = [
   { key: "30", label: "1M" },
@@ -176,7 +177,7 @@ export default function StockDetailPage() {
   const { data: revenueData, isLoading: revenueLoading } = useRevenue(symbol, activeTab === "revenue");
 
   const prices = priceData?.data ?? [];
-  const error = priceError ? (priceError as Error).message : null;
+  const error = priceError ? getErrorMessage(priceError) : null;
 
   if (loading && prices.length === 0) {
     return <LoadingSpinner text={t.stock.loading} fullPage />;

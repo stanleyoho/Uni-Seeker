@@ -7,6 +7,7 @@ import { type InstitutionalData } from "@/lib/api-client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { DataTable, type Column } from "@/components/ui/data-table";
+import { getErrorMessage } from "@/lib/type-guards";
 
 /** Format a number with thousands separators and +/- sign. */
 function formatNet(v: number): string {
@@ -48,7 +49,7 @@ export default function InstitutionalPage() {
     !!query,
   );
 
-  const error = queryError ? (queryError as Error).message : null;
+  const error = queryError ? getErrorMessage(queryError) : null;
 
   const handleSearch = () => {
     const clean = symbol.trim().replace(".TW", "").replace(".TWO", "");

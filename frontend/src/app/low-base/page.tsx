@@ -8,6 +8,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { ScoreBadge } from "@/components/ui/badge";
 import { ScoreBar } from "@/components/ui/score-bar";
 import { LoadingSpinner } from "@/components/ui/loading";
+import { getErrorMessage } from "@/lib/type-guards";
 import { ErrorState, EmptyState } from "@/components/ui/empty-state";
 import { DataTable, type Column } from "@/components/ui/data-table";
 
@@ -26,7 +27,7 @@ export default function LowBasePage() {
   const lb = t.lowBase;
 
   const { data, isLoading: loading, error: queryError, refetch: load } = useLowBaseRanking(20);
-  const error = queryError ? (queryError as Error).message : null;
+  const error = queryError ? getErrorMessage(queryError) : null;
 
   const columns: Column<LowBaseScore>[] = [
     {
