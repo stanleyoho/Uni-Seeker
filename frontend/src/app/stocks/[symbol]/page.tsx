@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { StockChart } from "@/components/charts/stock-chart";
+import { IndicatorPanel } from "./components/indicator-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
 import { StatCard } from "@/components/ui/stat-card";
@@ -196,6 +197,7 @@ export default function StockDetailPage() {
 
   const tabs = [
     { key: "chart", label: t.stock.chart },
+    { key: "indicators", label: t.stock?.indicators ?? "Indicators" },
     { key: "revenue", label: t.stock?.revenue ?? "Revenue" },
     ...(isTWSymbol ? [{ key: "margin", label: t.stock.margin }] : []),
   ];
@@ -280,6 +282,11 @@ export default function StockDetailPage() {
                 <StockChart prices={prices} height={500} />
               </div>
             </div>
+          )}
+
+          {/* Indicators tab */}
+          {activeTab === "indicators" && (
+            <IndicatorPanel prices={prices} t={t} />
           )}
 
           {/* Margin tab */}

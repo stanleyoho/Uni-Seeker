@@ -53,7 +53,15 @@
     "latestRevenue": "Latest Revenue",
     "trend": "Trend",
     "revenueHigh": "Revenue High",
-    "revenueLow": "Revenue Low"
+    "revenueLow": "Revenue Low",
+    "indicators": "Indicators"
+  },
+  "indicators": {
+    "title": "Technical Indicators",
+    "showParams": "Params",
+    "hideParams": "Hide Params",
+    "paramToggle": "Toggle parameter controls",
+    "selectIndicators": "Select indicators"
   },
   "financial": {
     "healthScore": "Health Score",

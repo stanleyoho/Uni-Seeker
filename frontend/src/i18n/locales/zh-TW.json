@@ -53,7 +53,15 @@
     "latestRevenue": "最新營收",
     "trend": "趨勢",
     "revenueHigh": "營收新高",
-    "revenueLow": "營收新低"
+    "revenueLow": "營收新低",
+    "indicators": "技術指標"
+  },
+  "indicators": {
+    "title": "技術指標",
+    "showParams": "參數",
+    "hideParams": "隱藏參數",
+    "paramToggle": "切換參數控制",
+    "selectIndicators": "選擇指標"
   },
   "financial": {
     "healthScore": "健康度評分",
