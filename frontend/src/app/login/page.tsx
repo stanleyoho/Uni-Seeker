@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/contexts/auth-context";
 import { login, register } from "@/lib/api-client";
-import { TabGroup } from "@/components/ui/tab-group";
+import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 
 export default function LoginPage() {
   const { t } = useI18n();
@@ -43,86 +43,193 @@ export default function LoginPage() {
     }
   };
 
-  const inputClass =
-    "w-full px-3 py-2.5 bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200 placeholder-[var(--text-muted)]";
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    background: "var(--bg-secondary)",
+    border: "1px solid var(--border-color)",
+    color: "var(--foreground)",
+    fontSize: 14,
+    outline: "none",
+    transition: "outline 150ms",
+  };
+
+  const labelClass =
+    "block text-[11px] uppercase tracking-[0.05em] font-bold mb-1.5";
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration - enhanced shimmer */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/8 rounded-full blur-[100px] animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/8 rounded-full blur-[100px]" />
-        <div className="absolute inset-0 animate-shimmer" />
-      </div>
-
-      <div className="relative w-full max-w-sm glass border border-[var(--border-color)] rounded-xl p-6 shadow-2xl shadow-black/50 animate-fade-in" style={{ backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--background)" }}
+    >
+      <GlassPanel className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-5">
-          <h1 className="text-xl font-bold gradient-text">Uni-Seeker</h1>
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 28 28"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M14 3L25 23H3L14 3Z"
+              fill="var(--foreground)"
+              opacity="0.9"
+            />
+            <path
+              d="M14 8L20 20H8L14 8Z"
+              fill="var(--accent-primary, #ef4444)"
+              opacity="0.8"
+            />
+          </svg>
+          <span
+            className="font-bold text-[22px] uppercase"
+            style={{
+              color: "var(--foreground)",
+              letterSpacing: "-0.04em",
+            }}
+          >
+            STRATOS
+          </span>
         </div>
 
-        {/* Tabs */}
-        <div className="flex justify-center mb-5">
-          <TabGroup
-            tabs={[
-              { key: "login", label: t.auth.login },
-              { key: "register", label: t.auth.register },
-            ]}
-            active={tab}
-            onChange={(key) => { setTab(key as "login" | "register"); setError(""); }}
-            size="sm"
-          />
+        {/* Tab toggle */}
+        <div className="flex mb-6 gap-0">
+          <button
+            type="button"
+            onClick={() => { setTab("login"); setError(""); }}
+            className="flex-1 py-2.5 text-sm font-semibold uppercase tracking-[0.05em] transition-colors duration-200"
+            style={{
+              background: tab === "login" ? "var(--accent-primary)" : "transparent",
+              color: tab === "login" ? "#fff" : "var(--text-secondary)",
+              border: tab === "login" ? "none" : "1px solid var(--border-color)",
+              cursor: "pointer",
+            }}
+          >
+            {t.auth.login}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTab("register"); setError(""); }}
+            className="flex-1 py-2.5 text-sm font-semibold uppercase tracking-[0.05em] transition-colors duration-200"
+            style={{
+              background: tab === "register" ? "var(--accent-primary)" : "transparent",
+              color: tab === "register" ? "#fff" : "var(--text-secondary)",
+              border: tab === "register" ? "none" : "1px solid var(--border-color)",
+              cursor: "pointer",
+            }}
+          >
+            {t.auth.register}
+          </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
+            <label
+              className={labelClass}
+              style={{ color: "var(--text-secondary)" }}
+            >
               {t.auth.email}
             </label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = "2px solid var(--accent-cyan)";
+                e.currentTarget.style.outlineOffset = "2px";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = "none";
+                e.currentTarget.style.outlineOffset = "0px";
+              }}
+            />
           </div>
 
           {tab === "register" && (
-            <div className="animate-fade-in">
-              <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
+            <div>
+              <label
+                className={labelClass}
+                style={{ color: "var(--text-secondary)" }}
+              >
                 {t.auth.username}
               </label>
-              <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = "2px solid var(--accent-cyan)";
+                  e.currentTarget.style.outlineOffset = "2px";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = "none";
+                  e.currentTarget.style.outlineOffset = "0px";
+                }}
+              />
             </div>
           )}
 
           <div>
-            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
+            <label
+              className={labelClass}
+              style={{ color: "var(--text-secondary)" }}
+            >
               {t.auth.password}
             </label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = "2px solid var(--accent-cyan)";
+                e.currentTarget.style.outlineOffset = "2px";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = "none";
+                e.currentTarget.style.outlineOffset = "0px";
+              }}
+            />
           </div>
 
           {error && (
-            <div className="px-2.5 py-2 bg-[var(--stock-up)]/10 border border-[var(--stock-up)]/20 rounded-lg animate-slide-down">
-              <p className="text-red-400 text-xs">{error}</p>
-            </div>
+            <p className="text-sm" style={{ color: "var(--accent-primary)" }}>
+              {error}
+            </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-hover)] disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ...
-              </span>
-            ) : tab === "login" ? (
-              t.auth.loginButton
-            ) : (
-              t.auth.registerButton
-            )}
-          </button>
+          <div className="pt-2">
+            <ClippedButton
+              type="submit"
+              variant={tab === "login" ? "red-solid" : "white-solid"}
+              size="lg"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span
+                    className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                  />
+                  ...
+                </span>
+              ) : tab === "login" ? (
+                t.auth.loginButton
+              ) : (
+                t.auth.registerButton
+              )}
+            </ClippedButton>
+          </div>
         </form>
-      </div>
+      </GlassPanel>
     </div>
   );
 }

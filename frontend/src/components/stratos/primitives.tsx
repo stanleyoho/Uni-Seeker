@@ -86,6 +86,8 @@ interface ClippedButtonProps {
   onClick?: () => void;
   children: React.ReactNode;
   className?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 }
 
 const cutSize: Record<ButtonSize, number> = { sm: 8, md: 12, lg: 14 };
@@ -121,18 +123,23 @@ export function ClippedButton({
   onClick,
   children,
   className = "",
+  type = "button",
+  disabled = false,
 }: ClippedButtonProps) {
   const c = cutSize[size];
 
   return (
     <button
+      type={type}
       onClick={onClick}
+      disabled={disabled}
       className={`${sizeClasses[size]} font-semibold ${className}`}
       style={{
         ...variantStyles[variant],
         clipPath: `polygon(0 0, calc(100% - ${c}px) 0, 100% ${c}px, 100% 100%, ${c}px 100%, 0 calc(100% - ${c}px))`,
         transition: "all 200ms",
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         outline: "none",
       }}
       onFocus={(e) => {
