@@ -1,285 +1,649 @@
 "use client";
 
-import { useState } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import {
-  type MarketIndex,
-  type MarketMover,
-} from "@/lib/api-client";
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+} from "recharts";
+import { GlassPanel, KpiCard } from "@/components/stratos/primitives";
+import { Sparkline, SectorHeatmap } from "@/components/stratos/charts";
+import { AmbientBackground } from "@/components/stratos/ambient";
+import {
+  useMarketIndices,
+  useMarketMovers,
+  useHeatmap,
+} from "@/hooks/use-market-data";
+import { useWatchlist } from "@/hooks/use-watchlist";
 import { useI18n } from "@/i18n/context";
-import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { useMarketIndices, useMarketMovers } from "@/hooks/use-market-data";
+import type {
+  MarketIndex,
+  MarketMover,
+  HeatmapSector,
+} from "@/lib/api-client";
 
-// ── Status Bar ─────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Mock news data (no news API available yet)
+// ---------------------------------------------------------------------------
 
-function StatusBar() {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-  });
-  const timeStr = now.toLocaleTimeString("zh-TW", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+const NEWS_ITEMS = [
+  {
+    id: 1,
+    title: "Fed holds rates steady, signals potential cuts in Q3",
+    source: "Reuters",
+    time: "2h ago",
+    tag: "Macro",
+  },
+  {
+    id: 2,
+    title: "TSMC beats Q1 estimates on strong AI chip demand",
+    source: "Bloomberg",
+    time: "4h ago",
+    tag: "Earnings",
+  },
+  {
+    id: 3,
+    title: "Taiwan export orders rise 12% YoY in March",
+    source: "MOEA",
+    time: "6h ago",
+    tag: "Data",
+  },
+  {
+    id: 4,
+    title: "Nvidia announces next-gen GPU architecture",
+    source: "TechCrunch",
+    time: "8h ago",
+    tag: "Tech",
+  },
+  {
+    id: 5,
+    title: "USD/TWD slips below 30.5 on trade surplus data",
+    source: "FX Street",
+    time: "10h ago",
+    tag: "FX",
+  },
+];
 
-  return (
-    <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)] rounded-t-lg">
-      <div className="flex items-center gap-2">
-        <span className="status-dot" />
-        <span className="text-[var(--foreground)] text-xs font-semibold tracking-wide">
-          Uni-Seeker 戰情室
-        </span>
-      </div>
-      <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] mono-nums">
-        <span>{dateStr} {timeStr}</span>
-        <span className="text-[var(--score-excellent)] font-medium">MARKET OPEN</span>
-      </div>
-    </div>
-  );
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Generate a mock 20-point sparkline from a single value */
+function generateMockTrend(base: number): { v: number }[] {
+  const points: { v: number }[] = [];
+  let val = base * 0.97;
+  for (let i = 0; i < 20; i++) {
+    val += (base * 0.003) * (Math.sin(i * 0.8) + 0.5 * Math.cos(i * 1.3));
+    points.push({ v: val });
+  }
+  // Ensure the last point is close to the actual value
+  points[points.length - 1] = { v: base };
+  return points;
 }
 
-// ── Market Index Card ──────────────────────────────────────────
+/** Filter indices to show major markets */
+function filterMajorIndices(indices: MarketIndex[]): MarketIndex[] {
+  const matchers = [
+    (n: string) => /TAIEX|加權/i.test(n),
+    (n: string) => /SPY/i.test(n),
+    (n: string) => /QQQ/i.test(n),
+    (n: string) => /SOX|費半|Semiconductor/i.test(n),
+  ];
 
-function IndexCard({ idx }: { idx: MarketIndex }) {
-  const isUp = idx.change >= 0;
+  const matched: MarketIndex[] = [];
+  for (const matcher of matchers) {
+    const found = indices.find(
+      (idx) => matcher(idx.name) || matcher(idx.symbol)
+    );
+    if (found && !matched.some((m) => m.symbol === found.symbol)) {
+      matched.push(found);
+    }
+  }
 
-  return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-md px-2.5 py-2 hover:bg-[var(--card-hover)] transition-colors duration-150">
-      <div className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider truncate mb-0.5">
-        {idx.name}
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <div className="text-sm font-bold text-[var(--foreground)] mono-nums leading-tight">
-          {idx.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-        </div>
-        <div className="text-right">
-          <div
-            className={`text-xs font-semibold mono-nums leading-tight ${
-              isUp
-                ? "text-[var(--stock-up)] glow-red"
-                : "text-[var(--stock-down)] glow-green"
-            }`}
-          >
-            {isUp ? "+" : ""}
-            {idx.change_percent.toFixed(2)}%
-          </div>
-          <div
-            className={`text-[10px] mono-nums leading-tight ${
-              isUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"
-            }`}
-          >
-            {isUp ? "+" : ""}
-            {idx.change.toFixed(2)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // If fewer than 4 matched, fill from remaining indices
+  if (matched.length < 4) {
+    for (const idx of indices) {
+      if (matched.length >= 4) break;
+      if (!matched.some((m) => m.symbol === idx.symbol)) {
+        matched.push(idx);
+      }
+    }
+  }
+
+  return matched.slice(0, 4);
 }
 
-// ── Index Ticker Grid ──────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Section: Index Panel (2x2 grid of major indices)
+// ---------------------------------------------------------------------------
 
-function IndexTickerGrid({ indices }: { indices: MarketIndex[] }) {
-  if (indices.length === 0) return null;
+function IndexPanel({ indices }: { indices: MarketIndex[] }) {
+  const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
+
+  if (majorIndices.length === 0) {
+    return (
+      <GlassPanel title="MARKET INDICES">
+        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+          No index data available
+        </div>
+      </GlassPanel>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
-      {indices.map((idx) => (
-        <IndexCard key={idx.symbol} idx={idx} />
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gap: 12,
+      }}
+    >
+      {majorIndices.map((idx) => (
+        <IndexCell key={idx.symbol} idx={idx} />
       ))}
     </div>
   );
 }
 
-// ── Mover Row ───────────────────────────────────────────────────
+function IndexCell({ idx }: { idx: MarketIndex }) {
+  const isUp = idx.change >= 0;
+  const color = isUp ? "var(--stock-up)" : "var(--stock-down)";
+  const trendData = useMemo(() => generateMockTrend(idx.value), [idx.value]);
+  const gradientId = `idx-grad-${idx.symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
 
-function MoverRow({ mover, rank }: { mover: MarketMover; rank: number }) {
-  const isUp = mover.change >= 0;
+  return (
+    <GlassPanel>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          color: "#9CA3AF",
+          letterSpacing: "0.04em",
+          marginBottom: 4,
+        }}
+      >
+        {idx.name}
+      </div>
+      <div
+        style={{
+          fontSize: 24,
+          fontWeight: 700,
+          color: "var(--foreground)",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1.2,
+        }}
+      >
+        {idx.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color,
+          marginBottom: 8,
+        }}
+      >
+        {isUp ? "\u25B2" : "\u25BC"}{" "}
+        {isUp ? "+" : ""}
+        {idx.change_percent.toFixed(2)}%
+      </div>
+      <div style={{ height: 100 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={trendData}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="v"
+              stroke={isUp ? "#10B981" : "#EF4444"}
+              strokeWidth={1.5}
+              fill={`url(#${gradientId})`}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </GlassPanel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section: Watchlist Panel
+// ---------------------------------------------------------------------------
+
+function WatchlistPanel() {
+  const { items } = useWatchlist();
+
+  return (
+    <GlassPanel
+      title="WATCHLIST"
+      icon={
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      }
+    >
+      {items.length === 0 ? (
+        <div
+          style={{
+            color: "var(--text-secondary)",
+            fontSize: 13,
+            textAlign: "center",
+            padding: "32px 0",
+          }}
+        >
+          No stocks tracked
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {items.map((item) => (
+            <WatchlistRow key={item.symbol} item={item} />
+          ))}
+        </div>
+      )}
+    </GlassPanel>
+  );
+}
+
+function WatchlistRow({
+  item,
+}: {
+  item: { symbol: string; name: string };
+}) {
+  // Generate mock sparkline data for watchlist items
+  const sparkData = useMemo(() => {
+    const base = 100;
+    const data: number[] = [];
+    let v = base;
+    for (let i = 0; i < 15; i++) {
+      v += (Math.random() - 0.48) * 3;
+      data.push(v);
+    }
+    return data;
+  }, []);
 
   return (
     <Link
-      href={`/stocks/${encodeURIComponent(mover.symbol)}`}
-      className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-[var(--card-hover)] rounded-md transition-colors duration-100 group"
+      href={`/stocks/${encodeURIComponent(item.symbol)}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "8px 4px",
+        borderRadius: 6,
+        textDecoration: "none",
+        color: "inherit",
+        transition: "background 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.background =
+          "rgba(255,255,255,0.04)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+      }}
     >
-      <span className="text-[var(--text-muted)] text-[10px] mono-nums w-4 shrink-0">
-        {rank}
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[var(--foreground)] font-semibold text-xs group-hover:text-[var(--accent-blue)] transition-colors">
-            {mover.symbol.replace(".TW", "").replace(".TWO", "")}
-          </span>
-          <span className="text-[var(--text-muted)] text-[10px] truncate">
-            {mover.name}
-          </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontWeight: 700,
+            fontSize: 13,
+            color: "var(--foreground)",
+          }}
+        >
+          {item.symbol}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#9CA3AF",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.name}
         </div>
       </div>
-      <div className="text-right shrink-0 flex items-center gap-2">
-        <span className="text-[var(--foreground)] text-xs mono-nums">
-          {mover.close.toFixed(2)}
-        </span>
-        <span
-          className={`text-[10px] font-semibold mono-nums min-w-[48px] text-right ${
-            isUp
-              ? "text-[var(--stock-up)] glow-red"
-              : "text-[var(--stock-down)] glow-green"
-          }`}
-        >
-          {isUp ? "+" : ""}
-          {mover.change_percent.toFixed(2)}%
-        </span>
-      </div>
+      <Sparkline data={sparkData} width={60} height={20} />
     </Link>
   );
 }
 
-// ── Movers Card ─────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Section: Market Movers
+// ---------------------------------------------------------------------------
 
-function MoversCard({
-  title,
+function MarketMoversPanel({
   movers,
 }: {
-  title: string;
-  movers: MarketMover[];
+  movers: { gainers: MarketMover[]; losers: MarketMover[]; most_active: MarketMover[] };
 }) {
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg overflow-hidden">
-      <div className="px-3 py-2 border-b border-[var(--border-subtle)]">
-        <h3 className="text-[var(--text-secondary)] font-medium text-xs uppercase tracking-wider">
-          {title}
-        </h3>
+    <GlassPanel title="MARKET MOVERS">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <MoverSection label="GAINERS" items={movers.gainers} />
+        <MoverSection label="LOSERS" items={movers.losers} />
+        <MoverSection label="MOST ACTIVE" items={movers.most_active} />
       </div>
-      <div className="p-1 space-y-0">
-        {movers.length === 0 ? (
-          <div className="px-2.5 py-3 text-center text-[var(--text-muted)] text-[10px]">
-            暫無資料
-          </div>
-        ) : (
-          movers
-            .slice(0, 10)
-            .map((m, i) => <MoverRow key={m.symbol} mover={m} rank={i + 1} />)
-        )}
+    </GlassPanel>
+  );
+}
+
+function MoverSection({
+  label,
+  items,
+}: {
+  label: string;
+  items: MarketMover[];
+}) {
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          color: "#9CA3AF",
+          letterSpacing: "0.04em",
+          marginBottom: 6,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          paddingBottom: 4,
+        }}
+      >
+        {label}
       </div>
+      {items.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#6B7280" }}>No data</div>
+      ) : (
+        items.slice(0, 5).map((m, i) => {
+          const isUp = m.change >= 0;
+          return (
+            <Link
+              key={m.symbol}
+              href={`/stocks/${encodeURIComponent(m.symbol)}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "4px 2px",
+                textDecoration: "none",
+                color: "inherit",
+                fontSize: 12,
+              }}
+            >
+              <span
+                style={{
+                  color: "#6B7280",
+                  fontVariantNumeric: "tabular-nums",
+                  width: 16,
+                  fontSize: 10,
+                }}
+              >
+                {i + 1}
+              </span>
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: "var(--foreground)",
+                  flex: 1,
+                }}
+              >
+                {m.symbol.replace(".TW", "").replace(".TWO", "")}
+              </span>
+              <span
+                style={{
+                  fontVariantNumeric: "tabular-nums",
+                  color: "var(--foreground)",
+                }}
+              >
+                {m.close.toFixed(2)}
+              </span>
+              <span
+                style={{
+                  fontVariantNumeric: "tabular-nums",
+                  fontWeight: 600,
+                  color: isUp ? "var(--stock-up)" : "var(--stock-down)",
+                  minWidth: 56,
+                  textAlign: "right",
+                }}
+              >
+                {isUp ? "+" : ""}
+                {m.change_percent.toFixed(2)}%
+              </span>
+            </Link>
+          );
+        })
+      )}
     </div>
   );
 }
 
-// ── Main Page ───────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Section: Sector Heatmap Wrapper
+// ---------------------------------------------------------------------------
+
+function SectorHeatmapPanel({
+  sectors,
+}: {
+  sectors: HeatmapSector[];
+}) {
+  const heatmapData = useMemo(
+    () =>
+      sectors.map((s) => ({
+        name: s.industry,
+        change: s.avg_change_percent,
+        marketCap: s.total_volume, // use volume as proxy for relative size
+      })),
+    [sectors]
+  );
+
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "-0.04em",
+          color: "var(--text-secondary)",
+          marginBottom: 12,
+        }}
+      >
+        SECTOR HEATMAP
+      </div>
+      {heatmapData.length === 0 ? (
+        <GlassPanel>
+          <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+            No sector data available
+          </div>
+        </GlassPanel>
+      ) : (
+        <SectorHeatmap data={heatmapData} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section: News Feed
+// ---------------------------------------------------------------------------
+
+function NewsFeedPanel() {
+  return (
+    <GlassPanel title="NEWS FEED">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {NEWS_ITEMS.map((item) => (
+          <div
+            key={item.id}
+            style={{
+              borderBottom: "1px solid rgba(255,255,255,0.04)",
+              paddingBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 4,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  color: "var(--accent-cyan, #00E5FF)",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {item.tag}
+              </span>
+              <span style={{ fontSize: 10, color: "#6B7280" }}>
+                {item.time}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--foreground)",
+                lineHeight: 1.4,
+              }}
+            >
+              {item.title}
+            </div>
+            <div style={{ fontSize: 10, color: "#6B7280", marginTop: 2 }}>
+              {item.source}
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassPanel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Dashboard
+// ---------------------------------------------------------------------------
 
 export default function HomePage() {
   const { t } = useI18n();
-  const [marketFilter, setMarketFilter] = useState<string>("all");
-
-  const m = t.market;
 
   const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
-  const filter = marketFilter === "all" ? undefined : marketFilter;
-  const { data: movers, isLoading: moversLoading } = useMarketMovers(filter);
-  const marketLoading = indicesLoading || moversLoading;
+  const { data: movers, isLoading: moversLoading } = useMarketMovers();
+  const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();
 
-  const marketTabs = [
-    { key: "all", label: m.allMarkets },
-    { key: "TW_TWSE", label: m.twse },
-    { key: "TW_TPEX", label: m.tpex },
-    { key: "US_NYSE", label: m.us },
-  ];
+  const isLoading = indicesLoading || moversLoading || heatmapLoading;
 
   return (
-    <div className="min-h-screen flex flex-col max-w-[1440px] mx-auto w-full px-2 md:px-3 py-2 animate-fade-in">
-      {/* 1. Status Bar */}
-      <StatusBar />
+    <>
+      <AmbientBackground />
 
-      {/* 2. Index Ticker Grid */}
-      <div className="mt-2">
-        {indicesLoading ? (
-          <LoadingSpinner size="sm" />
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 1440,
+          margin: "0 auto",
+          padding: "16px 16px",
+        }}
+        className="md:px-6"
+      >
+        {/* ── 1. KPI Row ─────────────────────────────────────── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 16,
+            marginBottom: 24,
+          }}
+          className="grid-cols-2 sm:grid-cols-4"
+        >
+          <KpiCard
+            label="Portfolio Value"
+            value="$2,847,350"
+            delta="+3.24%"
+            direction="up"
+          />
+          <KpiCard
+            label="Daily P&L"
+            value="+$48,720"
+            delta="+1.74%"
+            direction="up"
+          />
+          <KpiCard
+            label="Win Rate"
+            value="68.4%"
+            delta="+2.1%"
+            direction="up"
+          />
+          <KpiCard
+            label="Active Positions"
+            value="12"
+            delta="-2"
+            direction="down"
+          />
+        </div>
+
+        {/* ── 2. Main Grid (Index + Watchlist) ────────────────── */}
+        {isLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+            <LoadingSpinner size="lg" />
+          </div>
         ) : (
-          <IndexTickerGrid indices={indices} />
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 1fr",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              {/* Left: Index Panel */}
+              <IndexPanel indices={indices} />
+
+              {/* Right: Watchlist */}
+              <WatchlistPanel />
+            </div>
+
+            {/* ── 3. Bottom Grid (Heatmap + Movers + News) ────── */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 16,
+              }}
+            >
+              {/* Sector Heatmap */}
+              <SectorHeatmapPanel
+                sectors={heatmapData?.sectors ?? []}
+              />
+
+              {/* Market Movers */}
+              <MarketMoversPanel
+                movers={{
+                  gainers: movers?.gainers ?? [],
+                  losers: movers?.losers ?? [],
+                  most_active: movers?.most_active ?? [],
+                }}
+              />
+
+              {/* News Feed */}
+              <NewsFeedPanel />
+            </div>
+          </>
         )}
       </div>
-
-      {/* 3. Section Divider + Tabs Inline */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-0.5 h-4 bg-[var(--accent-blue)] rounded-full" />
-          <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-            {m.overview}
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <TabGroup
-            tabs={marketTabs}
-            active={marketFilter}
-            onChange={setMarketFilter}
-            size="sm"
-          />
-          {movers?.date && (
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">
-              {m.asOf} {movers.date}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* 4. Three-Column Mover Grid */}
-      {moversLoading ? (
-        <LoadingSpinner size="sm" />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <MoversCard title={m.gainers} movers={movers?.gainers ?? []} />
-          <MoversCard title={m.losers} movers={movers?.losers ?? []} />
-          <MoversCard title={m.mostActive} movers={movers?.most_active ?? []} />
-        </div>
-      )}
-
-      {/* 5. Quick Tools */}
-      <div className="border-t border-[var(--border-subtle)] pt-2 mt-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-          <span className="text-[var(--text-muted)] uppercase tracking-wider text-[10px] mr-1">
-            Quick
-          </span>
-          <Link
-            href="/screener"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.screener}
-          </Link>
-          <Link
-            href="/backtest"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.backtest}
-          </Link>
-          <Link
-            href="/low-base"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.lowBase}
-          </Link>
-          <Link
-            href="/heatmap"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.heatmap}
-          </Link>
-          <Link
-            href="/compare"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.compare}
-          </Link>
-          <Link
-            href="/watchlist"
-            className="text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
-          >
-            {t.nav.watchlist}
-          </Link>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
