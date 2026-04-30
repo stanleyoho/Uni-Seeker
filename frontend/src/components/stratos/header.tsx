@@ -129,7 +129,7 @@ export function StratosHeader() {
                 letterSpacing: "-0.04em",
               }}
             >
-              STRATOS
+              Uni-Seeker
             </span>
           </Link>
 
@@ -372,10 +372,12 @@ function TickerStrip() {
       }}
     >
       <div
-        className="flex items-center h-full whitespace-nowrap ticker-scroll group-hover:[animation-play-state:paused]"
+        className="flex items-center h-full whitespace-nowrap"
         style={{
-          animation: `ticker-scroll ${indices.length * 4}s linear infinite`,
+          animation: `ticker-scroll ${Math.max(indices.length * 4, 20)}s linear infinite`,
         }}
+        onMouseEnter={(e) => { e.currentTarget.style.animationPlayState = 'paused'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.animationPlayState = 'running'; }}
       >
         {items.map((item, i) => (
           <div key={`${item.symbol}-${i}`} className="flex items-center gap-2 px-4 shrink-0">
