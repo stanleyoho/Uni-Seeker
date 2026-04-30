@@ -13,6 +13,7 @@ import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { ErrorState } from "@/components/ui/empty-state";
 import { ScoreBar } from "@/components/ui/score-bar";
+import { GlassPanel } from "@/components/stratos/primitives";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { usePrices, useCompanyInfo, useMarginData, useRevenue } from "@/hooks/use-market-data";
 import { getErrorMessage } from "@/lib/type-guards";
@@ -28,9 +29,7 @@ const TIMEFRAMES = [
 function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any> }) {
   const s = t.stock;
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
-      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{s.margin}</h3>
-
+    <GlassPanel title={s.margin}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <StatCard label={s.marginBalance} value={margin.margin_balance.toLocaleString()} size="sm" />
         <StatCard label={s.shortBalance} value={margin.short_balance.toLocaleString()} size="sm" />
@@ -48,15 +47,15 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.marginBuy}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginSell}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginLimit}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.margin_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -70,20 +69,20 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.shortBuy}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortSell}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortLimit}</span>
-              <p className="text-[var(--foreground)] mono-nums mt-0.5">{margin.short_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -101,9 +100,7 @@ function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<stri
   };
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
-      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{t.stock?.revenue ?? "Revenue"}</h3>
-
+    <GlassPanel title={t.stock?.revenue ?? "Revenue"}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <StatCard label={t.stock?.latestRevenue ?? "Latest Revenue"} value={formatRevenue(revenue.latest_revenue)} size="sm" />
         <StatCard
@@ -149,7 +146,7 @@ function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<stri
                     style={{ height: `${height}%`, minHeight: "2px" }}
                     title={`${rec.period}: ${formatRevenue(rec.revenue)}`}
                   />
-                  <span className="text-[var(--text-muted)] text-[8px] mono-nums truncate w-full text-center">
+                  <span className="text-[var(--text-muted)] text-[8px] truncate w-full text-center" style={{ fontVariantNumeric: "tabular-nums" }}>
                     {rec.period.slice(-5)}
                   </span>
                 </div>
@@ -158,7 +155,7 @@ function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<stri
           </div>
         </div>
       )}
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -204,132 +201,210 @@ export default function StockDetailPage() {
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-[1440px] mx-auto animate-fade-in">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">{symbol}</h1>
-            <button
-              onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
-              className="transition-colors duration-200"
-              title={watchlist.has(symbol) ? (t.watchlist?.remove ?? "Remove") : (t.watchlist?.add ?? "Add")}
+      <GlassPanel className="mb-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">{symbol}</h1>
+              <button
+                onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
+                className="transition-colors duration-200"
+                title={watchlist.has(symbol) ? (t.watchlist?.remove ?? "Remove") : (t.watchlist?.add ?? "Add")}
+              >
+                <svg className="w-5 h-5" fill={watchlist.has(symbol) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                    className={watchlist.has(symbol) ? "text-yellow-400" : "text-[var(--text-muted)] hover:text-yellow-400"}
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Price line */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {latestPrice && (
+                <span
+                  className={`text-3xl font-bold ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {parseFloat(latestPrice.close).toLocaleString()}
+                </span>
+              )}
+              {latestPrice && <ChangeBadge change={change} changePct={changePct} />}
+              {companyInfo?.name && (
+                <span className="text-[var(--text-muted)] text-sm">{companyInfo.name}</span>
+              )}
+              {companyInfo?.industry && (
+                <Badge variant="blue">{companyInfo.industry}</Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation tabs */}
+          <div className="flex items-center gap-2">
+            <TabGroup tabs={tabs} active={activeTab} onChange={setActiveTab} size="sm" />
+            <Link
+              href={`/stocks/${encodeURIComponent(symbol)}/financials`}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
             >
-              <svg className="w-5 h-5" fill={watchlist.has(symbol) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                  className={watchlist.has(symbol) ? "text-yellow-400" : "text-[var(--text-muted)] hover:text-yellow-400"}
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Price line */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {latestPrice && (
-              <span className={`text-3xl font-bold mono-nums ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
-                {parseFloat(latestPrice.close).toLocaleString()}
-              </span>
-            )}
-            {latestPrice && <ChangeBadge change={change} changePct={changePct} />}
-            {companyInfo?.name && (
-              <span className="text-[var(--text-muted)] text-sm">{companyInfo.name}</span>
-            )}
-            {companyInfo?.industry && (
-              <Badge variant="blue">{companyInfo.industry}</Badge>
-            )}
+              {t.stock.financials}
+            </Link>
           </div>
         </div>
-
-        {/* Navigation tabs */}
-        <div className="flex items-center gap-2">
-          <TabGroup tabs={tabs} active={activeTab} onChange={setActiveTab} size="sm" />
-          <Link
-            href={`/stocks/${encodeURIComponent(symbol)}/financials`}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
-          >
-            {t.stock.financials}
-          </Link>
-        </div>
-      </div>
+      </GlassPanel>
 
       {prices.length > 0 ? (
-        <>
-          {/* Price stats grid */}
-          <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
-            <StatCard label={t.stock.open} value={parseFloat(latestPrice!.open).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.close} value={parseFloat(latestPrice!.close).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.high} value={parseFloat(latestPrice!.high).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.low} value={parseFloat(latestPrice!.low).toLocaleString()} size="sm" />
-            <StatCard
-              label={t.stock.volume}
-              value={latestPrice!.volume.toLocaleString()}
-              className="col-span-2 md:col-span-1"
-              size="sm"
-            />
+        <div className="grid grid-cols-12 gap-4">
+          {/* Price stats — full width */}
+          <div className="col-span-12">
+            <GlassPanel>
+              <h3 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                {t.stock.chart}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <StatCard label={t.stock.open} value={parseFloat(latestPrice!.open).toLocaleString()} size="sm" />
+                <StatCard label={t.stock.close} value={parseFloat(latestPrice!.close).toLocaleString()} size="sm" />
+                <StatCard label={t.stock.high} value={parseFloat(latestPrice!.high).toLocaleString()} size="sm" />
+                <StatCard label={t.stock.low} value={parseFloat(latestPrice!.low).toLocaleString()} size="sm" />
+                <StatCard
+                  label={t.stock.volume}
+                  value={latestPrice!.volume.toLocaleString()}
+                  className="col-span-2 md:col-span-1"
+                  size="sm"
+                />
+              </div>
+            </GlassPanel>
           </div>
 
-          {/* Chart tab */}
+          {/* Chart tab — 8 cols */}
           {activeTab === "chart" && (
-            <div className="bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg">
-              <div className="flex items-center justify-between px-3 pt-3">
-                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{t.stock.chart}</h3>
-                <TabGroup tabs={TIMEFRAMES} active={timeframe} onChange={setTimeframe} size="sm" />
+            <>
+              <div className="col-span-12 lg:col-span-8">
+                <GlassPanel noPadding>
+                  <div className="flex items-center justify-between px-4 pt-4">
+                    <h3 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                      {t.stock.chart}
+                    </h3>
+                    <TabGroup tabs={TIMEFRAMES} active={timeframe} onChange={setTimeframe} size="sm" />
+                  </div>
+                  <div className="p-4">
+                    <StockChart prices={prices} height={500} />
+                  </div>
+                </GlassPanel>
               </div>
-              <div className="p-3">
-                <StockChart prices={prices} height={500} />
+
+              {/* Company info — 4 cols */}
+              <div className="col-span-12 lg:col-span-4">
+                <GlassPanel title={t.stock?.companyInfo ?? "Company Info"}>
+                  <div className="space-y-3">
+                    {companyInfo?.name && (
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-medium">
+                          {t.stock?.name ?? "Name"}
+                        </span>
+                        <p className="text-[var(--foreground)] text-sm mt-0.5">{companyInfo.name}</p>
+                      </div>
+                    )}
+                    {companyInfo?.industry && (
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-medium">
+                          {t.stock?.industry ?? "Industry"}
+                        </span>
+                        <p className="text-[var(--foreground)] text-sm mt-0.5">{companyInfo.industry}</p>
+                      </div>
+                    )}
+                    {latestPrice?.market && (
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-medium">
+                          {t.stock?.market ?? "Market"}
+                        </span>
+                        <p className="text-[var(--foreground)] text-sm mt-0.5">{latestPrice.market}</p>
+                      </div>
+                    )}
+                    {latestPrice && (
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-medium">
+                          {t.stock?.change ?? "Change"}
+                        </span>
+                        <div className="mt-1">
+                          <ChangeBadge change={change} changePct={changePct} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </GlassPanel>
               </div>
+            </>
+          )}
+
+          {/* Indicators tab — full width */}
+          {activeTab === "indicators" && (
+            <div className="col-span-12">
+              <IndicatorPanel prices={prices} t={t} />
             </div>
           )}
 
-          {/* Indicators tab */}
-          {activeTab === "indicators" && (
-            <IndicatorPanel prices={prices} t={t} />
-          )}
-
-          {/* Margin tab */}
+          {/* Margin tab — full width */}
           {activeTab === "margin" && (
-            marginLoading ? (
-              <LoadingSpinner text={t.stock.loading} size="sm" />
-            ) : marginData ? (
-              <MarginPanel margin={marginData} t={t} />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
-              </div>
-            )
+            <div className="col-span-12">
+              {marginLoading ? (
+                <GlassPanel>
+                  <LoadingSpinner text={t.stock.loading} size="sm" />
+                </GlassPanel>
+              ) : marginData ? (
+                <MarginPanel margin={marginData} t={t} />
+              ) : (
+                <GlassPanel>
+                  <div className="text-center py-12">
+                    <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+                  </div>
+                </GlassPanel>
+              )}
+            </div>
           )}
 
-          {/* Revenue tab */}
+          {/* Revenue tab — full width */}
           {activeTab === "revenue" && (
-            revenueLoading ? (
-              <LoadingSpinner text={t.stock.loading} size="sm" />
-            ) : revenueData ? (
-              <RevenuePanel revenue={revenueData} t={t} />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
-              </div>
-            )
+            <div className="col-span-12">
+              {revenueLoading ? (
+                <GlassPanel>
+                  <LoadingSpinner text={t.stock.loading} size="sm" />
+                </GlassPanel>
+              ) : revenueData ? (
+                <RevenuePanel revenue={revenueData} t={t} />
+              ) : (
+                <GlassPanel>
+                  <div className="text-center py-12">
+                    <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+                  </div>
+                </GlassPanel>
+              )}
+            </div>
           )}
 
-          {/* Quick links */}
-          <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
-            <Link
-              href="/low-base"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-colors duration-150"
-            >
-              {t.lowBase?.viewDetail ?? "View Low-Base Score"}
-            </Link>
+          {/* Quick links — full width */}
+          <div className="col-span-12 mt-1">
+            <div className="flex flex-wrap gap-1.5 text-xs">
+              <Link
+                href="/low-base"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-colors duration-150"
+              >
+                {t.lowBase?.viewDetail ?? "View Low-Base Score"}
+              </Link>
+            </div>
           </div>
-        </>
-      ) : (
-        <div className="text-center py-16">
-          <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
         </div>
+      ) : (
+        <GlassPanel>
+          <div className="text-center py-16">
+            <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+          </div>
+        </GlassPanel>
       )}
     </div>
   );
