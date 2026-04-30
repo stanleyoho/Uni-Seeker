@@ -37,13 +37,18 @@ export default function LowBasePage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
+          <h1
+            className="text-lg font-bold tracking-tight"
+            style={{ color: "var(--foreground)" }}
+          >
             {lb.title}
           </h1>
-          <p className="text-[var(--text-secondary)] text-xs mt-0.5">{lb.subtitle}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+            {lb.subtitle}
+          </p>
         </div>
         <ClippedButton
           variant="red-solid"
@@ -55,9 +60,9 @@ export default function LowBasePage() {
         </ClippedButton>
       </div>
 
-      {/* KPI Cards */}
+      {/* Summary KPI cards */}
       {data && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <KpiCard
             label={lb.scanned}
             value={String(data.total_scanned)}
@@ -68,6 +73,18 @@ export default function LowBasePage() {
             label={lb.qualified}
             value={String(data.total_qualified)}
             delta="符合資格"
+            direction="flat"
+          />
+          <KpiCard
+            label="合格率"
+            value={data.total_scanned > 0 ? `${((data.total_qualified / data.total_scanned) * 100).toFixed(1)}%` : "-"}
+            delta="qualified / scanned"
+            direction="flat"
+          />
+          <KpiCard
+            label="平均分數"
+            value={data.results.length > 0 ? (data.results.reduce((s, r) => s + r.total_score, 0) / data.results.length).toFixed(1) : "-"}
+            delta="top results"
             direction="flat"
           />
         </div>
@@ -129,7 +146,7 @@ export default function LowBasePage() {
         </div>
       )}
 
-      {/* Desktop table */}
+      {/* Full-width dense desktop table */}
       {data && data.results.length > 0 && (
         <GlassPanel noPadding className="hidden md:block overflow-hidden">
           <table className="w-full text-xs">
@@ -140,25 +157,34 @@ export default function LowBasePage() {
                   background: "rgba(255,255,255,0.02)",
                 }}
               >
-                <th className="text-left px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
+                <th className="text-left px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-10">
                   {lb.rank}
                 </th>
                 <th className="text-left px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
                   {lb.stock}
                 </th>
-                <th className="text-center px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
+                <th className="text-center px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
                   {lb.score}
                 </th>
-                <th className="text-left px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-48">
+                <th className="text-center px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
+                  {lb.valuationScore}
+                </th>
+                <th className="text-center px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
+                  {lb.priceScore}
+                </th>
+                <th className="text-center px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
+                  {lb.qualityScore}
+                </th>
+                <th className="text-left px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-36">
                   {lb.details}
                 </th>
-                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
+                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
                   {lb.pePercentile}
                 </th>
-                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
+                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-16">
                   {lb.maDeviation}
                 </th>
-                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider">
+                <th className="text-right px-3 py-2 text-[var(--text-secondary)] font-semibold text-[10px] uppercase tracking-wider w-14">
                   {lb.peg}
                 </th>
               </tr>
@@ -177,7 +203,7 @@ export default function LowBasePage() {
                   }}
                 >
                   <td className="px-3 py-2">
-                    <span className="text-[var(--text-secondary)] mono-nums text-[10px]">
+                    <span className="text-[var(--text-muted)] mono-nums text-[10px]">
                       #{idx + 1}
                     </span>
                   </td>
@@ -200,7 +226,22 @@ export default function LowBasePage() {
                       {row.total_score}
                     </span>
                   </td>
-                  <td className="px-3 py-2 w-48">
+                  <td className="px-3 py-2 text-center">
+                    <span className="mono-nums text-[11px]" style={{ color: scoreColor(row.valuation_score) }}>
+                      {row.valuation_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="mono-nums text-[11px]" style={{ color: scoreColor(row.price_position_score) }}>
+                      {row.price_position_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="mono-nums text-[11px]" style={{ color: scoreColor(row.quality_score) }}>
+                      {row.quality_score}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 w-36">
                     <div className="space-y-0.5">
                       <ScoreBar label={lb.valuationScore} value={row.valuation_score} />
                       <ScoreBar label={lb.priceScore} value={row.price_position_score} />

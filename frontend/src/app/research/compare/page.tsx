@@ -25,8 +25,8 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
 
   if (loading) {
     return (
-      <GlassPanel className="min-w-0 md:min-w-[280px] w-full">
-        <div className="flex items-center justify-center py-8">
+      <GlassPanel className="flex-1 min-w-[240px]">
+        <div className="flex items-center justify-center py-6">
           <LoadingSpinner size="sm" />
         </div>
       </GlassPanel>
@@ -34,13 +34,13 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
   }
 
   return (
-    <GlassPanel className="min-w-0 md:min-w-[280px] w-full relative group">
+    <GlassPanel className="flex-1 min-w-[240px] relative group">
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="absolute top-3 right-3 text-[var(--text-secondary)] hover:text-red-400 transition-colors p-1 opacity-60 group-hover:opacity-100"
+        className="absolute top-2 right-2 text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
@@ -57,34 +57,51 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
           )}
         </div>
         {price && (
-          <span className="text-2xl font-bold text-[var(--foreground)] mono-nums">
+          <span className="text-xl font-bold text-[var(--foreground)] mono-nums">
             {parseFloat(price.close).toLocaleString()}
           </span>
         )}
       </div>
 
-      {/* Health Score */}
+      {/* Health Score - compact */}
       {score && (
-        <div className="mb-3 rounded-lg p-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
-          <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-1 font-semibold">
-            {t.financial?.healthScore ?? "Health Score"}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className={`text-xl font-bold mono-nums ${score.total_score > 70 ? "text-[var(--score-excellent)] glow-green" : score.total_score >= 40 ? "text-[var(--score-good)] glow-amber" : "text-[var(--score-poor)] glow-red"}`}>
-              {Math.round(score.total_score)}
+        <div
+          className="mb-3 p-2.5"
+          style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">
+              {t.financial?.healthScore ?? "Health"}
             </span>
-            <span className="text-[var(--text-secondary)] text-[10px] mono-nums">/ 100</span>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-lg font-bold mono-nums ${score.total_score > 70 ? "text-[var(--score-excellent)] glow-green" : score.total_score >= 40 ? "text-[var(--score-good)] glow-amber" : "text-[var(--score-poor)] glow-red"}`}>
+                {Math.round(score.total_score)}
+              </span>
+              <span className="text-[var(--text-muted)] text-[10px]">/ 100</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-1 mt-2 text-[10px]">
-            <div><span className="text-[var(--text-secondary)]">{t.financial?.profitability ?? "Profit"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.profitability_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-secondary)]">{t.financial?.efficiency ?? "Efficiency"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.efficiency_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-secondary)]">{t.financial?.leverage ?? "Leverage"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.leverage_score.toFixed(0)}</span></div>
-            <div><span className="text-[var(--text-secondary)]">{t.financial?.growth ?? "Growth"}</span> <span className="text-[var(--foreground)] mono-nums ml-0.5">{score.growth_score.toFixed(0)}</span></div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.profitability ?? "Profit"}</span>
+              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.profitability_score.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.efficiency ?? "Efficiency"}</span>
+              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.efficiency_score.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.leverage ?? "Leverage"}</span>
+              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.leverage_score.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.growth ?? "Growth"}</span>
+              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.growth_score.toFixed(0)}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Key Ratios - table with hover rows */}
+      {/* Key Ratios - dense rows */}
       {ratios && (
         <div className="space-y-0">
           {[
@@ -96,12 +113,12 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
           ].map((item) => (
             <div
               key={item.label}
-              className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-[var(--bg-secondary)] transition-colors text-[11px]"
+              className="flex items-center justify-between px-1.5 py-1 text-[11px] transition-colors hover:bg-[var(--card-hover)]"
             >
-              <span className="text-[var(--text-secondary)]">{item.label}</span>
+              <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
               <span className={`mono-nums font-medium ${
-                item.value != null && item.value > 0 ? "text-[var(--stock-down)] glow-green" :
-                item.value != null && item.value < 0 ? "text-[var(--stock-up)] glow-red" : "text-[var(--foreground)]"
+                item.value != null && item.value > 0 ? "text-[var(--stock-down)]" :
+                item.value != null && item.value < 0 ? "text-[var(--stock-up)]" : "text-[var(--foreground)]"
               }`}>
                 {item.value != null ? (item.isPct ? `${(item.value * 100).toFixed(1)}%` : item.value.toFixed(2)) : "-"}
               </span>
@@ -150,36 +167,49 @@ export default function ComparePage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      {/* Page header */}
-      <div className="mb-5">
-        <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] tracking-tight">
-          {cmp?.title ?? "Stock Comparison"}
-        </h1>
-        <p className="text-[var(--text-secondary)] text-xs mt-1">
-          {cmp?.subtitle ?? "Compare up to 5 stocks side by side"}
-        </p>
-      </div>
-
-      {/* Add stock input */}
-      <div className="relative mb-5 max-w-md">
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && input.trim()) {
-                addSymbol(input);
-              }
-            }}
-            placeholder={cmp?.addPlaceholder ?? "Add stock (e.g. 2330.TW, AAPL)"}
-            className="flex-1 px-3 py-2 text-xs text-[var(--foreground)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
-            style={{
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--border-color)",
-              borderRadius: 0,
-            }}
-          />
+      {/* Top: search input + selected tags inline */}
+      <div className="relative mb-4">
+        <div className="flex gap-2 items-center flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && input.trim()) {
+                  addSymbol(input);
+                }
+              }}
+              placeholder={cmp?.addPlaceholder ?? "Add stock (e.g. 2330.TW, AAPL)"}
+              className="w-full px-3 py-2 text-xs text-[var(--foreground)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+              style={{
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 0,
+              }}
+            />
+            {/* Suggestions dropdown */}
+            {suggestions.length > 0 && (
+              <div
+                className="absolute top-full left-0 right-0 mt-1 shadow-xl z-30 overflow-hidden"
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                }}
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s.symbol}
+                    onClick={() => addSymbol(s.symbol)}
+                    className="w-full px-3 py-1.5 text-left text-xs hover:bg-[var(--card-hover)] transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-[var(--foreground)] mono-nums font-semibold">{s.symbol}</span>
+                    <span className="text-[var(--text-secondary)]">{s.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <ClippedButton
             variant="red-solid"
             size="sm"
@@ -188,54 +218,37 @@ export default function ComparePage() {
           >
             {cmp?.add ?? "加入"}
           </ClippedButton>
-        </div>
 
-        {/* Suggestions dropdown */}
-        {suggestions.length > 0 && (
-          <div
-            className="absolute top-full left-0 right-0 mt-1 shadow-xl z-30 overflow-hidden"
-            style={{
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--border-color)",
-            }}
-          >
-            {suggestions.map((s) => (
+          {/* Selected symbols as inline tags */}
+          {symbols.map((s) => (
+            <span
+              key={s}
+              className="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold mono-nums"
+              style={{
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
+                color: "var(--foreground)",
+              }}
+            >
+              {s}
               <button
-                key={s.symbol}
-                onClick={() => addSymbol(s.symbol)}
-                className="w-full px-3 py-2 text-left text-xs hover:bg-[var(--glass-bg)] transition-colors flex items-center gap-2"
+                onClick={() => removeSymbol(s)}
+                className="hover:text-red-400 ml-0.5 text-[var(--text-muted)]"
               >
-                <span className="text-[var(--foreground)] mono-nums font-semibold">{s.symbol}</span>
-                <span className="text-[var(--text-secondary)]">{s.name}</span>
+                x
               </button>
-            ))}
-          </div>
-        )}
+            </span>
+          ))}
 
-        {/* Selected symbols tags */}
-        {symbols.length > 0 && (
-          <div className="flex gap-2 mt-2 flex-wrap">
-            {symbols.map((s) => (
-              <span
-                key={s}
-                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold mono-nums"
-                style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  color: "var(--foreground)",
-                }}
-              >
-                {s}
-                <button onClick={() => removeSymbol(s)} className="hover:text-red-400 ml-0.5 text-[var(--text-secondary)]">
-                  x
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
+          {symbols.length > 0 && (
+            <span className="text-[10px] text-[var(--text-muted)]">
+              {symbols.length}/5
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Comparison cards grid */}
+      {/* Horizontal card grid */}
       {symbols.length === 0 ? (
         <GlassPanel>
           <EmptyState
@@ -244,12 +257,7 @@ export default function ComparePage() {
           />
         </GlassPanel>
       ) : (
-        <div
-          className="grid gap-4 pb-4"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          }}
-        >
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {symbols.map((sym) => (
             <CompareStock key={sym} symbol={sym} onRemove={() => removeSymbol(sym)} />
           ))}
