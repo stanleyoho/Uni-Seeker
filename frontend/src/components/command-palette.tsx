@@ -52,7 +52,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       setResults(data);
       setSelectedIndex(-1);
       setLoading(false);
-    }, 200);
+    }, 300);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

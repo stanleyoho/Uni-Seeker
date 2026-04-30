@@ -18,6 +18,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   compact?: boolean;
+  isLoading?: boolean;
 }
 
 export function DataTable<T>({
@@ -27,6 +28,7 @@ export function DataTable<T>({
   onRowClick,
   emptyMessage = "No data",
   compact = false,
+  isLoading = false,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -42,7 +44,7 @@ export function DataTable<T>({
 
   const cellPadding = compact ? "px-3 py-2" : "px-4 py-3";
 
-  if (data.length === 0) {
+  if (!isLoading && data.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--text-muted)]">{emptyMessage}</p>
@@ -58,10 +60,14 @@ export function DataTable<T>({
             {columns.map((col) => (
               <th
                 key={col.key}
+                role="columnheader"
+                aria-sort={col.sortable ? (sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : "none") : undefined}
+                tabIndex={col.sortable ? 0 : undefined}
                 className={`${cellPadding} text-${col.align || "left"} ${col.width || ""} ${
                   col.sortable ? "cursor-pointer select-none hover:text-white transition-colors" : ""
                 }`}
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
+                onKeyDown={col.sortable ? (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSort(col.key); } } : undefined}
               >
                 <span className="inline-flex items-center gap-1">
                   {col.header}
@@ -80,9 +86,19 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {data.map((row, idx) => (
+          {isLoading && Array.from({ length: 5 }).map((_, i) => (
+            <tr key={`skeleton-${i}`} className="border-t border-[var(--border-subtle)]">
+              {columns.map((_, j) => (
+                <td key={j} className="py-2 px-3">
+                  <div className="h-3 bg-[var(--bg-secondary)] rounded animate-pulse w-3/4" />
+                </td>
+              ))}
+            </tr>
+          ))}
+          {!isLoading && data.map((row, idx) => (
             <tr
               key={rowKey(row)}
+              role="row"
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={`border-b border-[var(--border-subtle)] hover:bg-[var(--card-active)]/40 transition-colors duration-150 ${
                 idx % 2 === 1 ? "bg-[var(--background)]/30" : ""

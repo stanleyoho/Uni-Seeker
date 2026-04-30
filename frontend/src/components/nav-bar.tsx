@@ -28,6 +28,8 @@ export function NavBar() {
   ];
 
   const moreLinks = [
+    { href: "/scanner", label: t.nav.scanner },
+    { href: "/portfolio", label: t.nav.portfolio },
     { href: "/compare", label: t.nav.compare },
     { href: "/low-base", label: t.nav.lowBase },
     { href: "/institutional", label: t.nav.institutional },
@@ -57,7 +59,7 @@ export function NavBar() {
 
   return (
     <>
-      <nav className="nav-border-gradient bg-[var(--background)]/95 backdrop-blur-xl sticky top-0 z-50">
+      <nav aria-label="Main navigation" className="nav-border-gradient bg-[var(--background)]/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 h-12">
           {/* Logo - text only, Glint style */}
           <Link
@@ -73,6 +75,7 @@ export function NavBar() {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={isActive(link.href) ? "page" : undefined}
                 className={`relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200 ${
                   isActive(link.href)
                     ? "text-white"
@@ -106,6 +109,7 @@ export function NavBar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMoreOpen(false)}
+                      aria-current={isActive(link.href) ? "page" : undefined}
                       className={`block px-4 py-2.5 text-[13px] transition-colors duration-150 ${
                         isActive(link.href)
                           ? "text-white bg-[var(--card-hover)]"
@@ -182,6 +186,7 @@ export function NavBar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
+                  aria-current={isActive(link.href) ? "page" : undefined}
                   className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
                     isActive(link.href)
                       ? "text-white bg-[var(--card-hover)]"

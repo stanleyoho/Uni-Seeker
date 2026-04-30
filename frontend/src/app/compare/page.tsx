@@ -20,14 +20,14 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
 
   if (loading) {
     return (
-      <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-3 min-w-[260px]">
+      <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-3 min-w-0 md:min-w-[260px] w-full md:w-auto">
         <LoadingSpinner size="sm" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-3 min-w-[260px] relative hover:bg-[var(--card-hover)] transition-colors duration-150">
+    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-3 min-w-0 md:min-w-[260px] w-full md:w-auto relative hover:bg-[var(--card-hover)] transition-colors duration-150">
       <button
         onClick={onRemove}
         className="absolute top-2 right-2 text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5"
@@ -201,7 +201,7 @@ export default function ComparePage() {
           message={cmp?.emptyMessage ?? "Enter stock symbols above to compare financial metrics side by side"}
         />
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-3">
+        <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto pb-3">
           {symbols.map((sym) => (
             <CompareStock key={sym} symbol={sym} onRemove={() => removeSymbol(sym)} />
           ))}

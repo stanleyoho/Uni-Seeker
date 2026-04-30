@@ -13,6 +13,8 @@
     "heatmap": "熱力圖",
     "lowBase": "低基期",
     "institutional": "三大法人",
+    "scanner": "訊號掃描",
+    "portfolio": "組合回測",
     "language": "語言"
   },
   "search": {
@@ -238,6 +240,52 @@
     "shares": "股數",
     "reason": "原因",
     "noResults": "尚無回測結果",
-    "insufficientData": "資料不足，請先回補歷史股價"
+    "insufficientData": "資料不足，請先回補歷史股價",
+    "builderTab": "策略建構",
+    "queueTab": "回測佇列",
+    "resultsTab": "回測結果",
+    "historyTab": "歷史紀錄",
+    "singleMode": "單一策略",
+    "compositeMode": "複合策略",
+    "gridSearchOn": "Grid Search ON",
+    "gridSearchOff": "Grid Search OFF",
+    "stopLoss": "停損",
+    "takeProfit": "停利",
+    "addToQueue": "加入佇列",
+    "runNow": "立即執行",
+    "paramSettings": "參數設定",
+    "riskControl": "風險控制",
+    "capitalConfig": "資金配置"
+  },
+  "portfolio": {
+    "title": "組合回測",
+    "addStock": "新增標的",
+    "equalWeight": "均分權重",
+    "weight": "權重",
+    "strategy": "策略",
+    "rebalanceMode": "再平衡模式",
+    "noRebalance": "不再平衡",
+    "periodic": "定期",
+    "threshold": "偏離",
+    "periodDays": "再平衡週期 (天)",
+    "thresholdPct": "偏離閾值 (%)",
+    "runPortfolio": "執行組合回測",
+    "noResults": "尚無回測結果"
+  },
+  "scanner": {
+    "title": "訊號掃描",
+    "subtitle": "掃描全市場股票的技術指標訊號",
+    "selectStrategy": "策略選擇",
+    "selectAll": "不勾選則使用全部",
+    "startScan": "開始掃描",
+    "noScan": "尚未執行掃描",
+    "noScanHint": "選擇策略後點擊「開始掃描」，分析全市場技術指標訊號",
+    "totalScanned": "掃描股票數",
+    "strongBuy": "強力買進",
+    "buy": "買進",
+    "hold": "持有",
+    "sell": "賣出",
+    "strongSell": "強力賣出",
+    "backtest": "回測"
   }
 }

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-type BadgeVariant = "default" | "up" | "down" | "flat" | "blue" | "score-excellent" | "score-good" | "score-poor";
+type BadgeVariant = "default" | "up" | "down" | "flat" | "blue" | "neutral" | "warning" | "score-excellent" | "score-good" | "score-poor";
 
 const variantClasses: Record<BadgeVariant, string> = {
   default: "text-[var(--text-secondary)] bg-[var(--card-hover)] border-[var(--border-color)]",
@@ -8,6 +8,8 @@ const variantClasses: Record<BadgeVariant, string> = {
   down: "text-[var(--stock-down)] bg-[var(--stock-down-bg)] border-[var(--stock-down)]/20 glow-green",
   flat: "text-[var(--stock-flat)] bg-[var(--bg-secondary)] border-[var(--border-color)]",
   blue: "text-[var(--accent-blue)] bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/20 glow-blue",
+  neutral: "text-gray-300 bg-gray-500/10 border-gray-500/20",
+  warning: "text-amber-400 bg-amber-500/10 border-amber-500/20 glow-amber",
   "score-excellent": "text-[var(--score-excellent)] bg-[var(--score-excellent)]/10 border-[var(--score-excellent)]/20 glow-green",
   "score-good": "text-[var(--score-good)] bg-[var(--score-good)]/10 border-[var(--score-good)]/20 glow-amber",
   "score-poor": "text-[var(--score-poor)] bg-[var(--score-poor)]/10 border-[var(--score-poor)]/20 glow-red",

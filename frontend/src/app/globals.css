@@ -15,6 +15,8 @@
   --accent-blue-glow: rgba(59, 130, 246, 0.2);
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
+  /* Stock colors follow Taiwan convention: red = up (漲), green = down (跌)
+     This is opposite to US convention. May need locale-aware toggle in future. */
   --stock-up: #ef4444;
   --stock-up-bg: rgba(239, 68, 68, 0.1);
   --stock-down: #22c55e;
@@ -24,6 +26,19 @@
   --score-good: #eab308;
   --score-poor: #ef4444;
   --amber: #f59e0b;
+
+  /* Typography scale */
+  --font-xs: 0.625rem;    /* 10px */
+  --font-sm: 0.75rem;     /* 12px */
+  --font-base: 0.875rem;  /* 14px */
+  --font-lg: 1.125rem;    /* 18px */
+  --font-xl: 1.5rem;      /* 24px */
+  --font-2xl: 2rem;       /* 32px */
+
+  /* Page spacing */
+  --page-padding: 0.75rem;
+  --page-padding-md: 1rem;
+  --page-max-width: 80rem;
 }
 
 @theme inline {
