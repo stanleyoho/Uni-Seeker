@@ -1,3 +1,4 @@
+from app.modules.indicators.bias import BiasIndicator
 from app.modules.indicators.bollinger import BollingerBandsIndicator
 from app.modules.indicators.kd import KDIndicator
 from app.modules.indicators.macd import MACDIndicator
@@ -11,6 +12,7 @@ from app.modules.indicators.price_volume import PriceVolumeIndicator
 
 def create_default_registry() -> IndicatorRegistry:
     registry = IndicatorRegistry()
+    registry.register(BiasIndicator())
     registry.register(RSIIndicator())
     registry.register(MACDIndicator())
     registry.register(KDIndicator())
