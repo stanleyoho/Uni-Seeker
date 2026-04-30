@@ -6,9 +6,8 @@ import { useInstitutional } from "@/hooks/use-market-data";
 import { type InstitutionalData } from "@/lib/api-client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
-import { DataTable, type Column } from "@/components/ui/data-table";
 import { getErrorMessage } from "@/lib/type-guards";
-import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
+import { GlassPanel, ClippedButton, KpiCard } from "@/components/stratos/primitives";
 
 /** Format a number with thousands separators and +/- sign. */
 function formatNet(v: number): string {
@@ -32,6 +31,13 @@ function defaultRange(): { start: string; end: string } {
   start.setDate(end.getDate() - 30);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   return { start: fmt(start), end: fmt(end) };
+}
+
+/** Determine KPI direction from a numeric value. */
+function kpiDirection(v: number): "up" | "down" | "flat" {
+  if (v > 0) return "up";
+  if (v < 0) return "down";
+  return "flat";
 }
 
 export default function InstitutionalPage() {
@@ -61,63 +67,22 @@ export default function InstitutionalPage() {
     if (e.key === "Enter") handleSearch();
   };
 
-  // ----- Table columns -----
-  const columns: Column<InstitutionalData>[] = useMemo(
-    () => [
-      {
-        key: "date",
-        header: ins.date,
-        width: "w-24",
-        render: (row) => (
-          <span className="text-[var(--text-secondary)] mono-nums text-xs">{row.date}</span>
-        ),
-      },
-      {
-        key: "foreign_net",
-        header: `${ins.foreign} ${ins.netBuy}`,
-        align: "right" as const,
-        render: (row) => (
-          <span className={`mono-nums text-xs font-medium ${netColor(row.foreign_net)}`}>
-            {formatNet(row.foreign_net)}
-          </span>
-        ),
-      },
-      {
-        key: "trust_net",
-        header: `${ins.trust} ${ins.netBuy}`,
-        align: "right" as const,
-        render: (row) => (
-          <span className={`mono-nums text-xs font-medium ${netColor(row.trust_net)}`}>
-            {formatNet(row.trust_net)}
-          </span>
-        ),
-      },
-      {
-        key: "dealer_net",
-        header: `${ins.dealer} ${ins.netBuy}`,
-        align: "right" as const,
-        render: (row) => (
-          <span className={`mono-nums text-xs font-medium ${netColor(row.dealer_net)}`}>
-            {formatNet(row.dealer_net)}
-          </span>
-        ),
-      },
-      {
-        key: "total_net",
-        header: ins.total,
-        align: "right" as const,
-        render: (row) => (
-          <span className={`mono-nums text-xs font-bold ${netColor(row.total_net)}`}>
-            {formatNet(row.total_net)}
-          </span>
-        ),
-      },
-    ],
-    [ins],
-  );
+  // ----- Aggregate KPI totals -----
+  const totals = useMemo(() => {
+    if (!data || data.length === 0) return null;
+    return data.reduce(
+      (acc, row) => ({
+        foreign: acc.foreign + row.foreign_net,
+        trust: acc.trust + row.trust_net,
+        dealer: acc.dealer + row.dealer_net,
+        total: acc.total + row.total_net,
+      }),
+      { foreign: 0, trust: 0, dealer: 0, total: 0 },
+    );
+  }, [data]);
 
   const inputStyle: React.CSSProperties = {
-    background: "var(--glass-bg)",
+    background: "var(--bg-secondary)",
     border: "1px solid var(--border-color)",
     color: "var(--foreground)",
     outline: "none",
@@ -182,6 +147,36 @@ export default function InstitutionalPage() {
         </div>
       </GlassPanel>
 
+      {/* KPI Summary Cards */}
+      {totals && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <KpiCard
+            label={`${ins.foreign}${ins.netBuy}`}
+            value={formatNet(totals.foreign)}
+            delta={formatNet(totals.foreign)}
+            direction={kpiDirection(totals.foreign)}
+          />
+          <KpiCard
+            label={`${ins.trust}${ins.netBuy}`}
+            value={formatNet(totals.trust)}
+            delta={formatNet(totals.trust)}
+            direction={kpiDirection(totals.trust)}
+          />
+          <KpiCard
+            label={`${ins.dealer}${ins.netBuy}`}
+            value={formatNet(totals.dealer)}
+            delta={formatNet(totals.dealer)}
+            direction={kpiDirection(totals.dealer)}
+          />
+          <KpiCard
+            label={ins.total}
+            value={formatNet(totals.total)}
+            delta={formatNet(totals.total)}
+            direction={kpiDirection(totals.total)}
+          />
+        </div>
+      )}
+
       {/* Loading */}
       {isLoading && <LoadingSpinner text={ins.loading} size="sm" />}
 
@@ -207,7 +202,9 @@ export default function InstitutionalPage() {
         <div className="md:hidden space-y-2">
           {data.map((row) => (
             <GlassPanel key={row.date}>
-              <div className="text-[var(--text-secondary)] text-xs mono-nums mb-2">{row.date}</div>
+              <div className="text-[var(--text-secondary)] text-xs mono-nums mb-2 font-semibold">
+                {row.date}
+              </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                 <span className="text-[var(--text-muted)]">{ins.foreign}</span>
                 <span className={`mono-nums text-right font-medium ${netColor(row.foreign_net)}`}>
@@ -234,7 +231,67 @@ export default function InstitutionalPage() {
       {/* Desktop table */}
       {data && data.length > 0 && (
         <GlassPanel className="hidden md:block" noPadding>
-          <DataTable columns={columns} data={data} rowKey={(row) => row.date} compact />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr
+                  style={{ background: "var(--bg-secondary)" }}
+                >
+                  <th className="sticky top-0 text-left px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.date}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.foreign} {ins.buy}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.foreign} {ins.sell}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.foreign} {ins.netBuy}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.trust} {ins.netBuy}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.dealer} {ins.netBuy}
+                  </th>
+                  <th className="sticky top-0 text-right px-4 py-2 text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-semibold" style={{ background: "var(--bg-secondary)" }}>
+                    {ins.total}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row) => (
+                  <tr
+                    key={row.date}
+                    className="border-t border-[var(--border-color)] transition-colors duration-150 hover:bg-[var(--card-hover)]"
+                  >
+                    <td className="px-4 py-2 text-[13px] tabular-nums text-[var(--text-secondary)]">
+                      {row.date}
+                    </td>
+                    <td className="px-4 py-2 text-[13px] tabular-nums text-right text-[var(--text-secondary)]">
+                      {row.foreign_buy.toLocaleString("en-US")}
+                    </td>
+                    <td className="px-4 py-2 text-[13px] tabular-nums text-right text-[var(--text-secondary)]">
+                      {row.foreign_sell.toLocaleString("en-US")}
+                    </td>
+                    <td className={`px-4 py-2 text-[13px] tabular-nums text-right font-medium ${netColor(row.foreign_net)}`}>
+                      {formatNet(row.foreign_net)}
+                    </td>
+                    <td className={`px-4 py-2 text-[13px] tabular-nums text-right font-medium ${netColor(row.trust_net)}`}>
+                      {formatNet(row.trust_net)}
+                    </td>
+                    <td className={`px-4 py-2 text-[13px] tabular-nums text-right font-medium ${netColor(row.dealer_net)}`}>
+                      {formatNet(row.dealer_net)}
+                    </td>
+                    <td className={`px-4 py-2 text-[13px] tabular-nums text-right font-bold ${netColor(row.total_net)}`}>
+                      {formatNet(row.total_net)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </GlassPanel>
       )}
     </div>
