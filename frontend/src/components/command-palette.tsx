@@ -116,15 +116,29 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 backdrop-blur-[8px]"
+        style={{ background: "rgba(0,0,0,0.7)" }}
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-lg mx-4 bg-[#0a0a0b] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-black/80 overflow-hidden animate-slide-down">
+      <div
+        className="relative w-full max-w-lg mx-4 border rounded-xl overflow-hidden animate-slide-down"
+        style={{
+          background: "var(--glass-bg)",
+          borderColor: "var(--border-color)",
+          boxShadow: "var(--glass-shadow)",
+        }}
+      >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-color)]">
+        <div
+          className="flex items-center gap-3 px-4 py-3"
+          style={{
+            background: "var(--bg-secondary)",
+            borderBottom: "1px solid var(--border-color)",
+          }}
+        >
           <svg
             className="w-4 h-4 text-[var(--text-muted)] shrink-0"
             fill="none"
@@ -146,7 +160,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t.search.placeholder}
-            className="flex-1 bg-transparent text-white text-sm placeholder-[var(--text-muted)] outline-none mono-nums"
+            className="flex-1 bg-transparent text-[var(--foreground)] text-sm placeholder-[var(--text-muted)] outline-none mono-nums"
             autoComplete="off"
             spellCheck={false}
           />
@@ -186,9 +200,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   ? "bg-[var(--card-active)]"
                   : "hover:bg-[var(--card-hover)]"
               }`}
+              style={
+                index === selectedIndex
+                  ? { borderLeft: "2px solid var(--accent-primary)" }
+                  : undefined
+              }
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-white font-semibold text-xs mono-nums bg-[var(--card-active)] px-1.5 py-0.5 rounded shrink-0">
+                <span className="text-[var(--foreground)] font-semibold text-xs mono-nums bg-[var(--card-active)] px-1.5 py-0.5 rounded shrink-0">
                   {stock.symbol.replace(".TW", "").replace(".TWO", "")}
                 </span>
                 <span className="text-[var(--text-secondary)] text-xs truncate">
