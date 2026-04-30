@@ -20,6 +20,7 @@ from app.api.v1.backtest_jobs import router as backtest_jobs_router
 from app.api.v1.portfolio import router as portfolio_router
 from app.api.v1.scanner import router as scanner_router
 from app.api.v1.sync import router as sync_router
+from app.api.v1.ws import router as ws_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -42,3 +43,4 @@ v1_router.include_router(sync_router)
 v1_router.include_router(backtest_jobs_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
+v1_router.include_router(ws_router)

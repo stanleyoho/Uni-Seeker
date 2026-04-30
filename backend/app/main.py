@@ -83,6 +83,13 @@ def create_app() -> FastAPI:
             status["services"]["redis"] = "error"
             status["status"] = "degraded"
 
+        # Check WebSocket
+        from app.services.websocket_manager import ws_manager
+
+        status["services"]["websocket"] = {
+            "connections": ws_manager.connection_count,
+        }
+
         return status
 
     return app
