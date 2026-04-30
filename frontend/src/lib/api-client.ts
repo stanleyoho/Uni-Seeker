@@ -1,5 +1,84 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+// ---------------------------------------------------------------------------
+// API Error class
+// ---------------------------------------------------------------------------
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auth helper
+// ---------------------------------------------------------------------------
+
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("auth_token");
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+// ---------------------------------------------------------------------------
+// Core fetch wrapper with timeout + retry + auth injection
+// ---------------------------------------------------------------------------
+
+const API_TIMEOUT = 10000; // 10 seconds
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+        ...options?.headers,
+      },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        body.message || body.detail || `Request failed: ${res.status}`,
+        res.status,
+        body.error,
+      );
+    }
+
+    // Handle 204 No Content or empty responses
+    const text = await res.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("Request timeout", 408, "TIMEOUT");
+    }
+    throw new ApiError(
+      err instanceof Error ? err.message : "Network error",
+      0,
+      "NETWORK_ERROR",
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Interfaces
+// ---------------------------------------------------------------------------
+
 export interface StockPrice {
   symbol: string;
   market: string;
@@ -24,47 +103,12 @@ export interface IndicatorResponse {
   values: Record<string, (number | null)[]>;
 }
 
-export async function fetchPrices(symbol: string, limit = 30): Promise<PriceListResponse> {
-  const res = await fetch(`${API_BASE}/prices/${symbol}?limit=${limit}`);
-  if (!res.ok) throw new Error(`Failed to fetch prices: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchIndicator(
-  symbol: string,
-  indicator: string,
-  params: Record<string, unknown> = {},
-): Promise<IndicatorResponse> {
-  const res = await fetch(`${API_BASE}/indicators/calculate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ symbol, indicator, params }),
-  });
-  if (!res.ok) throw new Error(`Failed to calculate indicator: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchIndicatorList(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/indicators/`);
-  if (!res.ok) throw new Error(`Failed to fetch indicators: ${res.status}`);
-  const data = await res.json();
-  return data.indicators;
-}
-
 // --- Stock Search ---
 
 export interface StockSearchResult {
   symbol: string;
   name: string;
   market: string;
-}
-
-export async function searchStocks(query: string, limit = 10): Promise<StockSearchResult[]> {
-  if (!query.trim()) return [];
-  const res = await fetch(`${API_BASE}/stocks/search?q=${encodeURIComponent(query)}&limit=${limit}`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.results;
 }
 
 // --- Screener ---
@@ -86,21 +130,6 @@ export interface ScreenResponse {
   total: number;
 }
 
-export async function screenStocks(
-  conditions: ScreenCondition[],
-  operator = "AND",
-  sortBy?: string,
-  limit = 50,
-): Promise<ScreenResponse> {
-  const res = await fetch(`${API_BASE}/screener/screen`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ conditions, operator, sort_by: sortBy, limit }),
-  });
-  if (!res.ok) throw new Error(`Screen failed: ${res.status}`);
-  return res.json();
-}
-
 // --- Notifications ---
 
 export interface NotificationRule {
@@ -110,30 +139,6 @@ export interface NotificationRule {
   symbol: string;
   conditions: Record<string, unknown>;
   is_active: boolean;
-}
-
-export async function fetchNotificationRules(): Promise<NotificationRule[]> {
-  const res = await fetch(`${API_BASE}/notifications/rules`);
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  const data = await res.json();
-  return data.rules;
-}
-
-export async function createNotificationRule(
-  rule: { name: string; rule_type: string; symbol: string; conditions: Record<string, unknown> },
-): Promise<NotificationRule> {
-  const res = await fetch(`${API_BASE}/notifications/rules`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(rule),
-  });
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
-}
-
-export async function deleteNotificationRule(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/notifications/rules/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
 }
 
 // --- Financials ---
@@ -180,12 +185,6 @@ export interface FullAnalysis {
   health_scores: HealthScore[];
 }
 
-export async function fetchFinancialAnalysis(symbol: string): Promise<FullAnalysis> {
-  const res = await fetch(`${API_BASE}/financials/${symbol}`);
-  if (!res.ok) throw new Error(`Failed to fetch financials: ${res.status}`);
-  return res.json();
-}
-
 // --- Auth ---
 
 export interface AuthUser {
@@ -195,42 +194,6 @@ export interface AuthUser {
   tier: string;
 }
 
-export async function register(email: string, password: string, username: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, username }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "Registration failed");
-  }
-  const data = await res.json();
-  return data.access_token;
-}
-
-export async function login(email: string, password: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "Login failed");
-  }
-  const data = await res.json();
-  return data.access_token;
-}
-
-export async function fetchMe(token: string): Promise<AuthUser> {
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Not authenticated");
-  return res.json();
-}
-
 // --- Company Info ---
 
 export interface CompanyInfo {
@@ -238,12 +201,6 @@ export interface CompanyInfo {
   name: string;
   market: string;
   industry: string;
-}
-
-export async function fetchCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
-  const res = await fetch(`${API_BASE}/company/${encodeURIComponent(symbol)}`);
-  if (!res.ok) return null;
-  return res.json();
 }
 
 // --- Margin Trading ---
@@ -263,12 +220,6 @@ export interface MarginData {
   short_usage_pct: number;
   offset: number;
   margin_short_ratio: number;
-}
-
-export async function fetchMarginData(symbol: string): Promise<MarginData | null> {
-  const res = await fetch(`${API_BASE}/margin/${encodeURIComponent(symbol)}`);
-  if (!res.ok) return null;
-  return res.json();
 }
 
 // --- Market Overview ---
@@ -298,22 +249,6 @@ export interface MarketMoversResponse {
   date: string | null;
 }
 
-export async function fetchMarketIndices(): Promise<MarketIndex[]> {
-  const res = await fetch(`${API_BASE}/market/indices`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.indices;
-}
-
-export async function fetchMarketMovers(marketFilter?: string, limit = 10): Promise<MarketMoversResponse> {
-  const params = new URLSearchParams();
-  if (marketFilter) params.set("market_filter", marketFilter);
-  params.set("limit", String(limit));
-  const res = await fetch(`${API_BASE}/market/movers?${params}`);
-  if (!res.ok) return { gainers: [], losers: [], most_active: [], date: null };
-  return res.json();
-}
-
 // --- Revenue ---
 
 export interface RevenueRecord {
@@ -332,12 +267,6 @@ export interface RevenueAnalysis {
   trend: string;
   consecutive_growth_quarters: number;
   records: RevenueRecord[];
-}
-
-export async function fetchRevenueAnalysis(symbol: string): Promise<RevenueAnalysis | null> {
-  const res = await fetch(`${API_BASE}/revenue/${encodeURIComponent(symbol)}`);
-  if (!res.ok) return null;
-  return res.json();
 }
 
 // --- Heatmap ---
@@ -363,14 +292,6 @@ export interface HeatmapResponse {
   date: string | null;
 }
 
-export async function fetchHeatmapData(marketFilter?: string): Promise<HeatmapResponse> {
-  const params = new URLSearchParams();
-  if (marketFilter) params.set("market_filter", marketFilter);
-  const res = await fetch(`${API_BASE}/heatmap/sectors?${params}`);
-  if (!res.ok) return { sectors: [], date: null };
-  return res.json();
-}
-
 // --- Low Base ---
 
 export interface LowBaseScore {
@@ -392,18 +313,6 @@ export interface LowBaseRanking {
   total_qualified: number;
 }
 
-export async function fetchLowBaseRanking(limit = 20): Promise<LowBaseRanking> {
-  const res = await fetch(`${API_BASE}/low-base/scan?limit=${limit}`);
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchLowBaseScore(symbol: string): Promise<LowBaseScore> {
-  const res = await fetch(`${API_BASE}/low-base/${symbol}`);
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
-}
-
 // --- Institutional Investors ---
 
 export interface InstitutionalData {
@@ -423,23 +332,6 @@ export interface InstitutionalData {
 export interface InstitutionalResponse {
   symbol: string;
   data: InstitutionalData[];
-}
-
-export async function fetchInstitutional(
-  symbol: string,
-  startDate: string,
-  endDate: string,
-): Promise<InstitutionalData[]> {
-  const params = new URLSearchParams({
-    start_date: startDate,
-    end_date: endDate,
-  });
-  const res = await fetch(
-    `${API_BASE}/institutional/${encodeURIComponent(symbol)}?${params}`,
-  );
-  if (!res.ok) throw new Error(`Failed to fetch institutional data: ${res.status}`);
-  const json: InstitutionalResponse = await res.json();
-  return json.data;
 }
 
 // --- Backtest ---
@@ -476,10 +368,318 @@ export interface BacktestResult {
   trades: TradeRecord[];
 }
 
+// --- Job Queue ---
+
+export interface JobEnqueueRequest {
+  symbol: string;
+  job_type?: string;
+  strategy?: string;
+  strategies?: string[];
+  mode?: string;
+  params?: Record<string, unknown>;
+  param_grid?: Record<string, unknown[]>;
+  initial_capital?: number;
+  position_size?: number;
+  stop_loss?: number | null;
+  take_profit?: number | null;
+}
+
+export interface JobStatus {
+  id: number;
+  symbol: string;
+  job_type: string;
+  status: string;
+  progress_pct: number;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  error_message?: string;
+}
+
+export interface QueueStatus {
+  jobs: JobStatus[];
+  running_count: number;
+  pending_count: number;
+}
+
+export interface TradeLogEntry {
+  date: string;
+  action: string;
+  price: number;
+  shares: number;
+  reason: string;
+}
+
+export interface BacktestHistoryItem {
+  id: number;
+  job_id: number;
+  symbol: string;
+  strategy_name: string;
+  strategy_params: Record<string, unknown>;
+  total_return: number;
+  annualized_return: number;
+  max_drawdown: number;
+  sharpe_ratio: number;
+  win_rate: number;
+  total_trades: number;
+  profit_factor: number;
+  trade_log: TradeLogEntry[] | null;
+  created_at: string;
+}
+
+export interface BacktestHistoryResponse {
+  results: BacktestHistoryItem[];
+  total: number;
+}
+
+export interface JobResultResponse {
+  job: JobStatus;
+  results: BacktestHistoryItem[];
+}
+
+// --- Portfolio ---
+
+export interface PortfolioAllocationInput {
+  symbol: string;
+  weight: number;
+  strategy: string;
+  params?: Record<string, unknown>;
+}
+
+export interface PortfolioBacktestRequest {
+  allocations: PortfolioAllocationInput[];
+  rebalance_mode?: string;
+  rebalance_config?: Record<string, unknown>;
+  initial_capital?: number;
+}
+
+export interface PortfolioBacktestResponse {
+  portfolio_metrics: Record<string, number>;
+  individual_metrics: Record<string, Record<string, number>>;
+  portfolio_equity_curve: number[];
+  individual_equity_curves: Record<string, number[]>;
+  trade_log: Record<string, unknown>[];
+  rebalance_log: Record<string, unknown>[];
+  allocations: PortfolioAllocationInput[];
+}
+
+// --- Scanner ---
+
+export interface SignalDetail {
+  strategy: string;
+  action: string;
+  strength: number;
+  reason: string;
+}
+
+export interface ApiStockSignal {
+  symbol: string;
+  name: string;
+  composite_action: string;
+  score: number;
+  signals: SignalDetail[];
+}
+
+export interface ScanResponse {
+  results: ApiStockSignal[];
+  scan_date: string;
+  total_scanned: number;
+  strategies_used: string[];
+}
+
+// ---------------------------------------------------------------------------
+// API functions (all using apiFetch)
+// ---------------------------------------------------------------------------
+
+export async function fetchPrices(symbol: string, limit = 30): Promise<PriceListResponse> {
+  return apiFetch<PriceListResponse>(`${API_BASE}/prices/${symbol}?limit=${limit}`);
+}
+
+export async function fetchIndicator(
+  symbol: string,
+  indicator: string,
+  params: Record<string, unknown> = {},
+): Promise<IndicatorResponse> {
+  return apiFetch<IndicatorResponse>(`${API_BASE}/indicators/calculate`, {
+    method: "POST",
+    body: JSON.stringify({ symbol, indicator, params }),
+  });
+}
+
+export async function fetchIndicatorList(): Promise<string[]> {
+  const data = await apiFetch<{ indicators: string[] }>(`${API_BASE}/indicators/`);
+  return data.indicators;
+}
+
+export async function searchStocks(query: string, limit = 10): Promise<StockSearchResult[]> {
+  if (!query.trim()) return [];
+  try {
+    const data = await apiFetch<{ results: StockSearchResult[] }>(
+      `${API_BASE}/stocks/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+    );
+    return data.results;
+  } catch {
+    return [];
+  }
+}
+
+export async function screenStocks(
+  conditions: ScreenCondition[],
+  operator = "AND",
+  sortBy?: string,
+  limit = 50,
+): Promise<ScreenResponse> {
+  return apiFetch<ScreenResponse>(`${API_BASE}/screener/screen`, {
+    method: "POST",
+    body: JSON.stringify({ conditions, operator, sort_by: sortBy, limit }),
+  });
+}
+
+// --- Notifications ---
+
+export async function fetchNotificationRules(): Promise<NotificationRule[]> {
+  const data = await apiFetch<{ rules: NotificationRule[] }>(`${API_BASE}/notifications/rules`);
+  return data.rules;
+}
+
+export async function createNotificationRule(
+  rule: { name: string; rule_type: string; symbol: string; conditions: Record<string, unknown> },
+): Promise<NotificationRule> {
+  return apiFetch<NotificationRule>(`${API_BASE}/notifications/rules`, {
+    method: "POST",
+    body: JSON.stringify(rule),
+  });
+}
+
+export async function deleteNotificationRule(id: number): Promise<void> {
+  await apiFetch<void>(`${API_BASE}/notifications/rules/${id}`, { method: "DELETE" });
+}
+
+// --- Financials ---
+
+export async function fetchFinancialAnalysis(symbol: string): Promise<FullAnalysis> {
+  return apiFetch<FullAnalysis>(`${API_BASE}/financials/${symbol}`);
+}
+
+// --- Auth ---
+
+export async function register(email: string, password: string, username: string): Promise<string> {
+  const data = await apiFetch<{ access_token: string }>(`${API_BASE}/auth/register`, {
+    method: "POST",
+    body: JSON.stringify({ email, password, username }),
+  });
+  return data.access_token;
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const data = await apiFetch<{ access_token: string }>(`${API_BASE}/auth/login`, {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return data.access_token;
+}
+
+export async function fetchMe(token: string): Promise<AuthUser> {
+  return apiFetch<AuthUser>(`${API_BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// --- Company Info ---
+
+export async function fetchCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
+  try {
+    return await apiFetch<CompanyInfo>(`${API_BASE}/company/${encodeURIComponent(symbol)}`);
+  } catch {
+    return null;
+  }
+}
+
+// --- Margin Trading ---
+
+export async function fetchMarginData(symbol: string): Promise<MarginData | null> {
+  try {
+    return await apiFetch<MarginData>(`${API_BASE}/margin/${encodeURIComponent(symbol)}`);
+  } catch {
+    return null;
+  }
+}
+
+// --- Market Overview ---
+
+export async function fetchMarketIndices(): Promise<MarketIndex[]> {
+  try {
+    const data = await apiFetch<{ indices: MarketIndex[] }>(`${API_BASE}/market/indices`);
+    return data.indices;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchMarketMovers(marketFilter?: string, limit = 10): Promise<MarketMoversResponse> {
+  const params = new URLSearchParams();
+  if (marketFilter) params.set("market_filter", marketFilter);
+  params.set("limit", String(limit));
+  try {
+    return await apiFetch<MarketMoversResponse>(`${API_BASE}/market/movers?${params}`);
+  } catch {
+    return { gainers: [], losers: [], most_active: [], date: null };
+  }
+}
+
+// --- Revenue ---
+
+export async function fetchRevenueAnalysis(symbol: string): Promise<RevenueAnalysis | null> {
+  try {
+    return await apiFetch<RevenueAnalysis>(`${API_BASE}/revenue/${encodeURIComponent(symbol)}`);
+  } catch {
+    return null;
+  }
+}
+
+// --- Heatmap ---
+
+export async function fetchHeatmapData(marketFilter?: string): Promise<HeatmapResponse> {
+  const params = new URLSearchParams();
+  if (marketFilter) params.set("market_filter", marketFilter);
+  try {
+    return await apiFetch<HeatmapResponse>(`${API_BASE}/heatmap/sectors?${params}`);
+  } catch {
+    return { sectors: [], date: null };
+  }
+}
+
+// --- Low Base ---
+
+export async function fetchLowBaseRanking(limit = 20): Promise<LowBaseRanking> {
+  return apiFetch<LowBaseRanking>(`${API_BASE}/low-base/scan?limit=${limit}`);
+}
+
+export async function fetchLowBaseScore(symbol: string): Promise<LowBaseScore> {
+  return apiFetch<LowBaseScore>(`${API_BASE}/low-base/${symbol}`);
+}
+
+// --- Institutional Investors ---
+
+export async function fetchInstitutional(
+  symbol: string,
+  startDate: string,
+  endDate: string,
+): Promise<InstitutionalData[]> {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  });
+  const json = await apiFetch<InstitutionalResponse>(
+    `${API_BASE}/institutional/${encodeURIComponent(symbol)}?${params}`,
+  );
+  return json.data;
+}
+
+// --- Backtest ---
+
 export async function fetchStrategies(): Promise<StrategyInfo[]> {
-  const res = await fetch(`${API_BASE}/strategies/`);
-  if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  const data = await res.json();
+  const data = await apiFetch<{ strategies: StrategyInfo[] }>(`${API_BASE}/strategies/`);
   return data.strategies;
 }
 
@@ -489,15 +689,78 @@ export async function runBacktest(params: {
   params?: Record<string, unknown>;
   initial_capital?: number;
   position_size?: number;
+  stop_loss?: number | null;
+  take_profit?: number | null;
 }): Promise<BacktestResult> {
-  const res = await fetch(`${API_BASE}/backtest/run`, {
+  return apiFetch<BacktestResult>(`${API_BASE}/backtest/run`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
-    throw new Error(err.detail || `Backtest failed: ${res.status}`);
-  }
-  return res.json();
+}
+
+// --- Job Queue ---
+
+export async function enqueueBacktestJob(req: JobEnqueueRequest): Promise<JobStatus> {
+  return apiFetch<JobStatus>(`${API_BASE}/backtest/jobs`, {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
+}
+
+export async function fetchQueueStatus(): Promise<QueueStatus> {
+  return apiFetch<QueueStatus>(`${API_BASE}/backtest/jobs`);
+}
+
+export async function fetchJobResult(jobId: number): Promise<JobResultResponse> {
+  return apiFetch<JobResultResponse>(`${API_BASE}/backtest/jobs/${jobId}`);
+}
+
+export async function cancelJob(jobId: number): Promise<void> {
+  await apiFetch<void>(`${API_BASE}/backtest/jobs/${jobId}`, { method: "DELETE" });
+}
+
+export async function fetchBacktestHistory(
+  symbol?: string,
+  limit?: number,
+  offset?: number,
+): Promise<BacktestHistoryResponse> {
+  const params = new URLSearchParams();
+  if (symbol) params.set("symbol", symbol);
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (offset !== undefined) params.set("offset", String(offset));
+  return apiFetch<BacktestHistoryResponse>(`${API_BASE}/backtest/history?${params}`);
+}
+
+export async function fetchBestStrategies(symbol: string): Promise<BacktestHistoryResponse> {
+  return apiFetch<BacktestHistoryResponse>(
+    `${API_BASE}/backtest/history/${encodeURIComponent(symbol)}/best`,
+  );
+}
+
+// --- Portfolio ---
+
+export async function runPortfolioBacktest(
+  req: PortfolioBacktestRequest,
+): Promise<PortfolioBacktestResponse> {
+  return apiFetch<PortfolioBacktestResponse>(`${API_BASE}/portfolio/backtest`, {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
+}
+
+// --- Scanner ---
+
+export async function runSignalScan(req?: {
+  symbols?: string[];
+  strategy_keys?: string[];
+  limit?: number;
+}): Promise<ScanResponse> {
+  return apiFetch<ScanResponse>(`${API_BASE}/scanner/scan`, {
+    method: "POST",
+    body: JSON.stringify(req ?? {}),
+  });
+}
+
+export async function fetchStockSignals(symbol: string): Promise<ApiStockSignal> {
+  return apiFetch<ApiStockSignal>(`${API_BASE}/scanner/${encodeURIComponent(symbol)}`);
 }
