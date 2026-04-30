@@ -33,6 +33,9 @@ class BacktestResultRecord(Base):
     sharpe_ratio: Mapped[float] = mapped_column(Float, default=0.0)
     win_rate: Mapped[float] = mapped_column(Float, default=0.0)
 
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now(),
     )

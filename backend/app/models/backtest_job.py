@@ -37,6 +37,9 @@ class BacktestJob(Base):
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None,
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now(),
     )

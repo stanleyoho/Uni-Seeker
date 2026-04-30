@@ -149,6 +149,7 @@ class BacktestJobQueue:
         """Return completed backtest results, optionally filtered by symbol."""
         stmt = (
             select(BacktestResultRecord)
+            .where(BacktestResultRecord.deleted_at.is_(None))
             .order_by(BacktestResultRecord.total_return.desc())
             .limit(limit)
             .offset(offset)

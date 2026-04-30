@@ -34,6 +34,11 @@ class NotificationRule(Base):
     conditions: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     condition_logic: Mapped[str] = mapped_column(String(10), default="AND")
     channels: Mapped[str] = mapped_column(String(200), default='["telegram"]')
+    backtest_result_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="SET NULL"),
+        default=None,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
@@ -43,6 +48,11 @@ class NotificationRule(Base):
         init=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+
+
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None,
     )
 
 
