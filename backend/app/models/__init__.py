@@ -2,6 +2,8 @@ from app.models.base import Base
 from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
 from app.models.enums import Market, NotificationStatus, UserTier
+from app.models.financial_metrics import FinancialMetrics
+from app.models.financial_statement import FinancialStatement
 from app.models.industry import Industry
 from app.models.margin import MarginTrading
 from app.models.notification import NotificationLog, NotificationRule
@@ -18,6 +20,8 @@ __all__ = [
     "BacktestJob",
     "BacktestResultRecord",
     "Base",
+    "FinancialMetrics",
+    "FinancialStatement",
     "Industry",
     "Market",
     "MarginTrading",

@@ -159,7 +159,7 @@ class PriceSyncTask(SyncTask):
                 error_message=None,
             )
             sync_stmt = sync_stmt.on_conflict_do_update(
-                constraint="uq_sync_state",
+                constraint="uq_sync_state_with_stock",
                 set_={
                     "last_synced_date": max_date,
                     "last_run_at": now,

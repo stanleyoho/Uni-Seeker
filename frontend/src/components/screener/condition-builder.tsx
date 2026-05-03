@@ -45,20 +45,20 @@ export function ConditionBuilder({
     onChange(updated);
   };
 
-  const selectClass =
-    "px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent-blue)] transition-all duration-200";
+  const inputClass =
+    "px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs font-bold focus:outline-none focus:border-[var(--accent-cyan)] transition-all";
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-[var(--text-muted)]">Logic:</span>
-        <div className="flex bg-[var(--bg-secondary)] p-0.5 rounded-lg">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Logic Flow</span>
+        <div className="flex bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-0.5">
           <button
             type="button"
             onClick={() => onLogicChange("AND")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-1 text-[10px] font-bold transition-all ${
               logicOperator === "AND"
-                ? "bg-[var(--accent-blue)] text-white shadow-sm"
+                ? "bg-[var(--accent-primary)] text-white"
                 : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -67,9 +67,9 @@ export function ConditionBuilder({
           <button
             type="button"
             onClick={() => onLogicChange("OR")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-1 text-[10px] font-bold transition-all ${
               logicOperator === "OR"
-                ? "bg-[var(--accent-blue)] text-white shadow-sm"
+                ? "bg-[var(--accent-primary)] text-white"
                 : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -78,49 +78,59 @@ export function ConditionBuilder({
         </div>
       </div>
 
-      {conditions.map((cond, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-2 flex-wrap p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] animate-fade-in"
-        >
-          <select value={cond.indicator} onChange={(e) => updateCondition(i, "indicator", e.target.value)} className={selectClass}>
-            {indicators.map((ind) => (
-              <option key={ind} value={ind}>{ind}</option>
-            ))}
-          </select>
-
-          <select value={cond.op} onChange={(e) => updateCondition(i, "op", e.target.value)} className={`${selectClass} font-mono`}>
-            {OPERATORS.map((op) => (
-              <option key={op} value={op}>{op}</option>
-            ))}
-          </select>
-
-          <input
-            type="number"
-            value={String(cond.value)}
-            onChange={(e) => updateCondition(i, "value", Number(e.target.value))}
-            className={`w-24 ${selectClass} font-mono`}
-            placeholder="Value"
-          />
-
-          <button
-            type="button"
-            onClick={() => removeCondition(i)}
-            className="text-[var(--text-muted)] hover:text-red-400 transition-all duration-200 text-sm px-2 py-1 rounded-lg hover:bg-red-500/10"
+      <div className="space-y-2">
+        {conditions.map((cond, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 flex-wrap p-3 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] animate-fade-in relative group"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-      ))}
+            <select 
+              value={cond.indicator} 
+              onChange={(e) => updateCondition(i, "indicator", e.target.value)} 
+              className={`${inputClass} flex-1 min-w-[120px]`}
+            >
+              {indicators.map((ind) => (
+                <option key={ind} value={ind}>{ind}</option>
+              ))}
+            </select>
+
+            <select 
+              value={cond.op} 
+              onChange={(e) => updateCondition(i, "op", e.target.value)} 
+              className={`${inputClass} w-16 font-mono`}
+            >
+              {OPERATORS.map((op) => (
+                <option key={op} value={op}>{op}</option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              value={String(cond.value)}
+              onChange={(e) => updateCondition(i, "value", Number(e.target.value))}
+              className={`w-24 ${inputClass} font-mono`}
+              placeholder="VALUE"
+            />
+
+            <button
+              type="button"
+              onClick={() => removeCondition(i)}
+              className="text-[var(--text-muted)] hover:text-red-500 transition-all p-1.5 bg-[var(--card-hover)] border border-[var(--border-subtle)]"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
 
       <button
         type="button"
         onClick={addCondition}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl hover:border-[var(--accent-blue)]/50 hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200 text-sm"
+        className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--accent-cyan)]/50 hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all text-[10px] font-bold uppercase tracking-widest"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
         Add Condition

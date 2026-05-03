@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Eye } from "lucide-react";
-import { GlassPanel } from "@/components/stratos/primitives";
+import { KpiCard, GlassPanel } from "@/components/stratos/primitives";
 import { Sparkline, SectorHeatmap } from "@/components/stratos/charts";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import {
@@ -133,6 +133,50 @@ function filterMajorIndices(indices: MarketIndex[]): MarketIndex[] {
   }
 
   return matched.slice(0, 4);
+}
+
+function IndexChartCell({ idx }: { idx: MarketIndex }) {
+  const value = parseFloat(idx.value);
+  const change = parseFloat(idx.change);
+  const changePercent = parseFloat(idx.change_percent);
+  const isUp = change >= 0;
+  const trendData = useMemo(() => generateMockTrend(value), [value]);
+  const gradientId = `idx-grad-${idx.symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
+
+  return (
+    <GlassPanel title={idx.name} className="h-[180px]">
+      <div className="flex items-end justify-between mb-2">
+        <div>
+          <div className="text-2xl font-bold tabular-nums text-[var(--foreground)]">
+            {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          </div>
+          <div className={`text-sm font-semibold ${isUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"}`}>
+            {isUp ? "+" : ""}{change.toFixed(2)} ({isUp ? "+" : ""}{changePercent.toFixed(2)}%)
+          </div>
+        </div>
+      </div>
+      <div className="h-[80px] -mx-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={trendData}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isUp ? "var(--stock-up)" : "var(--stock-down)"} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={isUp ? "var(--stock-up)" : "var(--stock-down)"} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area
+              type="monotone"
+              dataKey="v"
+              stroke={isUp ? "var(--stock-up)" : "var(--stock-down)"}
+              strokeWidth={2}
+              fill={`url(#${gradientId})`}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </GlassPanel>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -287,9 +331,11 @@ function IndexRow({ indices }: { indices: MarketIndex[] }) {
 }
 
 function IndexCell({ idx }: { idx: MarketIndex }) {
-  const isUp = idx.change >= 0;
+  const value = parseFloat(idx.value);
+  const changePercent = parseFloat(idx.change_percent);
+  const isUp = changePercent >= 0;
   const color = isUp ? "var(--stock-up)" : "var(--stock-down)";
-  const trendData = useMemo(() => generateMockTrend(idx.value), [idx.value]);
+  const trendData = useMemo(() => generateMockTrend(value), [value]);
   const gradientId = `idx-grad-${idx.symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
 
   return (
@@ -315,7 +361,7 @@ function IndexCell({ idx }: { idx: MarketIndex }) {
           lineHeight: 1.2,
         }}
       >
-        {idx.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+        {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
       </div>
       <div
         style={{
@@ -327,7 +373,7 @@ function IndexCell({ idx }: { idx: MarketIndex }) {
       >
         {isUp ? "\u25B2" : "\u25BC"}{" "}
         {isUp ? "+" : ""}
-        {idx.change_percent.toFixed(2)}%
+        {changePercent.toFixed(2)}%
       </div>
       <div style={{ height: 80 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -555,7 +601,9 @@ function MoverList({ items }: { items: MarketMover[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {items.slice(0, 10).map((m, i) => {
-        const isUp = m.change >= 0;
+        const close = parseFloat(m.close);
+        const changePercent = parseFloat(m.change_percent);
+        const isUp = changePercent >= 0;
         return (
           <Link
             key={m.symbol}
@@ -611,7 +659,7 @@ function MoverList({ items }: { items: MarketMover[] }) {
                 textAlign: "right",
               }}
             >
-              {m.close.toFixed(2)}
+              {close.toFixed(2)}
             </span>
             <span
               style={{
@@ -623,7 +671,7 @@ function MoverList({ items }: { items: MarketMover[] }) {
               }}
             >
               {isUp ? "+" : ""}
-              {m.change_percent.toFixed(2)}%
+              {changePercent.toFixed(2)}%
             </span>
           </Link>
         );
@@ -645,7 +693,7 @@ function SectorHeatmapPanel({
     () =>
       sectors.map((s) => ({
         name: s.industry,
-        change: s.avg_change_percent,
+        change: parseFloat(s.avg_change_percent),
         marketCap: s.total_volume,
       })),
     [sectors]
@@ -770,76 +818,78 @@ function NewsFeedPanel() {
 
 export default function HomePage() {
   const { t } = useI18n();
-
   const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
   const { data: movers, isLoading: moversLoading } = useMarketMovers();
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();
 
+  const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
   const isLoading = indicesLoading || moversLoading || heatmapLoading;
 
   return (
-    <>
+    <div className="flex-1 flex flex-col min-h-0">
       <AmbientBackground />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 1440,
-          margin: "0 auto",
-          padding: "12px 16px",
-        }}
-        className="md:px-6"
-      >
+      <main className="flex-1 relative z-10 max-w-[1440px] mx-auto w-full px-4 md:px-6 py-4 overflow-y-auto overflow-x-hidden">
         {/* -- 0. Market Status Bar -- */}
         <MarketStatusBar />
 
         {isLoading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+          <div className="flex items-center justify-center h-64">
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <>
-            {/* -- 1. Index Cards (full width, 2 cols mobile / 4 cols desktop) -- */}
-            <div style={{ marginBottom: 16 }}>
-              <IndexRow indices={indices} />
+          <div className="space-y-4">
+            {/* -- 1. Top KPI Row (Indices) -- */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {majorIndices.map((idx) => {
+                const val = parseFloat(idx.value);
+                const cp = parseFloat(idx.change_percent);
+                return (
+                  <KpiCard
+                    key={idx.symbol}
+                    label={idx.name}
+                    value={val.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    delta={`${cp >= 0 ? "+" : ""}${cp.toFixed(2)}%`}
+                    direction={cp > 0 ? "up" : cp < 0 ? "down" : "flat"}
+                  />
+                );
+              })}
             </div>
 
-            {/* -- 2. Watchlist (5col) + Market Movers (7col) -- */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "5fr 7fr",
-                gap: 16,
-                marginBottom: 16,
-              }}
-            >
-              <WatchlistPanel />
-              <MarketMoversPanel
-                movers={{
-                  gainers: movers?.gainers ?? [],
-                  losers: movers?.losers ?? [],
-                  most_active: movers?.most_active ?? [],
-                }}
-              />
+            {/* -- 2. Main Grid: Index Charts (8col) + Watchlist (4col) -- */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-8 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {majorIndices.slice(0, 2).map((idx) => (
+                    <IndexChartCell key={idx.symbol} idx={idx} />
+                  ))}
+                </div>
+                <SectorHeatmapPanel sectors={heatmapData?.sectors ?? []} />
+              </div>
+
+              <div className="lg:col-span-4 h-full">
+                <WatchlistPanel />
+              </div>
             </div>
 
-            {/* -- 3. Sector Heatmap (5col) + News Feed (7col) -- */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "5fr 7fr",
-                gap: 16,
-              }}
-            >
-              <SectorHeatmapPanel
-                sectors={heatmapData?.sectors ?? []}
-              />
-              <NewsFeedPanel />
+            {/* -- 3. Bottom Grid: Movers (6col) + News (6col) -- */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-8">
+              <div className="lg:col-span-6">
+                <MarketMoversPanel
+                  movers={{
+                    gainers: movers?.gainers ?? [],
+                    losers: movers?.losers ?? [],
+                    most_active: movers?.most_active ?? [],
+                  }}
+                />
+              </div>
+              <div className="lg:col-span-6">
+                <NewsFeedPanel />
+              </div>
             </div>
-          </>
+          </div>
         )}
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

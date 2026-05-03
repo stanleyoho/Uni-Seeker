@@ -6,9 +6,11 @@ import {
   runBacktest,
   fetchQueueStatus,
   fetchBacktestHistory,
+  fetchBacktestResult,
   enqueueBacktestJob,
   type StrategyInfo,
   type BacktestResult,
+  type BacktestHistoryItem,
   type QueueStatus,
   type BacktestHistoryResponse,
   type JobStatus,
@@ -71,6 +73,21 @@ export function useBacktestHistory(symbol?: string, limit: number = 50) {
 }
 
 /**
+ * Fetch a single backtest result by ID.
+ */
+export function useBacktestResult(id: number | null) {
+  return useQuery<BacktestHistoryItem | null>({
+    queryKey: id !== null ? queryKeys.backtest.result(id) : ["backtest", "result", "none"],
+    queryFn: async () => {
+      if (id === null) return null;
+      return fetchBacktestResult(id);
+    },
+    enabled: id !== null,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/**
  * Mutation for running a backtest immediately.
  */
 export function useRunBacktest() {
@@ -87,6 +104,8 @@ export function useRunBacktest() {
       position_size?: number;
       stop_loss?: number | null;
       take_profit?: number | null;
+      start_date?: string | null;
+      end_date?: string | null;
     }
   >({
     mutationFn: runBacktest,

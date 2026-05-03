@@ -367,15 +367,18 @@ function TickerStrip() {
         background: "var(--bg-secondary)",
         borderBottom: "1px solid var(--border-subtle)",
       }}>
-        {indices.map((item) => (
-          <div key={item.symbol} className="flex items-center gap-2">
-            <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>{item.name}</span>
-            <span className="text-[12px]" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            <span className="text-[12px] font-medium" style={{ color: item.change_percent >= 0 ? "var(--stock-up)" : "var(--stock-down)", fontVariantNumeric: "tabular-nums" }}>
-              {item.change_percent >= 0 ? "+" : ""}{item.change_percent.toFixed(2)}%
-            </span>
-          </div>
-        ))}
+        {indices.map((item) => {
+          const chg = Number(item.change_percent);
+          return (
+            <div key={item.symbol} className="flex items-center gap-2">
+              <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>{item.name}</span>
+              <span className="text-[12px]" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-[12px] font-medium" style={{ color: chg >= 0 ? "var(--stock-up)" : "var(--stock-down)", fontVariantNumeric: "tabular-nums" }}>
+                {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -399,27 +402,30 @@ function TickerStrip() {
         onMouseEnter={(e) => { e.currentTarget.style.animationPlayState = 'paused'; }}
         onMouseLeave={(e) => { e.currentTarget.style.animationPlayState = 'running'; }}
       >
-        {items.map((item, i) => (
-          <div key={`${item.symbol}-${i}`} className="flex items-center gap-2 px-4 shrink-0">
-            <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>
-              {item.name || item.symbol}
-            </span>
-            <span className="text-[12px] tabular-nums" style={{ color: "var(--foreground)" }}>
-              {item.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span
-              className="text-[12px] tabular-nums font-medium"
-              style={{
-                color: item.change_percent >= 0
-                  ? "var(--stock-up)"
-                  : "var(--stock-down)",
-              }}
-            >
-              {item.change_percent >= 0 ? "+" : ""}
-              {item.change_percent.toFixed(2)}%
-            </span>
-          </div>
-        ))}
+        {items.map((item, i) => {
+          const chg = Number(item.change_percent);
+          return (
+            <div key={`${item.symbol}-${i}`} className="flex items-center gap-2 px-4 shrink-0">
+              <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>
+                {item.name || item.symbol}
+              </span>
+              <span className="text-[12px] tabular-nums" style={{ color: "var(--foreground)" }}>
+                {Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span
+                className="text-[12px] tabular-nums font-medium"
+                style={{
+                  color: chg >= 0
+                    ? "var(--stock-up)"
+                    : "var(--stock-down)",
+                }}
+              >
+                {chg >= 0 ? "+" : ""}
+                {chg.toFixed(2)}%
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* CSS keyframe for marquee — injected inline */}

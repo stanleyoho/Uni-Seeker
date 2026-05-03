@@ -22,57 +22,48 @@ function changeColor(pct: number): string {
   return "bg-green-600/90";
 }
 
+import { AmbientBackground } from "@/components/stratos/ambient";
+
 function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (symbol: string) => void }) {
-  const isUp = sector.avg_change_percent >= 0;
-  const pctText = `${isUp ? "+" : ""}${sector.avg_change_percent.toFixed(2)}%`;
+  const avgChange = parseFloat(sector.avg_change_percent);
+  const isUp = avgChange >= 0;
+  const pctText = `${isUp ? "+" : ""}${avgChange.toFixed(2)}%`;
 
   return (
-    <div
-      className="rounded-lg border border-[var(--border-subtle)] overflow-hidden animate-shimmer"
-      aria-label={`${sector.industry}: ${sector.avg_change_percent.toFixed(2)}%`}
-      role="region"
+    <GlassPanel 
+      noPadding 
+      className="flex flex-col h-full border-t-2" 
+      style={{ borderTopColor: changeColor(avgChange) }}
     >
-      {/* Sector header */}
-      <div className={`px-2.5 py-1.5 ${changeColor(sector.avg_change_percent)}`}>
+      <div className="p-3 bg-gradient-to-b from-white/5 to-transparent">
         <div className="flex items-center justify-between">
-          <span className="text-[var(--foreground)] font-semibold text-xs truncate">{sector.industry}</span>
-          <span className={`text-[10px] font-bold mono-nums ${isUp ? "text-[var(--foreground)] glow-red" : "text-[var(--foreground)] glow-green"}`}>
+          <h3 className="text-sm font-bold text-[var(--foreground)] truncate pr-4">{sector.industry}</h3>
+          <span className="text-sm font-bold tabular-nums" style={{ color: isUp ? "var(--stock-up)" : "var(--stock-down)" }}>
             {pctText}
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[var(--foreground)]/60 text-[10px] mono-nums">{sector.stock_count} stocks</span>
-          <span className="text-[var(--foreground)] font-bold text-xs mono-nums drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            {pctText}
-          </span>
-        </div>
+        <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{sector.stock_count} STOCKS</p>
       </div>
 
-      {/* Top stocks */}
-      <div className="bg-[var(--card-bg)] p-1 space-y-0">
-        {sector.stocks.map((stock) => {
-          const sUp = stock.change_percent >= 0;
+      <div className="flex-1 p-2 space-y-1 bg-[var(--bg-secondary)]/30">
+        {sector.stocks.slice(0, 5).map((stock) => {
+          const sChange = parseFloat(stock.change_percent);
+          const sUp = sChange >= 0;
           return (
             <button
               key={stock.symbol}
               onClick={() => onClick(stock.symbol)}
-              aria-label={`${stock.name} (${stock.symbol}): ${stock.change_percent >= 0 ? "+" : ""}${stock.change_percent.toFixed(2)}%`}
-              className="w-full flex items-center justify-between px-2 py-1 rounded hover:bg-[var(--card-hover)] transition-colors duration-100 text-left"
+              className="w-full flex items-center justify-between px-2 py-1 hover:bg-[var(--card-hover)] transition-colors text-left"
             >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-[var(--foreground)] text-[10px] mono-nums font-semibold">
-                  {stock.symbol.replace(".TW", "").replace(".TWO", "")}
-                </span>
-                <span className="text-[var(--text-muted)] text-[10px] truncate">{stock.name}</span>
-              </div>
-              <span className={`text-[10px] mono-nums font-semibold shrink-0 ${sUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
-                {sUp ? "+" : ""}{stock.change_percent.toFixed(2)}%
+              <span className="text-[11px] font-bold text-[var(--foreground)] tabular-nums">{stock.symbol.split('.')[0]}</span>
+              <span className={`text-[11px] font-bold tabular-nums ${sUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"}`}>
+                {sUp ? "+" : ""}{sChange.toFixed(2)}%
               </span>
             </button>
           );
         })}
       </div>
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -86,70 +77,43 @@ export default function HeatmapPage() {
   const { data, isLoading: loading } = useHeatmap(filter);
 
   const marketTabs = [
-    { key: "TW_TWSE", label: t.market?.twse ?? "TWSE" },
-    { key: "TW_TPEX", label: t.market?.tpex ?? "TPEX" },
-    { key: "all", label: t.market?.allMarkets ?? "All" },
+    { key: "TW_TWSE", label: "TAIWAN SE (TWSE)" },
+    { key: "TW_TPEX", label: "TAIPEI EXCHANGE (TPEX)" },
+    { key: "all", label: "GLOBAL VIEW" },
   ];
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      <GlassPanel>
-        {/* Header row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+    <div className="flex-1 bg-[var(--background)]">
+      <AmbientBackground />
+      <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 border-b border-[var(--border-subtle)] pb-4 gap-4">
           <div>
-            <h1
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "-0.04em",
-                color: "var(--foreground)",
-              }}
-            >
-              {hm?.title ?? "產業熱力圖"}
+            <h1 className="text-3xl font-bold tracking-tighter text-[var(--foreground)] uppercase">
+              {hm?.title ?? "Market Heatmap"}
             </h1>
-            <p className="text-[var(--text-muted)] text-xs mt-0.5">
-              {hm?.subtitle ?? "Sector performance overview"}
+            <p className="text-xs font-bold text-[var(--text-muted)] tracking-widest mt-1 uppercase">
+              {hm?.subtitle ?? "Sector Performance Terminal"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <TabGroup tabs={marketTabs} active={marketFilter} onChange={setMarketFilter} size="sm" />
-            {data?.date && (
-              <span className="text-[10px] text-[var(--text-muted)] mono-nums">{data.date}</span>
-            )}
+          <div className="flex bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-1">
+            {marketTabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setMarketFilter(tab.key)}
+                className={`px-4 py-1 text-[10px] font-bold transition-all ${
+                  marketFilter === tab.key ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-          <span className="text-[10px] text-[var(--text-muted)]">{hm?.legend ?? "Change"}:</span>
-          <div className="flex items-center gap-0.5">
-            <div className="w-3 h-2 rounded-sm bg-green-600/90" />
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">&lt;-3%</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <div className="w-3 h-2 rounded-sm bg-green-500/50" />
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">-1.5%</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <div className="w-3 h-2 rounded-sm bg-[var(--card-hover)]" />
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">0%</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <div className="w-3 h-2 rounded-sm bg-red-500/50" />
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">+1.5%</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <div className="w-3 h-2 rounded-sm bg-red-600/90" />
-            <span className="text-[10px] text-[var(--text-muted)] mono-nums">&gt;+3%</span>
-          </div>
-        </div>
-
-        {/* Content */}
         {loading ? (
-          <LoadingSpinner text={hm?.loading ?? "Loading heatmap..."} size="sm" />
+          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
         ) : data && data.sectors.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {data.sectors.map((sector) => (
               <SectorBlock
                 key={sector.industry}
@@ -159,9 +123,11 @@ export default function HeatmapPage() {
             ))}
           </div>
         ) : (
-          <EmptyState message={hm?.noData ?? "No heatmap data available"} />
+          <GlassPanel className="py-24 text-center">
+            <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-[0.2em]">NO DATA AVAILABLE</p>
+          </GlassPanel>
         )}
-      </GlassPanel>
+      </main>
     </div>
   );
 }

@@ -1,17 +1,18 @@
 from pydantic import BaseModel
+from app.schemas.types import DecimalStr
 
 
 class LowBaseScoreResponse(BaseModel):
     symbol: str
     name: str
-    total_score: float
-    valuation_score: float
-    price_position_score: float
-    quality_score: float
-    institutional_technical_score: float | None = None
-    pe_percentile: float | None = None
-    ma240_deviation: float | None = None
-    peg: float | None = None
+    total_score: DecimalStr
+    valuation_score: DecimalStr
+    price_position_score: DecimalStr
+    quality_score: DecimalStr
+    institutional_technical_score: DecimalStr | None = None
+    pe_percentile: DecimalStr | None = None
+    ma240_deviation: DecimalStr | None = None
+    peg: DecimalStr | None = None
     details: dict[str, object]
     disqualified: bool = False
     disqualify_reason: str = ""

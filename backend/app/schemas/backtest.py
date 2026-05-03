@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from app.schemas.types import DecimalStr
 
 
 class BacktestRequest(BaseModel):
@@ -11,6 +12,8 @@ class BacktestRequest(BaseModel):
     tax_rate: float = 0.003
     stop_loss: float | None = None
     take_profit: float | None = None
+    start_date: str | None = None  # YYYY-MM-DD, inclusive
+    end_date: str | None = None    # YYYY-MM-DD, inclusive
 
 
 class CompositeBacktestRequest(BaseModel):
@@ -24,29 +27,41 @@ class CompositeBacktestRequest(BaseModel):
     tax_rate: float = 0.003
     stop_loss: float | None = None
     take_profit: float | None = None
+    start_date: str | None = None
+    end_date: str | None = None
 
 
 class TradeRecord(BaseModel):
     action: str
     date: str
-    price: float
+    price: DecimalStr
     shares: int
     reason: str
 
 
 class MetricsResponse(BaseModel):
-    total_return: float
-    annualized_return: float
-    max_drawdown: float
-    sharpe_ratio: float
-    win_rate: float
+    total_return: DecimalStr
+    annualized_return: DecimalStr
+    max_drawdown: DecimalStr
+    sharpe_ratio: DecimalStr
+    win_rate: DecimalStr
     total_trades: int
-    profit_factor: float
+    profit_factor: DecimalStr
 
 
 class BacktestResponse(BaseModel):
     symbol: str
     strategy: str
     metrics: MetricsResponse
-    equity_curve: list[float]
+    equity_curve: list[DecimalStr]
     trades: list[TradeRecord]
+
+
+class AutoDiscoveryRequest(BaseModel):
+    symbol: str
+    initial_capital: float = 1_000_000
+    position_size: float = 0.1
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    start_date: str | None = None  # YYYY-MM-DD, inclusive
+    end_date: str | None = None    # YYYY-MM-DD, inclusive

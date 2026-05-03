@@ -14,33 +14,13 @@ from app.api.deps import get_db
 from app.models.industry import Industry
 from app.models.price import StockPrice
 from app.models.stock import Stock
+from app.schemas.market import HeatmapResponse, HeatmapSector, HeatmapStock
 
 MIN_HEATMAP_SECTORS = 5
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 router = APIRouter(prefix="/heatmap", tags=["heatmap"])
-
-
-class HeatmapStock(BaseModel):
-    symbol: str
-    name: str
-    close: float
-    change_percent: float
-    volume: int
-
-
-class HeatmapSector(BaseModel):
-    industry: str
-    stock_count: int
-    avg_change_percent: float
-    total_volume: int
-    stocks: list[HeatmapStock]
-
-
-class HeatmapResponse(BaseModel):
-    sectors: list[HeatmapSector]
-    date: str | None
 
 
 def _demo_heatmap() -> HeatmapResponse:

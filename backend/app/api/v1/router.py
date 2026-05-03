@@ -6,6 +6,7 @@ from app.api.v1.company import router as company_router
 from app.api.v1.heatmap import router as heatmap_router
 from app.api.v1.institutional import router as institutional_router
 from app.api.v1.market import router as market_router
+from app.api.v1.financial_metrics import router as financial_metrics_router
 from app.api.v1.financials import router as financials_router
 from app.api.v1.indicators import router as indicators_router
 from app.api.v1.low_base import router as low_base_router
@@ -29,6 +30,7 @@ v1_router.include_router(indicators_router)
 v1_router.include_router(screener_router)
 v1_router.include_router(notifications_router)
 v1_router.include_router(stocks_router)
+v1_router.include_router(financial_metrics_router)
 v1_router.include_router(financials_router)
 v1_router.include_router(strategies_router)
 v1_router.include_router(backtest_router)

@@ -57,6 +57,14 @@ def _result_to_history_item(rec: BacktestResultRecord) -> BacktestHistoryItem:
             )
             for t in rec.trade_log
         ]
+    # equity_curve can be a list or dict with a "curve" key
+    raw_curve = rec.equity_curve
+    equity_list: list[float] | None = None
+    if isinstance(raw_curve, list):
+        equity_list = raw_curve
+    elif isinstance(raw_curve, dict) and "curve" in raw_curve:
+        equity_list = raw_curve["curve"]
+
     return BacktestHistoryItem(
         id=rec.id,
         job_id=rec.job_id,
@@ -71,6 +79,13 @@ def _result_to_history_item(rec: BacktestResultRecord) -> BacktestHistoryItem:
         total_trades=metrics.get("total_trades", 0),
         profit_factor=metrics.get("profit_factor", 0.0),
         trade_log=trade_log,
+        equity_curve=equity_list,
+        backtest_type=rec.backtest_type or "single",
+        composite_mode=rec.composite_mode,
+        date_range_start=rec.date_range_start.isoformat() if rec.date_range_start else None,
+        date_range_end=rec.date_range_end.isoformat() if rec.date_range_end else None,
+        buy_hold_return=rec.buy_hold_return,
+        trading_days=rec.trading_days,
         created_at=rec.created_at.isoformat() if rec.created_at else "",
     )
 
@@ -187,6 +202,20 @@ async def get_backtest_history(
         results=[_result_to_history_item(r) for r in records],
         total=total,
     )
+
+
+@router.get("/results/{result_id}", response_model=BacktestHistoryItem)
+async def get_result_by_id(
+    result_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BacktestHistoryItem:
+    """Get a single backtest result by ID."""
+    stmt = select(BacktestResultRecord).where(BacktestResultRecord.id == result_id)
+    result = await db.execute(stmt)
+    record = result.scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Result {result_id} not found")
+    return _result_to_history_item(record)
 
 
 @router.get("/history/{symbol}/best", response_model=list[BacktestHistoryItem])

@@ -4,19 +4,20 @@ from decimal import Decimal
 from pydantic import BaseModel
 
 from app.models.enums import Market
+from app.schemas.types import DecimalStr
 
 
 class StockPriceResponse(BaseModel):
     symbol: str
     market: str
     date: date
-    open: Decimal
-    high: Decimal
-    low: Decimal
-    close: Decimal
+    open: DecimalStr
+    high: DecimalStr
+    low: DecimalStr
+    close: DecimalStr
     volume: int
-    change: Decimal
-    change_percent: Decimal
+    change: DecimalStr
+    change_percent: DecimalStr
 
 
 class StockPriceListResponse(BaseModel):

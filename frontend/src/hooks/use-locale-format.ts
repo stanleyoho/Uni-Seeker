@@ -7,22 +7,28 @@ export function useLocaleFormat() {
   const { locale } = useI18n();
 
   return useMemo(() => ({
-    formatNumber: (value: number, options?: Intl.NumberFormatOptions) => {
-      return new Intl.NumberFormat(locale === "zh-TW" ? "zh-TW" : "en-US", options).format(value);
+    formatNumber: (value: number | string, options?: Intl.NumberFormatOptions) => {
+      const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "-";
+      return new Intl.NumberFormat(locale === "zh-TW" ? "zh-TW" : "en-US", options).format(num);
     },
-    formatPercent: (value: number, decimals = 2) => {
+    formatPercent: (value: number | string, decimals = 2) => {
+      const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "-";
       return new Intl.NumberFormat(locale === "zh-TW" ? "zh-TW" : "en-US", {
         style: "percent",
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
-      }).format(value / 100);
+      }).format(num / 100);
     },
-    formatCurrency: (value: number, currency = "TWD") => {
+    formatCurrency: (value: number | string, currency = "TWD") => {
+      const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "-";
       return new Intl.NumberFormat(locale === "zh-TW" ? "zh-TW" : "en-US", {
         style: "currency",
         currency,
         maximumFractionDigits: 0,
-      }).format(value);
+      }).format(num);
     },
     formatDate: (dateStr: string) => {
       const date = new Date(dateStr);

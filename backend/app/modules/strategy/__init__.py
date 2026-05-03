@@ -7,6 +7,13 @@ from app.modules.strategy.builtin import (
     RSIBiasComboStrategy,
     RSIOversoldStrategy,
 )
+from app.modules.strategy.chip import (
+    ForeignTrustSyncStrategy,
+    InstitutionalFollowStrategy,
+    MarginDivergenceStrategy,
+    MarginOverleverageStrategy,
+    OwnershipConcentrationStrategy,
+)
 from app.modules.strategy.composite import CompositeStrategy
 from app.modules.strategy.registry import StrategyRegistry
 
@@ -19,4 +26,11 @@ def create_default_registry() -> StrategyRegistry:
     registry.register("bollinger_bounce", BollingerBounceStrategy)
     registry.register("bias_reversal", BiasReversalStrategy)
     registry.register("rsi_bias_combo", RSIBiasComboStrategy)
+
+    # Chip-data (籌碼面) strategies
+    registry.register("institutional_follow", lambda **kw: InstitutionalFollowStrategy(**kw))
+    registry.register("margin_divergence", lambda **kw: MarginDivergenceStrategy(**kw))
+    registry.register("foreign_trust_sync", lambda **kw: ForeignTrustSyncStrategy(**kw))
+    registry.register("ownership_concentration", lambda **kw: OwnershipConcentrationStrategy(**kw))
+    registry.register("margin_overleverage", lambda **kw: MarginOverleverageStrategy(**kw))
     return registry

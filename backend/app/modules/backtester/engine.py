@@ -42,6 +42,7 @@ class BacktestEngine:
         strategy: Strategy,
         prices: list[StockPrice],
         symbol: str = "",
+        chip_data: dict[str, list[dict]] | None = None,
     ) -> BacktestResult:
         if not prices:
             portfolio = Portfolio(initial_capital=self._config.initial_capital)
@@ -57,6 +58,14 @@ class BacktestEngine:
         portfolio = Portfolio(initial_capital=self._config.initial_capital)
         closes_so_far: list[float] = []
         buy_price: float = 0.0
+
+        # Build date-indexed chip data for O(1) lookup
+        _chip_by_date: dict[str, dict[str, list[dict]]] = {}
+        if chip_data:
+            for key, records in chip_data.items():
+                for rec in records:
+                    d = rec.get("date", "")
+                    _chip_by_date.setdefault(d, {}).setdefault(key, []).append(rec)
 
         for price in prices:
             close = float(price.close)
@@ -98,8 +107,16 @@ class BacktestEngine:
                 portfolio.record_equity({symbol: close})
                 continue
 
+            # Build kwargs with chip data up to current date
+            chip_kwargs: dict[str, object] = {}
+            if chip_data:
+                date_chip = _chip_by_date.get(date_str, {})
+                chip_kwargs["institutional"] = date_chip.get("institutional", [])
+                chip_kwargs["margin"] = date_chip.get("margin", [])
+                chip_kwargs["shareholding"] = date_chip.get("shareholding", [])
+
             # Evaluate strategy
-            signal = strategy.evaluate(closes_so_far)
+            signal = strategy.evaluate(closes_so_far, **chip_kwargs)
 
             if signal.action == "BUY" and symbol not in portfolio.positions:
                 # Calculate shares to buy

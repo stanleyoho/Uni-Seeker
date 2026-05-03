@@ -16,7 +16,7 @@ from app.modules.backtester.metrics import calculate_metrics
 from app.modules.backtester.portfolio import Portfolio
 from app.modules.strategy.base import Strategy
 
-_WEIGHT_TOLERANCE = 1e-6
+_WEIGHT_TOLERANCE = 1e-4
 
 
 @dataclass
@@ -579,7 +579,7 @@ class PortfolioBacktestEngine:
             # Sharpe from daily returns (skip zero-value days)
             daily_returns: list[float] = []
             for i in range(1, len(curve)):
-                if curve[i - 1] > 0:
+                if curve[i - 1] > 0 and curve[i] > 0:
                     daily_returns.append(curve[i] / curve[i - 1] - 1)
             if daily_returns:
                 avg_r = sum(daily_returns) / len(daily_returns)

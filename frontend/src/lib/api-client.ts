@@ -100,7 +100,7 @@ export interface PriceListResponse {
 export interface IndicatorResponse {
   symbol: string;
   indicator: string;
-  values: Record<string, (number | null)[]>;
+  values: Record<string, (string | null)[]>;
 }
 
 // --- Stock Search ---
@@ -122,7 +122,7 @@ export interface ScreenCondition {
 
 export interface ScreenResult {
   symbol: string;
-  indicator_values: Record<string, number>;
+  indicator_values: Record<string, string>;
 }
 
 export interface ScreenResponse {
@@ -146,31 +146,31 @@ export interface NotificationRule {
 export interface FinancialRatios {
   symbol: string;
   period: string;
-  gross_margin: number | null;
-  operating_margin: number | null;
-  net_margin: number | null;
-  roe: number | null;
-  roa: number | null;
-  current_ratio: number | null;
-  debt_ratio: number | null;
-  revenue_growth: number | null;
-  net_income_growth: number | null;
+  gross_margin: string | null;
+  operating_margin: string | null;
+  net_margin: string | null;
+  roe: string | null;
+  roa: string | null;
+  current_ratio: string | null;
+  debt_ratio: string | null;
+  revenue_growth: string | null;
+  net_income_growth: string | null;
 }
 
 export interface HealthScore {
   symbol: string;
   period: string;
-  total_score: number;
-  profitability_score: number;
-  efficiency_score: number;
-  leverage_score: number;
-  growth_score: number;
+  total_score: string;
+  profitability_score: string;
+  efficiency_score: string;
+  leverage_score: string;
+  growth_score: string;
 }
 
 export interface FinancialStatement {
   period: string;
   period_type: string;
-  data: Record<string, number>;
+  data: Record<string, string>;
 }
 
 export interface FullAnalysis {
@@ -227,18 +227,18 @@ export interface MarginData {
 export interface MarketIndex {
   symbol: string;
   name: string;
-  value: number;
-  change: number;
-  change_percent: number;
+  value: string;
+  change: string;
+  change_percent: string;
 }
 
 export interface MarketMover {
   symbol: string;
   name: string;
   market: string;
-  close: number;
-  change: number;
-  change_percent: number;
+  close: string;
+  change: string;
+  change_percent: string;
   volume: number;
 }
 
@@ -253,15 +253,15 @@ export interface MarketMoversResponse {
 
 export interface RevenueRecord {
   period: string;
-  revenue: number;
+  revenue: string;
   currency: string;
 }
 
 export interface RevenueAnalysis {
   symbol: string;
-  latest_revenue: number;
-  qoq_growth: number | null;
-  yoy_growth: number | null;
+  latest_revenue: string;
+  qoq_growth: string | null;
+  yoy_growth: string | null;
   is_revenue_high: boolean;
   is_revenue_low: boolean;
   trend: string;
@@ -274,15 +274,15 @@ export interface RevenueAnalysis {
 export interface HeatmapStock {
   symbol: string;
   name: string;
-  close: number;
-  change_percent: number;
+  close: string;
+  change_percent: string;
   volume: number;
 }
 
 export interface HeatmapSector {
   industry: string;
   stock_count: number;
-  avg_change_percent: number;
+  avg_change_percent: string;
   total_volume: number;
   stocks: HeatmapStock[];
 }
@@ -297,13 +297,13 @@ export interface HeatmapResponse {
 export interface LowBaseScore {
   symbol: string;
   name: string;
-  total_score: number;
-  valuation_score: number;
-  price_position_score: number;
-  quality_score: number;
-  pe_percentile: number | null;
-  ma240_deviation: number | null;
-  peg: number | null;
+  total_score: string;
+  valuation_score: string;
+  price_position_score: string;
+  quality_score: string;
+  pe_percentile: string | null;
+  ma240_deviation: string | null;
+  peg: string | null;
   details: Record<string, unknown>;
 }
 
@@ -343,19 +343,19 @@ export interface StrategyInfo {
 }
 
 export interface BacktestMetrics {
-  total_return: number;
-  annualized_return: number;
-  max_drawdown: number;
-  sharpe_ratio: number;
-  win_rate: number;
+  total_return: string;
+  annualized_return: string;
+  max_drawdown: string;
+  sharpe_ratio: string;
+  win_rate: string;
   total_trades: number;
-  profit_factor: number;
+  profit_factor: string;
 }
 
 export interface TradeRecord {
   action: string;
   date: string;
-  price: number;
+  price: string;
   shares: number;
   reason: string;
 }
@@ -364,7 +364,7 @@ export interface BacktestResult {
   symbol: string;
   strategy: string;
   metrics: BacktestMetrics;
-  equity_curve: number[];
+  equity_curve: string[];
   trades: TradeRecord[];
 }
 
@@ -424,6 +424,13 @@ export interface BacktestHistoryItem {
   total_trades: number;
   profit_factor: number;
   trade_log: TradeLogEntry[] | null;
+  equity_curve: number[] | null;
+  backtest_type: string;
+  composite_mode: string | null;
+  date_range_start: string | null;
+  date_range_end: string | null;
+  buy_hold_return: number | null;
+  trading_days: number | null;
   created_at: string;
 }
 
@@ -683,6 +690,21 @@ export async function fetchStrategies(): Promise<StrategyInfo[]> {
   return data.strategies;
 }
 
+export async function runAutoDiscovery(params: {
+  symbol: string;
+  initial_capital?: number;
+  position_size?: number;
+  stop_loss?: number | null;
+  take_profit?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}): Promise<any> {
+  return apiFetch(`${API_BASE}/backtest/run/auto-discovery`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 export async function runBacktest(params: {
   symbol: string;
   strategy: string;
@@ -691,6 +713,8 @@ export async function runBacktest(params: {
   position_size?: number;
   stop_loss?: number | null;
   take_profit?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }): Promise<BacktestResult> {
   return apiFetch<BacktestResult>(`${API_BASE}/backtest/run`, {
     method: "POST",
@@ -729,6 +753,10 @@ export async function fetchBacktestHistory(
   if (limit !== undefined) params.set("limit", String(limit));
   if (offset !== undefined) params.set("offset", String(offset));
   return apiFetch<BacktestHistoryResponse>(`${API_BASE}/backtest/history?${params}`);
+}
+
+export async function fetchBacktestResult(id: number): Promise<BacktestHistoryItem> {
+  return apiFetch<BacktestHistoryItem>(`${API_BASE}/backtest/results/${id}`);
 }
 
 export async function fetchBestStrategies(symbol: string): Promise<BacktestHistoryResponse> {

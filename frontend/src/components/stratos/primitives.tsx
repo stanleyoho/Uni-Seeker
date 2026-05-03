@@ -12,6 +12,7 @@ interface GlassPanelProps {
   children: React.ReactNode;
   className?: string;
   noPadding?: boolean;
+  style?: React.CSSProperties;
 }
 
 const glassStyle: React.CSSProperties = {
@@ -30,6 +31,7 @@ export function GlassPanel({
   children,
   className = "",
   noPadding = false,
+  style: extraStyle,
 }: GlassPanelProps) {
   return (
     <div
@@ -37,6 +39,7 @@ export function GlassPanel({
       style={{
         ...glassStyle,
         padding: noPadding ? 0 : 24,
+        ...extraStyle,
       }}
     >
       {title && (
@@ -97,11 +100,11 @@ const variantStyles: Record<
   React.CSSProperties
 > = {
   "red-solid": { background: "var(--accent-primary)", color: "#fff", border: "none" },
-  "white-solid": { background: "#fff", color: "#000", border: "none" },
+  "white-solid": { background: "var(--foreground)", color: "var(--background)", border: "none" },
   "red-ghost": {
     background: "transparent",
-    color: "#EE3F2C",
-    border: "1px solid #EE3F2C",
+    color: "var(--accent-primary)",
+    border: "1px solid var(--accent-primary)",
   },
   "green-solid": { background: "var(--stock-down)", color: "#fff", border: "none" },
   "cyan-ghost": {
@@ -133,22 +136,19 @@ export function ClippedButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`${sizeClasses[size]} font-semibold ${className}`}
+      className={`${sizeClasses[size]} font-semibold transition-all duration-200 active:scale-95 hover:brightness-110 ${className}`}
       style={{
         ...variantStyles[variant],
         clipPath: `polygon(0 0, calc(100% - ${c}px) 0, 100% ${c}px, 100% 100%, ${c}px 100%, 0 calc(100% - ${c}px))`,
-        transition: "all 200ms",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
         outline: "none",
       }}
       onFocus={(e) => {
-        e.currentTarget.style.outline = "1px solid #00E5FF";
-        e.currentTarget.style.outlineOffset = "2px";
+        e.currentTarget.style.boxShadow = "0 0 0 2px var(--background), 0 0 0 4px var(--accent-cyan)";
       }}
       onBlur={(e) => {
-        e.currentTarget.style.outline = "none";
-        e.currentTarget.style.outlineOffset = "0px";
+        e.currentTarget.style.boxShadow = "none";
       }}
     >
       {children}
@@ -173,7 +173,7 @@ const directionConfig: Record<
 > = {
   up: { arrow: "\u25B2", color: "var(--stock-up)" },
   down: { arrow: "\u25BC", color: "var(--stock-down)" },
-  flat: { arrow: "\u2014", color: "#9CA3AF" },
+  flat: { arrow: "\u2014", color: "var(--text-muted)" },
 };
 
 export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
@@ -182,15 +182,7 @@ export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.04)",
-        backdropFilter: "blur(40px) saturate(180%)",
-        WebkitBackdropFilter: "blur(40px) saturate(180%)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        backgroundImage:
-          "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%)",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-        borderRadius: 0,
+        ...glassStyle,
         padding: 20,
       }}
     >
@@ -200,7 +192,7 @@ export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
-          color: "#9CA3AF",
+          color: "var(--text-secondary)",
           marginBottom: 4,
         }}
       >
@@ -210,7 +202,7 @@ export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
         style={{
           fontSize: 32,
           fontWeight: 600,
-          color: "#fff",
+          color: "var(--foreground)",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1.1,
           marginBottom: 4,

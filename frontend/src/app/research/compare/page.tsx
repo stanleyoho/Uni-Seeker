@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useI18n } from "@/i18n/context";
 import { searchStocks, type StockSearchResult } from "@/lib/api-client";
 import { useFinancialAnalysis, usePrices } from "@/hooks/use-market-data";
+import { AmbientBackground } from "@/components/stratos/ambient";
 import { ChangeBadge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,114 +26,113 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
 
   if (loading) {
     return (
-      <GlassPanel className="flex-1 min-w-[240px]">
-        <div className="flex items-center justify-center py-6">
+      <GlassPanel className="flex-1 min-w-[280px]">
+        <div className="flex items-center justify-center py-20">
           <LoadingSpinner size="sm" />
         </div>
       </GlassPanel>
     );
   }
 
+  const isUp = price ? parseFloat(price.change) >= 0 : true;
+  const totalScore = score ? parseFloat(score.total_score) : 0;
+  const profitabilityScore = score ? parseFloat(score.profitability_score) : 0;
+  const growthScore = score ? parseFloat(score.growth_score) : 0;
+  const leverageScore = score ? parseFloat(score.leverage_score) : 0;
+  const efficiencyScore = score ? parseFloat(score.efficiency_score) : 0;
+
   return (
-    <GlassPanel className="flex-1 min-w-[240px] relative group">
+    <GlassPanel className="flex-1 min-w-[280px] relative group border-t-2" style={{ borderTopColor: isUp ? "var(--stock-up)" : "var(--stock-down)" }}>
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="absolute top-2 right-2 text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
+        className="absolute top-3 right-3 text-[var(--text-muted)] hover:text-red-500 transition-colors p-1 bg-[var(--card-hover)] border border-[var(--border-subtle)] opacity-0 group-hover:opacity-100"
       >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
       {/* Header */}
-      <div className="mb-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[var(--foreground)] font-bold text-sm tracking-tight">{symbol}</span>
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl font-bold text-[var(--foreground)] tracking-tighter">{symbol}</span>
           {price && (
-            <ChangeBadge
-              change={parseFloat(price.change)}
-              changePct={price.change_percent}
-            />
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 ${isUp ? "bg-[var(--stock-up-bg)] text-[var(--stock-up)]" : "bg-[var(--stock-down-bg)] text-[var(--stock-down)]"}`}>
+              {isUp ? "+" : ""}{parseFloat(price.change_percent).toFixed(2)}%
+            </span>
           )}
         </div>
         {price && (
-          <span className="text-xl font-bold text-[var(--foreground)] mono-nums">
+          <div className="text-2xl font-bold text-[var(--foreground)] tabular-nums">
             {parseFloat(price.close).toLocaleString()}
-          </span>
+          </div>
         )}
       </div>
 
-      {/* Health Score - compact */}
+      {/* Health Score */}
       {score && (
-        <div
-          className="mb-3 p-2.5"
-          style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">
-              {t.financial?.healthScore ?? "Health"}
+        <div className="mb-6 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-4">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest">
+              HEALTH INDEX
             </span>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-lg font-bold mono-nums ${score.total_score > 70 ? "text-[var(--score-excellent)] glow-green" : score.total_score >= 40 ? "text-[var(--score-good)] glow-amber" : "text-[var(--score-poor)] glow-red"}`}>
-                {Math.round(score.total_score)}
-              </span>
-              <span className="text-[var(--text-muted)] text-[10px]">/ 100</span>
+            <div className="text-2xl font-bold tabular-nums" style={{ color: totalScore > 70 ? "var(--stock-up)" : "var(--foreground)" }}>
+              {Math.round(totalScore)}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
-            <div className="flex justify-between">
-              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.profitability ?? "Profit"}</span>
-              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.profitability_score.toFixed(0)}</span>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold">
+            <div className="flex justify-between border-b border-[var(--border-subtle)] pb-1">
+              <span className="text-[var(--text-muted)]">PROFIT</span>
+              <span className="tabular-nums">{profitabilityScore.toFixed(0)}</span>
             </div>
-            <div className="flex justify-between">
-              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.efficiency ?? "Efficiency"}</span>
-              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.efficiency_score.toFixed(0)}</span>
+            <div className="flex justify-between border-b border-[var(--border-subtle)] pb-1">
+              <span className="text-[var(--text-muted)]">GROWTH</span>
+              <span className="tabular-nums">{growthScore.toFixed(0)}</span>
             </div>
-            <div className="flex justify-between">
-              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.leverage ?? "Leverage"}</span>
-              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.leverage_score.toFixed(0)}</span>
+            <div className="flex justify-between border-b border-[var(--border-subtle)] pb-1">
+              <span className="text-[var(--text-muted)]">LEVERAGE</span>
+              <span className="tabular-nums">{leverageScore.toFixed(0)}</span>
             </div>
-            <div className="flex justify-between">
-              <span style={{ color: "var(--text-secondary)" }}>{t.financial?.growth ?? "Growth"}</span>
-              <span className="mono-nums" style={{ color: "var(--foreground)" }}>{score.growth_score.toFixed(0)}</span>
+            <div className="flex justify-between border-b border-[var(--border-subtle)] pb-1">
+              <span className="text-[var(--text-muted)]">EFFICIENCY</span>
+              <span className="tabular-nums">{efficiencyScore.toFixed(0)}</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Key Ratios - dense rows */}
+      {/* Key Ratios */}
       {ratios && (
-        <div className="space-y-0">
+        <div className="space-y-1">
+          <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-3">KEY PERFORMANCE</h4>
           {[
-            { label: t.financial?.grossMargin ?? "Gross Margin", value: ratios.gross_margin, isPct: true },
-            { label: t.financial?.netMargin ?? "Net Margin", value: ratios.net_margin, isPct: true },
-            { label: t.financial?.roe ?? "ROE", value: ratios.roe, isPct: true },
-            { label: t.financial?.debtRatio ?? "Debt Ratio", value: ratios.debt_ratio, isPct: false },
-            { label: t.financial?.revenueGrowth ?? "Rev Growth", value: ratios.revenue_growth, isPct: true },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between px-1.5 py-1 text-[11px] transition-colors hover:bg-[var(--card-hover)]"
-            >
-              <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
-              <span className={`mono-nums font-medium ${
-                item.value != null && item.value > 0 ? "text-[var(--stock-down)]" :
-                item.value != null && item.value < 0 ? "text-[var(--stock-up)]" : "text-[var(--foreground)]"
-              }`}>
-                {item.value != null ? (item.isPct ? `${(item.value * 100).toFixed(1)}%` : item.value.toFixed(2)) : "-"}
-              </span>
-            </div>
-          ))}
+            { label: "GROSS MARGIN", value: ratios.gross_margin, isPct: true },
+            { label: "NET MARGIN", value: ratios.net_margin, isPct: true },
+            { label: "ROE", value: ratios.roe, isPct: true },
+            { label: "DEBT RATIO", value: ratios.debt_ratio, isPct: false },
+          ].map((item) => {
+            const val = item.value != null ? parseFloat(item.value) : null;
+            return (
+              <div
+                key={item.label}
+                className="flex items-center justify-between px-3 py-2 text-[11px] font-bold bg-[var(--bg-secondary)]/30 border-b border-[var(--border-subtle)]"
+              >
+                <span className="text-[var(--text-secondary)]">{item.label}</span>
+                <span className={`tabular-nums ${
+                  val != null && val > 0 ? "text-[var(--stock-up)]" :
+                  val != null && val < 0 ? "text-[var(--stock-down)]" : "text-[var(--foreground)]"
+                }`}>
+                  {val != null ? (item.isPct ? `${(val * 100).toFixed(1)}%` : val.toFixed(2)) : "-"}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </GlassPanel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  ComparePage                                                        */
-/* ------------------------------------------------------------------ */
 
 export default function ComparePage() {
   const { t } = useI18n();
@@ -163,106 +163,72 @@ export default function ComparePage() {
     }
   };
 
-  const cmp = t.compare;
-
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      {/* Top: search input + selected tags inline */}
-      <div className="relative mb-4">
-        <div className="flex gap-2 items-center flex-wrap">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+    <div className="flex-1 bg-[var(--background)]">
+      <AmbientBackground />
+      <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
+        
+        {/* Search & Selection */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8 items-start">
+          <div className="relative w-full max-w-md">
             <input
               type="text"
               value={input}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && input.trim()) {
-                  addSymbol(input);
-                }
+                if (e.key === "Enter" && input.trim()) addSymbol(input);
               }}
-              placeholder={cmp?.addPlaceholder ?? "Add stock (e.g. 2330.TW, AAPL)"}
-              className="w-full px-3 py-2 text-xs text-[var(--foreground)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
-              style={{
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border-color)",
-                borderRadius: 0,
-              }}
+              placeholder="SEARCH ASSETS TO COMPARE..."
+              className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-sm font-bold text-[var(--foreground)] placeholder-[var(--text-muted)] focus:border-[var(--accent-cyan)] outline-none transition-all"
             />
-            {/* Suggestions dropdown */}
             {suggestions.length > 0 && (
-              <div
-                className="absolute top-full left-0 right-0 mt-1 shadow-xl z-30 overflow-hidden"
-                style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                }}
-              >
+              <div className="absolute top-full left-0 right-0 mt-1 border border-[var(--border-subtle)] bg-[var(--bg-secondary)] z-50">
                 {suggestions.map((s) => (
                   <button
                     key={s.symbol}
                     onClick={() => addSymbol(s.symbol)}
-                    className="w-full px-3 py-1.5 text-left text-xs hover:bg-[var(--card-hover)] transition-colors flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-[var(--card-hover)] flex justify-between items-center"
                   >
-                    <span className="text-[var(--foreground)] mono-nums font-semibold">{s.symbol}</span>
-                    <span className="text-[var(--text-secondary)]">{s.name}</span>
+                    <span className="text-[var(--foreground)]">{s.symbol}</span>
+                    <span className="text-[var(--text-muted)]">{s.name.toUpperCase()}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          <ClippedButton
-            variant="red-solid"
-            size="sm"
-            onClick={() => addSymbol(input)}
-            disabled={!input.trim() || symbols.length >= 5}
-          >
-            {cmp?.add ?? "加入"}
-          </ClippedButton>
 
-          {/* Selected symbols as inline tags */}
-          {symbols.map((s) => (
-            <span
-              key={s}
-              className="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold mono-nums"
-              style={{
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border-color)",
-                color: "var(--foreground)",
-              }}
-            >
-              {s}
-              <button
-                onClick={() => removeSymbol(s)}
-                className="hover:text-red-400 ml-0.5 text-[var(--text-muted)]"
+          <div className="flex flex-wrap gap-2">
+            {symbols.map((s) => (
+              <div
+                key={s}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-primary)] text-white text-[10px] font-bold"
+                style={{ clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))" }}
               >
-                x
-              </button>
-            </span>
-          ))}
-
-          {symbols.length > 0 && (
-            <span className="text-[10px] text-[var(--text-muted)]">
-              {symbols.length}/5
-            </span>
-          )}
+                {s}
+                <button onClick={() => removeSymbol(s)} className="hover:scale-110 transition-transform">
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Horizontal card grid */}
-      {symbols.length === 0 ? (
-        <GlassPanel>
-          <EmptyState
-            title={cmp?.emptyTitle ?? "Add stocks to compare"}
-            message={cmp?.emptyMessage ?? "Enter stock symbols above to compare financial metrics side by side"}
-          />
-        </GlassPanel>
-      ) : (
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {symbols.map((sym) => (
-            <CompareStock key={sym} symbol={sym} onRemove={() => removeSymbol(sym)} />
-          ))}
-        </div>
-      )}
+        {/* Comparison Grid */}
+        {symbols.length === 0 ? (
+          <GlassPanel className="py-24 text-center">
+            <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-[0.2em]">Asset comparison standby</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-2 uppercase">ADD UP TO 5 SECURITIES TO BEGIN ANALYSIS</p>
+          </GlassPanel>
+        ) : (
+          <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide">
+            {symbols.map((sym) => (
+              <CompareStock key={sym} symbol={sym} onRemove={() => removeSymbol(sym)} />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

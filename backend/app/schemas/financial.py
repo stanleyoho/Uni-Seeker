@@ -1,12 +1,12 @@
 from typing import Any
-
 from pydantic import BaseModel
+from app.schemas.types import DecimalStr
 
 
 class FinancialStatementResponse(BaseModel):
     period: str
     period_type: str
-    data: dict[str, float]
+    data: dict[str, DecimalStr]
 
 
 class FinancialDataResponse(BaseModel):
@@ -20,28 +20,28 @@ class FinancialDataResponse(BaseModel):
 class FinancialRatiosResponse(BaseModel):
     symbol: str
     period: str
-    gross_margin: float | None = None
-    operating_margin: float | None = None
-    net_margin: float | None = None
-    roe: float | None = None
-    roa: float | None = None
-    inventory_turnover: float | None = None
-    receivable_turnover: float | None = None
-    current_ratio: float | None = None
-    quick_ratio: float | None = None
-    debt_ratio: float | None = None
-    revenue_growth: float | None = None
-    net_income_growth: float | None = None
+    gross_margin: DecimalStr | None = None
+    operating_margin: DecimalStr | None = None
+    net_margin: DecimalStr | None = None
+    roe: DecimalStr | None = None
+    roa: DecimalStr | None = None
+    inventory_turnover: DecimalStr | None = None
+    receivable_turnover: DecimalStr | None = None
+    current_ratio: DecimalStr | None = None
+    quick_ratio: DecimalStr | None = None
+    debt_ratio: DecimalStr | None = None
+    revenue_growth: DecimalStr | None = None
+    net_income_growth: DecimalStr | None = None
 
 
 class HealthScoreResponse(BaseModel):
     symbol: str
     period: str
-    total_score: float
-    profitability_score: float
-    efficiency_score: float
-    leverage_score: float
-    growth_score: float
+    total_score: DecimalStr
+    profitability_score: DecimalStr
+    efficiency_score: DecimalStr
+    leverage_score: DecimalStr
+    growth_score: DecimalStr
     details: dict[str, str]
 
 

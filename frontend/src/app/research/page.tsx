@@ -11,6 +11,8 @@ import {
 import { useI18n } from "@/i18n/context";
 import { useSavedScreens } from "@/hooks/use-saved-screens";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
+import { AmbientBackground } from "@/components/stratos/ambient";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 const PRESETS = [
   {
@@ -84,191 +86,166 @@ export default function ResearchScreenerPage() {
     setError(null);
   };
 
-  const inputStyle =
-    "px-2.5 py-1.5 rounded-lg text-sm focus:outline-none focus:border-[var(--accent-primary)] transition-all duration-200";
-  const inputBg: React.CSSProperties = {
-    background: "var(--bg-secondary)",
-    border: "1px solid var(--border-color)",
-    color: "var(--foreground)",
-  };
-
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      {/* Side-by-side layout: Conditions (4col) | Results (8col) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* LEFT: Conditions panel (4 cols) */}
-        <div className="lg:col-span-4">
-          <GlassPanel title={t.screener?.conditions ?? "CONDITIONS"} className="h-full">
-            {/* Preset buttons - compact grid */}
-            <div className="mb-4">
-              <span
-                className="text-[10px] font-semibold uppercase tracking-wider block mb-2"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {t.screener?.presets ?? "Presets"}
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {PRESETS.map((preset) => (
-                  <button
-                    key={preset.key}
-                    onClick={() => applyPreset(preset)}
-                    className="px-2.5 py-1.5 text-xs font-medium text-left transition-all duration-150 hover:border-[var(--accent-primary)]/40 hover:bg-[var(--card-hover)]"
-                    style={{
-                      background: "var(--bg-secondary)",
-                      border: "1px solid var(--border-color)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {preset.label[locale as keyof typeof preset.label] || preset.label.en}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Saved screens */}
-            {savedScreens.items.length > 0 && (
-              <div className="mb-4">
-                <span
-                  className="text-[10px] font-semibold uppercase tracking-wider block mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {t.screener?.saved ?? "Saved"}
-                </span>
-                <div className="flex gap-1.5 flex-wrap">
-                  {savedScreens.items.map((screen) => (
-                    <div key={screen.id} className="flex items-center gap-0.5">
-                      <button
-                        onClick={() => {
-                          setConditions(screen.conditions);
-                          setLogicOp(screen.operator);
-                          setError(null);
-                        }}
-                        className="px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-primary)]/30 transition-all"
-                        style={{
-                          background: "var(--bg-secondary)",
-                          border: "1px solid var(--border-color)",
-                        }}
-                      >
-                        {screen.name}
-                      </button>
-                      <button
-                        onClick={() => savedScreens.remove(screen.id)}
-                        className="text-[var(--text-muted)] hover:text-red-400 transition-colors p-0.5"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+    <div className="flex-1 bg-[var(--background)]">
+      <AmbientBackground />
+      <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT: Conditions panel (4 cols) */}
+          <div className="lg:col-span-4 space-y-4">
+            <GlassPanel title="Screen Configurations">
+              {/* Preset buttons - compact grid */}
+              <div className="mb-6">
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] mb-3">
+                  {t.screener?.presets ?? "STRATEGY PRESETS"}
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      onClick={() => applyPreset(preset)}
+                      className="px-3 py-2 text-[11px] font-bold text-left transition-all duration-200 border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--foreground)] active:scale-95"
+                      style={{ clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))" }}
+                    >
+                      {preset.label[locale as keyof typeof preset.label] || preset.label.en}
+                    </button>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Condition builder */}
-            <div className="mb-4">
-              <ConditionBuilder
-                conditions={conditions}
-                onChange={setConditions}
-                logicOperator={logicOp}
-                onLogicChange={setLogicOp}
-              />
-            </div>
+              {/* Saved screens */}
+              {savedScreens.items.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)] mb-3">
+                    {t.screener?.saved ?? "SAVED QUERIES"}
+                  </h4>
+                  <div className="flex gap-2 flex-wrap">
+                    {savedScreens.items.map((screen) => (
+                      <div key={screen.id} className="group relative">
+                        <button
+                          onClick={() => {
+                            setConditions(screen.conditions);
+                            setLogicOp(screen.operator);
+                            setError(null);
+                          }}
+                          className="px-3 py-1.5 text-[10px] font-bold border border-[var(--border-subtle)] bg-[var(--card-hover)] text-[var(--text-secondary)] hover:border-[var(--accent-cyan)] hover:text-[var(--foreground)] transition-all"
+                        >
+                          {screen.name.toUpperCase()}
+                        </button>
+                        <button
+                          onClick={() => savedScreens.remove(screen.id)}
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {/* Controls */}
-            <div
-              className="flex flex-wrap items-center gap-3 pt-3"
-              style={{ borderTop: "1px solid var(--border-color)" }}
-            >
-              <label className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
-                {t.screener.limit}:
-                <input
-                  type="number"
-                  value={limit}
-                  onChange={(e) => setLimit(Number(e.target.value) || 50)}
-                  className={`w-16 ${inputStyle}`}
-                  style={inputBg}
+              {/* Condition builder */}
+              <div className="mb-6">
+                <ConditionBuilder
+                  conditions={conditions}
+                  onChange={setConditions}
+                  logicOperator={logicOp}
+                  onLogicChange={setLogicOp}
                 />
-              </label>
-              <ClippedButton
-                variant="red-solid"
-                size="md"
-                onClick={handleScreen}
-                disabled={loading}
-              >
-                {loading ? t.screener.screening : t.screener.screen}
-              </ClippedButton>
-            </div>
+              </div>
 
-            {/* Save controls */}
-            {conditions.length > 0 && (
-              <div className="mt-3">
-                {showSave ? (
-                  <div className="flex items-center gap-2">
+              {/* Controls */}
+              <div className="flex flex-col gap-4 pt-4 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--text-secondary)]">{t.screener.limit.toUpperCase()}</span>
+                  <input
+                    type="number"
+                    value={limit}
+                    onChange={(e) => setLimit(Number(e.target.value) || 50)}
+                    className="w-20 px-3 py-1.5 text-sm font-bold bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:border-[var(--accent-cyan)] focus:outline-none transition-all tabular-nums"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <ClippedButton
+                    variant="red-solid"
+                    size="md"
+                    className="flex-1"
+                    onClick={handleScreen}
+                    disabled={loading}
+                  >
+                    {loading ? "SCANNING..." : t.screener.screen.toUpperCase()}
+                  </ClippedButton>
+                  
+                  {conditions.length > 0 && !showSave && (
+                    <ClippedButton
+                      variant="cyan-ghost"
+                      size="md"
+                      onClick={() => setShowSave(true)}
+                    >
+                      SAVE
+                    </ClippedButton>
+                  )}
+                </div>
+
+                {showSave && (
+                  <div className="flex flex-col gap-2 p-3 bg-[var(--card-hover)] border border-[var(--accent-cyan)]/30 animate-fade-in">
                     <input
                       type="text"
                       value={saveName}
                       onChange={(e) => setSaveName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && saveName.trim()) {
-                          savedScreens.save(saveName.trim(), conditions, logicOp);
-                          setSaveName("");
-                          setShowSave(false);
-                        }
-                      }}
-                      placeholder={t.screener?.saveNamePlaceholder ?? "Screen name..."}
-                      className={`flex-1 min-w-0 ${inputStyle}`}
-                      style={inputBg}
-                      autoFocus
+                      placeholder="ENTER SCREEN NAME"
+                      className="w-full px-3 py-2 text-xs font-bold bg-[var(--background)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:border-[var(--accent-cyan)] outline-none"
                     />
-                    <ClippedButton
-                      variant="green-solid"
-                      size="sm"
-                      onClick={() => {
-                        if (saveName.trim()) {
-                          savedScreens.save(saveName.trim(), conditions, logicOp);
-                          setSaveName("");
-                          setShowSave(false);
-                        }
-                      }}
-                    >
-                      {t.screener?.saveConfirm ?? "Save"}
-                    </ClippedButton>
-                    <button
-                      onClick={() => setShowSave(false)}
-                      className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors text-xs"
-                    >
-                      {t.screener?.cancel ?? "Cancel"}
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          if (saveName.trim()) {
+                            savedScreens.save(saveName.trim(), conditions, logicOp);
+                            setSaveName("");
+                            setShowSave(false);
+                          }
+                        }}
+                        className="flex-1 py-1.5 bg-[var(--accent-cyan)] text-black text-[10px] font-bold"
+                      >
+                        CONFIRM
+                      </button>
+                      <button 
+                        onClick={() => setShowSave(false)}
+                        className="px-4 py-1.5 border border-[var(--border-subtle)] text-[var(--text-muted)] text-[10px] font-bold"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <ClippedButton
-                    variant="cyan-ghost"
-                    size="sm"
-                    onClick={() => setShowSave(true)}
-                  >
-                    {t.screener?.save ?? "Save Screen"}
-                  </ClippedButton>
                 )}
               </div>
-            )}
 
-            {/* Error */}
-            {error && (
-              <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-400 text-sm">{error}</p>
+              {/* Error */}
+              {error && (
+                <div className="mt-4 px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold tracking-wider">
+                  ERROR: {error.toUpperCase()}
+                </div>
+              )}
+            </GlassPanel>
+          </div>
+
+          {/* RIGHT: Results panel (8 cols) */}
+          <div className="lg:col-span-8">
+            <GlassPanel title={`${t.screener?.resultsTitle ?? "SCREENING RESULTS"} ${total > 0 ? `[${total}]` : ""}`} noPadding>
+              <div className="min-h-[600px]">
+                {loading ? (
+                  <div className="h-full flex flex-center items-center justify-center pt-20">
+                    <LoadingSpinner />
+                  </div>
+                ) : (
+                  <ResultsTable results={results} total={total} />
+                )}
               </div>
-            )}
-          </GlassPanel>
+            </GlassPanel>
+          </div>
         </div>
-
-        {/* RIGHT: Results panel (8 cols) */}
-        <div className="lg:col-span-8">
-          <GlassPanel title={`${t.screener?.resultsTitle ?? "RESULTS"} ${total > 0 ? `(${total})` : ""}`} className="h-full">
-            <ResultsTable results={results} total={total} />
-          </GlassPanel>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

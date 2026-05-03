@@ -24,7 +24,8 @@
     "alerts": "Alerts",
     "marketOpen": "MARKET OPEN",
     "marketClosed": "CLOSED",
-    "quickSearch": "Search"
+    "quickSearch": "Search",
+    "backtestHistory": "History"
   },
   "search": {
     "placeholder": "Enter symbol or name",

@@ -72,7 +72,7 @@ export function Sparkline({
 // ─── SectorHeatmap ───────────────────────────────────────────────
 interface SectorItem {
   name: string;
-  change: number;
+  change: string | number;
   marketCap: number;
 }
 
@@ -122,6 +122,7 @@ export function SectorHeatmap({ data }: SectorHeatmapProps) {
         }}
       >
         {sorted.map((sector) => {
+          const changeVal = typeof sector.change === "string" ? parseFloat(sector.change) : sector.change;
           const fraction = sector.marketCap / totalCap;
           // Larger sectors span 2 columns
           const span = fraction > 0.15 ? 2 : 1;
@@ -130,7 +131,7 @@ export function SectorHeatmap({ data }: SectorHeatmapProps) {
               key={sector.name}
               style={{
                 gridColumn: `span ${span}`,
-                background: sectorColor(sector.change),
+                background: sectorColor(changeVal),
                 padding: "10px 8px",
                 display: "flex",
                 flexDirection: "column",
@@ -165,8 +166,8 @@ export function SectorHeatmap({ data }: SectorHeatmapProps) {
                   marginTop: 2,
                 }}
               >
-                {sector.change > 0 ? "+" : ""}
-                {sector.change.toFixed(1)}%
+                {changeVal > 0 ? "+" : ""}
+                {changeVal.toFixed(1)}%
               </span>
             </div>
           );

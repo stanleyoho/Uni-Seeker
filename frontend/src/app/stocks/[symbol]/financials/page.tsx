@@ -25,22 +25,23 @@ function scoreGlow(score: number, max: number): string {
   return "drop-shadow(0 0 6px rgba(34, 197, 94, 0.4))";
 }
 
-function formatPct(value: number | null): string {
+function formatPct(value: number | string | null): string {
   if (value === null || value === undefined) return "N/A";
-  return `${(value * 100).toFixed(1)}%`;
+  return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
-function formatNumber(value: number | null): string {
+function formatNumber(value: number | string | null): string {
   if (value === null || value === undefined) return "N/A";
-  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
-function CircularScore({ score, label }: { score: number; label: string }) {
+function CircularScore({ score, label }: { score: number | string; label: string }) {
+  const n = Number(score);
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const progress = (score / 100) * circumference;
-  const color = scoreColor(score, 100);
-  const glow = scoreGlow(score, 100);
+  const progress = (n / 100) * circumference;
+  const color = scoreColor(n, 100);
+  const glow = scoreGlow(n, 100);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -95,7 +96,7 @@ function CircularScore({ score, label }: { score: number; label: string }) {
           fontSize="32"
           fontFamily="monospace"
         >
-          {score}
+          {Math.round(n)}
         </text>
         <text
           x="70"
@@ -119,11 +120,12 @@ function CategoryBar({
   max,
 }: {
   label: string;
-  score: number;
+  score: number | string;
   max: number;
 }) {
-  const pct = (score / max) * 100;
-  const color = scoreColor(score, max);
+  const n = Number(score);
+  const pct = (n / max) * 100;
+  const color = scoreColor(n, max);
 
   return (
     <div className="flex items-center gap-2">
@@ -135,7 +137,7 @@ function CategoryBar({
         />
       </div>
       <span className="text-xs w-14 text-right mono-nums font-medium" style={{ color }}>
-        {score.toFixed(1)}/{max}
+        {n.toFixed(1)}/{max}
       </span>
     </div>
   );
@@ -294,7 +296,7 @@ export default function FinancialsPage() {
           </div>
           <div className="flex flex-col md:flex-row items-center gap-6">
             <CircularScore
-              score={Math.round(latestScore.total_score)}
+              score={Math.round(Number(latestScore.total_score))}
               label={t.financial.overallHealth}
             />
             <div className="flex-1 w-full space-y-3">

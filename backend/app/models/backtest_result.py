@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,6 +27,13 @@ class BacktestResultRecord(Base):
     equity_curve: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     trade_log: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     composite_mode: Mapped[str | None] = mapped_column(String(20), default=None)
+
+    # Backtest metadata
+    backtest_type: Mapped[str] = mapped_column(String(20), default="single")  # single, grid_search, auto_discovery, portfolio
+    date_range_start: Mapped[date | None] = mapped_column(Date, default=None)
+    date_range_end: Mapped[date | None] = mapped_column(Date, default=None)
+    buy_hold_return: Mapped[float | None] = mapped_column(Float, default=None)
+    trading_days: Mapped[int | None] = mapped_column(Integer, default=None)
 
     # Denormalized columns for efficient sorting / filtering
     total_return: Mapped[float] = mapped_column(Float, default=0.0)

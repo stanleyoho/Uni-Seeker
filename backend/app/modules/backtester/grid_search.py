@@ -86,6 +86,7 @@ class GridSearchConfig:
     take_profit: float | None = None
     min_trades: int = 6  # 最低交易次數（過濾極端低頻策略）
     min_win_rate: float = 50.0  # 最低勝率 (%)
+    max_combinations: int = 10_000  # Safety limit to prevent DoS
 
     def total_combinations(self) -> int:
         """Return the number of parameter combinations in the grid."""
@@ -224,9 +225,17 @@ class GridSearchEngine:
         if not symbol:
             symbol = prices[0].symbol
 
+        total = config.total_combinations()
+        if total > config.max_combinations:
+            raise ValueError(
+                f"Grid search has {total:,} combinations, exceeding limit of {config.max_combinations:,}. "
+                f"Reduce param_grid or increase max_combinations."
+            )
+
         combos = self._generate_combinations(config.param_grid)
         total = len(combos)
         items: list[GridSearchResultItem] = []
+        skipped = 0
 
         for idx, flat_params in enumerate(combos):
             mode = flat_params.get("mode", config.composite_mode)
@@ -237,11 +246,21 @@ class GridSearchEngine:
                 prices=prices,
                 symbol=symbol,
             )
-            items.append(item)
+            if item is not None:
+                items.append(item)
+            else:
+                skipped += 1
 
             if progress_callback is not None:
                 pct = int((idx + 1) / total * 100)
                 progress_callback(pct)
+
+        if skipped:
+            logger.warning(
+                "Grid search: %d of %d combinations skipped due to strategy construction errors.",
+                skipped,
+                total,
+            )
 
         # Rank by composite score (filtered by min_trades + min_win_rate)
         scored = compute_composite_scores(
@@ -295,7 +314,7 @@ class GridSearchEngine:
         mode: str,
         prices: list[StockPrice],
         symbol: str,
-    ) -> GridSearchResultItem:
+    ) -> GridSearchResultItem | None:
         """Build strategy from params, run backtest, return result item."""
         # Build per-strategy kwargs from the flat param dict
         strat_params = _build_strategy_params(config.strategy_keys, flat_params)
@@ -310,7 +329,7 @@ class GridSearchEngine:
                 logger.warning(
                     "Skipping strategy %s with params %s: %s", key, kwargs, exc
                 )
-                return self._empty_result(flat_params, mode, config.strategy_keys)
+                return None
 
         # Wrap in CompositeStrategy (or use single strategy directly)
         if len(sub_strategies) == 1:
@@ -395,23 +414,3 @@ class GridSearchEngine:
 
         return f"{strat_part}({param_part}) [{mode}]"
 
-    @staticmethod
-    def _empty_result(
-        flat_params: dict[str, Any],
-        mode: str,
-        strategy_keys: list[str],
-    ) -> GridSearchResultItem:
-        """Return a zero-valued result for failed strategy construction."""
-        return GridSearchResultItem(
-            name=f"FAILED({strategy_keys}) [{mode}]",
-            params=flat_params,
-            total_return=0.0,
-            annualized_return=0.0,
-            max_drawdown=0.0,
-            win_rate=0.0,
-            total_trades=0,
-            profit_factor=0.0,
-            sharpe=0.0,
-            wins=0,
-            losses=0,
-        )

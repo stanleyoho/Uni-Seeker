@@ -60,6 +60,13 @@ class BacktestHistoryItem(BaseModel):
     total_trades: int
     profit_factor: float
     trade_log: list[TradeLogEntry] | None = None
+    equity_curve: list[float] | None = None
+    backtest_type: str = "single"
+    composite_mode: str | None = None
+    date_range_start: str | None = None
+    date_range_end: str | None = None
+    buy_hold_return: float | None = None
+    trading_days: int | None = None
     created_at: str
 
 

@@ -24,7 +24,8 @@
     "alerts": "通知",
     "marketOpen": "盤中",
     "marketClosed": "休市",
-    "quickSearch": "搜尋"
+    "quickSearch": "搜尋",
+    "backtestHistory": "歷史"
   },
   "search": {
     "placeholder": "輸入代號或名稱",

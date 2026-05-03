@@ -11,6 +11,8 @@ import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { Sparkline } from "@/components/stratos/charts";
 import { MarketBadge } from "@/components/ui/badge";
 
+import { AmbientBackground } from "@/components/stratos/ambient";
+
 interface WatchlistRowData extends WatchlistItem {
   price?: StockPrice | null;
   loading: boolean;
@@ -147,273 +149,170 @@ export default function WatchlistPage() {
 
   const wl = t.watchlist;
 
-  const sortOptions: { key: SortKey; label: string }[] = [
-    { key: "symbol", label: "代號" },
-    { key: "name", label: "名稱" },
-    { key: "change", label: "漲跌幅" },
-    { key: "volume", label: "成交量" },
-  ];
-
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 animate-fade-in">
-      {/* Toolbar */}
-      <GlassPanel noPadding>
-        <div
-          className="flex flex-wrap items-center gap-2 px-4 py-2.5"
-          style={{ borderBottom: "1px solid var(--border-color)" }}
-        >
-          {/* Left: action buttons */}
-          <div className="flex items-center gap-2">
-            <label className="cursor-pointer">
-              <ClippedButton variant="cyan-ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-                CSV 匯入
-              </ClippedButton>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleImport}
-                className="hidden"
-              />
-            </label>
-            {items.length > 0 && (
-              <ClippedButton variant="cyan-ghost" size="sm" onClick={handleExport}>
-                CSV 匯出
-              </ClippedButton>
-            )}
-            {items.length > 0 && (
-              <ClippedButton
-                variant="red-ghost"
-                size="sm"
-                onClick={loadPrices}
-                disabled={loading}
-              >
-                {loading ? "..." : "重新整理"}
-              </ClippedButton>
-            )}
-            {selected.size > 0 && (
-              <ClippedButton variant="red-solid" size="sm" onClick={handleBulkRemove}>
-                刪除已選 ({selected.size})
-              </ClippedButton>
-            )}
+    <div className="flex-1 bg-[var(--background)]">
+      <AmbientBackground />
+      <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 border-b border-[var(--border-subtle)] pb-4 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tighter text-[var(--foreground)] uppercase">
+              {wl?.title || "Watchlist Management"}
+            </h1>
+            <p className="text-xs font-bold text-[var(--text-muted)] tracking-widest mt-1 uppercase">
+              {items.length} ACTIVE SECURITIES MONITORED
+            </p>
           </div>
-
-          {/* Right: sort + count */}
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-[11px] text-[var(--text-muted)] tabular-nums">
-              {items.length} 檔
-            </span>
-            {items.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="sort-select" className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">
-                  排序
-                </label>
-                <select
-                  id="sort-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortKey)}
-                  className="px-2 py-1 text-xs bg-[var(--glass-bg)] border border-[var(--border-color)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-cyan)]"
-                  style={{ clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))" }}
-                >
-                  {sortOptions.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <label className="cursor-pointer">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-cyan)] transition-all"
+              >
+                IMPORT CSV
+              </button>
+              <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} className="hidden" />
+            </label>
+            <button 
+              onClick={handleExport}
+              className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-cyan)] transition-all"
+            >
+              EXPORT CSV
+            </button>
+            <ClippedButton variant="red-solid" size="sm" onClick={loadPrices} disabled={loading}>
+              {loading ? "FETCHING..." : "SYNC PRICES"}
+            </ClippedButton>
+            {selected.size > 0 && (
+              <ClippedButton variant="red-ghost" size="sm" onClick={handleBulkRemove}>
+                DELETE SELECTED [{selected.size}]
+              </ClippedButton>
             )}
           </div>
         </div>
 
-        {/* Empty State */}
+        {/* List Content */}
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div
-              className="w-16 h-16 mx-auto mb-4 flex items-center justify-center"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid var(--border-color)",
-                clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="1.5">
-                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          <GlassPanel className="py-24 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center bg-[var(--bg-secondary)] border border-dashed border-[var(--border-subtle)] rotate-45">
+              <svg className="-rotate-45 w-6 h-6 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <p className="text-[var(--foreground)] text-sm font-semibold mb-1">
-              {wl?.emptyTitle ?? "No stocks in watchlist"}
-            </p>
-            <p className="text-[var(--text-muted)] text-xs mb-4">
-              {wl?.emptyMessage ?? "Search for a stock and click the star icon to add it here"}
-            </p>
-            <Link href="/">
-              <ClippedButton variant="red-solid" size="sm">
-                {wl?.goSearch ?? "Search Stocks"}
-              </ClippedButton>
+            <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-[0.2em]">Asset monitoring offline</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-2 uppercase">Your watchlist is currently empty</p>
+            <Link href="/" className="inline-block mt-6">
+              <ClippedButton variant="red-solid" size="md">DISCOVER ASSETS</ClippedButton>
             </Link>
-          </div>
-        ) : loading && rowData.every((r) => r.loading) ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-[var(--border-color)] border-t-[var(--accent-cyan)] rounded-full animate-spin" />
-              <span className="text-[var(--text-muted)] text-sm">{wl?.loading ?? "Loading prices..."}</span>
-            </div>
-          </div>
+          </GlassPanel>
         ) : (
-          <>
-            {/* Dense Table Header */}
-            <div
-              className="grid items-center gap-2 px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold"
-              style={{
-                borderBottom: "1px solid var(--border-color)",
-                gridTemplateColumns: "20px 24px 1fr 80px 90px 100px 80px",
-              }}
-            >
-              <label className="flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someSelected;
-                  }}
-                  onChange={toggleSelectAll}
-                  className="w-3 h-3 accent-[var(--accent-primary)] cursor-pointer"
-                  aria-label="Select all"
-                />
-              </label>
-              <span className="text-center">
-                <svg className="w-3 h-3 mx-auto" fill="var(--text-muted)" viewBox="0 0 24 24" opacity={0.5}>
-                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </span>
-              <span>代號 / 名稱</span>
-              <span className="text-right hidden sm:block">走勢</span>
-              <span className="text-right">現價</span>
-              <span className="text-right">漲跌%</span>
-              <span className="text-right hidden md:block">成交量</span>
-            </div>
-
-            {/* Table Rows */}
-            {sortedRows.map((row) => {
-              const price = row.price;
-              const change = price ? parseFloat(price.change) : 0;
-              const changePct = price ? parseFloat(price.change_percent) : 0;
-              const volume = price?.volume ?? null;
-              const isSelected = selected.has(row.symbol);
-              const sparkColor = change >= 0 ? "var(--stock-up)" : "var(--stock-down)";
-
-              return (
-                <div
-                  key={row.symbol}
-                  className="grid items-center gap-2 px-3 py-2 transition-colors duration-75 hover:bg-white/[0.02] group"
-                  style={{
-                    borderBottom: "1px solid var(--border-color)",
-                    borderLeft: isSelected ? "2px solid var(--accent-primary)" : "2px solid transparent",
-                    background: isSelected ? "rgba(238, 63, 44, 0.04)" : undefined,
-                    gridTemplateColumns: "20px 24px 1fr 80px 90px 100px 80px",
-                  }}
-                >
-                  {/* Checkbox */}
-                  <label className="flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(row.symbol)}
-                      className="w-3 h-3 accent-[var(--accent-primary)] cursor-pointer"
-                      aria-label={`Select ${row.symbol}`}
-                    />
-                  </label>
-
-                  {/* Star */}
-                  <button
-                    onClick={() => remove(row.symbol)}
-                    className="text-yellow-400/70 hover:text-yellow-400 transition-colors flex items-center justify-center"
-                    title={wl?.remove ?? "Remove from watchlist"}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                  </button>
-
-                  {/* Symbol + Name */}
-                  <Link
-                    href={`/stocks/${encodeURIComponent(row.symbol)}`}
-                    className="min-w-0"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[var(--foreground)] font-bold text-[13px] group-hover:text-[var(--accent-primary)] transition-colors tabular-nums">
-                        {row.symbol.replace(".TW", "").replace(".TWO", "")}
-                      </span>
-                      <span className="text-[var(--text-muted)] text-xs truncate">{row.name}</span>
-                      <MarketBadge market={row.market} />
-                    </div>
-                  </Link>
-
-                  {/* Sparkline */}
-                  <div className="hidden sm:flex justify-end">
-                    {price && (
-                      <Sparkline
-                        data={[
-                          parseFloat(price.open),
-                          parseFloat(price.high),
-                          parseFloat(price.low),
-                          parseFloat(price.close),
-                        ]}
-                        color={sparkColor}
-                        width={60}
-                        height={18}
+          <GlassPanel noPadding title="REAL-TIME ASSET MONITOR">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                        onChange={toggleSelectAll}
+                        className="w-3.5 h-3.5 accent-[var(--accent-primary)] cursor-pointer"
                       />
-                    )}
-                  </div>
+                    </th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Symbol</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Name</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden sm:table-cell">Intraday</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Price</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Chg%</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden md:table-cell">Market Cap</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {sortedRows.map((row) => {
+                    const price = row.price;
+                    const changePct = price ? parseFloat(price.change_percent) : 0;
+                    const isUp = changePct >= 0;
+                    const isSelected = selected.has(row.symbol);
 
-                  {/* Price */}
-                  {row.loading ? (
-                    <div className="flex justify-end">
-                      <div className="w-3 h-3 border-2 border-[var(--border-color)] border-t-[var(--accent-cyan)] rounded-full animate-spin" />
-                    </div>
-                  ) : price ? (
-                    <span className="text-[var(--foreground)] text-[13px] font-semibold tabular-nums text-right">
-                      {parseFloat(price.close).toLocaleString()}
-                    </span>
-                  ) : (
-                    <span className="text-[var(--text-muted)] text-xs text-right">--</span>
-                  )}
-
-                  {/* Change % */}
-                  {!row.loading && price ? (
-                    <div className="flex justify-end">
-                      <span
-                        className="text-xs font-semibold tabular-nums px-2 py-0.5"
-                        style={{
-                          color: change > 0 ? "var(--stock-up)" : change < 0 ? "var(--stock-down)" : "var(--text-muted)",
-                          background: change > 0 ? "rgba(16,185,129,0.1)" : change < 0 ? "rgba(239,68,68,0.1)" : "transparent",
-                          clipPath: "polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))",
-                        }}
+                    return (
+                      <tr 
+                        key={row.symbol}
+                        className={`transition-all hover:bg-[var(--card-hover)] group relative ${isSelected ? "bg-[var(--accent-primary)]/5" : ""}`}
                       >
-                        {change > 0 ? "+" : ""}{changePct.toFixed(2)}%
-                      </span>
-                    </div>
-                  ) : !row.loading ? (
-                    <span className="text-[var(--text-muted)] text-xs text-right">--</span>
-                  ) : (
-                    <span />
-                  )}
-
-                  {/* Volume */}
-                  {!row.loading && volume !== null ? (
-                    <span className="text-[var(--text-muted)] text-xs tabular-nums text-right hidden md:block">
-                      {volume.toLocaleString()}
-                    </span>
-                  ) : (
-                    <span className="hidden md:block" />
-                  )}
-                </div>
-              );
-            })}
-          </>
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(row.symbol)}
+                            className="w-3.5 h-3.5 accent-[var(--accent-primary)] cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Link href={`/stocks/${encodeURIComponent(row.symbol)}`} className="font-bold text-sm text-[var(--foreground)] tabular-nums group-hover:text-[var(--accent-cyan)] transition-colors">
+                            {row.symbol.split('.')[0]}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[120px] block uppercase">
+                            {row.name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right hidden sm:table-cell">
+                          {price && (
+                            <div className="flex justify-end">
+                              <Sparkline
+                                data={[parseFloat(price.open), parseFloat(price.high), parseFloat(price.low), parseFloat(price.close)]}
+                                color={isUp ? "var(--stock-up)" : "var(--stock-down)"}
+                                width={60}
+                                height={20}
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className={`px-4 py-4 text-right tabular-nums text-sm font-bold ${isUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"}`}>
+                          {row.loading ? (
+                            <div className="inline-block w-4 h-4 border-2 border-[var(--border-subtle)] border-t-[var(--accent-cyan)] rounded-full animate-spin" />
+                          ) : price ? (
+                            parseFloat(price.close).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                          ) : "--"}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          {price && (
+                            <div className={`inline-block px-2 py-0.5 text-[11px] font-bold tabular-nums min-w-[60px] text-center ${isUp ? "bg-[var(--stock-up-bg)] text-[var(--stock-up)]" : "bg-[var(--stock-down-bg)] text-[var(--stock-down)]"}`}>
+                              {isUp ? "+" : ""}{changePct.toFixed(2)}%
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-right tabular-nums text-[11px] font-bold text-[var(--text-secondary)] hidden md:table-cell uppercase">
+                          {price?.market || "Global"}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <div className="flex justify-end items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Link href={`/stocks/${encodeURIComponent(row.symbol)}`} className="text-[10px] font-bold text-[var(--accent-cyan)] hover:underline">
+                              ANALYZE
+                            </Link>
+                            <button 
+                              onClick={() => remove(row.symbol)}
+                              className="text-[var(--text-muted)] hover:text-red-500 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </GlassPanel>
         )}
-      </GlassPanel>
+      </main>
     </div>
   );
 }

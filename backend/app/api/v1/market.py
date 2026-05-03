@@ -15,6 +15,12 @@ from app.api.deps import get_db
 from app.cache import cache_get, cache_set, make_cache_key
 from app.models.price import StockPrice
 from app.models.stock import Stock
+from app.schemas.market import (
+    MarketIndex,
+    MarketIndicesResponse,
+    MarketMover,
+    MarketMoversResponse,
+)
 
 MARKET_CACHE_TTL = 300  # 5 minutes
 MIN_INDICES_COUNT = 4
@@ -23,38 +29,6 @@ MIN_MOVERS_COUNT = 5
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 router = APIRouter(prefix="/market", tags=["market"])
-
-
-# -- Schemas ------------------------------------------------------------------
-
-
-class MarketMover(BaseModel):
-    symbol: str
-    name: str
-    market: str
-    close: float
-    change: float
-    change_percent: float
-    volume: int
-
-
-class MarketMoversResponse(BaseModel):
-    gainers: list[MarketMover]
-    losers: list[MarketMover]
-    most_active: list[MarketMover]
-    date: str | None
-
-
-class MarketIndex(BaseModel):
-    symbol: str
-    name: str
-    value: float
-    change: float
-    change_percent: float
-
-
-class MarketIndicesResponse(BaseModel):
-    indices: list[MarketIndex]
 
 
 # -- Demo / Fallback Data -----------------------------------------------------

@@ -1,4 +1,4 @@
-"""Sync task: PER / PBR / dividend yield (TaiwanStockPER)."""
+"""Sync task: Monthly Revenue (TaiwanStockMonthRevenue)."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.revenue import MonthlyRevenue
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
-from app.models.valuation import StockValuation
 from app.modules.finmind.client import FinMindClient, FinMindRateLimitError
 from app.config import settings
 from app.modules.sync_manager.rate_limiter import RateLimiter
@@ -31,10 +31,19 @@ def _safe_decimal(value: object) -> Decimal | None:
         return None
 
 
-class PerPbrSyncTask(SyncTask):
-    """Synchronise PER, PBR and dividend yield for all tracked stocks."""
+def _to_period(row_date: str) -> str | None:
+    """Convert a FinMind date string (e.g. '2026-03-01') to period 'YYYY-MM'."""
+    try:
+        d = date.fromisoformat(row_date)
+        return f"{d.year}-{d.month:02d}"
+    except (ValueError, TypeError):
+        return None
 
-    dataset_name = "per_pbr"
+
+class RevenueSyncTask(SyncTask):
+    """Synchronise monthly revenue for all tracked stocks."""
+
+    dataset_name = "revenue"
 
     async def run(
         self,
@@ -87,7 +96,7 @@ class PerPbrSyncTask(SyncTask):
 
             try:
                 raw = await client.fetch(
-                    dataset="TaiwanStockPER",
+                    dataset="TaiwanStockMonthRevenue",
                     data_id=data_id,
                     start_date=start_date.isoformat(),
                     end_date=today.isoformat(),
@@ -97,7 +106,7 @@ class PerPbrSyncTask(SyncTask):
                 break
             except Exception as exc:
                 logger.error(
-                    "per_pbr_sync_fetch_error",
+                    "revenue_sync_fetch_error",
                     stock=stock.symbol,
                     error=str(exc),
                 )
@@ -107,24 +116,37 @@ class PerPbrSyncTask(SyncTask):
 
             max_date = start_date
             for row in raw:
+                period = _to_period(row.get("date", ""))
+                if period is None:
+                    continue
+
+                revenue = _safe_decimal(row.get("revenue"))
+                if revenue is None:
+                    continue
+
+                mom = _safe_decimal(row.get("revenue_month"))
+                yoy = _safe_decimal(row.get("revenue_year"))
+
                 try:
                     row_date = date.fromisoformat(row["date"])
                 except (KeyError, ValueError):
                     continue
 
-                pe = _safe_decimal(row.get("PER"))
-                pb = _safe_decimal(row.get("PBR"))
-                dy = _safe_decimal(row.get("dividend_yield"))
-
-                stmt = pg_insert(StockValuation).values(
+                stmt = pg_insert(MonthlyRevenue).values(
                     stock_id=stock.id,
-                    date=row_date,
-                    pe_ratio=pe,
-                    pb_ratio=pb,
-                    dividend_yield=dy,
+                    period=period,
+                    revenue=revenue,
+                    mom_growth=mom,
+                    yoy_growth=yoy,
+                    currency="TWD",
                 )
-                stmt = stmt.on_conflict_do_nothing(
-                    constraint="uq_stock_valuations_stock_id_date",
+                stmt = stmt.on_conflict_do_update(
+                    constraint="uq_monthly_revenues_stock_id_period",
+                    set_={
+                        "revenue": stmt.excluded.revenue,
+                        "mom_growth": stmt.excluded.mom_growth,
+                        "yoy_growth": stmt.excluded.yoy_growth,
+                    },
                 )
                 await db.execute(stmt)
                 result.records_synced += 1
@@ -166,7 +188,7 @@ class PerPbrSyncTask(SyncTask):
             result.stopped_reason = "completed"
 
         logger.info(
-            "per_pbr_sync_finished",
+            "revenue_sync_finished",
             stocks_processed=result.stocks_processed,
             records=result.records_synced,
             stopped=result.stopped_reason,

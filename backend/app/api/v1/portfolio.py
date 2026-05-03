@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -60,7 +61,7 @@ async def run_portfolio_backtest(
 
     # Validate weights sum to 1.0
     total_weight = sum(a.weight for a in req.allocations)
-    if abs(total_weight - 1.0) > 1e-6:
+    if abs(total_weight - 1.0) > 1e-4:
         raise HTTPException(
             status_code=400,
             detail=f"Allocation weights must sum to 1.0, got {total_weight:.6f}",
@@ -103,7 +104,18 @@ async def run_portfolio_backtest(
     )
 
     engine = PortfolioBacktestEngine(config)
-    result = engine.run(allocations, prices_map)
+    try:
+        result = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(
+                None, lambda: engine.run(allocations, prices_map)
+            ),
+            timeout=30,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail="Portfolio backtest timed out after 30 seconds",
+        )
 
     # Convert trade log to serializable dicts
     trade_log_dicts = [

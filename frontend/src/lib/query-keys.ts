@@ -40,6 +40,8 @@ export const queryKeys = {
     queue: () => [...queryKeys.backtest.all, "queue"] as const,
     history: (symbol?: string, limit?: number) =>
       [...queryKeys.backtest.all, "history", symbol, limit] as const,
+    result: (id: number) =>
+      [...queryKeys.backtest.all, "result", id] as const,
   },
   portfolio: {
     all: ["portfolio"] as const,
