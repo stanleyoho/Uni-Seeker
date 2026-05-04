@@ -203,6 +203,12 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
     return await _build_group_response(db, group)
 
 
+@router.get("/groups", response_model=list[GroupResponse])
+async def list_groups(db: DbDep) -> list[GroupResponse]:
+    groups = (await db.execute(select(AccountGroup))).scalars().all()
+    return [await _build_group_response(db, g) for g in groups]
+
+
 @router.get("/groups/{group_id}", response_model=GroupResponse)
 async def get_group(group_id: int, db: DbDep) -> GroupResponse:
     group = await db.get(AccountGroup, group_id)
