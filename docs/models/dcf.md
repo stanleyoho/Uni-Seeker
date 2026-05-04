@@ -55,20 +55,25 @@ Where:
 ## Inputs
 | Input | Source | Type | Required | Description |
 |-------|--------|------|----------|-------------|
-| free_cash_flow | Cash flow statement | float | Yes | Current annual FCF (must be > 0) |
-| growth_rate | Analyst estimate | float | No | Annual FCF growth rate (default: 0.05 / 5%) |
+| free_cash_flow | Cash flow statement | float | Yes | Latest annual FCF (TTM) |
+| growth_rate | Dynamic (CAGR) | float | Auto | 3-year historical CAGR (clamped 2-15%) |
 | terminal_growth | Macro assumption | float | No | Perpetual growth rate (default: 0.02 / 2%) |
-| discount_rate | WACC estimate | float | No | Discount rate (default: 0.10 / 10%) |
-| shares_outstanding | Company filings | float | No | Number of shares (default: 1.0) |
+| discount_rate | Dynamic (WACC) | float | Auto | Estimated via price volatility (Proxy Beta) |
+| shares_outstanding | Company filings | float | Yes | Precise count from latest Balance Sheet |
 | projection_years | Model config | int | No | Explicit forecast period (default: 5) |
 
 ## Outputs
 | Output | Type | Range | Description |
 |--------|------|-------|-------------|
-| cheap_price | float | >= 0 | Fair price * 0.70 (margin of safety) |
-| fair_price | float | >= 0 | DCF-derived intrinsic value per share |
+| cheap_price | float | >= 0 | Fair price * 0.70 (30% Margin of Safety) |
+| fair_price | float | >= 0 | DCF intrinsic value (2-Stage model) |
 | expensive_price | float | >= 0 | Fair price * 1.30 |
-| confidence | float | 0.0-1.0 | Fixed at 0.5 |
+| confidence | float | 0.0-1.0 | Dynamic based on data availability (Base: 0.6) |
+
+## Validation & Accuracy Enforcement
+- **Dynamic Growth**: Calculates 12-quarter EPS CAGR to avoid static bias.
+- **Dynamic WACC**: Uses 250-day price volatility to proxy Beta, adjusting the discount rate for high-risk assets.
+- **Outlier Check**: Composite engine penalizes confidence if DCF deviates > 150% from market price.
 | details.fcf | float | -- | Input FCF |
 | details.growth_rate | float | -- | Growth rate used |
 | details.terminal_growth | float | -- | Terminal growth rate |

@@ -12,6 +12,7 @@ import {
   fetchLowBaseRanking,
   fetchRevenueAnalysis,
   fetchInstitutional,
+  fetchValuationEstimates,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -100,5 +101,14 @@ export function useLowBaseRanking(limit = 20) {
     queryKey: queryKeys.lowBase.ranking(limit),
     queryFn: () => fetchLowBaseRanking(limit),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useValuation(symbol: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.stocks.valuation(symbol),
+    queryFn: () => fetchValuationEstimates(symbol),
+    staleTime: 10 * 60 * 1000,
+    enabled: enabled && !!symbol,
   });
 }

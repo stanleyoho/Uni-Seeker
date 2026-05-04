@@ -19,12 +19,13 @@ from app.modules.sync_manager.tasks.per_pbr import PerPbrSyncTask
 from app.modules.sync_manager.tasks.prices import PriceSyncTask
 from app.modules.sync_manager.tasks.revenue import RevenueSyncTask
 from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
+from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
 
 logger = structlog.get_logger()
 
 # Execution order: stock_info first (so stocks table is up to date),
 # then the per-stock datasets.
-_TASK_ORDER: list[str] = ["stock_info", "prices", "margin", "per_pbr", "revenue", "financials"]
+_TASK_ORDER: list[str] = ["stock_info", "prices", "margin", "per_pbr", "revenue", "financials", "valuation"]
 
 
 class SyncScheduler:
@@ -39,6 +40,7 @@ class SyncScheduler:
             "per_pbr": PerPbrSyncTask(),
             "revenue": RevenueSyncTask(),
             "financials": FinancialsSyncTask(),
+            "valuation": ValuationSyncTask(),
         }
         self._notifier: TelegramNotifier | None = None
 

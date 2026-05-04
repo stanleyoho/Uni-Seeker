@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { StockChart } from "@/components/charts/stock-chart";
 import { IndicatorPanel } from "./components/indicator-panel";
+import { ValuationPanel } from "./components/valuation-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
 import { StatCard } from "@/components/ui/stat-card";
@@ -15,7 +16,7 @@ import { ErrorState } from "@/components/ui/empty-state";
 import { ScoreBar } from "@/components/ui/score-bar";
 import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primitives";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { usePrices, useCompanyInfo, useMarginData, useRevenue } from "@/hooks/use-market-data";
+import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation } from "@/hooks/use-market-data";
 import { getErrorMessage } from "@/lib/type-guards";
 import { AmbientBackground } from "@/components/stratos/ambient";
 
@@ -199,6 +200,7 @@ export default function StockDetailPage() {
   const isTWSymbol = symbol.includes(".TW");
   const { data: marginData, isLoading: marginLoading } = useMarginData(symbol, activeTab === "margin" && isTWSymbol);
   const { data: revenueData, isLoading: revenueLoading } = useRevenue(symbol, activeTab === "revenue");
+  const { data: valuationData, isLoading: valuationLoading } = useValuation(symbol, activeTab === "valuation");
 
   const prices = priceData?.data ?? [];
   const error = priceError ? getErrorMessage(priceError) : null;
@@ -217,6 +219,7 @@ export default function StockDetailPage() {
   const tabs = [
     { key: "chart", label: "Overview" },
     { key: "indicators", label: "Analysis" },
+    { key: "valuation", label: "Valuation" },
     { key: "revenue", label: "Financials" },
     ...(isTWSymbol ? [{ key: "margin", label: "Flows" }] : []),
   ];
@@ -365,6 +368,18 @@ export default function StockDetailPage() {
           {activeTab === "indicators" && (
             <div className="animate-fade-up">
               <IndicatorPanel prices={prices} t={t} />
+            </div>
+          )}
+
+          {activeTab === "valuation" && (
+            <div className="animate-fade-up">
+              {valuationLoading ? (
+                <div className="h-64 flex items-center justify-center"><LoadingSpinner /></div>
+              ) : valuationData ? (
+                <ValuationPanel valuation={valuationData} currentPrice={latestPrice ? parseFloat(latestPrice.close) : 0} />
+              ) : (
+                <GlassPanel><div className="py-20 text-center text-[var(--text-muted)]">No valuation data available</div></GlassPanel>
+              )}
             </div>
           )}
 

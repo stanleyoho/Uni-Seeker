@@ -18,7 +18,9 @@
   - `GET /api/v1/company/{symbol}` (via `useCompanyInfo` hook)
   - `GET /api/v1/stocks/{symbol}/margin` (via `useMarginData` hook, conditional)
   - `GET /api/v1/stocks/{symbol}/revenue` (via `useRevenue` hook, conditional)
-- **Data Models:** `StockPrice`, `CompanyInfo`, `MarginData`, `RevenueAnalysis`
+  - `GET /api/v1/valuation/{symbol}/estimates` (via `useValuation` hook, conditional)
+- **Data Models:** `StockPrice`, `CompanyInfo`, `MarginData`, `RevenueAnalysis`, `ValuationEstimates`
+- **Components:** `StockChart`, `IndicatorPanel`, `RevenuePanel`, `MarginPanel`, `ValuationPanel`
 
 ### Page: Research Screener (`/research`)
 - **API Endpoints Used:**
