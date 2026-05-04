@@ -11,8 +11,12 @@ import {
   fetchJournalGroup,
   createJournalGroup,
   fetchJournalAlerts,
+  type JournalAccount,
   type JournalAccountCreate,
   type JournalTradeCreate,
+  type JournalTradeListResponse,
+  type JournalGroup,
+  type JournalAlertsResponse,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -21,7 +25,7 @@ export function useJournalAccounts() {
     queryKey: queryKeys.journal.accounts(),
     queryFn: fetchJournalAccounts,
     staleTime: 30 * 1000,
-    placeholderData: [],
+    placeholderData: (): JournalAccount[] => [],
   });
 }
 
@@ -53,7 +57,7 @@ export function useJournalTrades(
     queryFn: () => fetchJournalTrades(accountId, opts),
     staleTime: 15 * 1000,
     enabled: accountId > 0,
-    placeholderData: { total: 0, items: [] },
+    placeholderData: (): JournalTradeListResponse => ({ total: 0, items: [] }),
   });
 }
 
@@ -74,7 +78,7 @@ export function useJournalGroups() {
     queryKey: queryKeys.journal.groups(),
     queryFn: fetchJournalGroups,
     staleTime: 60 * 1000,
-    placeholderData: [],
+    placeholderData: (): JournalGroup[] => [],
   });
 }
 
@@ -102,6 +106,6 @@ export function useJournalAlerts() {
     queryKey: queryKeys.journal.alerts(),
     queryFn: fetchJournalAlerts,
     staleTime: 60 * 1000,
-    placeholderData: { alerts: [] },
+    placeholderData: (): JournalAlertsResponse => ({ alerts: [] }),
   });
 }

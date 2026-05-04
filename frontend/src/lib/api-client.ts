@@ -958,7 +958,7 @@ export async function fetchJournalTrades(
 ): Promise<JournalTradeListResponse> {
   const qs = new URLSearchParams();
   if (params?.symbol) qs.set("symbol", params.symbol);
-  if (params?.page) qs.set("page", String(params.page));
+  if (params?.page !== undefined) qs.set("page", String(params.page));
   if (params?.page_size) qs.set("page_size", String(params.page_size));
   const query = qs.toString() ? `?${qs.toString()}` : "";
   return apiFetch<JournalTradeListResponse>(
