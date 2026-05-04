@@ -9,12 +9,24 @@ from app.models.margin import MarginTrading
 from app.models.notification import NotificationLog, NotificationRule
 from app.models.portfolio_backtest import PortfolioBacktestRecord
 from app.models.price import StockPrice
+from app.models.price_estimate import PriceEstimate
 from app.models.revenue import MonthlyRevenue
 from app.models.signal_scan import SignalScanRecord
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
 from app.models.user import User
 from app.models.valuation import StockValuation
+from app.models.journal import (
+    AccountGroup,
+    AccountGroupMember,
+    AllocationRule,
+    FXRate,
+    PortfolioSnapshot,
+    Position,
+    Trade,
+    TradeAccount,
+    TradeLot,
+)
 
 __all__ = [
     "BacktestJob",
@@ -30,6 +42,7 @@ __all__ = [
     "NotificationRule",
     "NotificationStatus",
     "PortfolioBacktestRecord",
+    "PriceEstimate",
     "SignalScanRecord",
     "Stock",
     "StockPrice",
@@ -37,4 +50,13 @@ __all__ = [
     "SyncState",
     "User",
     "UserTier",
+    "AccountGroup",
+    "AccountGroupMember",
+    "AllocationRule",
+    "FXRate",
+    "PortfolioSnapshot",
+    "Position",
+    "Trade",
+    "TradeAccount",
+    "TradeLot",
 ]
