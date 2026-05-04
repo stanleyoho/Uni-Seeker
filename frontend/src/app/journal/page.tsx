@@ -99,7 +99,10 @@ export default function JournalDashboard() {
                   fontSize: 12,
                   color: "var(--foreground)",
                 }}
-                formatter={(v: unknown) => [fmt(Number(v)), "市值"]}
+                formatter={(v: unknown) => {
+                  const n = Number(v);
+                  return [Number.isFinite(n) ? fmt(n) : "—", "市值"];
+                }}
               />
               <Area
                 type="monotone"
@@ -129,7 +132,7 @@ export default function JournalDashboard() {
                 const isOver = a.direction === "over";
                 return (
                   <div
-                    key={i}
+                    key={`${a.scope_id}-${a.symbol}`}
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
