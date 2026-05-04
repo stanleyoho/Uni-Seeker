@@ -69,7 +69,7 @@ async def _upsert_position(
             index_elements=["account_id", "symbol", "market"],
             set_={
                 "quantity": Position.quantity + qty_delta,
-                "total_cost": Position.total_cost + cost_delta,
+                "total_cost": sa_func.coalesce(Position.total_cost, Decimal("0")) + cost_delta,
                 "realized_pnl": Position.realized_pnl + realized_pnl_delta,
                 "last_updated": sa_func.now(),
             },

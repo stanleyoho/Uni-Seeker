@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ── Account ───────────────────────────────────────────────────────────────────
@@ -45,6 +45,18 @@ class TradeCreate(BaseModel):
     tags: list[str] = Field(default_factory=list)
     note: str | None = None
     split_ratio: Decimal | None = None  # For SPLIT: new_shares / old_shares (e.g. 2.0 for 2:1)
+
+    @model_validator(mode="after")
+    def validate_action_fields(self) -> "TradeCreate":
+        if self.action in ("BUY", "SELL"):
+            if self.price is None:
+                raise ValueError(f"price is required for {self.action}")
+            if self.quantity is None:
+                raise ValueError(f"quantity is required for {self.action}")
+        if self.action == "SPLIT":
+            if self.split_ratio is None:
+                raise ValueError("split_ratio is required for SPLIT")
+        return self
 
 
 class TradeResponse(BaseModel):

@@ -174,6 +174,23 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
     db.add(group)
     await db.flush()  # get group.id
 
+    if body.members:
+        requested_ids = {m.account_id for m in body.members}
+        found_ids = {
+            row.id
+            for row in (
+                await db.execute(
+                    select(TradeAccount.id).where(TradeAccount.id.in_(list(requested_ids)))
+                )
+            ).scalars().all()
+        }
+        missing = requested_ids - found_ids
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Account IDs not found: {sorted(missing)}",
+            )
+
     for member in body.members:
         db.add(AccountGroupMember(
             group_id=group.id,
@@ -200,9 +217,32 @@ async def _build_group_response(db: AsyncSession, group: AccountGroup) -> GroupR
             select(AccountGroupMember).where(AccountGroupMember.group_id == group.id)
         )
     ).scalars().all()
+
+    if not members_rows:
+        return GroupResponse(
+            id=group.id,
+            name=group.name,
+            description=group.description,
+            base_currency=group.base_currency,
+            members=[],
+        )
+
+    # Load all member accounts in one query (avoid N+1)
+    member_account_ids = [m.account_id for m in members_rows]
+    accounts_map: dict[int, TradeAccount] = {
+        acc.id: acc
+        for acc in (
+            await db.execute(
+                select(TradeAccount).where(TradeAccount.id.in_(member_account_ids))
+            )
+        ).scalars().all()
+    }
+
     members = []
     for m in members_rows:
-        acc = await db.get(TradeAccount, m.account_id)
+        acc = accounts_map.get(m.account_id)
+        if acc is None:
+            continue  # account was deleted, skip orphaned member
         members.append(GroupMemberResponse(
             account_id=m.account_id,
             target_weight=m.target_weight,

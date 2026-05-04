@@ -95,6 +95,8 @@ class FIFOEngine:
         WARNING: Returned Lot objects are live references to internal state.
         Callers must not mutate them after calling this method.
         """
+        if ratio <= Decimal("0"):
+            raise ValueError(f"Split ratio must be positive, got {ratio}")
         for lot in self._lots:
             lot.remaining_qty = lot.remaining_qty * ratio
             lot.original_qty = lot.original_qty * ratio
