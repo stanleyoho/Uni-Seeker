@@ -28,7 +28,7 @@ function CreateAccountForm({ onDone }: { onDone: () => void }) {
         broker: broker || null,
         market,
         currency,
-      } as JournalAccountCreate);
+      });
       onDone();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "建立失敗");

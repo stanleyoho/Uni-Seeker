@@ -20,7 +20,7 @@ function fmt(n: number, dec = 0) {
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const accountId = Number(id);
+  const accountId = Number(id) || 0;
   const { data, isLoading } = useJournalAccount(accountId);
   const { data: accounts = [] } = useJournalAccounts();
   const [showModal, setShowModal] = useState(false);
