@@ -32,6 +32,8 @@ export const queryKeys = {
         startDate,
         endDate,
       ] as const,
+    valuation: (symbol: string) =>
+      [...queryKeys.stocks.detail(symbol), "valuation"] as const,
   },
   backtest: {
     all: ["backtest"] as const,
@@ -59,5 +61,15 @@ export const queryKeys = {
     all: ["low-base"] as const,
     ranking: (limit?: number) =>
       [...queryKeys.lowBase.all, "ranking", limit] as const,
+  },
+  journal: {
+    all: ["journal"] as const,
+    accounts: () => [...queryKeys.journal.all, "accounts"] as const,
+    account: (id: number) => [...queryKeys.journal.all, "account", id] as const,
+    trades: (accountId: number, symbol?: string, page?: number) =>
+      [...queryKeys.journal.all, "trades", accountId, symbol, page] as const,
+    groups: () => [...queryKeys.journal.all, "groups"] as const,
+    group: (id: number) => [...queryKeys.journal.all, "group", id] as const,
+    alerts: () => [...queryKeys.journal.all, "alerts"] as const,
   },
 } as const;

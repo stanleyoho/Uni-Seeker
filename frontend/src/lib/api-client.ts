@@ -494,9 +494,28 @@ export interface ScanResponse {
   strategies_used: string[];
 }
 
+// --- Valuation ---
+
+export interface PriceEstimate {
+  model_type: string;
+  date: string;
+  cheap_price: string | null;
+  fair_price: string | null;
+  expensive_price: string | null;
+  confidence: string;
+  details: Record<string, any>;
+}
+
+export interface ValuationEstimates {
+  symbol: string;
+  estimates: PriceEstimate[];
+  latest_composite: PriceEstimate | null;
+}
+
 // ---------------------------------------------------------------------------
-// API functions (all using apiFetch)
+// API functions
 // ---------------------------------------------------------------------------
+
 
 export async function fetchPrices(symbol: string, limit = 30): Promise<PriceListResponse> {
   return apiFetch<PriceListResponse>(`${API_BASE}/prices/${symbol}?limit=${limit}`);
@@ -791,4 +810,192 @@ export async function runSignalScan(req?: {
 
 export async function fetchStockSignals(symbol: string): Promise<ApiStockSignal> {
   return apiFetch<ApiStockSignal>(`${API_BASE}/scanner/${encodeURIComponent(symbol)}`);
+}
+
+// --- Valuation ---
+
+export async function fetchValuationEstimates(symbol: string): Promise<ValuationEstimates> {
+  return apiFetch<ValuationEstimates>(`${API_BASE}/valuation/${encodeURIComponent(symbol)}/estimates`);
+}
+
+// ---------------------------------------------------------------------------
+// Journal — Types
+// ---------------------------------------------------------------------------
+
+export interface JournalAccount {
+  id: number;
+  name: string;
+  broker: string | null;
+  market: "TW" | "US" | "CRYPTO";
+  currency: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface JournalPosition {
+  id: number;
+  account_id: number;
+  symbol: string;
+  market: string;
+  currency: string;
+  quantity: string;        // Decimal as string from backend
+  avg_cost_fifo: string | null;
+  total_cost: string | null;
+  realized_pnl: string;
+  is_closed: boolean;
+}
+
+export interface JournalAccountDetail {
+  account: JournalAccount;
+  positions: JournalPosition[];
+}
+
+export interface JournalTrade {
+  id: number;
+  account_id: number;
+  symbol: string;
+  market: string;
+  action: "BUY" | "SELL" | "DIVIDEND" | "SPLIT";
+  date: string;
+  price: string | null;
+  quantity: string | null;
+  fee: string;
+  tax: string;
+  trade_fx_rate: string | null;
+  tags: string[];
+  note: string | null;
+  created_at: string;
+}
+
+export interface JournalTradeListResponse {
+  total: number;
+  items: JournalTrade[];
+}
+
+export interface JournalTradeCreate {
+  symbol: string;
+  market: "TW" | "US" | "CRYPTO";
+  action: "BUY" | "SELL" | "DIVIDEND" | "SPLIT";
+  date: string;
+  price?: string | null;
+  quantity?: string | null;
+  fee?: string;
+  tax?: string;
+  trade_fx_rate?: string | null;
+  tags?: string[];
+  note?: string | null;
+  split_ratio?: string | null;
+}
+
+export interface JournalAccountCreate {
+  name: string;
+  broker?: string | null;
+  market: "TW" | "US" | "CRYPTO";
+  currency: "TWD" | "USD" | "USDT" | "BTC" | "ETH";
+  description?: string | null;
+}
+
+export interface JournalGroupMember {
+  account_id: number;
+  target_weight: string | null;
+  account: JournalAccount;
+}
+
+export interface JournalGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  base_currency: string;
+  members: JournalGroupMember[];
+}
+
+export interface JournalAllocationRule {
+  id: number;
+  symbol: string;
+  target_weight: string;
+  lower_threshold: string;
+  upper_threshold: string;
+  is_active: boolean;
+}
+
+export interface JournalRebalanceAlert {
+  scope: "account" | "group";
+  scope_id: number;
+  scope_name: string;
+  symbol: string;
+  current_weight: string;
+  target_weight: string;
+  deviation: string;    // positive = over, negative = under
+  direction: "over" | "under";
+}
+
+export interface JournalAlertsResponse {
+  alerts: JournalRebalanceAlert[];
+}
+
+// ---------------------------------------------------------------------------
+// Journal — API functions
+// ---------------------------------------------------------------------------
+
+export async function fetchJournalAccounts(): Promise<JournalAccount[]> {
+  return apiFetch<JournalAccount[]>(`${API_BASE}/journal/accounts`);
+}
+
+export async function fetchJournalAccount(id: number): Promise<JournalAccountDetail> {
+  return apiFetch<JournalAccountDetail>(`${API_BASE}/journal/accounts/${id}`);
+}
+
+export async function createJournalAccount(body: JournalAccountCreate): Promise<JournalAccount> {
+  return apiFetch<JournalAccount>(`${API_BASE}/journal/accounts`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchJournalTrades(
+  accountId: number,
+  params?: { symbol?: string; page?: number; page_size?: number },
+): Promise<JournalTradeListResponse> {
+  const qs = new URLSearchParams();
+  if (params?.symbol) qs.set("symbol", params.symbol);
+  if (params?.page) qs.set("page", String(params.page));
+  if (params?.page_size) qs.set("page_size", String(params.page_size));
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch<JournalTradeListResponse>(
+    `${API_BASE}/journal/accounts/${accountId}/trades${query}`,
+  );
+}
+
+export async function createJournalTrade(
+  accountId: number,
+  body: JournalTradeCreate,
+): Promise<JournalTrade> {
+  return apiFetch<JournalTrade>(`${API_BASE}/journal/accounts/${accountId}/trades`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchJournalGroups(): Promise<JournalGroup[]> {
+  return apiFetch<JournalGroup[]>(`${API_BASE}/journal/groups`);
+}
+
+export async function fetchJournalGroup(id: number): Promise<JournalGroup> {
+  return apiFetch<JournalGroup>(`${API_BASE}/journal/groups/${id}`);
+}
+
+export async function createJournalGroup(body: {
+  name: string;
+  description?: string | null;
+  base_currency?: string;
+  members?: { account_id: number; target_weight?: string | null }[];
+}): Promise<JournalGroup> {
+  return apiFetch<JournalGroup>(`${API_BASE}/journal/groups`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchJournalAlerts(): Promise<JournalAlertsResponse> {
+  return apiFetch<JournalAlertsResponse>(`${API_BASE}/journal/alerts`);
 }
