@@ -66,7 +66,7 @@ class Trade(Base):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     account_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("trade_accounts.id"), nullable=False, index=True
+        Integer, ForeignKey("trade_accounts.id", ondelete="RESTRICT"), nullable=False
     )
     symbol: Mapped[str] = mapped_column(String(20), nullable=False)
     market: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -78,7 +78,7 @@ class Trade(Base):
     fee: Mapped[Decimal] = mapped_column(Numeric(24, 8), default=Decimal("0"))
     tax: Mapped[Decimal] = mapped_column(Numeric(24, 8), default=Decimal("0"))
     trade_fx_rate: Mapped[Decimal | None] = mapped_column(Numeric(12, 6), default=None)
-    tags: Mapped[list] = mapped_column(JSONB, default_factory=list)
+    tags: Mapped[list[str]] = mapped_column(JSONB, default_factory=list)
     note: Mapped[str | None] = mapped_column(Text, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
@@ -96,10 +96,10 @@ class TradeLot(Base):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     trade_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("trades.id"), nullable=False
+        Integer, ForeignKey("trades.id", ondelete="CASCADE"), nullable=False
     )
     account_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("trade_accounts.id"), nullable=False
+        Integer, ForeignKey("trade_accounts.id", ondelete="RESTRICT"), nullable=False
     )
     symbol: Mapped[str] = mapped_column(String(20), nullable=False)
     market: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -116,7 +116,7 @@ class Position(Base):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     account_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("trade_accounts.id"), nullable=False, index=True
+        Integer, ForeignKey("trade_accounts.id", ondelete="CASCADE"), nullable=False, index=True
     )
     symbol: Mapped[str] = mapped_column(String(20), nullable=False)
     market: Mapped[str] = mapped_column(String(10), nullable=False)
