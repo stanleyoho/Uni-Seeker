@@ -25,7 +25,8 @@
     "marketOpen": "盤中",
     "marketClosed": "休市",
     "quickSearch": "搜尋",
-    "backtestHistory": "歷史"
+    "backtestHistory": "歷史",
+    "journal": "交易日誌"
   },
   "search": {
     "placeholder": "輸入代號或名稱",
