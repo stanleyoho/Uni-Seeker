@@ -5,6 +5,7 @@ from app.api.v1.backtest import router as backtest_router
 from app.api.v1.company import router as company_router
 from app.api.v1.heatmap import router as heatmap_router
 from app.api.v1.institutional import router as institutional_router
+from app.api.v1.journal import router as journal_router
 from app.api.v1.market import router as market_router
 from app.api.v1.financial_metrics import router as financial_metrics_router
 from app.api.v1.financials import router as financials_router
@@ -21,6 +22,7 @@ from app.api.v1.backtest_jobs import router as backtest_jobs_router
 from app.api.v1.portfolio import router as portfolio_router
 from app.api.v1.scanner import router as scanner_router
 from app.api.v1.sync import router as sync_router
+from app.api.v1.valuation_models import router as valuation_models_router
 from app.api.v1.ws import router as ws_router
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -41,7 +43,9 @@ v1_router.include_router(company_router)
 v1_router.include_router(market_router)
 v1_router.include_router(heatmap_router)
 v1_router.include_router(institutional_router)
+v1_router.include_router(journal_router)
 v1_router.include_router(sync_router)
+v1_router.include_router(valuation_models_router)
 v1_router.include_router(backtest_jobs_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
