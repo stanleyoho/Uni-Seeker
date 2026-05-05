@@ -153,6 +153,14 @@ export function OverviewTab({ ratios, healthScores, cashFlows }: OverviewTabProp
   const latest = ratios[0];
   const latestHealth = healthScores[0];
 
+  if (!latest) {
+    return (
+      <GlassPanel>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-muted)" }}>暫無財務資料</div>
+      </GlassPanel>
+    );
+  }
+
   // Build sorted time-series for trend charts (oldest → newest)
   const sorted = [...ratios].sort((a, b) => a.period.localeCompare(b.period));
 
@@ -165,16 +173,8 @@ export function OverviewTab({ ratios, healthScores, cashFlows }: OverviewTabProp
     .sort((a, b) => a.period.localeCompare(b.period))
     .map((s) => ({ period: s.period, value: Number(s.data["Free Cash Flow"] ?? 0) }));
 
-  const revenueGrowth = latest?.revenue_growth ? Number(latest.revenue_growth) : null;
+  const revenueGrowth = latest.revenue_growth ? Number(latest.revenue_growth) : null;
   const growthDir = revenueGrowth == null ? "flat" : revenueGrowth >= 0 ? "up" : "down";
-
-  if (!latest) {
-    return (
-      <GlassPanel>
-        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-muted)" }}>暫無財務資料</div>
-      </GlassPanel>
-    );
-  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

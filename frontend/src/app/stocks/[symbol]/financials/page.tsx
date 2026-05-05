@@ -47,6 +47,7 @@ export default function FinancialsPage() {
         {TABS.map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id)}
             style={{
               padding: "6px 18px",

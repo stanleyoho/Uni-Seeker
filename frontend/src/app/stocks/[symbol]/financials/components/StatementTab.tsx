@@ -64,7 +64,7 @@ const LABEL_MAP: Record<string, string> = {
 };
 
 function fmtVal(v: string | undefined): string {
-  if (!v) return "—";
+  if (v === undefined || v === null || v === "") return "—";
   const n = Number(v);
   if (!isFinite(n)) return "—";
   if (Math.abs(n) >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
