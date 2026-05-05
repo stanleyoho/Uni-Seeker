@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.modules.financial_analysis.yfinance_financials import YFinanceFinancialProvider
+from app.modules.financial_analysis.sec_edgar_provider import SECEdgarFinancialProvider
+from app.modules.financial_analysis.finmind_tw_provider import FinMindTWFinancialProvider
 from app.modules.financial_analysis.ratios import calculate_ratios
 from app.modules.financial_analysis.scorer import calculate_health_score
 from app.schemas.financial import (
@@ -20,10 +22,22 @@ router = APIRouter(prefix="/financials", tags=["financials"])
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
+def _is_tw_stock(symbol: str) -> bool:
+    """Taiwan stock symbols are purely numeric (e.g., 2330, 0050)."""
+    return symbol.isdigit()
+
+
+def _get_provider(symbol: str):
+    """Return the appropriate financial data provider for the symbol."""
+    if _is_tw_stock(symbol):
+        return FinMindTWFinancialProvider()
+    return SECEdgarFinancialProvider()
+
+
 @router.get("/{symbol}", response_model=FullAnalysisResponse)
 async def get_full_analysis(symbol: str) -> FullAnalysisResponse:
     """Get complete financial analysis: statements, ratios, health score."""
-    provider = YFinanceFinancialProvider()
+    provider = _get_provider(symbol)
 
     try:
         data = await provider.fetch_financials(symbol)
@@ -92,7 +106,7 @@ async def get_full_analysis(symbol: str) -> FullAnalysisResponse:
 @router.get("/{symbol}/ratios", response_model=list[FinancialRatiosResponse])
 async def get_ratios(symbol: str) -> list[FinancialRatiosResponse]:
     """Get financial ratios only."""
-    provider = YFinanceFinancialProvider()
+    provider = _get_provider(symbol)
 
     try:
         data = await provider.fetch_financials(symbol)
