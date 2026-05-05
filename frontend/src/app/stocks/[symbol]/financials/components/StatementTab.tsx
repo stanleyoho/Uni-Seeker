@@ -103,7 +103,7 @@ function Sparkline({ values }: { values: number[] }) {
 export function StatementTab({ statements, type }: StatementTabProps) {
   if (!statements || statements.length === 0) {
     return (
-      <GlassPanel>
+      <GlassPanel noPadding>
         <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-muted)" }}>
           暫無報表資料
         </div>
