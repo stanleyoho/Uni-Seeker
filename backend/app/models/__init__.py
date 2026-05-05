@@ -5,6 +5,7 @@ from app.models.enums import Market, NotificationStatus, UserTier
 from app.models.financial_metrics import FinancialMetrics
 from app.models.financial_statement import FinancialStatement
 from app.models.industry import Industry
+from app.models.industry_metrics import IndustryMetrics
 from app.models.journal import (
     AccountGroup,
     AccountGroupMember,
@@ -39,6 +40,7 @@ __all__ = [
     "FinancialStatement",
     "FXRate",
     "Industry",
+    "IndustryMetrics",
     "Market",
     "MarginTrading",
     "MonthlyRevenue",

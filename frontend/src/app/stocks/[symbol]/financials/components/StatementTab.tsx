@@ -103,7 +103,7 @@ function Sparkline({ values }: { values: number[] }) {
 export function StatementTab({ statements, type }: StatementTabProps) {
   if (!statements || statements.length === 0) {
     return (
-      <GlassPanel noPadding>
+      <GlassPanel>
         <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-muted)" }}>
           暫無報表資料
         </div>
@@ -140,8 +140,12 @@ export function StatementTab({ statements, type }: StatementTabProps) {
               const validValues = periods
                 .slice()
                 .reverse()
-                .map((s) => Number(s.data[key] ?? ""))
-                .filter((v) => isFinite(v));
+                .flatMap((s) => {
+                  const raw = s.data[key];
+                  if (raw === undefined || raw === "") return [];
+                  const n = Number(raw);
+                  return isFinite(n) ? [n] : [];
+                });
 
               return (
                 <tr
