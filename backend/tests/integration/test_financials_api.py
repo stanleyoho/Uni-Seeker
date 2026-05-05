@@ -51,9 +51,9 @@ async def test_get_full_analysis(app) -> None:
             data = resp.json()
             assert data["financials"]["symbol"] == "AAPL"
             assert len(data["ratios"]) == 1
-            assert data["ratios"][0]["gross_margin"] == 0.4
+            assert float(data["ratios"][0]["gross_margin"]) == 0.4
             assert len(data["health_scores"]) == 1
-            assert data["health_scores"][0]["total_score"] > 0
+            assert float(data["health_scores"][0]["total_score"]) > 0
 
 
 @pytest.mark.asyncio
@@ -69,7 +69,7 @@ async def test_get_ratios(app) -> None:
             assert resp.status_code == 200
             ratios = resp.json()
             assert len(ratios) == 1
-            assert ratios[0]["net_margin"] == 0.15
+            assert float(ratios[0]["net_margin"]) == 0.15
 
 
 @pytest.mark.asyncio

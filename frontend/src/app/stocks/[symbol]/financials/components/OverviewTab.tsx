@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   AreaChart,
   Area,
@@ -17,7 +18,7 @@ interface OverviewTabProps {
 }
 
 function formatPct(v: string | null): string {
-  if (!v) return "N/A";
+  if (v == null) return "N/A";
   return `${(Number(v) * 100).toFixed(1)}%`;
 }
 
@@ -80,6 +81,8 @@ function TrendChart({ data, color, label }: {
   color: string;
   label: string;
 }) {
+  const uid = useId();
+  const gradId = `grad-${uid}`;
   const latest = data[data.length - 1]?.value;
   return (
     <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)", padding: "12px 14px" }}>
@@ -92,7 +95,7 @@ function TrendChart({ data, color, label }: {
       <ResponsiveContainer width="100%" height={56}>
         <AreaChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
           <defs>
-            <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={color} stopOpacity={0.25} />
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
@@ -102,7 +105,7 @@ function TrendChart({ data, color, label }: {
             contentStyle={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)", fontSize: 11 }}
             formatter={(v) => [`${(Number(v) * 100).toFixed(1)}%`, label]}
           />
-          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} fill={`url(#grad-${label})`} dot={false} />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -110,6 +113,8 @@ function TrendChart({ data, color, label }: {
 }
 
 function FCFTrendChart({ data }: { data: { period: string; value: number }[] }) {
+  const uid = useId();
+  const gradId = `grad-${uid}`;
   const latest = data[data.length - 1]?.value;
   const color = latest != null && latest >= 0 ? "#22c55e" : "#ef4444";
   const fmtBillion = (n: number) => {
@@ -127,7 +132,7 @@ function FCFTrendChart({ data }: { data: { period: string; value: number }[] }) 
       <ResponsiveContainer width="100%" height={56}>
         <AreaChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
           <defs>
-            <linearGradient id="grad-fcf" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={color} stopOpacity={0.25} />
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
@@ -137,7 +142,7 @@ function FCFTrendChart({ data }: { data: { period: string; value: number }[] }) 
             contentStyle={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)", fontSize: 11 }}
             formatter={(v) => [fmtBillion(Number(v)), "FCF"]}
           />
-          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} fill="url(#grad-fcf)" dot={false} />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} fill={`url(#${gradId})`} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

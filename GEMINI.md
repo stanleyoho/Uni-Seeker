@@ -65,3 +65,9 @@ npm run dev
 - `docs/superpowers/plans/`：各階段開發計畫書。
 - `backend/app/modules/`：核心業務邏輯。
 - `frontend/src/app/`：頁面與路由。
+
+## 任務清單 (Task List)
+### Phase 3: 財報與估值優化
+- [ ] **實作產業基準計算 (Industry Aggregates)**：計算並存儲各產業的平均估值指標（如 PE, PB），供 DCF/PE 模型參考。
+- [ ] **建立財務資料字典 (Data Dictionary)**：定義所有財務欄位及其來源，確保前後端定義一致。
+- [x] 核心測試覆蓋與驗證 (32 Passed, 42% Coverage)

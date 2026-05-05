@@ -7,6 +7,7 @@ from app.schemas.types import DecimalStr
 
 
 class PriceEstimateBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     model_type: str
     date: date
     cheap_price: DecimalStr | None = None

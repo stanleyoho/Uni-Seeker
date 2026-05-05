@@ -75,8 +75,7 @@ def sample_prices() -> list[StockPrice]:
     ]
     return [
         StockPrice(
-            symbol="2330.TW",
-            market=Market.TW_TWSE,
+            stock_id=1,
             date=date(2026, 4, d + 1),
             open=Decimal(str(o)),
             high=Decimal(str(h)),

@@ -10,6 +10,7 @@ from app.main import create_app
 from app.models.base import Base
 from app.models.enums import Market
 from app.models.price import StockPrice
+from app.models.stock import Stock
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -30,6 +31,10 @@ async def app_with_prices():
 
     # Seed 60 days of falling-then-rising prices
     async with session_factory() as session:
+        stock = Stock(symbol="TEST.TW", name="Test Stock", market=Market.TW_TWSE)
+        session.add(stock)
+        await session.flush()
+
         for i in range(60):
             d = date(2026, 1, 1) + timedelta(days=i)
             if i < 30:
@@ -37,7 +42,7 @@ async def app_with_prices():
             else:
                 c = 85.0 + (i - 30) * 1.0
             session.add(StockPrice(
-                symbol="TEST.TW", market=Market.TW_TWSE, date=d,
+                stock_id=stock.id, date=d,
                 open=Decimal(str(c - 1)), high=Decimal(str(c + 2)),
                 low=Decimal(str(c - 2)), close=Decimal(str(c)), volume=10_000_000,
             ))
@@ -91,4 +96,5 @@ async def test_insufficient_data(app_with_prices) -> None:
         resp = await client.post("/api/v1/backtest/run", json={
             "symbol": "NODATA.TW", "strategy": "rsi_oversold",
         })
-        assert resp.status_code == 400
+        # If stock not found, returns 404
+        assert resp.status_code == 404

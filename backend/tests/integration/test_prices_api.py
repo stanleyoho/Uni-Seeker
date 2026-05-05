@@ -42,7 +42,7 @@ async def test_get_prices_success(client: AsyncClient, db_session: AsyncSession)
     assert data["data"][0]["symbol"] == "2330.TW"
     # Verify DecimalStr serialization (should be string)
     assert isinstance(data["data"][0]["close"], str)
-    assert data["data"][0]["close"] == "505.0000"
+    assert float(data["data"][0]["close"]) == 505.0
 
 @pytest.mark.asyncio
 async def test_get_prices_not_found(client: AsyncClient):

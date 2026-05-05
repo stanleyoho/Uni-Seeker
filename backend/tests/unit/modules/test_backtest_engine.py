@@ -11,7 +11,7 @@ def _make_prices(closes: list[float]) -> list[StockPrice]:
     start = date(2026, 1, 1)
     return [
         StockPrice(
-            symbol="TEST.TW", market=Market.TW_TWSE,
+            stock_id=1,
             date=start + timedelta(days=i),
             open=Decimal(str(c - 1)), high=Decimal(str(c + 2)),
             low=Decimal(str(c - 2)), close=Decimal(str(c)),
