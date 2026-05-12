@@ -1,13 +1,24 @@
+# Production image — must be built from monorepo root context.
+# See backend/Dockerfile for layout rationale.
 FROM python:3.12-slim AS builder
-WORKDIR /app
+
+WORKDIR /workspace
 RUN pip install --no-cache-dir uv
-COPY pyproject.toml .
-RUN uv pip install --system -e "."
+
+COPY adaptive-alpha-engine/packages/backtesting_core /workspace/adaptive-alpha-engine/packages/backtesting_core
+COPY Uni-Seeker/backend/pyproject.toml /workspace/Uni-Seeker/backend/
+COPY Uni-Seeker/backend/uv.lock /workspace/Uni-Seeker/backend/
+
+WORKDIR /workspace/Uni-Seeker/backend
+# Production install — no editable, no dev extras.
+RUN uv pip install --system "."
+
 
 FROM python:3.12-slim
 WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY . .
+COPY Uni-Seeker/backend /app
+
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

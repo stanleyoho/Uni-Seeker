@@ -26,9 +26,10 @@ services:
       retries: 5
 
   backend:
+    # Build from monorepo root so backtesting_core path dependency resolves.
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: Uni-Seeker/backend/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -44,7 +45,9 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      # Hot reload: mount backend AND shared package over the in-image copies.
+      - ./backend:/workspace/Uni-Seeker/backend
+      - ../adaptive-alpha-engine/packages/backtesting_core:/workspace/adaptive-alpha-engine/packages/backtesting_core
 
   frontend:
     build:

@@ -22,9 +22,10 @@ services:
       retries: 5
 
   backend:
+    # Build from monorepo root so backtesting_core path dependency resolves.
     build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+      context: ..
+      dockerfile: Uni-Seeker/backend/Dockerfile.prod
     environment:
       UNI_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-uni_seeker}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-uni_seeker}
       UNI_REDIS_URL: redis://redis:6379/0
