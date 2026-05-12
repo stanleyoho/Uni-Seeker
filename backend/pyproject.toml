@@ -19,7 +19,11 @@ dependencies = [
     "yfinance>=0.2.48",
     "pyjwt>=2.9.0",
     "bcrypt>=4.0.0",
+    "backtesting_core",
 ]
+
+[tool.uv.sources]
+backtesting_core = { path = "../../adaptive-alpha-engine/packages/backtesting_core", editable = true }
 
 [project.optional-dependencies]
 dev = [
