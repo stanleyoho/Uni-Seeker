@@ -1118,6 +1118,28 @@ wheels = [
 ]
 
 [[package]]
+name = "prediction-engine"
+version = "0.1.0"
+source = { editable = "../../adaptive-alpha-engine/packages/prediction_engine" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scipy" },
+    { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "scipy", specifier = ">=1.11" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "protobuf"
 version = "7.34.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1730,6 +1752,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "pandas" },
+    { name = "prediction-engine" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "python-telegram-bot" },
@@ -1768,6 +1791,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "prediction-engine", editable = "../../adaptive-alpha-engine/packages/prediction_engine" },
     { name = "pydantic-settings", specifier = ">=2.6.0" },
     { name = "pyjwt", specifier = ">=2.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },

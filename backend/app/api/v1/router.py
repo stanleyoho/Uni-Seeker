@@ -20,6 +20,7 @@ from app.api.v1.stocks import router as stocks_router
 from app.api.v1.strategies import router as strategies_router
 from app.api.v1.backtest_jobs import router as backtest_jobs_router
 from app.api.v1.portfolio import router as portfolio_router
+from app.api.v1.predictions import router as predictions_router
 from app.api.v1.scanner import router as scanner_router
 from app.api.v1.sync import router as sync_router
 from app.api.v1.valuation_models import router as valuation_models_router
@@ -49,4 +50,5 @@ v1_router.include_router(valuation_models_router)
 v1_router.include_router(backtest_jobs_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
+v1_router.include_router(predictions_router)
 v1_router.include_router(ws_router)

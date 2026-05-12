@@ -20,10 +20,12 @@ dependencies = [
     "pyjwt>=2.9.0",
     "bcrypt>=4.0.0",
     "backtesting_core",
+    "prediction-engine",
 ]
 
 [tool.uv.sources]
 backtesting_core = { path = "../../adaptive-alpha-engine/packages/backtesting_core", editable = true }
+prediction-engine = { path = "../../adaptive-alpha-engine/packages/prediction_engine", editable = true }
 
 [project.optional-dependencies]
 dev = [
