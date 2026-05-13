@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     app_name: str = "Uni-Seeker"
     debug: bool = False
 
+    # Feature toggle: when False, require_tier passes all users as PRO
+    enable_monetization: bool = False  # UNI_ENABLE_MONETIZATION
+
+    # Stripe configuration
+    stripe_secret_key: str = ""        # UNI_STRIPE_SECRET_KEY
+    stripe_webhook_secret: str = ""    # UNI_STRIPE_WEBHOOK_SECRET
+    stripe_price_id_basic: str = ""    # UNI_STRIPE_PRICE_ID_BASIC
+    stripe_price_id_pro: str = ""      # UNI_STRIPE_PRICE_ID_PRO
+
     model_config = {"env_prefix": "UNI_", "env_file": ".env"}
 
 

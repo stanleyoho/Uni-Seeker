@@ -28,3 +28,12 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    subscription_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )

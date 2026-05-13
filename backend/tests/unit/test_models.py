@@ -41,3 +41,26 @@ def test_stock_price_model_creation() -> None:
     )
     assert price.close == Decimal("890.00")
     assert price.volume == 25_000_000
+
+
+def test_user_has_stripe_fields() -> None:
+    """User model must expose stripe_customer_id, stripe_subscription_id,
+    subscription_expires_at as optional fields."""
+    from app.models.user import User
+
+    annotations = User.__mapper__.columns.keys()
+    assert "stripe_customer_id" in annotations
+    assert "stripe_subscription_id" in annotations
+    assert "subscription_expires_at" in annotations
+
+
+def test_settings_has_stripe_keys() -> None:
+    """Settings must expose stripe_secret_key, stripe_webhook_secret and price IDs."""
+    from app.config import Settings
+
+    fields = Settings.model_fields
+    assert "enable_monetization" in fields
+    assert "stripe_secret_key" in fields
+    assert "stripe_webhook_secret" in fields
+    assert "stripe_price_id_basic" in fields
+    assert "stripe_price_id_pro" in fields
