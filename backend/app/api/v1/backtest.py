@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_stock_or_404
 from app.config import settings
+from app.middleware.tier_guard import require_tier
+from app.models.enums import UserTier
 from app.models.price import StockPrice
 from app.modules.backtester.auto_discovery import AutoDiscoveryConfig, AutoDiscoveryEngine
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine, MIN_DATA_POINTS
@@ -24,7 +26,11 @@ from app.schemas.backtest import (
     TradeRecord,
 )
 
-router = APIRouter(prefix="/backtest", tags=["backtest"])
+router = APIRouter(
+    prefix="/backtest",
+    tags=["backtest"],
+    dependencies=[Depends(require_tier(UserTier.PRO))],
+)
 
 _registry = create_default_registry()
 

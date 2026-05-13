@@ -5,10 +5,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_stock_or_404
+from app.middleware.tier_guard import require_tier
+from app.models.enums import UserTier
 from app.models.price_estimate import PriceEstimate
 from app.schemas.valuation import ValuationEstimatesResponse, PriceEstimateBase
 
-router = APIRouter(prefix="/valuation", tags=["valuation"])
+router = APIRouter(
+    prefix="/valuation",
+    tags=["valuation"],
+    dependencies=[Depends(require_tier(UserTier.PRO))],
+)
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
