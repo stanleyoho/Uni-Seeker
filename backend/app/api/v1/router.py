@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.backtest import router as backtest_router
+from app.api.v1.billing import router as billing_router
 from app.api.v1.company import router as company_router
 from app.api.v1.heatmap import router as heatmap_router
 from app.api.v1.institutional import router as institutional_router
@@ -51,4 +52,5 @@ v1_router.include_router(backtest_jobs_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
 v1_router.include_router(predictions_router)
+v1_router.include_router(billing_router)
 v1_router.include_router(ws_router)

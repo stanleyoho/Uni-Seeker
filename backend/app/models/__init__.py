@@ -22,6 +22,7 @@ from app.models.notification import NotificationLog, NotificationRule
 from app.models.portfolio_backtest import PortfolioBacktestRecord
 from app.models.price import StockPrice
 from app.models.price_estimate import PriceEstimate
+from app.models.processed_webhook_event import ProcessedWebhookEvent
 from app.models.revenue import MonthlyRevenue
 from app.models.signal_scan import SignalScanRecord
 from app.models.stock import Stock
@@ -51,6 +52,7 @@ __all__ = [
     "PortfolioSnapshot",
     "Position",
     "PriceEstimate",
+    "ProcessedWebhookEvent",
     "SignalScanRecord",
     "Stock",
     "StockPrice",
