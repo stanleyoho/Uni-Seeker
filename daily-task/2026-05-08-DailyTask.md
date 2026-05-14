@@ -120,21 +120,21 @@
 ### 團隊單
 
 #### #6 [UNI-FIN-002][subtask] financials API 改讀 DB
-- 狀態: `todo`
+- 狀態: `done`
 - DoD:
   - [ ] `GET /api/v1/financials/2330` 資料來自 `financial_statements` DB 表
   - [ ] 日誌不出現 FinMind request log
   - [ ] ratios 計算結果與直接呼叫 FinMind 相同
 
 #### #7 [UNI-FIN-002][subtask] 台股行事曆 Service
-- 狀態: `todo`
+- 狀態: `done`
 - DoD:
   - [ ] `EarningsCalendarService` 依法定截止日計算各股下次預計發布日
   - [ ] 回傳 DB 是否已有該季資料
   - [ ] Q1 截止 5/15 計算正確
 
 #### #8 [UNI-FIN-002][subtask] 新增 /calendar 端點
-- 狀態: `todo`
+- 狀態: `done`
 - DoD:
   - [ ] `GET /api/v1/financials/{symbol}/calendar` 正確回傳行事曆資料
   - [ ] 欄位包含：下次截止日、最近已有資料的季別、距截止日天數
@@ -142,16 +142,16 @@
 ### 內部步驟 (Internal WBS)
 
 #### Batch A（平行）
-- **FA-T1.1** `financials.py` 改讀 `financial_statements` DB — 狀態: `todo`
+- **FA-T1.1** `financials.py` 改讀 `financial_statements` DB — 狀態: `done`
   - 依賴: 無
   - 產出: 更新 `backend/app/api/v1/financials.py`
 
-- **FA-T2.1** `EarningsCalendarService` — 狀態: `todo`
+- **FA-T2.1** `EarningsCalendarService` — 狀態: `done`
   - 依賴: 無
   - 產出: `backend/app/modules/financial_analysis/earnings_calendar.py`
 
 #### Batch B（依賴 Batch A）
-- **FA-T3.1** `GET /api/v1/financials/{symbol}/calendar` 端點 — 狀態: `todo`
+- **FA-T3.1** `GET /api/v1/financials/{symbol}/calendar` 端點 — 狀態: `done`
   - 依賴: FA-T2.1
   - 產出: 更新 `backend/app/api/v1/financials.py`
 
