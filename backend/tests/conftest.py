@@ -4,6 +4,15 @@ from datetime import date
 from typing import Annotated
 
 import pytest
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCompiler
+
+# ── Patch SQLite compiler to handle PostgreSQL JSONB ─────────────────────────
+def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> str:  # type: ignore[override]
+    return self.visit_JSON(type_, **kwargs)  # type: ignore[arg-type]
+
+_SQLiteTypeCompiler.visit_JSONB = _visit_JSONB  # type: ignore[attr-defined]
+# ─────────────────────────────────────────────────────────────────────────────
+
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
