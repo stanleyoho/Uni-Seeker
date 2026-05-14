@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.auth import require_auth
+from app.middleware.tier_guard import require_risk_tolerance
 from app.models.user import User
 from app.schemas.onboarding import KYCRequest, KYCResponse
 from app.services.audit import log_audit_event
@@ -60,3 +61,16 @@ async def submit_kyc(
 
     await db.commit()
     return KYCResponse(risk_tolerance=risk)
+
+
+@router.get("/risky-demo")
+async def risky_demo(
+    user: User = Depends(require_risk_tolerance("moderate")),
+) -> dict:
+    """Placeholder endpoint demonstrating the require_risk_tolerance guard.
+
+    Real high-risk signal endpoints (NBA Pro, crypto whale alerts) live in
+    Plan 5+ and will mount this dependency themselves; this route exists
+    only so the guard can be exercised end-to-end in T6.
+    """
+    return {"ok": True, "user_id": user.id}
