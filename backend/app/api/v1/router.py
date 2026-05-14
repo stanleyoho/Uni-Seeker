@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.alpha import router as alpha_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.backtest import router as backtest_router
 from app.api.v1.billing import router as billing_router
@@ -35,6 +36,7 @@ v1_router.include_router(prices_router)
 v1_router.include_router(indicators_router)
 v1_router.include_router(screener_router)
 v1_router.include_router(notifications_router)
+v1_router.include_router(alpha_router)
 v1_router.include_router(stocks_router)
 v1_router.include_router(financial_metrics_router)
 v1_router.include_router(financials_router)
