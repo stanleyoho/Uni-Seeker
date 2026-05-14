@@ -72,3 +72,55 @@ async def get_nba_predictions_today(user: ProUser) -> NbaPredictionsResponse:
     raw = await fetch_nba_predictions_today()
     items = [NbaPredictionItem(**item) for item in raw]
     return NbaPredictionsResponse(date=today, tier="pro", predictions=items)
+
+
+# ---------------------------------------------------------------------------
+# Stock edge stub — production wiring fetches foreign futures + margin data.
+# ---------------------------------------------------------------------------
+
+from app.modules.stock_signals.sharp_detector import EdgeSignal, StockSharpDetector
+
+
+async def fetch_stock_edge_signal(stock_id: str) -> EdgeSignal:
+    """Compose a StockSharpDetector edge signal for the given stock.
+
+    Production: fetch foreign_futures_net from FinMind / TWSE and
+    margin_balance_change from margin data provider. Stub seeds the
+    detector with zeros so the endpoint is operationally safe before
+    the data wiring lands.
+    """
+    detector = StockSharpDetector()
+    return detector.get_edge_signal(stock_id=stock_id, date=date.today())
+
+
+class StockEdgeResponse(BaseModel):
+    stock_id: str
+    date: str
+    direction: str            # "long" | "short" | "neutral"
+    confidence: float
+    divergence_detected: bool
+    reason: str
+    tier: str
+
+
+@router.get("/stocks/edge/{stock_id}", response_model=StockEdgeResponse)
+async def get_stock_edge_signal(
+    stock_id: str,
+    user: ProUser,
+) -> StockEdgeResponse:
+    """Institutional vs retail divergence edge signal for a stock. Pro only.
+
+    Logic lives in StockSharpDetector. CompliancePurifier middleware will
+    rewrite any investment-advice phrasing in the `reason` field before
+    the response reaches the client.
+    """
+    edge = await fetch_stock_edge_signal(stock_id)
+    return StockEdgeResponse(
+        stock_id=edge.stock_id,
+        date=edge.date.isoformat(),
+        direction=edge.direction,
+        confidence=edge.confidence,
+        divergence_detected=edge.divergence_detected,
+        reason=edge.reason,
+        tier="pro",
+    )
