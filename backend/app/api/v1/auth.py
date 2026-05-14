@@ -70,6 +70,18 @@ async def register(req: RegisterRequest, request: Request, db: DbSession) -> Tok
     await db.commit()
     await db.refresh(user)
 
+    # Plan 7 T1: audit user registration
+    await log_audit_event(
+        db,
+        action="user_register",
+        user_id=user.id,
+        resource_type="user",
+        resource_id=str(user.id),
+        after_state={"email": user.email, "username": user.username},
+        metadata={"ip": request.client.host if request.client else None},
+    )
+    await db.commit()
+
     logger.info("user_registered", extra={"email": req.email, "ip": request.client.host if request.client else "unknown"})
     token = create_access_token(user.id, user.email)
     return TokenResponse(access_token=token)
@@ -86,6 +98,17 @@ async def login(req: LoginRequest, request: Request, db: DbSession) -> TokenResp
     if not user or not verify_password(req.password, user.hashed_password):
         logger.warning("login_failed", extra={"email": req.email, "ip": ip})
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Plan 7 T1: audit successful login (device_added is a separate event)
+    await log_audit_event(
+        db,
+        action="user_login",
+        user_id=user.id,
+        resource_type="user",
+        resource_id=str(user.id),
+        metadata={"ip": ip},
+    )
+    # _register_device below commits; audit row will be flushed and persisted there.
 
     # Plan 4.5 T7: device fingerprint registry + 3-active-device limit
     await _register_device(db, user, request)

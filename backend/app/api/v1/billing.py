@@ -14,6 +14,7 @@ from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.billing.stripe_service import StripeService
 from app.schemas.billing import BillingStatusResponse, CheckoutRequest, CheckoutResponse
+from app.services.audit import log_audit_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -105,10 +106,26 @@ async def stripe_webhook(
         res = await db.execute(stmt)
         user = res.scalar_one_or_none()
         if user:
+            before_tier = user.tier.value
             tier_map = {"basic": UserTier.BASIC, "pro": UserTier.PRO}
             user.tier = tier_map.get(result.tier or "", user.tier)
             user.stripe_customer_id = result.customer_id
             user.stripe_subscription_id = result.subscription_id
+            # Plan 7 T1: audit tier upgrade (webhook-driven)
+            await log_audit_event(
+                db,
+                action="tier_upgrade",
+                actor_type="webhook",
+                user_id=user.id,
+                resource_type="user",
+                resource_id=str(user.id),
+                before_state={"tier": before_tier},
+                after_state={
+                    "tier": user.tier.value,
+                    "subscription_id": result.subscription_id,
+                },
+                metadata={"event_id": result.event_id},
+            )
             await db.commit()
 
     elif result.event_type == "customer.subscription.deleted" and result.subscription_id:
@@ -116,8 +133,21 @@ async def stripe_webhook(
         res = await db.execute(stmt)
         user = res.scalar_one_or_none()
         if user:
+            before_tier = user.tier.value
             user.tier = UserTier.FREE
             user.stripe_subscription_id = None
+            # Plan 7 T1: audit tier downgrade (webhook-driven)
+            await log_audit_event(
+                db,
+                action="tier_downgrade",
+                actor_type="webhook",
+                user_id=user.id,
+                resource_type="user",
+                resource_id=str(user.id),
+                before_state={"tier": before_tier},
+                after_state={"tier": UserTier.FREE.value},
+                metadata={"event_id": result.event_id},
+            )
             await db.commit()
 
     elif result.event_type == "invoice.payment_failed":
@@ -147,6 +177,16 @@ async def cancel_subscription(
     if not current_user.stripe_subscription_id:
         raise HTTPException(status_code=404, detail="No active subscription")
     stripe_svc.cancel_subscription(current_user.stripe_subscription_id)
+    # Plan 7 T1: audit user-initiated subscription cancel
+    await log_audit_event(
+        db,
+        action="subscription_cancel",
+        user_id=current_user.id,
+        resource_type="subscription",
+        resource_id=current_user.stripe_subscription_id,
+        metadata={"stripe_subscription_id": current_user.stripe_subscription_id},
+    )
+    await db.commit()
     # Intentionally do NOT mutate tier / clear subscription_id here.
 
 
