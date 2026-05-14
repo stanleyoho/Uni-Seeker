@@ -1,7 +1,7 @@
 """Add processed_webhook_events table for Stripe webhook idempotency.
 
-Revision ID: UNI-BILL-002
-Revises: UNI-BILL-001
+Revision ID: UNI_BILL_002
+Revises: UNI_BILL_001
 Create Date: 2026-05-14
 """
 from typing import Sequence, Union
@@ -9,8 +9,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "UNI-BILL-002"
-down_revision: Union[str, None] = "UNI-BILL-001"
+revision: str = "UNI_BILL_002"
+down_revision: Union[str, None] = "UNI_BILL_001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

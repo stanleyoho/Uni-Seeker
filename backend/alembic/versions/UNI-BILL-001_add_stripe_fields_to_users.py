@@ -1,8 +1,11 @@
 """Add Stripe fields to users table.
 
-Revision ID: UNI-BILL-001
+Revision ID: UNI_BILL_001
 Revises: e900cd627d8a
 Create Date: 2026-05-11
+
+Note: revision identifier uses underscores; alembic 1.18+ rejects hyphen.
+Filename keeps hyphens for human readability of the BILL series.
 """
 from typing import Sequence, Union
 
@@ -10,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = "UNI-BILL-001"
+revision: str = "UNI_BILL_001"
 down_revision: Union[str, None] = "e900cd627d8a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
