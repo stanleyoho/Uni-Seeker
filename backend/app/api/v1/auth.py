@@ -3,16 +3,20 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.auth import create_access_token, hash_password, require_auth, verify_password
 from app.models.user import User
+from app.models.user_device import UserDevice
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.services.audit import log_audit_event
+from app.services.device import compute_fingerprint
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -83,6 +87,9 @@ async def login(req: LoginRequest, request: Request, db: DbSession) -> TokenResp
         logger.warning("login_failed", extra={"email": req.email, "ip": ip})
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Plan 4.5 T7: device fingerprint registry + 3-active-device limit
+    await _register_device(db, user, request)
+
     logger.info("login_success", extra={"email": req.email, "ip": ip})
     token = create_access_token(user.id, user.email)
     return TokenResponse(access_token=token)
@@ -91,3 +98,59 @@ async def login(req: LoginRequest, request: Request, db: DbSession) -> TokenResp
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: Annotated[User, Depends(require_auth)]) -> UserResponse:
     return UserResponse.model_validate(user)
+
+
+_DEVICE_LIMIT = 3
+
+
+async def _register_device(db: AsyncSession, user: User, request: Request) -> None:
+    """Record / refresh the calling device; enforce the active-device limit.
+
+    Behavior:
+      - Match (user_id, fingerprint_hash) regardless of blocked status, to
+        avoid the unique-constraint collision a naive ``IS NULL`` filter causes.
+      - blocked row exists  -> 403 device_blocked
+      - active row exists   -> update last_seen_at, no audit (avoid log spam)
+      - no row exists       -> check active count; >= 3 -> 403, else INSERT + audit
+    """
+    fp = compute_fingerprint(request)
+
+    row = await db.scalar(
+        select(UserDevice).where(
+            UserDevice.user_id == user.id,
+            UserDevice.fingerprint_hash == fp,
+        )
+    )
+    if row is not None:
+        if row.blocked_at is not None:
+            raise HTTPException(status_code=403, detail="device_blocked")
+        row.last_seen_at = datetime.now(timezone.utc)
+        await db.commit()
+        return
+
+    active_count = await db.scalar(
+        select(func.count()).select_from(UserDevice).where(
+            UserDevice.user_id == user.id,
+            UserDevice.blocked_at.is_(None),
+        )
+    ) or 0
+    if active_count >= _DEVICE_LIMIT:
+        raise HTTPException(status_code=403, detail="device_limit_exceeded")
+
+    db.add(UserDevice(
+        user_id=user.id,
+        fingerprint_hash=fp,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    ))
+    await log_audit_event(
+        db,
+        action="device_added",
+        user_id=user.id,
+        resource_type="user_device",
+        metadata={
+            "fingerprint": fp[:16] + "...",
+            "ip": request.client.host if request.client else "unknown",
+        },
+    )
+    await db.commit()
