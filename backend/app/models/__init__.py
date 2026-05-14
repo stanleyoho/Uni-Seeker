@@ -1,3 +1,4 @@
+from app.models.audit_log import AuditLog
 from app.models.base import Base
 from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
@@ -28,12 +29,14 @@ from app.models.signal_scan import SignalScanRecord
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
 from app.models.user import User
+from app.models.user_device import UserDevice
 from app.models.valuation import StockValuation
 
 __all__ = [
     "AccountGroup",
     "AccountGroupMember",
     "AllocationRule",
+    "AuditLog",
     "BacktestJob",
     "BacktestResultRecord",
     "Base",
@@ -62,5 +65,6 @@ __all__ = [
     "TradeAccount",
     "TradeLot",
     "User",
+    "UserDevice",
     "UserTier",
 ]
