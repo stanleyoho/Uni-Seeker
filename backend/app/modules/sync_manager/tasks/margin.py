@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import select
@@ -32,7 +33,7 @@ class MarginSyncTask(SyncTask):
         batch_size: int = 50,
     ) -> SyncResult:
         result = SyncResult(dataset=self.dataset_name)
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         # -- load active stocks -------------------------------------------
         stocks_q = await db.execute(

@@ -1,5 +1,6 @@
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
@@ -29,7 +30,7 @@ async def _fetch_prices_grouped(
     market_filter: str | None = None,
 ) -> dict[str, list[StockPrice]]:
     """Fetch prices grouped by symbol, limited to stocks with recent data."""
-    cutoff = date.today() - timedelta(days=_RECENT_DAYS)
+    cutoff = datetime.now(tz=ZoneInfo("Asia/Taipei")).date() - timedelta(days=_RECENT_DAYS)
 
     # Sub-query: stock_ids that have at least one price in the last 30 days
     recent_stocks = (

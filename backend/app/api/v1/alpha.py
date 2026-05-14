@@ -10,8 +10,9 @@ service) lives outside this module.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime, timezone
 from typing import Annotated, Any
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -68,7 +69,7 @@ class NbaPredictionsResponse(BaseModel):
 @router.get("/nba/predictions/today", response_model=NbaPredictionsResponse)
 async def get_nba_predictions_today(user: ProUser) -> NbaPredictionsResponse:
     """Today's NBA predictions with calibrated win probabilities. Pro only."""
-    today = date.today().isoformat()
+    today = datetime.now(tz=timezone.utc).date().isoformat()
     raw = await fetch_nba_predictions_today()
     items = [NbaPredictionItem(**item) for item in raw]
     return NbaPredictionsResponse(date=today, tier="pro", predictions=items)
@@ -90,7 +91,10 @@ async def fetch_stock_edge_signal(stock_id: str) -> EdgeSignal:
     the data wiring lands.
     """
     detector = StockSharpDetector()
-    return detector.get_edge_signal(stock_id=stock_id, date=date.today())
+    return detector.get_edge_signal(
+        stock_id=stock_id,
+        date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date(),
+    )
 
 
 class StockEdgeResponse(BaseModel):

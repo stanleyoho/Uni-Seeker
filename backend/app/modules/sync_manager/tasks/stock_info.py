@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import select
@@ -112,7 +113,7 @@ class StockInfoSyncTask(SyncTask):
         )
         row = existing.scalar_one_or_none()
         if row:
-            row.last_synced_date = date.today()
+            row.last_synced_date = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
             row.last_run_at = now
             row.status = "completed"
             row.records_synced = result.records_synced
@@ -121,7 +122,7 @@ class StockInfoSyncTask(SyncTask):
             db.add(SyncState(
                 dataset=self.dataset_name,
                 stock_id=None,
-                last_synced_date=date.today(),
+                last_synced_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date(),
                 last_run_at=now,
                 status="completed",
                 records_synced=result.records_synced,

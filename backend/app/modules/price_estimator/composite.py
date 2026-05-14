@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 
 from sqlalchemy import delete, select
@@ -38,7 +39,7 @@ class CompositeEstimator:
         if not results:
             return None
 
-        today_date = date.today()
+        today_date = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
         await self.session.execute(
             delete(PriceEstimate).where(
                 PriceEstimate.stock_id == stock_id, PriceEstimate.date == today_date

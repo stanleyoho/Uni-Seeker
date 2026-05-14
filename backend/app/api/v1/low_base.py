@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from typing import Annotated, Any
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -94,7 +95,7 @@ async def scan_low_base(
         scanner = SignalScanner(create_strategy_registry())
 
     # Date range for institutional data (last ~5 trading days = 10 calendar days)
-    today = date.today()
+    today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
     inst_start = (today - timedelta(days=10)).isoformat()
     inst_end = today.isoformat()
 
@@ -233,7 +234,7 @@ async def get_stock_low_base_score(
     # Enhanced-mode: fetch institutional + technical data
     extra_kwargs: dict[str, float | None] = {}
     if enhanced:
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
         inst_start = (today - timedelta(days=10)).isoformat()
         inst_end = today.isoformat()
 

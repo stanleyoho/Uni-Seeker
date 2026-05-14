@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 
 import httpx
@@ -33,7 +34,7 @@ class TWSEProvider:
         raw_data: list[dict[str, str]] = response.json()
 
         prices: list[StockPriceData] = []
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         for record in raw_data:
             code = record.get("Code", "")

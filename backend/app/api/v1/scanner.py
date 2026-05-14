@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -126,7 +127,7 @@ async def scan_stocks(
 
     return ScanResponse(
         results=[_stock_signal_to_response(r) for r in limited],
-        scan_date=date.today().isoformat(),
+        scan_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date().isoformat(),
         total_scanned=len(stocks_data),
         strategies_used=strategies_used,
     )

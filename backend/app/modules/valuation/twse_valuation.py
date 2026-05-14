@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 
 import httpx
@@ -25,7 +26,7 @@ class TWSEValuationProvider:
         response.raise_for_status()
         raw: list[dict[str, str]] = response.json()
         results: list[ValuationData] = []
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         for record in raw:
             code = record.get("Code", "")

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/heatmap", tags=["heatmap"])
 
 def _demo_heatmap() -> HeatmapResponse:
     """Fallback heatmap data when DB has insufficient sector data."""
-    today = str(date.today())
+    today = str(datetime.now(tz=ZoneInfo("Asia/Taipei")).date())
 
     sectors_data = [
         (

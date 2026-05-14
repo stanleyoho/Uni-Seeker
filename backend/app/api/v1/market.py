@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -84,7 +85,7 @@ def _demo_indices() -> list[MarketIndex]:
 
 def _demo_movers() -> MarketMoversResponse:
     """Fallback market movers when DB has insufficient data."""
-    today = str(date.today())
+    today = str(datetime.now(tz=ZoneInfo("Asia/Taipei")).date())
 
     gainers_data = [
         ("2330", "台積電 TSMC", "TW_TWSE", 895.0, 35.0, 4.07, 45230000),
@@ -257,7 +258,7 @@ async def get_market_movers(
                 existing_a.add(m.symbol)
 
         if not latest_date:
-            latest_date = date.today()
+            latest_date = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
     response = MarketMoversResponse(
         gainers=gainers[:limit],

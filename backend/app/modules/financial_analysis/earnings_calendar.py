@@ -10,7 +10,8 @@ Taiwan regulatory filing deadlines (TWSE/GTSM):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import func, select
@@ -94,7 +95,7 @@ class EarningsCalendarService:
         - Whether data is already in our DB
         """
         if today is None:
-            today = date.today()
+            today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         # Resolve stock
         stock_q = await db.execute(

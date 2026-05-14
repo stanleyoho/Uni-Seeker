@@ -15,11 +15,14 @@ select = [
     "TCH",    # flake8-type-checking
     "RUF",    # ruff-specific
     "PT",     # flake8-pytest-style
+    "DTZ",    # flake8-datetimez
 ]
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ANN", "ARG", "PLR2004"]
+"tests/**/*.py" = ["S101", "ANN", "ARG", "PLR2004", "DTZ"]
+"**/conftest.py" = ["DTZ"]
+"alembic/**" = ["DTZ"]
 
 [lint.isort]
 known-first-party = ["app"]
