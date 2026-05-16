@@ -77,7 +77,13 @@ export default function JournalDashboard() {
           </span>
         </div>
         <div style={{ height: 140, padding: "0 8px 16px" }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={0}
+            minHeight={120}
+            initialDimension={{ width: 600, height: 120 }}
+          >
             <AreaChart data={DUMMY_CURVE}>
               <defs>
                 <linearGradient id="jGrad" x1="0" y1="0" x2="0" y2="1">
