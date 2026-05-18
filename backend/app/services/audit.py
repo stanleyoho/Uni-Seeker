@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import sentry_sdk
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_log import AuditLog
@@ -63,4 +64,26 @@ async def log_audit_event(
     # Plan 8 T5: mirror audit_logs DB rows into Prometheus counter so the
     # observability stack stays in sync with the compliance source of truth.
     AUDIT_EVENT_TOTAL.labels(action=action, actor_type=actor_type).inc()
+    # Plan 8 T12: drop a Sentry breadcrumb so any subsequent unhandled
+    # exception captured by Sentry carries the last N audit events in its
+    # breadcrumb panel — closing the
+    # "business event → log → DB row → trace → metric → alert" chain.
+    # PII-safe: only carry the structural fields; before_state / after_state
+    # / metadata may include user-identifiable info and are NOT propagated.
+    try:
+        sentry_sdk.add_breadcrumb(
+            category="audit",
+            message=action,
+            level="info",
+            data={
+                "user_id": user_id,
+                "actor_type": actor_type,
+                "resource_type": resource_type,
+                "resource_id": resource_id,
+            },
+        )
+    except Exception:
+        # Breadcrumb is best-effort; never let it break audit row writing.
+        # We deliberately swallow because audit_log row write already succeeded.
+        pass
     return log
