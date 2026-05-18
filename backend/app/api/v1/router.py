@@ -27,6 +27,7 @@ from app.api.v1.predictions import router as predictions_router
 from app.api.v1.scanner import router as scanner_router
 from app.api.v1.sync import router as sync_router
 from app.api.v1.valuation_models import router as valuation_models_router
+from app.api.v1.watchlist import router as watchlist_router
 from app.api.v1.ws import router as ws_router
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -57,4 +58,5 @@ v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
 v1_router.include_router(predictions_router)
 v1_router.include_router(billing_router)
+v1_router.include_router(watchlist_router)
 v1_router.include_router(ws_router)
