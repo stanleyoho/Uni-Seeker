@@ -1,8 +1,13 @@
+import logging as _logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 from sqlalchemy import text
 
 from app.api.v1.router import v1_router
@@ -13,6 +18,7 @@ from app.middleware.error_handler import register_error_handlers
 from app.middleware.trace_id import TraceIdMiddleware
 from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
 from app.obs.logging import configure_logging
+from app.obs.sentry import init_sentry
 from app.services.job_worker import BacktestJobWorker
 
 auto_scheduler = AutoSyncScheduler()
@@ -22,6 +28,15 @@ job_worker = BacktestJobWorker()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(service="uni-seeker-backend")
+    init_sentry(
+        service="uni-seeker-backend",
+        extra_integrations=[
+            FastApiIntegration(),
+            StarletteIntegration(),
+            AsyncioIntegration(),
+            LoggingIntegration(level=_logging.INFO, event_level=_logging.ERROR),
+        ],
+    )
     auto_scheduler.start()
     await job_worker.start()
     yield
