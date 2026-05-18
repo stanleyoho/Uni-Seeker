@@ -31,6 +31,7 @@ from app.models.sync_state import SyncState
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.valuation import StockValuation
+from app.models.watchlist_item import WatchlistItem
 
 __all__ = [
     "AccountGroup",
@@ -67,4 +68,5 @@ __all__ = [
     "User",
     "UserDevice",
     "UserTier",
+    "WatchlistItem",
 ]
