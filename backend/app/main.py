@@ -10,6 +10,7 @@ from app.config import settings
 from app.logging_config import setup_logging
 from app.middleware.compliance_purifier import CompliancePurifierMiddleware
 from app.middleware.error_handler import register_error_handlers
+from app.middleware.trace_id import TraceIdMiddleware
 from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
 from app.obs.logging import configure_logging
 from app.services.job_worker import BacktestJobWorker
@@ -61,6 +62,12 @@ def create_app() -> FastAPI:
     # Plan 4.5 T9: outermost middleware — sees fully serialized JSON/text bodies
     # last on the way out, so its regex sanitization wins over every endpoint.
     app.add_middleware(CompliancePurifierMiddleware)
+
+    # Plan 8 T2: trace_id propagation — registered LAST so it sits at the
+    # outermost layer (Starlette evaluates add_middleware in reverse order:
+    # last added = first to see the request), ensuring every inbound request
+    # gets a trace_id bound before CompliancePurifier or any downstream logs.
+    app.add_middleware(TraceIdMiddleware)
 
     app.include_router(v1_router)
 
