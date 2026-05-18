@@ -11,6 +11,7 @@ from app.logging_config import setup_logging
 from app.middleware.compliance_purifier import CompliancePurifierMiddleware
 from app.middleware.error_handler import register_error_handlers
 from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
+from app.obs.logging import configure_logging
 from app.services.job_worker import BacktestJobWorker
 
 auto_scheduler = AutoSyncScheduler()
@@ -19,6 +20,7 @@ job_worker = BacktestJobWorker()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    configure_logging(service="uni-seeker-backend")
     auto_scheduler.start()
     await job_worker.start()
     yield
