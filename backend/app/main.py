@@ -4,12 +4,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sqlalchemy import text
 
+import app.obs.metrics  # noqa: F401 — register custom Prometheus metrics at import time
 from app.api.v1.router import v1_router
 from app.config import settings
 from app.logging_config import setup_logging
@@ -36,6 +38,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             AsyncioIntegration(),
             LoggingIntegration(level=_logging.INFO, event_level=_logging.ERROR),
         ],
+    )
+    # Plan 8 T5: Prometheus instrumentation — auto-emits HTTP
+    # latency/throughput metrics and exposes /metrics for scraping.
+    # Custom business counters defined in app.obs.metrics are picked
+    # up via shared default REGISTRY at import time.
+    Instrumentator().instrument(app).expose(
+        app, endpoint="/metrics", include_in_schema=False
     )
     auto_scheduler.start()
     await job_worker.start()

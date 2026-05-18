@@ -17,6 +17,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_log import AuditLog
+from app.obs.metrics import AUDIT_EVENT_TOTAL
 
 
 async def log_audit_event(
@@ -59,4 +60,7 @@ async def log_audit_event(
     )
     db.add(log)
     await db.flush()
+    # Plan 8 T5: mirror audit_logs DB rows into Prometheus counter so the
+    # observability stack stays in sync with the compliance source of truth.
+    AUDIT_EVENT_TOTAL.labels(action=action, actor_type=actor_type).inc()
     return log

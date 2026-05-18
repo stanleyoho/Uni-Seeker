@@ -6,6 +6,7 @@ from app.auth import require_auth
 from app.config import settings
 from app.models.enums import UserTier
 from app.models.user import User
+from app.obs.metrics import TIER_GUARD_BLOCK_TOTAL
 
 # Tier ordering: FREE < BASIC < PRO
 _TIER_RANK: dict[UserTier, int] = {
@@ -34,6 +35,15 @@ def require_tier(min_tier: UserTier):
         if not settings.enable_monetization:
             return current_user
         if _TIER_RANK[current_user.tier] < _TIER_RANK[min_tier]:
+            # Plan 8 T5: surface tier-gating denials to Prometheus. We omit
+            # endpoint label here because the dependency closure does not
+            # carry the request path; per-endpoint breakdown is deferred to
+            # a future middleware-based instrumentation pass.
+            TIER_GUARD_BLOCK_TOTAL.labels(
+                endpoint="*",
+                required_tier=min_tier.value,
+                actual_tier=current_user.tier.value,
+            ).inc()
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Requires {min_tier.value} tier or above",
