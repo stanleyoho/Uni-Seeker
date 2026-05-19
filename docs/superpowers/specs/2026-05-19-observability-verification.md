@@ -248,32 +248,58 @@ Checking infra/prometheus/alerts.yml
 - **wiring 時必須核對**：當 collector 真實 call site 落地時，要決定用 `"error"` 還是 `"fail"` 並更新 alert expr。若決定改用 `"fail"`，需同步修改 `smart_money/infra/prometheus/alerts.yml` 第 22 行。
 - 建議：commit call site 同時跑 `promtool check rules` + 對著實機 `/metrics` `grep outcome=` 確認。
 
-## 6. End-to-End Alert Test (placeholder — Batch C 尚未交付)
+## 6. End-to-End Alert Test
 
-本節為 **stub**，內容等 Plan 8 T10 Batch C 完成後補完。
-
-阻塞項：
-
-- **T10-C0** Stanley 用 `@BotFather` 開獨立 alerts bot 並提供 token（pending）
-- **T10-C1** sports-prophet `infra/alertmanager/alertmanager.yml` + `scripts/alerts_tg_relay.py` + docker-compose alertmanager service（pending）
-
-預定告警鏈路：
+告警鏈路（Batch C 落地後）：
 
 ```
-Prometheus (eval alerts.yml)
-  └── fires alert (severity=critical|warning)
-        └── Alertmanager (route by severity)
-              └── webhook → scripts/alerts_tg_relay.py
-                    └── Telegram Bot API (獨立 alerts bot token)
-                          └── DM to Stanley's Telegram chat_id
+Prometheus (eval infra/prometheus/alerts.yml)
+  └── fires alert (severity=critical|warning, labels: service, team)
+        └── Alertmanager (route by severity, infra/alertmanager/alertmanager.yml)
+              └── webhook POST /alertmanager/webhook
+                    └── scripts/alerts_tg_relay.py (Starlette app on :8888)
+                          └── TelegramBot.send_message() — 復用 sports-prophet 現有 bot
+                                └── Telegram chat (ALERTS_CHAT_ID 或 TELEGRAM_CHAT_ID)
 ```
 
-Batch C ship 後本節將補上：
+### 6.1 檔案索引（sports-prophet）
 
-- `amtool check-config infra/alertmanager/alertmanager.yml`
-- 手動 fire test alert 的步驟（`amtool alert add` 或 curl Alertmanager API）
-- 預期 TG DM 範例
-- chat_id 取得方式與 token 存放位置（建議走 1Password / `.env.local`，**絕不** commit）
+- `/Users/stanley/stanley-project/sports-prophet/scripts/alerts_tg_relay.py` — webhook receiver，~120 lines
+- `/Users/stanley/stanley-project/sports-prophet/infra/alertmanager/alertmanager.yml` — routing + inhibit rules
+- `/Users/stanley/stanley-project/sports-prophet/src/sports_prophet/output/telegram_bot.py` — 既有 `TelegramBot.send_message`，本批僅 import 重用，**未改動**
+
+### 6.2 環境變數
+
+| Var | 必填 | 說明 |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | 是 | @BotFather token（Q4 = 獨立 alerts bot） |
+| `ALERTS_CHAT_ID` | 否 | 專用 alerts chat；未設則 fallback `TELEGRAM_CHAT_ID` |
+| `TELEGRAM_CHAT_ID` | 條件 | 至少 `ALERTS_CHAT_ID` 與本變數其一必填 |
+| `RELAY_PORT` | 否 | 預設 8888（避開 sports-prophet app 用的 8000） |
+
+### 6.3 本機驗證流程
+
+```bash
+# 1) 啟動 relay
+cd /Users/stanley/stanley-project/sports-prophet
+uv run python scripts/alerts_tg_relay.py
+# → 監聽 0.0.0.0:8888，GET / 回 {"status":"ok"}
+
+# 2) 驗證 alertmanager.yml（需先 brew install prometheus 取得 amtool）
+amtool check-config infra/alertmanager/alertmanager.yml
+
+# 3) 注入測試告警
+amtool alert add alertname=ServiceDown severity=critical service=sports-prophet \
+  --annotation=summary="manual test" --annotation=description="e2e relay check"
+
+# 4) 觀察 Telegram chat 是否收到「🔴 [OPS] CRITICAL: ServiceDown」訊息
+```
+
+### 6.4 跨 repo 監控棧（deferred）
+
+本批僅交付 sports-prophet 內的 relay + alertmanager.yml。實際把 Prometheus / Alertmanager / relay 串成 docker-compose 服務、同時監控 3 個 repo，延到 **Plan 8 T10b**：
+
+- `Uni-Seeker/docs/superpowers/plans/2026-05-19-plan-8-t10b-monitoring-stack.md`（另一 agent 撰寫中）
 
 ## 7. CI Integration (recommendation)
 
