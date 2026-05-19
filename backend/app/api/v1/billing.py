@@ -13,6 +13,7 @@ from app.config import settings
 from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.billing.stripe_service import StripeService
+from app.obs.metrics import TIER_DOWNGRADE_TOTAL, TIER_UPGRADE_TOTAL
 from app.schemas.billing import BillingStatusResponse, CheckoutRequest, CheckoutResponse
 from app.services.audit import log_audit_event
 
@@ -111,6 +112,14 @@ async def stripe_webhook(
             user.tier = tier_map.get(result.tier or "", user.tier)
             user.stripe_customer_id = result.customer_id
             user.stripe_subscription_id = result.subscription_id
+            # Plan 8 T5: only bump on an actual transition (skip no-op re-deliveries
+            # that survive idempotency, e.g. manual replays after admin tier reset).
+            if user.tier.value != before_tier:
+                TIER_UPGRADE_TOTAL.labels(
+                    from_tier=before_tier,
+                    to_tier=user.tier.value,
+                    source="webhook",
+                ).inc()
             # Plan 7 T1: audit tier upgrade (webhook-driven)
             await log_audit_event(
                 db,
@@ -136,6 +145,14 @@ async def stripe_webhook(
             before_tier = user.tier.value
             user.tier = UserTier.FREE
             user.stripe_subscription_id = None
+            # Plan 8 T5: only bump when the user actually held a paid tier before;
+            # otherwise the deleted event is a no-op transition.
+            if before_tier != UserTier.FREE.value:
+                TIER_DOWNGRADE_TOTAL.labels(
+                    from_tier=before_tier,
+                    to_tier=UserTier.FREE.value,
+                    reason="subscription_deleted",
+                ).inc()
             # Plan 7 T1: audit tier downgrade (webhook-driven)
             await log_audit_event(
                 db,

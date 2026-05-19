@@ -112,3 +112,89 @@ async def test_webhook_idempotent_duplicate_event_ignored(
 
     await db_session.refresh(user)
     assert user.tier == UserTier.FREE, "Duplicate webhook must not re-apply side effect"
+
+
+@pytest.mark.asyncio
+@patch("app.api.v1.billing.get_stripe_service")
+async def test_webhook_upgrade_increments_counter(
+    mock_svc_dep: MagicMock, client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Plan 8 T5: a free→pro checkout.session.completed must bump
+    uni_tier_upgrade_total{from_tier="free",to_tier="pro",source="webhook"}."""
+    from app.modules.billing.stripe_service import WebhookResult
+    from app.obs.metrics import TIER_UPGRADE_TOTAL
+
+    user = await _create_user(db_session, email="upgrade@example.com", tier=UserTier.FREE)
+
+    before = TIER_UPGRADE_TOTAL.labels(
+        from_tier="free", to_tier="pro", source="webhook"
+    )._value.get()
+
+    mock_svc = MagicMock()
+    mock_svc.handle_webhook.return_value = WebhookResult(
+        event_type="checkout.session.completed",
+        event_id="evt_upgrade_pro_1",
+        user_id=user.id,
+        tier="pro",
+        subscription_id="sub_upgrade",
+        customer_id="cus_upgrade",
+    )
+    mock_svc_dep.return_value = mock_svc
+
+    response = await client.post(
+        "/api/v1/billing/webhook",
+        content=b"{}",
+        headers={"stripe-signature": "t=1,v1=fake"},
+    )
+    assert response.status_code == 200
+
+    await db_session.refresh(user)
+    assert user.tier == UserTier.PRO
+
+    after = TIER_UPGRADE_TOTAL.labels(
+        from_tier="free", to_tier="pro", source="webhook"
+    )._value.get()
+    assert after == before + 1
+
+
+@pytest.mark.asyncio
+@patch("app.api.v1.billing.get_stripe_service")
+async def test_webhook_downgrade_increments_counter(
+    mock_svc_dep: MagicMock, client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Plan 8 T5: customer.subscription.deleted on a paid user must bump
+    uni_tier_downgrade_total{from_tier="pro",to_tier="free",reason="subscription_deleted"}."""
+    from app.modules.billing.stripe_service import WebhookResult
+    from app.obs.metrics import TIER_DOWNGRADE_TOTAL
+
+    user = await _create_user(db_session, email="downgrade@example.com", tier=UserTier.PRO)
+    user.stripe_subscription_id = "sub_downgrade"
+    await db_session.commit()
+
+    before = TIER_DOWNGRADE_TOTAL.labels(
+        from_tier="pro", to_tier="free", reason="subscription_deleted"
+    )._value.get()
+
+    mock_svc = MagicMock()
+    mock_svc.handle_webhook.return_value = WebhookResult(
+        event_type="customer.subscription.deleted",
+        event_id="evt_downgrade_pro_1",
+        subscription_id="sub_downgrade",
+        customer_id="cus_downgrade",
+    )
+    mock_svc_dep.return_value = mock_svc
+
+    response = await client.post(
+        "/api/v1/billing/webhook",
+        content=b"{}",
+        headers={"stripe-signature": "t=1,v1=fake"},
+    )
+    assert response.status_code == 200
+
+    await db_session.refresh(user)
+    assert user.tier == UserTier.FREE
+
+    after = TIER_DOWNGRADE_TOTAL.labels(
+        from_tier="pro", to_tier="free", reason="subscription_deleted"
+    )._value.get()
+    assert after == before + 1
