@@ -63,7 +63,7 @@ async def submit_kyc(
     return KYCResponse(risk_tolerance=risk)
 
 
-@router.get("/risky-demo")
+@router.get("/risky-demo", include_in_schema=False)
 async def risky_demo(
     user: User = Depends(require_risk_tolerance("moderate")),
 ) -> dict:
