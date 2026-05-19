@@ -11,6 +11,9 @@ from app.modules.price_estimator.base import EstimateResult
 from app.modules.price_estimator.dcf import DCFEstimator
 from app.modules.price_estimator.ddm import DDMEstimator
 from app.modules.price_estimator.pe_model import PEBandEstimator
+from app.obs.logging import get_logger
+
+logger = get_logger(component="price_estimator")
 
 
 class CompositeEstimator:
@@ -34,7 +37,13 @@ class CompositeEstimator:
                 res = await estimator.estimate(stock_id)
                 results.append(res)
             except Exception as e:
-                print(f"Error in {estimator.__class__.__name__}: {e}")
+                logger.warning(
+                    "price_estimator.submodel_failed",
+                    estimator=estimator.__class__.__name__,
+                    stock_id=stock_id,
+                    error=str(e),
+                    exc_info=True,
+                )
 
         if not results:
             return None
