@@ -118,7 +118,7 @@ async def create_dividend(
         # quantity. Pydantic catches most of these at the DTO layer; this
         # branch covers the "valid DTO, invalid combination" cases.
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INVALID_DIVIDEND_INPUT,
         ) from exc
     await db.commit()
@@ -213,7 +213,7 @@ async def update_dividend(
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.IMMUTABLE_DIVIDEND_FIELD,
         ) from exc
     await db.commit()

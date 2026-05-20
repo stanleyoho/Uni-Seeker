@@ -92,7 +92,7 @@ async def create_trade(
         ) from exc
     except InsufficientShares as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,
         ) from exc
     except ValueError as exc:
@@ -100,7 +100,7 @@ async def create_trade(
         # non-positive qty. Pydantic should catch these first, but keep
         # the translation here so the contract is total.
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INVALID_TRADE_INPUT,
         ) from exc
     await db.commit()
@@ -196,7 +196,7 @@ async def update_trade(
         # PATCH put the lot chain into an impossible state (e.g. lowered
         # a historical BUY's qty so a downstream SELL no longer balances).
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,
         ) from exc
     await db.commit()
@@ -226,7 +226,7 @@ async def delete_trade(
         # Should be impossible at delete (a SELL going away can only
         # reduce demand) but keep the branch for completeness.
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,
         ) from exc
     await db.commit()
