@@ -41,7 +41,7 @@ from app.schemas.journal import (
     TradeResponse,
 )
 
-router = APIRouter(prefix="/journal", tags=["journal"])
+router = APIRouter(prefix="/journal", tags=["journal"], include_in_schema=False)
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 

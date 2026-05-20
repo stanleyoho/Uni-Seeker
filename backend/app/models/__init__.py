@@ -33,6 +33,16 @@ from app.models.user_device import UserDevice
 from app.models.valuation import StockValuation
 from app.models.watchlist_item import WatchlistItem
 
+# Portfolio Tracker (UNI-PORT-001) — ORM lives under app/db/models/portfolio/
+# per design doc §5.5. Import here so the tables register on Base.metadata
+# and Alembic autogenerate / create_all see them.
+from app.db.models.portfolio import (  # noqa: E402, F401
+    PortfolioAccount,
+    PortfolioLot,
+    PortfolioPosition,
+    PortfolioTrade,
+)
+
 __all__ = [
     "AccountGroup",
     "AccountGroupMember",
