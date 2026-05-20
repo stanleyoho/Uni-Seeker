@@ -6,6 +6,7 @@ from app.api.v1.backtest import router as backtest_router
 from app.api.v1.billing import router as billing_router
 from app.api.v1.company import router as company_router
 from app.api.v1.heatmap import router as heatmap_router
+from app.api.v1.holdings import router as holdings_router
 from app.api.v1.institutional import router as institutional_router
 from app.api.v1.journal import router as journal_router
 from app.api.v1.market import router as market_router
@@ -51,6 +52,7 @@ v1_router.include_router(market_router)
 v1_router.include_router(heatmap_router)
 v1_router.include_router(institutional_router)
 v1_router.include_router(journal_router)
+v1_router.include_router(holdings_router)
 v1_router.include_router(sync_router)
 v1_router.include_router(valuation_models_router)
 v1_router.include_router(backtest_jobs_router)
