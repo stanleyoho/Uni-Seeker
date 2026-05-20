@@ -16,6 +16,7 @@ can return one user's row to another user.
 # re-export and explodes with a circular ImportError.
 from app import models as _app_models  # noqa: F401
 from app.repositories.portfolio.account_repo import PortfolioAccountRepo
+from app.repositories.portfolio.dividend_repo import PortfolioDividendRepo
 from app.repositories.portfolio.lot_repo import PortfolioLotRepo
 from app.repositories.portfolio.position_repo import PortfolioPositionRepo
 from app.repositories.portfolio.price_lookup_repo import PriceLookupRepo
@@ -23,6 +24,7 @@ from app.repositories.portfolio.trade_repo import PortfolioTradeRepo
 
 __all__ = [
     "PortfolioAccountRepo",
+    "PortfolioDividendRepo",
     "PortfolioLotRepo",
     "PortfolioPositionRepo",
     "PortfolioTradeRepo",

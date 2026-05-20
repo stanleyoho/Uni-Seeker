@@ -20,6 +20,10 @@ Tier enforcement (spec §9):
   data over a tier quota.
 """
 from app.services.portfolio.account_service import PortfolioAccountService
+from app.services.portfolio.dividend_service import (
+    PortfolioDividendNotFound,
+    PortfolioDividendService,
+)
 from app.services.portfolio.exceptions import (
     PortfolioAccountNotFound,
     PortfolioServiceError,
@@ -36,6 +40,8 @@ from app.services.portfolio.trade_service import PortfolioTradeService
 
 __all__ = [
     "PortfolioAccountService",
+    "PortfolioDividendService",
+    "PortfolioDividendNotFound",
     "PortfolioPositionService",
     "PortfolioSummaryService",
     "PortfolioTradeService",
