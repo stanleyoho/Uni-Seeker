@@ -19,6 +19,7 @@ the `detail=` strings the frontend asserts on).
 from fastapi import APIRouter
 
 from app.api.v1.holdings.accounts import router as accounts_router
+from app.api.v1.holdings.dividends import router as dividends_router
 from app.api.v1.holdings.positions import router as positions_router
 from app.api.v1.holdings.summary import router as summary_router
 from app.api.v1.holdings.trades import router as trades_router
@@ -28,5 +29,6 @@ router.include_router(accounts_router)
 router.include_router(trades_router)
 router.include_router(positions_router)
 router.include_router(summary_router)
+router.include_router(dividends_router)
 
 __all__ = ["router"]

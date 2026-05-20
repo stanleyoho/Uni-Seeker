@@ -17,8 +17,11 @@ from __future__ import annotations
 
 ACCOUNT_NOT_FOUND = "portfolio_account_not_found"
 TRADE_NOT_FOUND = "portfolio_trade_not_found"
+DIVIDEND_NOT_FOUND = "portfolio_dividend_not_found"
 INSUFFICIENT_SHARES = "insufficient_shares"
 INVALID_TRADE_INPUT = "invalid_trade_input"
+INVALID_DIVIDEND_INPUT = "invalid_dividend_input"
+IMMUTABLE_DIVIDEND_FIELD = "immutable_dividend_field"
 
 
 def limit_exceeded(limit_key: str) -> str:
@@ -34,8 +37,11 @@ def feature_unavailable(feature: str) -> str:
 __all__ = [
     "ACCOUNT_NOT_FOUND",
     "TRADE_NOT_FOUND",
+    "DIVIDEND_NOT_FOUND",
     "INSUFFICIENT_SHARES",
     "INVALID_TRADE_INPUT",
+    "INVALID_DIVIDEND_INPUT",
+    "IMMUTABLE_DIVIDEND_FIELD",
     "limit_exceeded",
     "feature_unavailable",
 ]
