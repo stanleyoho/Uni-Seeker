@@ -18,18 +18,17 @@ def test_stock_model_creation() -> None:
         symbol="2330.TW",
         name="台積電",
         market=Market.TW_TWSE,
-        industry="半導體業",
+        industry_id=None,
     )
     assert stock.symbol == "2330.TW"
     assert stock.name == "台積電"
     assert stock.market == Market.TW_TWSE
-    assert stock.industry == "半導體業"
+    assert stock.industry_id is None
 
 
 def test_stock_price_model_creation() -> None:
     price = StockPrice(
-        symbol="2330.TW",
-        market=Market.TW_TWSE,
+        stock_id=1,
         date=date(2026, 4, 22),
         open=Decimal("885.00"),
         high=Decimal("892.00"),
@@ -41,6 +40,7 @@ def test_stock_price_model_creation() -> None:
     )
     assert price.close == Decimal("890.00")
     assert price.volume == 25_000_000
+    assert price.change == Decimal("5.00")
 
 
 def test_user_has_stripe_fields() -> None:

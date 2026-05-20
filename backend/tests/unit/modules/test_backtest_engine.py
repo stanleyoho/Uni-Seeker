@@ -42,6 +42,6 @@ def test_backtest_trade_log() -> None:
     # Falling then rising should trigger buy then sell
     prices = _make_prices([float(100 - i) for i in range(20)] + [float(80 + i * 2) for i in range(20)])
     engine = BacktestEngine(BacktestConfig(position_size=0.3))
-    result = engine.run(RSIOversoldStrategy(), prices)
+    result = engine.run(RSIOversoldStrategy(), prices, symbol="TEST.TW")
     # Should have at least some trades
     assert isinstance(result.trade_log, list)

@@ -40,7 +40,7 @@ def app():
 @pytest.mark.asyncio
 async def test_get_full_analysis(app) -> None:
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=_mock_financial_data(),
     ):
@@ -59,7 +59,7 @@ async def test_get_full_analysis(app) -> None:
 @pytest.mark.asyncio
 async def test_get_ratios(app) -> None:
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=_mock_financial_data(),
     ):
@@ -76,7 +76,7 @@ async def test_get_ratios(app) -> None:
 async def test_no_data_returns_404(app) -> None:
     empty = FinancialData(symbol="X", currency="USD")
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=empty,
     ):
