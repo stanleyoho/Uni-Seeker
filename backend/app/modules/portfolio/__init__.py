@@ -19,10 +19,22 @@ from app.modules.portfolio.cost_basis import (
     apply_sell,
     average_cost,
 )
+from app.modules.portfolio.dividend_processor import (
+    CashDividendInputs,
+    CashDividendResult,
+    StockDividendInputs,
+    StockDividendResult,
+    process_cash_dividend,
+    process_stock_dividend,
+)
 from app.modules.portfolio.live_price_fetcher import (
+    CachedDailyCloseLivePriceFetcher,
+    CompositeLivePriceFetcher,
     DailyCloseLivePriceFetcher,
     LivePriceFetcher,
     PriceQuote,
+    TTLCacheMixin,
+    YFinanceLivePriceFetcher,
 )
 from app.modules.portfolio.pnl import (
     DailyChange,
@@ -55,4 +67,15 @@ __all__ = [
     "PriceQuote",
     "LivePriceFetcher",
     "DailyCloseLivePriceFetcher",
+    "TTLCacheMixin",
+    "YFinanceLivePriceFetcher",
+    "CachedDailyCloseLivePriceFetcher",
+    "CompositeLivePriceFetcher",
+    # dividend_processor
+    "CashDividendInputs",
+    "CashDividendResult",
+    "StockDividendInputs",
+    "StockDividendResult",
+    "process_cash_dividend",
+    "process_stock_dividend",
 ]
