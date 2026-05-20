@@ -23,6 +23,7 @@ from app.models.base import Base
 from app.models.enums import Market, MarketType
 
 if TYPE_CHECKING:
+    from app.db.models.portfolio.dividend import PortfolioDividend
     from app.db.models.portfolio.lot import PortfolioLot
     from app.db.models.portfolio.position import PortfolioPosition
     from app.db.models.portfolio.trade import PortfolioTrade
@@ -64,6 +65,11 @@ class PortfolioAccount(Base):
         init=False,
     )
     positions: Mapped[list["PortfolioPosition"]] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
+        init=False,
+    )
+    dividends: Mapped[list["PortfolioDividend"]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
         init=False,

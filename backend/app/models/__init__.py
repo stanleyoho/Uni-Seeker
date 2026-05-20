@@ -38,6 +38,7 @@ from app.models.watchlist_item import WatchlistItem
 # and Alembic autogenerate / create_all see them.
 from app.db.models.portfolio import (  # noqa: E402, F401
     PortfolioAccount,
+    PortfolioDividend,
     PortfolioLot,
     PortfolioPosition,
     PortfolioTrade,
