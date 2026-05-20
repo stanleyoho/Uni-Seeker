@@ -1,8 +1,9 @@
 """Trade DTOs for /api/v1/holdings/trades.
 
 Spec §5.4 Table 2 + §6.2 Table 2. Decimal-as-string on the wire is
-enforced via `json_encoders={Decimal: str}` in `model_config` (see
-package docstring on `app.schemas.portfolio`).
+enforced via `@field_serializer(..., when_used='json')` on the response
+model (see package docstring on `app.schemas.holdings`). The legacy
+`json_encoders` knob is deprecated in Pydantic 2.x and removed in v3.
 """
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.models.enums import Market
 
@@ -63,10 +64,7 @@ class TradeResponse(BaseModel):
     the other when calling the service).
     """
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_encoders={Decimal: str},
-    )
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     account_id: int
@@ -81,3 +79,13 @@ class TradeResponse(BaseModel):
     note: str | None
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("price", "quantity", "fee", "tax", when_used="json")
+    def _serialize_decimal(self, value: Decimal | None) -> str | None:
+        """Render Decimal as exact string on the wire (CLAUDE.md line 35).
+
+        Replaces the deprecated `json_encoders={Decimal: str}` knob —
+        scheduled for removal in Pydantic v3. `None` stays `None`
+        (renders as JSON null — matches spec §12 R8 "missing = null").
+        """
+        return None if value is None else str(value)

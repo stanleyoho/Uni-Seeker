@@ -3,8 +3,9 @@
 Spec §5.4 Table 3 + §6.2 Table 3 (Phase 2 Batch C). Mirrors the trade
 DTO conventions:
 
-- Decimal-as-string on the wire via `json_encoders={Decimal: str}` in
-  `model_config` (see package docstring on `app.schemas.holdings`).
+- Decimal-as-string on the wire via `@field_serializer(..., when_used='json')`
+  (see package docstring on `app.schemas.holdings`). The legacy
+  `json_encoders` knob is deprecated in Pydantic 2.x and removed in v3.
 - `from_attributes=True` on the response model so we can hand an ORM row
   to `DividendResponse.model_validate(row)` directly.
 
@@ -27,7 +28,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer
 
 from app.models.enums import Market
 
@@ -98,10 +99,7 @@ class DividendResponse(BaseModel):
     to `note` so the frontend can display it without parsing.
     """
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_encoders={Decimal: str},
-    )
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     account_id: int
@@ -117,6 +115,23 @@ class DividendResponse(BaseModel):
     note: str | None
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer(
+        "amount_per_share",
+        "quantity_at_record",
+        "withholding_tax",
+        "total_amount",
+        "net_amount",
+        when_used="json",
+    )
+    def _serialize_decimal(self, value: Decimal) -> str:
+        """Render Decimal as exact string on the wire (CLAUDE.md line 35).
+
+        Replaces the deprecated `json_encoders={Decimal: str}` knob —
+        scheduled for removal in Pydantic v3. Covers stored Decimal
+        columns plus the two `@computed_field` properties below.
+        """
+        return str(value)
 
     @computed_field  # type: ignore[prop-decorator]
     @property

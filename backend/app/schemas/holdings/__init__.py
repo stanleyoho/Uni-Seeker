@@ -6,14 +6,20 @@ heavy domain objects) and the HTTP wire (Decimal-as-string per
 
 Decimal serialization strategy
 ------------------------------
-We declare every Decimal field as `Decimal` and configure each response
-model with::
+We declare every Decimal field as `Decimal` and attach a
+`@field_serializer(..., when_used='json')` method to each response model
+that lists its Decimal fields (stored columns *and* `@computed_field`
+properties)::
 
-    model_config = ConfigDict(json_encoders={Decimal: str})
+    @field_serializer("amount_per_share", "quantity_at_record", when_used="json")
+    def _serialize_decimal(self, value: Decimal | None) -> str | None:
+        return None if value is None else str(value)
 
-This is the Pydantic-v2-friendly way to keep Decimal values exact on the
-wire (no float coercion, no banker's rounding) while still letting
-service-layer call sites pass `Decimal(...)` directly.
+This keeps Decimal values exact on the wire (no float coercion, no
+banker's rounding) while still letting service-layer call sites pass
+`Decimal(...)` directly. The previous `ConfigDict(json_encoders=...)`
+shape was deprecated in Pydantic 2.x and is removed in v3; the
+field-serializer form is strongly typed and IDE-friendly.
 
 `None` Decimal values stay `None` (rendered as JSON null) — matches the
 "missing quote = null" contract in spec §12 R8.
