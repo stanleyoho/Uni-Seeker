@@ -35,6 +35,10 @@ from app.schemas.holdings.dividend import (
     DividendType,
     DividendUpdateRequest,
 )
+from app.schemas.holdings.import_csv import (
+    ImportResult,
+    ImportResultRow,
+)
 from app.schemas.holdings.position import (
     PositionListResponse,
     PositionResponse,
@@ -60,4 +64,6 @@ __all__ = [
     "PositionResponse",
     "PositionListResponse",
     "SummaryResponse",
+    "ImportResult",
+    "ImportResultRow",
 ]

@@ -22,6 +22,10 @@ INSUFFICIENT_SHARES = "insufficient_shares"
 INVALID_TRADE_INPUT = "invalid_trade_input"
 INVALID_DIVIDEND_INPUT = "invalid_dividend_input"
 IMMUTABLE_DIVIDEND_FIELD = "immutable_dividend_field"
+INVALID_CSV_FORMAT = "invalid_csv_format"
+CSV_TOO_LARGE = "csv_too_large"
+IMPORT_PARTIAL_FAILURE = "import_partial_failure"
+EXPORT_NO_DATA = "export_no_data"
 
 
 def limit_exceeded(limit_key: str) -> str:
@@ -42,6 +46,10 @@ __all__ = [
     "INVALID_TRADE_INPUT",
     "INVALID_DIVIDEND_INPUT",
     "IMMUTABLE_DIVIDEND_FIELD",
+    "INVALID_CSV_FORMAT",
+    "CSV_TOO_LARGE",
+    "IMPORT_PARTIAL_FAILURE",
+    "EXPORT_NO_DATA",
     "limit_exceeded",
     "feature_unavailable",
 ]

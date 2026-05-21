@@ -31,6 +31,8 @@ from app.services.portfolio.exceptions import (
     TierFeatureUnavailable,
     TierLimitExceeded,
 )
+from app.services.portfolio.export_service import CsvExportService
+from app.services.portfolio.import_service import CsvImportService
 from app.services.portfolio.position_service import (
     PortfolioPositionService,
     PositionWithPnL,
@@ -45,6 +47,8 @@ __all__ = [
     "PortfolioPositionService",
     "PortfolioSummaryService",
     "PortfolioTradeService",
+    "CsvExportService",
+    "CsvImportService",
     "PositionWithPnL",
     "PortfolioServiceError",
     "PortfolioAccountNotFound",
