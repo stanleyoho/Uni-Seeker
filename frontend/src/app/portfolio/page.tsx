@@ -34,6 +34,11 @@ import {
   type WatchlistItem,
 } from "@/lib/api-client";
 import { downloadCSV } from "@/lib/csv-export";
+import {
+  hasLegacyWatchlist,
+  migrateLocalWatchlistToApi,
+  type MigrationResult,
+} from "@/lib/watchlist-migration";
 import { useAuth } from "@/contexts/auth-context";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { Sparkline } from "@/components/stratos/charts";
@@ -43,6 +48,7 @@ import { AmbientBackground } from "@/components/stratos/ambient";
 interface WatchlistRowData {
   symbol: string;
   id: number;
+  stock_name: string | null;
   created_at: string;
   price?: StockPrice | null;
   loading: boolean;
@@ -100,6 +106,17 @@ export default function WatchlistPage() {
   const [sortBy, setSortBy] = useState<SortKey>("symbol");
   const [bulkError, setBulkError] = useState<string | null>(null);
 
+  // ── localStorage → API migration banner (Round 6) ───────────────────
+  // Fires ONCE per mount when the legacy key exists. The utility itself
+  // clears the key after running, so subsequent mounts see nothing. We
+  // keep `migrationResult` around so the user can read the outcome until
+  // they explicitly dismiss the banner.
+  const [migrationResult, setMigrationResult] =
+    useState<MigrationResult | null>(null);
+  const [migrationDismissed, setMigrationDismissed] = useState(false);
+  const [migrationRunning, setMigrationRunning] = useState(false);
+  const migrationStartedRef = useRef(false);
+
   // Memoise the symbol list so loadPrices' identity is stable across renders
   // that don't actually change the underlying symbols (TanStack Query returns
   // a fresh array reference on every refetch, even when contents match).
@@ -118,6 +135,7 @@ export default function WatchlistPage() {
     const baseRows: WatchlistRowData[] = watchlistItems.map((item) => ({
       symbol: item.symbol,
       id: item.id,
+      stock_name: item.stock_name,
       created_at: item.created_at,
       loading: true,
     }));
@@ -130,6 +148,7 @@ export default function WatchlistPage() {
           return {
             symbol: item.symbol,
             id: item.id,
+            stock_name: item.stock_name,
             created_at: item.created_at,
             price: res.data[0] ?? null,
             loading: false,
@@ -138,6 +157,7 @@ export default function WatchlistPage() {
           return {
             symbol: item.symbol,
             id: item.id,
+            stock_name: item.stock_name,
             created_at: item.created_at,
             price: null,
             loading: false,
@@ -148,6 +168,28 @@ export default function WatchlistPage() {
     setRowData(updated);
     setPricesLoading(false);
   }, [watchlistItems]);
+
+  // Run the legacy localStorage → API migration once on first mount when
+  // the user is authenticated. We gate on `user` because the API hook
+  // would otherwise 401, and the migration's `listWatchlist` step would
+  // fail before we even know what to insert. We also gate on the ref
+  // (instead of relying on dependencies) so a re-mount during dev HMR
+  // doesn't trigger a second run if state has already been computed.
+  useEffect(() => {
+    if (!user) return;
+    if (migrationStartedRef.current) return;
+    if (!hasLegacyWatchlist()) return;
+    migrationStartedRef.current = true;
+    setMigrationRunning(true);
+    (async () => {
+      try {
+        const result = await migrateLocalWatchlistToApi();
+        setMigrationResult(result);
+      } finally {
+        setMigrationRunning(false);
+      }
+    })();
+  }, [user]);
 
   // Trigger price refresh when the set of symbols changes (not on every
   // array-identity flip from TanStack Query).
@@ -375,6 +417,49 @@ export default function WatchlistPage() {
           </div>
         </div>
 
+        {/* Migration banner (Round 6) — surfaced once per user when the
+            legacy localStorage key existed at mount. Dismissible. */}
+        {migrationRunning && (
+          <div
+            role="status"
+            className="mb-4 px-4 py-3 border bg-[var(--card-hover)] border-[var(--accent-cyan)] text-[var(--accent-cyan)] text-xs font-bold uppercase tracking-widest flex items-center gap-3"
+          >
+            <span className="inline-block w-3 h-3 border-2 border-[var(--accent-cyan)] border-t-transparent rounded-full animate-spin" />
+            <span>正在將本機 Watchlist 同步至雲端...</span>
+          </div>
+        )}
+        {migrationResult && !migrationDismissed && !migrationRunning && (
+          <div
+            role="status"
+            className="mb-4 px-4 py-3 border bg-[var(--card-hover)] border-[var(--accent-cyan)] text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-[var(--accent-cyan)]">
+                Watchlist 已從本機遷移至雲端
+              </span>
+              <span>新增 {migrationResult.migrated}</span>
+              <span className="text-[var(--text-muted)]">
+                / 已存在 {migrationResult.skipped}
+              </span>
+              {migrationResult.failed.length > 0 && (
+                <span className="text-[var(--stock-down)]">
+                  / 失敗 {migrationResult.failed.length}
+                  {migrationResult.failed.some((f) => f.reason === "tier_cap")
+                    ? "（已達 Free 上限）"
+                    : ""}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setMigrationDismissed(true)}
+              className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--foreground)] uppercase tracking-widest"
+              aria-label="dismiss migration notice"
+            >
+              ✕ DISMISS
+            </button>
+          </div>
+        )}
+
         {/* Error banner — surfaced for query failure, last-mutation failure,
             and bulk-remove partial failure */}
         {(watchlistError || removeMutation.isError || bulkError) && (
@@ -445,6 +530,7 @@ export default function WatchlistPage() {
                       />
                     </th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Symbol</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest hidden lg:table-cell">Name</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden sm:table-cell">Intraday</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Price</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Chg%</th>
@@ -476,6 +562,11 @@ export default function WatchlistPage() {
                           <Link href={`/stocks/${encodeURIComponent(row.symbol)}`} className="font-bold text-sm text-[var(--foreground)] tabular-nums group-hover:text-[var(--accent-cyan)] transition-colors">
                             {row.symbol.split('.')[0]}
                           </Link>
+                        </td>
+                        <td className="px-4 py-4 hidden lg:table-cell">
+                          <span className="text-xs text-[var(--text-secondary)] truncate block max-w-[160px]" title={row.stock_name || undefined}>
+                            {row.stock_name || "--"}
+                          </span>
                         </td>
                         <td className="px-4 py-4 text-right hidden sm:table-cell">
                           {price && (

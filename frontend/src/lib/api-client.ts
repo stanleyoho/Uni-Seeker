@@ -1020,7 +1020,33 @@ export async function fetchJournalAlerts(): Promise<JournalAlertsResponse> {
 export interface WatchlistItem {
   id: number;
   symbol: string;
+  /**
+   * Joined from stocks.name on the server (Round 6). May be null if the
+   * stock row was deleted out-of-band — callers should fall back to
+   * `symbol` for display.
+   */
+  stock_name: string | null;
   created_at: string;
+}
+
+/** Per-symbol failure returned inside a bulk-add response (Round 6). */
+export interface WatchlistBulkAddError {
+  symbol: string;
+  /** snake_case: `stock_not_found` | `invalid_symbol` | `internal_error` */
+  reason: string;
+}
+
+/**
+ * Envelope for POST /watchlist/bulk (Round 6).
+ *
+ * The endpoint NEVER returns 4xx for per-row issues — only quota
+ * (403 limit_exceeded:max_watchlist) and validation (422) and auth (401)
+ * can short-circuit. Per-row issues land in `errors[]`.
+ */
+export interface WatchlistBulkAddResponse {
+  added: WatchlistItem[];
+  skipped_duplicates: string[];
+  errors: WatchlistBulkAddError[];
 }
 
 export async function listWatchlist(): Promise<WatchlistItem[]> {
@@ -1031,6 +1057,25 @@ export async function addToWatchlist(symbol: string): Promise<WatchlistItem> {
   return apiFetch<WatchlistItem>(`${API_BASE}/watchlist/`, {
     method: "POST",
     body: JSON.stringify({ symbol }),
+  });
+}
+
+/**
+ * Bulk-add up to 20 symbols in one call. Atomic at the tier-quota level:
+ * if the projected `existing + new_unique` exceeds the Free cap (10), the
+ * whole batch is rejected with 403 `limit_exceeded:max_watchlist` and
+ * nothing is inserted. Per-row issues (unknown symbol etc.) are reported
+ * inside the 201 envelope.
+ *
+ * NOTE: The /portfolio page migration flow does NOT use this — see
+ * `watchlist-migration.ts` for why it sticks with single-symbol adds.
+ */
+export async function bulkAddToWatchlist(
+  symbols: string[],
+): Promise<WatchlistBulkAddResponse> {
+  return apiFetch<WatchlistBulkAddResponse>(`${API_BASE}/watchlist/bulk`, {
+    method: "POST",
+    body: JSON.stringify({ symbols }),
   });
 }
 
