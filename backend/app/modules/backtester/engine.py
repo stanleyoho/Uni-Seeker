@@ -53,7 +53,7 @@ class BacktestEngine:
             )
 
         if not symbol:
-            symbol = prices[0].symbol
+            symbol = "UNKNOWN"
 
         portfolio = Portfolio(initial_capital=self._config.initial_capital)
         closes_so_far: list[float] = []
