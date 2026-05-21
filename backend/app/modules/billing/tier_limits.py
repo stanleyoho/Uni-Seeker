@@ -88,6 +88,7 @@ class TierFeatures(BaseModel):
     daily_change_breakdown: bool
     multi_account: bool
     tax_export: bool
+    institutional_ownership_panel: bool
 
 
 class TierConfig(BaseModel):
@@ -101,9 +102,15 @@ class TierConfig(BaseModel):
     max_positions: int | None
     max_trades_per_month: int | None
     max_accounts: int | None
+    max_tracked_filers: int | None
     features: TierFeatures
 
-    @field_validator("max_positions", "max_trades_per_month", "max_accounts")
+    @field_validator(
+        "max_positions",
+        "max_trades_per_month",
+        "max_accounts",
+        "max_tracked_filers",
+    )
     @classmethod
     def _positive_or_none(cls, v: int | None) -> int | None:
         # spec §9.3: "validate: 數值欄位若非 None 必 > 0"
@@ -184,7 +191,12 @@ def load_tier_limits(path: str | None = None) -> AllTierLimits:
 
 
 _NUMERIC_LIMIT_KEYS = frozenset(
-    {"max_positions", "max_trades_per_month", "max_accounts"}
+    {
+        "max_positions",
+        "max_trades_per_month",
+        "max_accounts",
+        "max_tracked_filers",
+    }
 )
 
 

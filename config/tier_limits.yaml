@@ -11,31 +11,37 @@ free:
   max_positions: 10
   max_trades_per_month: 30
   max_accounts: 1
+  max_tracked_filers: 1
   features:
     realized_pnl: false
     dividends: false
     daily_change_breakdown: false
     multi_account: false
     tax_export: false
+    institutional_ownership_panel: false
 
 basic:
   max_positions: 50
   max_trades_per_month: 200
   max_accounts: 3
+  max_tracked_filers: 5
   features:
     realized_pnl: true
     dividends: true
     daily_change_breakdown: false
     multi_account: true
     tax_export: false
+    institutional_ownership_panel: false
 
 pro:
   max_positions: null
   max_trades_per_month: null
   max_accounts: null
+  max_tracked_filers: null
   features:
     realized_pnl: true
     dividends: true
     daily_change_breakdown: true
     multi_account: true
     tax_export: true
+    institutional_ownership_panel: true

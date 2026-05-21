@@ -360,3 +360,40 @@ def test_counter_increments_on_limit_block():
     assert r.status_code == 403
     after = _counter_value("free", "max_accounts")
     assert after == before + 1
+
+
+# ── 13. 13F tracker quota + feature flag (Phase 1 Batch A3) ─────────────────
+
+
+def test_free_max_tracked_filers_is_1(default_limits: tl.AllTierLimits):
+    assert default_limits.free.max_tracked_filers == 1
+
+
+def test_basic_max_tracked_filers_is_5(default_limits: tl.AllTierLimits):
+    assert default_limits.basic.max_tracked_filers == 5
+
+
+def test_pro_max_tracked_filers_is_unlimited(default_limits: tl.AllTierLimits):
+    assert default_limits.pro.max_tracked_filers is None
+
+
+def test_free_institutional_panel_disabled():
+    assert tl.has_feature(UserTier.FREE, "institutional_ownership_panel") is False
+    assert tl.has_feature(UserTier.BASIC, "institutional_ownership_panel") is False
+
+
+def test_pro_institutional_panel_enabled():
+    assert tl.has_feature(UserTier.PRO, "institutional_ownership_panel") is True
+
+
+def test_get_limit_max_tracked_filers_for_free_user():
+    assert tl.get_limit(UserTier.FREE, "max_tracked_filers") == 1
+    assert tl.get_limit(UserTier.BASIC, "max_tracked_filers") == 5
+    assert tl.get_limit(UserTier.PRO, "max_tracked_filers") is None
+
+
+def test_has_feature_institutional_ownership_panel_pro_only():
+    # PRO-only feature — Free/Basic must be False, PRO must be True.
+    assert tl.has_feature(UserTier.PRO, "institutional_ownership_panel") is True
+    assert tl.has_feature(UserTier.FREE, "institutional_ownership_panel") is False
+    assert tl.has_feature(UserTier.BASIC, "institutional_ownership_panel") is False
