@@ -999,3 +999,353 @@ export async function createJournalGroup(body: {
 export async function fetchJournalAlerts(): Promise<JournalAlertsResponse> {
   return apiFetch<JournalAlertsResponse>(`${API_BASE}/journal/alerts`);
 }
+
+// ---------------------------------------------------------------------------
+// Holdings — Types (Phase 3, /holdings/* endpoints)
+//
+// Decimal-as-string convention: backend serializes every Decimal column
+// (qty, price, fee, tax, avg_cost, realized_pnl, etc.) via
+// @field_serializer(when_used="json"). Frontend MUST treat these as
+// `string` and call `Number(...)` only at the render boundary.
+//
+// Important alignment notes vs. plain spec:
+//   - AccountResponse carries `market` + `description` (not user_id /
+//     updated_at). Account creation REQUIRES `market`.
+//   - TradeCreateRequest uses `qty` on the wire (not `quantity`). The
+//     response payload uses `quantity` (ORM column name). The PATCH body
+//     accepts EITHER (service maps qty -> quantity). We expose the wire
+//     shape verbatim — `qty` on create, `quantity` on the row.
+//   - PositionResponse uses `qty` (NOT `quantity`), exposes `total_cost`
+//     and `price_as_of`, and `avg_cost` may be null. `is_closed` is
+//     present.
+//   - GET /holdings/positions returns an envelope { account_id, positions }
+//     (not a bare array).
+//   - GET /holdings/positions/{account_id}/{symbol} REQUIRES `market`
+//     query param (composite uniqueness key).
+//   - GET /holdings/trades REQUIRES `account_id` query param.
+//   - DividendCreateRequest accepts `ratio` (STOCK branch). Response
+//     carries `total_amount` + `net_amount` as computed fields.
+//   - DELETE /holdings/dividends/{id} returns 204 (apiFetch handles it).
+// ---------------------------------------------------------------------------
+
+export type HoldingMarket = "TW_TWSE" | "TW_TPEX" | "US_NYSE" | "US_NASDAQ";
+export type HoldingTradeAction = "BUY" | "SELL";
+export type HoldingDividendType = "CASH" | "STOCK";
+
+// ── Accounts ───────────────────────────────────────────────────────────────
+
+export interface HoldingAccount {
+  id: number;
+  name: string;
+  market: HoldingMarket;
+  broker: string | null;
+  currency: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface HoldingAccountCreateRequest {
+  name: string;
+  market: HoldingMarket;
+  broker?: string | null;
+  currency?: string;
+  description?: string | null;
+}
+
+export interface HoldingAccountUpdateRequest {
+  name?: string;
+  market?: HoldingMarket;
+  broker?: string | null;
+  currency?: string;
+  description?: string | null;
+}
+
+// ── Trades ─────────────────────────────────────────────────────────────────
+
+export interface HoldingTrade {
+  id: number;
+  account_id: number;
+  symbol: string;
+  market: HoldingMarket;
+  action: string;            // backend returns the raw string ("BUY"/"SELL")
+  trade_date: string;        // ISO date (YYYY-MM-DD)
+  price: string | null;      // Decimal-as-string
+  quantity: string | null;   // ORM column name in response
+  fee: string;
+  tax: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HoldingTradeCreateRequest {
+  account_id: number;
+  action: HoldingTradeAction;
+  symbol: string;
+  market: HoldingMarket;
+  qty: string;               // wire uses `qty` on POST
+  price: string;
+  fee?: string;
+  tax?: string;
+  trade_date?: string | null;
+  note?: string | null;
+}
+
+export interface HoldingTradeUpdateRequest {
+  account_id?: number;
+  action?: HoldingTradeAction;
+  symbol?: string;
+  market?: HoldingMarket;
+  qty?: string;
+  price?: string;
+  fee?: string;
+  tax?: string;
+  trade_date?: string | null;
+  note?: string | null;
+}
+
+// ── Positions (read-only, derived) ─────────────────────────────────────────
+
+export interface HoldingPosition {
+  account_id: number;
+  symbol: string;
+  market: HoldingMarket;
+  currency: string;
+  qty: string;
+  avg_cost: string | null;
+  total_cost: string | null;
+  realized_pnl: string;
+  last_price: string | null;
+  prev_close: string | null;
+  price_as_of: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  daily_change: string | null;
+  daily_change_pct: string | null;
+  is_closed: boolean;
+}
+
+export interface HoldingPositionListResponse {
+  account_id: number | null;
+  positions: HoldingPosition[];
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+
+export interface HoldingSummary {
+  total_cost: string;
+  total_value: string;
+  total_unrealized_pnl: string;
+  total_daily_change: string;
+  gain_simple: string;
+  gain_simple_pct: string;
+  position_count: number;
+  account_count: number;
+}
+
+// ── Dividends ──────────────────────────────────────────────────────────────
+
+export interface HoldingDividend {
+  id: number;
+  account_id: number;
+  symbol: string;
+  market: HoldingMarket;
+  dividend_type: string;       // "CASH" | "STOCK" — backend returns raw str
+  ex_dividend_date: string;
+  pay_date: string | null;
+  amount_per_share: string;
+  quantity_at_record: string;
+  currency: string;
+  withholding_tax: string;
+  total_amount: string;        // computed_field
+  net_amount: string;          // computed_field
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HoldingDividendCreateRequest {
+  account_id: number;
+  symbol: string;
+  market: HoldingMarket;
+  dividend_type: HoldingDividendType;
+  ex_dividend_date: string;
+  pay_date?: string | null;
+  amount_per_share?: string | null;     // required for CASH
+  quantity_at_record: string;
+  ratio?: string | null;                // required for STOCK
+  currency?: string;
+  withholding_tax?: string;
+  note?: string | null;
+}
+
+export interface HoldingDividendUpdateRequest {
+  note?: string | null;
+  pay_date?: string | null;
+  withholding_tax?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Holdings — API functions
+// ---------------------------------------------------------------------------
+
+// ── Accounts ───────────────────────────────────────────────────────────────
+
+export async function listHoldingAccounts(): Promise<HoldingAccount[]> {
+  return apiFetch<HoldingAccount[]>(`${API_BASE}/holdings/accounts`);
+}
+
+export async function createHoldingAccount(
+  body: HoldingAccountCreateRequest,
+): Promise<HoldingAccount> {
+  return apiFetch<HoldingAccount>(`${API_BASE}/holdings/accounts`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getHoldingAccount(id: number): Promise<HoldingAccount> {
+  return apiFetch<HoldingAccount>(`${API_BASE}/holdings/accounts/${id}`);
+}
+
+export async function updateHoldingAccount(
+  id: number,
+  body: HoldingAccountUpdateRequest,
+): Promise<HoldingAccount> {
+  return apiFetch<HoldingAccount>(`${API_BASE}/holdings/accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteHoldingAccount(id: number): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`${API_BASE}/holdings/accounts/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ── Trades ─────────────────────────────────────────────────────────────────
+
+export async function listHoldingTrades(
+  accountId: number,
+  limit?: number,
+  offset?: number,
+): Promise<HoldingTrade[]> {
+  const qs = new URLSearchParams({ account_id: String(accountId) });
+  if (limit !== undefined) qs.set("limit", String(limit));
+  if (offset !== undefined) qs.set("offset", String(offset));
+  return apiFetch<HoldingTrade[]>(
+    `${API_BASE}/holdings/trades?${qs.toString()}`,
+  );
+}
+
+export async function createHoldingTrade(
+  body: HoldingTradeCreateRequest,
+): Promise<HoldingTrade> {
+  return apiFetch<HoldingTrade>(`${API_BASE}/holdings/trades`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getHoldingTrade(id: number): Promise<HoldingTrade> {
+  return apiFetch<HoldingTrade>(`${API_BASE}/holdings/trades/${id}`);
+}
+
+export async function updateHoldingTrade(
+  id: number,
+  body: HoldingTradeUpdateRequest,
+): Promise<HoldingTrade> {
+  return apiFetch<HoldingTrade>(`${API_BASE}/holdings/trades/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteHoldingTrade(id: number): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`${API_BASE}/holdings/trades/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ── Positions ──────────────────────────────────────────────────────────────
+
+export async function listHoldingPositions(
+  accountId?: number,
+): Promise<HoldingPositionListResponse> {
+  const qs = new URLSearchParams();
+  if (accountId !== undefined) qs.set("account_id", String(accountId));
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch<HoldingPositionListResponse>(
+    `${API_BASE}/holdings/positions${query}`,
+  );
+}
+
+export async function getHoldingPosition(
+  accountId: number,
+  symbol: string,
+  market: HoldingMarket,
+): Promise<HoldingPosition> {
+  const qs = new URLSearchParams({ market });
+  return apiFetch<HoldingPosition>(
+    `${API_BASE}/holdings/positions/${accountId}/${encodeURIComponent(symbol)}?${qs.toString()}`,
+  );
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+
+export async function getUserHoldingSummary(): Promise<HoldingSummary> {
+  return apiFetch<HoldingSummary>(`${API_BASE}/holdings/summary`);
+}
+
+export async function getAccountHoldingSummary(
+  accountId: number,
+): Promise<HoldingSummary> {
+  return apiFetch<HoldingSummary>(`${API_BASE}/holdings/summary/${accountId}`);
+}
+
+// ── Dividends ──────────────────────────────────────────────────────────────
+
+export async function listHoldingDividends(
+  accountId?: number,
+  limit?: number,
+  offset?: number,
+): Promise<HoldingDividend[]> {
+  const qs = new URLSearchParams();
+  if (accountId !== undefined) qs.set("account_id", String(accountId));
+  if (limit !== undefined) qs.set("limit", String(limit));
+  if (offset !== undefined) qs.set("offset", String(offset));
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch<HoldingDividend[]>(
+    `${API_BASE}/holdings/dividends${query}`,
+  );
+}
+
+export async function createHoldingDividend(
+  body: HoldingDividendCreateRequest,
+): Promise<HoldingDividend> {
+  return apiFetch<HoldingDividend>(`${API_BASE}/holdings/dividends`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getHoldingDividend(id: number): Promise<HoldingDividend> {
+  return apiFetch<HoldingDividend>(`${API_BASE}/holdings/dividends/${id}`);
+}
+
+export async function updateHoldingDividend(
+  id: number,
+  body: HoldingDividendUpdateRequest,
+): Promise<HoldingDividend> {
+  return apiFetch<HoldingDividend>(`${API_BASE}/holdings/dividends/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteHoldingDividend(id: number): Promise<void> {
+  await apiFetch<void>(`${API_BASE}/holdings/dividends/${id}`, {
+    method: "DELETE",
+  });
+}

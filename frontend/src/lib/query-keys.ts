@@ -72,4 +72,37 @@ export const queryKeys = {
     group: (id: number) => [...queryKeys.journal.all, "group", id] as const,
     alerts: () => [...queryKeys.journal.all, "alerts"] as const,
   },
+  holdings: {
+    all: ["holdings"] as const,
+    accounts: {
+      all: ["holdings", "accounts"] as const,
+      list: () => ["holdings", "accounts", "list"] as const,
+      detail: (id: number) => ["holdings", "accounts", id] as const,
+    },
+    trades: {
+      all: ["holdings", "trades"] as const,
+      list: (accountId?: number, limit?: number, offset?: number) =>
+        ["holdings", "trades", "list", accountId, limit, offset] as const,
+      detail: (id: number) => ["holdings", "trades", id] as const,
+    },
+    positions: {
+      all: ["holdings", "positions"] as const,
+      list: (accountId?: number) =>
+        ["holdings", "positions", "list", accountId] as const,
+      detail: (accountId: number, symbol: string, market: string) =>
+        ["holdings", "positions", accountId, symbol, market] as const,
+    },
+    summary: {
+      all: ["holdings", "summary"] as const,
+      user: () => ["holdings", "summary", "user"] as const,
+      account: (accountId: number) =>
+        ["holdings", "summary", "account", accountId] as const,
+    },
+    dividends: {
+      all: ["holdings", "dividends"] as const,
+      list: (accountId?: number, limit?: number, offset?: number) =>
+        ["holdings", "dividends", "list", accountId, limit, offset] as const,
+      detail: (id: number) => ["holdings", "dividends", id] as const,
+    },
+  },
 } as const;
