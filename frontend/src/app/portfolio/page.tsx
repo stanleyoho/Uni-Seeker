@@ -1,80 +1,181 @@
 "use client";
 
+// ---------------------------------------------------------------------------
+// Watchlist page — WATCH-001 / Round 5.2
+//
+// Source of truth: server (TanStack Query via useWatchlistApi). The legacy
+// localStorage-based useWatchlist hook is still exported from
+// `@/hooks/use-watchlist` for backward compatibility with other surfaces,
+// but this page no longer imports it.
+//
+// Tier gating: Free users are capped at 10 entries (enforced server-side
+// via 403 watchlist_limit_exceeded). We mirror that cap in the UI by
+// disabling additions at the limit and rendering a soft warning badge
+// starting at 80% capacity.
+//
+// CSV import/export is intentionally disabled in this round — the API
+// surface only supports single-symbol add/remove and the legacy CSV path
+// wrote to localStorage. Bulk add lands in Phase 4+. The buttons remain
+// rendered (with disabled styling + tooltip) so the layout is stable for
+// when bulk-add comes online.
+// ---------------------------------------------------------------------------
+
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/context";
-import { useWatchlist, type WatchlistItem } from "@/hooks/use-watchlist";
-import { fetchPrices, type StockPrice } from "@/lib/api-client";
+import {
+  useWatchlistApi,
+  useRemoveFromWatchlist,
+} from "@/hooks/use-watchlist-api";
+import {
+  fetchPrices,
+  ApiError,
+  type StockPrice,
+  type WatchlistItem,
+} from "@/lib/api-client";
 import { downloadCSV } from "@/lib/csv-export";
-import { parseCSV } from "@/lib/csv-import";
+import { useAuth } from "@/contexts/auth-context";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { Sparkline } from "@/components/stratos/charts";
-import { MarketBadge } from "@/components/ui/badge";
 
 import { AmbientBackground } from "@/components/stratos/ambient";
 
-interface WatchlistRowData extends WatchlistItem {
+interface WatchlistRowData {
+  symbol: string;
+  id: number;
+  created_at: string;
   price?: StockPrice | null;
   loading: boolean;
 }
 
-type SortKey = "symbol" | "name" | "change" | "volume";
+type SortKey = "symbol" | "change" | "volume";
+
+const FREE_TIER_LIMIT = 10;
+const FREE_TIER_WARN_THRESHOLD = 8; // 80% of cap
+
+/**
+ * Map backend detail strings (and ApiError statuses) to user-facing zh-TW
+ * messages. Keeps the markup tidy by centralising the cases handlers care
+ * about: 403 tier cap, 404 unknown symbol, 422 validation, 401 auth.
+ */
+function describeMutationError(err: unknown): string {
+  if (err instanceof ApiError) {
+    // Backend returns `detail` as the snake_case identifier — apiFetch
+    // surfaces that as `err.message`.
+    if (err.status === 403 && err.message.includes("watchlist_limit_exceeded")) {
+      return "已達 Free tier 上限 10 檔。升級 Pro 解鎖無限。";
+    }
+    if (err.status === 404) {
+      return "找不到該股代號。";
+    }
+    if (err.status === 409) {
+      return "該股票已在 Watchlist 中。";
+    }
+    if (err.status === 422) {
+      return "代號格式錯誤。";
+    }
+    if (err.status === 401) {
+      return "登入逾期，請重新登入。";
+    }
+    return err.message || "操作失敗，請稍後再試。";
+  }
+  return "網路異常，請稍後再試。";
+}
 
 export default function WatchlistPage() {
   const { t } = useI18n();
-  const { items, add, remove, removeMany } = useWatchlist();
+  const { user, loading: authLoading } = useAuth();
+  const {
+    data: watchlistItems = [],
+    isLoading: watchlistLoading,
+    isError: watchlistError,
+    error: watchlistErrorObj,
+  } = useWatchlistApi();
+  const removeMutation = useRemoveFromWatchlist();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rowData, setRowData] = useState<WatchlistRowData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pricesLoading, setPricesLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortKey>("symbol");
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  // Memoise the symbol list so loadPrices' identity is stable across renders
+  // that don't actually change the underlying symbols (TanStack Query returns
+  // a fresh array reference on every refetch, even when contents match).
+  const symbolsKey = useMemo(
+    () => watchlistItems.map((i) => i.symbol).sort().join(","),
+    [watchlistItems],
+  );
 
   const loadPrices = useCallback(async () => {
-    setLoading(true);
-    const rows: WatchlistRowData[] = items.map((item) => ({ ...item, loading: true }));
-    setRowData(rows);
+    if (watchlistItems.length === 0) {
+      setRowData([]);
+      setPricesLoading(false);
+      return;
+    }
+    setPricesLoading(true);
+    const baseRows: WatchlistRowData[] = watchlistItems.map((item) => ({
+      symbol: item.symbol,
+      id: item.id,
+      created_at: item.created_at,
+      loading: true,
+    }));
+    setRowData(baseRows);
 
     const updated = await Promise.all(
-      items.map(async (item) => {
+      watchlistItems.map(async (item) => {
         try {
           const res = await fetchPrices(item.symbol, 1);
-          return { ...item, price: res.data[0] ?? null, loading: false };
+          return {
+            symbol: item.symbol,
+            id: item.id,
+            created_at: item.created_at,
+            price: res.data[0] ?? null,
+            loading: false,
+          };
         } catch {
-          return { ...item, price: null, loading: false };
+          return {
+            symbol: item.symbol,
+            id: item.id,
+            created_at: item.created_at,
+            price: null,
+            loading: false,
+          };
         }
       }),
     );
     setRowData(updated);
-    setLoading(false);
-  }, [items]);
+    setPricesLoading(false);
+  }, [watchlistItems]);
 
+  // Trigger price refresh when the set of symbols changes (not on every
+  // array-identity flip from TanStack Query).
   useEffect(() => {
-    if (items.length > 0) {
+    if (symbolsKey.length > 0) {
       loadPrices();
     } else {
       setRowData([]);
-      setLoading(false);
+      setPricesLoading(false);
     }
-  }, [items.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbolsKey]);
 
-  // Clear selection for symbols that no longer exist
+  // Drop selections for symbols that no longer exist on the server.
   useEffect(() => {
-    const currentSymbols = new Set(items.map((i) => i.symbol));
+    const currentSymbols = new Set(watchlistItems.map((i) => i.symbol));
     setSelected((prev) => {
       const next = new Set([...prev].filter((s) => currentSymbols.has(s)));
       if (next.size !== prev.size) return next;
       return prev;
     });
-  }, [items]);
+  }, [watchlistItems]);
 
   const sortedRows = useMemo(() => {
     const rows = [...rowData];
     switch (sortBy) {
       case "symbol":
         rows.sort((a, b) => a.symbol.localeCompare(b.symbol));
-        break;
-      case "name":
-        rows.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case "change":
         rows.sort((a, b) => {
@@ -117,83 +218,205 @@ export default function WatchlistPage() {
     });
   };
 
-  const handleBulkRemove = () => {
+  // Bulk remove: fire each DELETE sequentially. The backend has no batch
+  // endpoint yet, so we settle().all() to surface any per-symbol failures
+  // without aborting the rest. The mutation hook handles cache
+  // invalidation on each success.
+  const handleBulkRemove = useCallback(async () => {
     if (selected.size === 0) return;
-    removeMany(selected);
+    setBulkError(null);
+    const symbols = [...selected];
+    const results = await Promise.allSettled(
+      symbols.map((sym) => removeMutation.mutateAsync(sym)),
+    );
+    const failures = results.filter((r) => r.status === "rejected");
+    if (failures.length > 0) {
+      const first = failures[0] as PromiseRejectedResult;
+      setBulkError(
+        `${failures.length} 個項目刪除失敗：${describeMutationError(first.reason)}`,
+      );
+    }
     setSelected(new Set());
-  };
+  }, [selected, removeMutation]);
+
+  const handleSingleRemove = useCallback(
+    (symbol: string) => {
+      setBulkError(null);
+      removeMutation.mutate(symbol);
+    },
+    [removeMutation],
+  );
 
   const handleExport = () => {
-    const data = items.map((item) => ({
+    const data = (rowData.length > 0 ? rowData : watchlistItems.map((i) => ({
+      symbol: i.symbol,
+      created_at: i.created_at,
+    }))).map((item) => ({
       symbol: item.symbol,
-      name: item.name,
-      added_date: item.addedAt.split("T")[0],
+      added_date: item.created_at ? item.created_at.split("T")[0] : "",
     }));
     downloadCSV(data, "watchlist.csv");
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result as string;
-      const symbols = parseCSV(text);
-      for (const symbol of symbols) {
-        add(symbol, symbol, "");
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  // ── Tier gating ─────────────────────────────────────────────────────────
+  // Treat unknown tier (not yet loaded, or unexpected value) the same as
+  // FREE — we'd rather block at-the-cap actions than silently exceed.
+  const tier = (user?.tier || "").toUpperCase();
+  const isFreeTier = !user || tier === "FREE";
+  const itemCount = watchlistItems.length;
+  const atFreeLimit = isFreeTier && itemCount >= FREE_TIER_LIMIT;
+  const nearFreeLimit =
+    isFreeTier && !atFreeLimit && itemCount >= FREE_TIER_WARN_THRESHOLD;
 
   const wl = t.watchlist;
+
+  // ── Auth gate ───────────────────────────────────────────────────────────
+  // The watchlist API is auth-gated; once auth has resolved with no user,
+  // surface a login CTA instead of leaking a 401 error banner.
+  if (!authLoading && !user) {
+    return (
+      <div className="flex-1 bg-[var(--background)]">
+        <AmbientBackground />
+        <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6">
+          <GlassPanel className="py-24 text-center">
+            <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-[0.2em]">
+              請先登入以使用 Watchlist
+            </p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-2 uppercase">
+              Watchlist is now backed by your account — sign in to continue
+            </p>
+            <Link href="/login" className="inline-block mt-6">
+              <ClippedButton variant="red-solid" size="md">
+                GO TO LOGIN
+              </ClippedButton>
+            </Link>
+          </GlassPanel>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-[var(--background)]">
       <AmbientBackground />
       <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
-        
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 border-b border-[var(--border-subtle)] pb-4 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-[var(--foreground)] uppercase">
               {wl?.title || "Watchlist Management"}
             </h1>
-            <p className="text-xs font-bold text-[var(--text-muted)] tracking-widest mt-1 uppercase">
-              {items.length} ACTIVE SECURITIES MONITORED
-            </p>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <p className="text-xs font-bold text-[var(--text-muted)] tracking-widest uppercase">
+                {itemCount} ACTIVE SECURITIES MONITORED
+              </p>
+              {isFreeTier && (atFreeLimit || nearFreeLimit) && (
+                <span
+                  className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest border ${
+                    atFreeLimit
+                      ? "bg-[var(--stock-down-bg)] text-[var(--stock-down)] border-[var(--stock-down)]"
+                      : "bg-[var(--card-hover)] text-[var(--accent-cyan)] border-[var(--accent-cyan)]"
+                  }`}
+                >
+                  {atFreeLimit
+                    ? `Free 上限 ${FREE_TIER_LIMIT} / 升級 Pro 解鎖無限`
+                    : `接近上限 (${itemCount}/${FREE_TIER_LIMIT})`}
+                </span>
+              )}
+            </div>
           </div>
-          
-          <div className="flex flex-wrap gap-2">
-            <label className="cursor-pointer">
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-cyan)] transition-all"
-              >
-                IMPORT CSV
-              </button>
-              <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} className="hidden" />
-            </label>
-            <button 
+
+          <div className="flex flex-wrap gap-2 items-center">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled
+              title="等後端 bulk add（Phase 4+）"
+              className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-muted)] opacity-50 cursor-not-allowed"
+            >
+              IMPORT CSV
+            </button>
+            {/* Hidden input retained so the layout stays compatible when
+                bulk-add lands in Phase 4+. handler intentionally a no-op. */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={() => {
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="hidden"
+            />
+            <button
               onClick={handleExport}
-              className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-cyan)] transition-all"
+              disabled={itemCount === 0}
+              className="px-4 py-1.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--foreground)] hover:border-[var(--accent-cyan)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               EXPORT CSV
             </button>
-            <ClippedButton variant="red-solid" size="sm" onClick={loadPrices} disabled={loading}>
-              {loading ? "FETCHING..." : "SYNC PRICES"}
+            <ClippedButton
+              variant="red-solid"
+              size="sm"
+              onClick={loadPrices}
+              disabled={pricesLoading || itemCount === 0}
+            >
+              {pricesLoading ? "FETCHING..." : "SYNC PRICES"}
             </ClippedButton>
             {selected.size > 0 && (
-              <ClippedButton variant="red-ghost" size="sm" onClick={handleBulkRemove}>
+              <ClippedButton
+                variant="red-ghost"
+                size="sm"
+                onClick={handleBulkRemove}
+                disabled={removeMutation.isPending}
+              >
                 DELETE SELECTED [{selected.size}]
               </ClippedButton>
             )}
           </div>
         </div>
 
+        {/* Error banner — surfaced for query failure, last-mutation failure,
+            and bulk-remove partial failure */}
+        {(watchlistError || removeMutation.isError || bulkError) && (
+          <div
+            role="alert"
+            className="mb-4 px-4 py-3 border bg-[var(--stock-down-bg)] border-[var(--stock-down)] text-[var(--stock-down)] text-xs font-bold uppercase tracking-widest"
+          >
+            {bulkError
+              ? bulkError
+              : watchlistError
+                ? `載入 Watchlist 失敗：${describeMutationError(watchlistErrorObj)}`
+                : describeMutationError(removeMutation.error)}
+          </div>
+        )}
+
+        {/* Sort selector */}
+        {itemCount > 0 && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+              Sort by
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-[10px] font-bold uppercase tracking-widest px-2 py-1"
+            >
+              <option value="symbol">Symbol</option>
+              <option value="change">Chg%</option>
+              <option value="volume">Volume</option>
+            </select>
+          </div>
+        )}
+
         {/* List Content */}
-        {items.length === 0 ? (
+        {watchlistLoading ? (
+          <GlassPanel className="py-24 text-center">
+            <div className="inline-block w-8 h-8 border-2 border-[var(--border-subtle)] border-t-[var(--accent-cyan)] rounded-full animate-spin" />
+            <p className="text-[10px] text-[var(--text-muted)] mt-4 uppercase tracking-widest">
+              Loading watchlist
+            </p>
+          </GlassPanel>
+        ) : itemCount === 0 ? (
           <GlassPanel className="py-24 text-center">
             <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center bg-[var(--bg-secondary)] border border-dashed border-[var(--border-subtle)] rotate-45">
               <svg className="-rotate-45 w-6 h-6 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,11 +445,10 @@ export default function WatchlistPage() {
                       />
                     </th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Symbol</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Name</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden sm:table-cell">Intraday</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Price</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Chg%</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden md:table-cell">Market Cap</th>
+                    <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right hidden md:table-cell">Market</th>
                     <th className="px-4 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right w-24">Actions</th>
                   </tr>
                 </thead>
@@ -238,7 +460,7 @@ export default function WatchlistPage() {
                     const isSelected = selected.has(row.symbol);
 
                     return (
-                      <tr 
+                      <tr
                         key={row.symbol}
                         className={`transition-all hover:bg-[var(--card-hover)] group relative ${isSelected ? "bg-[var(--accent-primary)]/5" : ""}`}
                       >
@@ -254,11 +476,6 @@ export default function WatchlistPage() {
                           <Link href={`/stocks/${encodeURIComponent(row.symbol)}`} className="font-bold text-sm text-[var(--foreground)] tabular-nums group-hover:text-[var(--accent-cyan)] transition-colors">
                             {row.symbol.split('.')[0]}
                           </Link>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[120px] block uppercase">
-                            {row.name}
-                          </span>
                         </td>
                         <td className="px-4 py-4 text-right hidden sm:table-cell">
                           {price && (
@@ -294,9 +511,10 @@ export default function WatchlistPage() {
                             <Link href={`/stocks/${encodeURIComponent(row.symbol)}`} className="text-[10px] font-bold text-[var(--accent-cyan)] hover:underline">
                               ANALYZE
                             </Link>
-                            <button 
-                              onClick={() => remove(row.symbol)}
-                              className="text-[var(--text-muted)] hover:text-red-500 transition-colors"
+                            <button
+                              onClick={() => handleSingleRemove(row.symbol)}
+                              disabled={removeMutation.isPending}
+                              className="text-[var(--text-muted)] hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -316,3 +534,8 @@ export default function WatchlistPage() {
     </div>
   );
 }
+
+// Type re-export retained for callers that imported the row shape from
+// this module before the API migration. The shape now matches the API
+// `WatchlistItem` (id/symbol/created_at).
+export type { WatchlistItem };
