@@ -44,6 +44,16 @@ from app.db.models.portfolio import (  # noqa: E402, F401
     PortfolioTrade,
 )
 
+# 13F Holdings Tracker (UNI-F13-001) — ORM lives under
+# app/db/models/institutional/ per design doc §6.5. Same registration
+# pattern as portfolio above.
+from app.db.models.institutional import (  # noqa: E402, F401
+    F13Filer,
+    F13Filing,
+    F13Holding,
+    F13UserSubscription,
+)
+
 __all__ = [
     "AccountGroup",
     "AccountGroupMember",
