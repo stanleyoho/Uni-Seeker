@@ -45,9 +45,13 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      # Hot reload: mount backend AND shared package over the in-image copies.
+      # Hot reload: mount backend AND both shared packages over the
+      # in-image copies. Both backtesting_core and prediction_engine are
+      # path deps in backend/pyproject.toml [tool.uv.sources]; without
+      # both mounts, edits to prediction_engine require a full rebuild.
       - ./backend:/workspace/Uni-Seeker/backend
       - ../adaptive-alpha-engine/packages/backtesting_core:/workspace/adaptive-alpha-engine/packages/backtesting_core
+      - ../adaptive-alpha-engine/packages/prediction_engine:/workspace/adaptive-alpha-engine/packages/prediction_engine
 
   frontend:
     build:

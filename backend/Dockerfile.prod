@@ -1,11 +1,17 @@
 # Production image — must be built from monorepo root context.
-# See backend/Dockerfile for layout rationale.
+# See backend/Dockerfile for layout rationale (Plan 1 T8.5).
 FROM python:3.12-slim AS builder
 
 WORKDIR /workspace
 RUN pip install --no-cache-dir uv
 
+# Sibling shared packages — both are declared as path deps under
+# [tool.uv.sources] in Uni-Seeker/backend/pyproject.toml. Missing
+# prediction_engine here previously caused production builds to fail to
+# resolve the dep (DOCKER-MONO follow-up to commit eae18d2, which only
+# fixed the dev Dockerfile).
 COPY adaptive-alpha-engine/packages/backtesting_core /workspace/adaptive-alpha-engine/packages/backtesting_core
+COPY adaptive-alpha-engine/packages/prediction_engine /workspace/adaptive-alpha-engine/packages/prediction_engine
 COPY Uni-Seeker/backend/pyproject.toml /workspace/Uni-Seeker/backend/
 COPY Uni-Seeker/backend/uv.lock /workspace/Uni-Seeker/backend/
 
