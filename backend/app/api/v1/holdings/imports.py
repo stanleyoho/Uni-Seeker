@@ -110,7 +110,7 @@ async def import_csv(
         try:
             if int(declared) > _MAX_CSV_BYTES:
                 raise HTTPException(
-                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                     detail=detail.CSV_TOO_LARGE,
                 )
         except ValueError:
@@ -119,7 +119,7 @@ async def import_csv(
     raw = await request.body()
     if len(raw) > _MAX_CSV_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=detail.CSV_TOO_LARGE,
         )
 
