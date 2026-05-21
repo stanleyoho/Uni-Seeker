@@ -29,6 +29,7 @@ from app.schemas.holdings.account import (
     AccountResponse,
     AccountUpdateRequest,
 )
+from app.schemas.holdings.analytics import AnalyticsResponse
 from app.schemas.holdings.dividend import (
     DividendCreateRequest,
     DividendResponse,
@@ -54,6 +55,7 @@ __all__ = [
     "AccountCreateRequest",
     "AccountUpdateRequest",
     "AccountResponse",
+    "AnalyticsResponse",
     "TradeCreateRequest",
     "TradeUpdateRequest",
     "TradeResponse",

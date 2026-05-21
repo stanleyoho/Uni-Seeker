@@ -20,6 +20,7 @@ from app.repositories.portfolio.dividend_repo import PortfolioDividendRepo
 from app.repositories.portfolio.lot_repo import PortfolioLotRepo
 from app.repositories.portfolio.position_repo import PortfolioPositionRepo
 from app.repositories.portfolio.price_lookup_repo import PriceLookupRepo
+from app.repositories.portfolio.snapshot_repo import HoldingsSnapshotRepo
 from app.repositories.portfolio.trade_repo import PortfolioTradeRepo
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "PortfolioPositionRepo",
     "PortfolioTradeRepo",
     "PriceLookupRepo",
+    "HoldingsSnapshotRepo",
 ]
