@@ -1001,6 +1001,49 @@ export async function fetchJournalAlerts(): Promise<JournalAlertsResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// Watchlist — Types + API functions (/watchlist endpoints, WATCH-001)
+//
+// Backend contract (app/api/v1/watchlist.py):
+//   GET    /watchlist/            → list[WatchlistItemResponse]
+//   POST   /watchlist/            → 201 WatchlistItemResponse, body { symbol }
+//                                   - 403 watchlist_limit_exceeded (Free tier cap=10)
+//                                   - 409 watchlist_already_exists
+//                                   - 404 stock_not_found
+//   DELETE /watchlist/{symbol}    → 200 { ok: true }  (NOT 204)
+//
+// Trailing-slash note: backend uses @router.get("/") + prefix="/watchlist",
+// so the canonical path is /watchlist/ — hitting /watchlist would 307 and
+// strip the Authorization header. We always include the trailing slash on
+// the collection endpoint.
+// ---------------------------------------------------------------------------
+
+export interface WatchlistItem {
+  id: number;
+  symbol: string;
+  created_at: string;
+}
+
+export async function listWatchlist(): Promise<WatchlistItem[]> {
+  return apiFetch<WatchlistItem[]>(`${API_BASE}/watchlist/`);
+}
+
+export async function addToWatchlist(symbol: string): Promise<WatchlistItem> {
+  return apiFetch<WatchlistItem>(`${API_BASE}/watchlist/`, {
+    method: "POST",
+    body: JSON.stringify({ symbol }),
+  });
+}
+
+export async function removeFromWatchlist(symbol: string): Promise<void> {
+  // Backend returns 200 { ok: true } here, not 204. apiFetch will parse it
+  // to { ok: true } but we discard the body — callers only care about success.
+  await apiFetch<{ ok: boolean }>(
+    `${API_BASE}/watchlist/${encodeURIComponent(symbol)}`,
+    { method: "DELETE" },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Holdings — Types (Phase 3, /holdings/* endpoints)
 //
 // Decimal-as-string convention: backend serializes every Decimal column

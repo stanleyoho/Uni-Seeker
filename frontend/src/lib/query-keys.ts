@@ -72,6 +72,10 @@ export const queryKeys = {
     group: (id: number) => [...queryKeys.journal.all, "group", id] as const,
     alerts: () => [...queryKeys.journal.all, "alerts"] as const,
   },
+  watchlist: {
+    all: ["watchlist"] as const,
+    list: () => ["watchlist", "list"] as const,
+  },
   holdings: {
     all: ["holdings"] as const,
     accounts: {
