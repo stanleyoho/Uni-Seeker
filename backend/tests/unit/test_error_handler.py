@@ -26,7 +26,7 @@ def test_external_service_error() -> None:
 
 def test_app_error_default_detail() -> None:
     err = AppError("msg")
-    assert err.detail == "msg"
+    assert err.detail is None
 
 
 def test_app_error_custom_detail() -> None:

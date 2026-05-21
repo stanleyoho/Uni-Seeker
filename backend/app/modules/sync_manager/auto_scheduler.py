@@ -89,13 +89,14 @@ class AutoSyncScheduler:
             await self._sync.run_all_with_notify(db)
 
     async def _catchup_sync(self) -> None:
-        """Catch-up sync -- only runs prices (the most quota-intensive task)."""
+        """Catch-up sync -- runs all tasks to handle rate-limit interrupted runs."""
         logger.info("auto_sync_catchup_start")
         from app.database import async_session
 
         async with async_session() as db:
-            result = await self._sync.run_task("prices", db, batch_size=100)
-            if result.records_synced > 0:
+            results = await self._sync.run_all(db, batch_size=100)
+            total = sum(r.records_synced for r in results)
+            if total > 0:
                 await self._sync._notify(
-                    f"\U0001f504 補同步完成: {result.records_synced} 筆股價 ({result.stocks_processed} 支)"
+                    f"\U0001f504 補同步完成: {total} 筆資料"
                 )

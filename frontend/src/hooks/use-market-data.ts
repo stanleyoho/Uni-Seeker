@@ -12,27 +12,31 @@ import {
   fetchLowBaseRanking,
   fetchRevenueAnalysis,
   fetchInstitutional,
+  fetchValuationEstimates,
 } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useMarketIndices() {
   return useQuery({
-    queryKey: ["market", "indices"],
+    queryKey: queryKeys.market.indices(),
     queryFn: fetchMarketIndices,
     staleTime: 2 * 60 * 1000, // 2 min
+    refetchInterval: 60_000, // auto-refresh every 1 min
   });
 }
 
 export function useMarketMovers(marketFilter?: string) {
   return useQuery({
-    queryKey: ["market", "movers", marketFilter],
+    queryKey: queryKeys.market.movers(marketFilter),
     queryFn: () => fetchMarketMovers(marketFilter),
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 60_000, // auto-refresh every 1 min
   });
 }
 
 export function useHeatmap(marketFilter?: string) {
   return useQuery({
-    queryKey: ["heatmap", marketFilter],
+    queryKey: queryKeys.market.heatmap(marketFilter),
     queryFn: () => fetchHeatmapData(marketFilter),
     staleTime: 2 * 60 * 1000,
   });
@@ -40,7 +44,7 @@ export function useHeatmap(marketFilter?: string) {
 
 export function usePrices(symbol: string, limit: number) {
   return useQuery({
-    queryKey: ["prices", symbol, limit],
+    queryKey: queryKeys.stocks.prices(symbol, limit),
     queryFn: () => fetchPrices(symbol, limit),
     staleTime: 60 * 1000,
     enabled: !!symbol,
@@ -49,7 +53,7 @@ export function usePrices(symbol: string, limit: number) {
 
 export function useCompanyInfo(symbol: string) {
   return useQuery({
-    queryKey: ["company", symbol],
+    queryKey: queryKeys.stocks.company(symbol),
     queryFn: () => fetchCompanyInfo(symbol),
     staleTime: 10 * 60 * 1000, // 10 min - rarely changes
     enabled: !!symbol,
@@ -58,7 +62,7 @@ export function useCompanyInfo(symbol: string) {
 
 export function useMarginData(symbol: string, enabled = true) {
   return useQuery({
-    queryKey: ["margin", symbol],
+    queryKey: queryKeys.stocks.margin(symbol),
     queryFn: () => fetchMarginData(symbol),
     staleTime: 2 * 60 * 1000,
     enabled: enabled && !!symbol,
@@ -67,7 +71,7 @@ export function useMarginData(symbol: string, enabled = true) {
 
 export function useFinancialAnalysis(symbol: string) {
   return useQuery({
-    queryKey: ["financials", symbol],
+    queryKey: queryKeys.stocks.financials(symbol),
     queryFn: () => fetchFinancialAnalysis(symbol),
     staleTime: 10 * 60 * 1000,
     enabled: !!symbol,
@@ -76,7 +80,7 @@ export function useFinancialAnalysis(symbol: string) {
 
 export function useRevenue(symbol: string, enabled = true) {
   return useQuery({
-    queryKey: ["revenue", symbol],
+    queryKey: queryKeys.stocks.revenue(symbol),
     queryFn: () => fetchRevenueAnalysis(symbol),
     staleTime: 10 * 60 * 1000,
     enabled: enabled && !!symbol,
@@ -85,7 +89,7 @@ export function useRevenue(symbol: string, enabled = true) {
 
 export function useInstitutional(symbol: string, startDate: string, endDate: string, enabled = true) {
   return useQuery({
-    queryKey: ["institutional", symbol, startDate, endDate],
+    queryKey: queryKeys.stocks.institutional(symbol, startDate, endDate),
     queryFn: () => fetchInstitutional(symbol, startDate, endDate),
     staleTime: 5 * 60 * 1000,
     enabled: enabled && !!symbol && !!startDate && !!endDate,
@@ -94,8 +98,17 @@ export function useInstitutional(symbol: string, startDate: string, endDate: str
 
 export function useLowBaseRanking(limit = 20) {
   return useQuery({
-    queryKey: ["low-base", limit],
+    queryKey: queryKeys.lowBase.ranking(limit),
     queryFn: () => fetchLowBaseRanking(limit),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useValuation(symbol: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.stocks.valuation(symbol),
+    queryFn: () => fetchValuationEstimates(symbol),
+    staleTime: 10 * 60 * 1000,
+    enabled: enabled && !!symbol,
   });
 }

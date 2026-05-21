@@ -1,4 +1,8 @@
-from typing import Annotated
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+from typing import Annotated, Any
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -9,9 +13,48 @@ from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.modules.low_base.scorer import calculate_low_base_score
 from app.modules.indicators.rsi import RSIIndicator
+from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
+from app.modules.scanner.engine import SignalScanner
+from app.modules.strategy import create_default_registry as create_strategy_registry
+from app.obs.logging import get_logger
 from app.schemas.low_base import LowBaseRankingResponse, LowBaseScoreResponse
 
+logger = get_logger(component="low_base")
+
 router = APIRouter(prefix="/low-base", tags=["low-base"])
+
+# ---------------------------------------------------------------------------
+# Enhanced-mode helpers
+# ---------------------------------------------------------------------------
+
+# Category mapping mirrors app.api.v1.institutional._CATEGORY_MAP
+_CATEGORY_MAP: dict[str, str] = {
+    "Foreign_Investor": "foreign",
+    "Investment_Trust": "trust",
+    "Dealer_self": "dealer",
+    "Dealer_Hedging": "dealer",
+}
+
+
+def _aggregate_5d_net(raw: list[dict[str, Any]]) -> dict[str, float]:
+    """Sum net buy amounts per institutional category over raw records.
+
+    Returns dict with keys ``foreign_net``, ``trust_net``, ``dealer_net``.
+    """
+    totals: dict[str, float] = {"foreign_net": 0.0, "trust_net": 0.0, "dealer_net": 0.0}
+    for row in raw:
+        cat = _CATEGORY_MAP.get(row.get("name", ""))
+        if cat is None:
+            continue
+        buy = float(row.get("buy", 0))
+        sell = float(row.get("sell", 0))
+        totals[f"{cat}_net"] += buy - sell
+    return totals
+
+
+def _scanner_score_to_100(score: float) -> float:
+    """Convert scanner composite score (-1..+1) to 0-100 range."""
+    return max(0.0, min(100.0, (score + 1.0) * 50.0))
 
 
 @router.get("/scan", response_model=LowBaseRankingResponse)
@@ -19,8 +62,13 @@ async def scan_low_base(
     db: Annotated[AsyncSession, Depends(get_db)],
     limit: int = Query(default=20, le=100),
     min_data_days: int = Query(default=60),
+    enhanced: bool = Query(default=False, description="Enable institutional + technical scoring"),
 ) -> LowBaseRankingResponse:
-    """Scan all stocks and rank by low-base composite score."""
+    """Scan all stocks and rank by low-base composite score.
+
+    When *enhanced=True*, institutional flow and technical signal data are
+    fetched for each stock and fed into the scorer with adjusted weights.
+    """
     # Get all stock_ids with enough data, along with their symbol/name
     symbol_query = (
         select(
@@ -38,6 +86,18 @@ async def scan_low_base(
 
     scores: list[LowBaseScoreResponse] = []
     rsi_calc = RSIIndicator()
+
+    # Prepare enhanced-mode helpers once (outside loop)
+    institutional_provider: FinMindInstitutionalProvider | None = None
+    scanner: SignalScanner | None = None
+    if enhanced:
+        institutional_provider = FinMindInstitutionalProvider()
+        scanner = SignalScanner(create_strategy_registry())
+
+    # Date range for institutional data (last ~5 trading days = 10 calendar days)
+    today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
+    inst_start = (today - timedelta(days=10)).isoformat()
+    inst_end = today.isoformat()
 
     for stock_id, symbol, name, count in stock_rows:
         # Fetch prices
@@ -64,12 +124,52 @@ async def scan_low_base(
                 current_rsi = v
                 break
 
+        # Enhanced-mode: fetch institutional + technical data
+        extra_kwargs: dict[str, float | None] = {}
+        if enhanced and institutional_provider is not None and scanner is not None:
+            # --- Institutional flow ---
+            try:
+                raw_symbol = symbol.replace(".TW", "").replace(".TWO", "")
+                raw_inst = await institutional_provider.fetch_institutional(
+                    stock_id=raw_symbol,
+                    start_date=inst_start,
+                    end_date=inst_end,
+                )
+                if raw_inst:
+                    nets = _aggregate_5d_net(raw_inst)
+                    extra_kwargs["foreign_net_buy_5d"] = nets["foreign_net"]
+                    extra_kwargs["trust_net_buy_5d"] = nets["trust_net"]
+                    extra_kwargs["dealer_net_buy_5d"] = nets["dealer_net"]
+            except Exception:
+                logger.warning(
+                    "Failed to fetch institutional data for %s, skipping enhancement",
+                    symbol,
+                    exc_info=True,
+                )
+
+            # --- Technical signal score ---
+            try:
+                if len(closes) >= 2:
+                    signal_result = scanner.scan_stock(
+                        symbol=symbol, name=display_name, closes=closes,
+                    )
+                    extra_kwargs["technical_score"] = _scanner_score_to_100(
+                        signal_result.score,
+                    )
+            except Exception:
+                logger.warning(
+                    "Failed to run signal scanner for %s, skipping enhancement",
+                    symbol,
+                    exc_info=True,
+                )
+
         # Calculate score
         score = calculate_low_base_score(
             symbol=symbol,
             name=display_name,
             closes=closes,
             rsi=current_rsi,
+            **extra_kwargs,
         )
 
         if not score.disqualified:
@@ -80,6 +180,7 @@ async def scan_low_base(
                 valuation_score=score.valuation_score,
                 price_position_score=score.price_position_score,
                 quality_score=score.quality_score,
+                institutional_technical_score=score.institutional_technical_score,
                 pe_percentile=score.details.get("pe_percentile"),
                 ma240_deviation=score.details.get("ma240_deviation"),
                 peg=score.details.get("peg"),
@@ -100,8 +201,13 @@ async def scan_low_base(
 async def get_stock_low_base_score(
     symbol: str,
     db: Annotated[AsyncSession, Depends(get_db)],
+    enhanced: bool = Query(default=False, description="Enable institutional + technical scoring"),
 ) -> LowBaseScoreResponse:
-    """Get low-base score for a single stock."""
+    """Get low-base score for a single stock.
+
+    When *enhanced=True*, institutional flow and technical signal data are
+    fetched and incorporated into the composite score.
+    """
     stock = await get_stock_or_404(db, symbol)
 
     price_query = (
@@ -125,8 +231,49 @@ async def get_stock_low_base_score(
             current_rsi = v
             break
 
+    # Enhanced-mode: fetch institutional + technical data
+    extra_kwargs: dict[str, float | None] = {}
+    if enhanced:
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
+        inst_start = (today - timedelta(days=10)).isoformat()
+        inst_end = today.isoformat()
+
+        # --- Institutional flow ---
+        try:
+            provider = FinMindInstitutionalProvider()
+            raw_symbol = symbol.replace(".TW", "").replace(".TWO", "")
+            raw_inst = await provider.fetch_institutional(
+                stock_id=raw_symbol,
+                start_date=inst_start,
+                end_date=inst_end,
+            )
+            if raw_inst:
+                nets = _aggregate_5d_net(raw_inst)
+                extra_kwargs["foreign_net_buy_5d"] = nets["foreign_net"]
+                extra_kwargs["trust_net_buy_5d"] = nets["trust_net"]
+                extra_kwargs["dealer_net_buy_5d"] = nets["dealer_net"]
+        except Exception:
+            logger.warning(
+                "Failed to fetch institutional data for %s", symbol, exc_info=True,
+            )
+
+        # --- Technical signal score ---
+        try:
+            if len(closes) >= 2:
+                scanner = SignalScanner(create_strategy_registry())
+                signal_result = scanner.scan_stock(
+                    symbol=symbol, name=name, closes=closes,
+                )
+                extra_kwargs["technical_score"] = _scanner_score_to_100(
+                    signal_result.score,
+                )
+        except Exception:
+            logger.warning(
+                "Failed to run signal scanner for %s", symbol, exc_info=True,
+            )
+
     score = calculate_low_base_score(
-        symbol=symbol, name=name, closes=closes, rsi=current_rsi,
+        symbol=symbol, name=name, closes=closes, rsi=current_rsi, **extra_kwargs,
     )
 
     return LowBaseScoreResponse(
@@ -135,6 +282,7 @@ async def get_stock_low_base_score(
         valuation_score=score.valuation_score,
         price_position_score=score.price_position_score,
         quality_score=score.quality_score,
+        institutional_technical_score=score.institutional_technical_score,
         pe_percentile=score.details.get("pe_percentile"),
         ma240_deviation=score.details.get("ma240_deviation"),
         peg=score.details.get("peg"),

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { StockChart } from "@/components/charts/stock-chart";
+import { IndicatorPanel } from "./components/indicator-panel";
+import { ValuationPanel } from "./components/valuation-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
 import { StatCard } from "@/components/ui/stat-card";
@@ -12,8 +14,11 @@ import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { ErrorState } from "@/components/ui/empty-state";
 import { ScoreBar } from "@/components/ui/score-bar";
+import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primitives";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { usePrices, useCompanyInfo, useMarginData, useRevenue } from "@/hooks/use-market-data";
+import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation } from "@/hooks/use-market-data";
+import { getErrorMessage } from "@/lib/type-guards";
+import { AmbientBackground } from "@/components/stratos/ambient";
 
 const TIMEFRAMES = [
   { key: "30", label: "1M" },
@@ -26,9 +31,7 @@ const TIMEFRAMES = [
 function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any> }) {
   const s = t.stock;
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
-      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{s.margin}</h3>
-
+    <GlassPanel title={s.margin}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <StatCard label={s.marginBalance} value={margin.margin_balance.toLocaleString()} size="sm" />
         <StatCard label={s.shortBalance} value={margin.short_balance.toLocaleString()} size="sm" />
@@ -46,15 +49,15 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.marginBuy}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginSell}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.marginLimit}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.margin_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.margin_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -68,95 +71,119 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
           <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px]">
             <div>
               <span className="text-[var(--text-muted)]">{s.shortBuy}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_buy.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_buy.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortSell}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_sell.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_sell.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-[var(--text-muted)]">{s.shortLimit}</span>
-              <p className="text-white mono-nums mt-0.5">{margin.short_limit.toLocaleString()}</p>
+              <p className="text-[var(--foreground)] mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>{margin.short_limit.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }
 
 function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<string, any> }) {
-  const formatRevenue = (v: number) => {
-    if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
-    if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
-    if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
-    return v.toFixed(0);
+  const formatRevenue = (v: number | string) => {
+    const val = typeof v === "string" ? parseFloat(v) : v;
+    if (isNaN(val)) return "-";
+    if (val >= 1e9) return `${(val / 1e9).toFixed(1)}B`;
+    if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M`;
+    if (val >= 1e3) return `${(val / 1e3).toFixed(1)}K`;
+    return val.toFixed(0);
   };
 
-  const formatPct = (v: number | null) => {
+  const formatPct = (v: number | string | null) => {
     if (v == null) return "-";
-    return `${(v * 100).toFixed(1)}%`;
+    const val = typeof v === "string" ? parseFloat(v) : v;
+    if (isNaN(val)) return "-";
+    return `${(val * 100).toFixed(1)}%`;
   };
+
+  const latestRevenue = parseFloat(revenue.latest_revenue);
+  const yoyGrowth = revenue.yoy_growth != null ? parseFloat(revenue.yoy_growth) : null;
+  const qoqGrowth = revenue.qoq_growth != null ? parseFloat(revenue.qoq_growth) : null;
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg p-4">
-      <h3 className="text-xs font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">{t.stock?.revenue ?? "Revenue"}</h3>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <StatCard label={t.stock?.latestRevenue ?? "Latest Revenue"} value={formatRevenue(revenue.latest_revenue)} size="sm" />
-        <StatCard
-          label="QoQ"
-          value={formatPct(revenue.qoq_growth)}
-          change={revenue.qoq_growth != null ? revenue.qoq_growth * 100 : undefined}
-          size="sm"
+    <GlassPanel title={t.stock?.revenue ?? "Revenue"}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <KpiCard
+          label={t.stock?.latestRevenue ?? "Latest Revenue"}
+          value={formatRevenue(revenue.latest_revenue)}
+          delta={`${revenue.trend === "up" ? "+" : ""}${revenue.consecutive_growth_quarters}Q`}
+          direction={revenue.trend === "up" ? "up" : "down"}
         />
-        <StatCard
-          label="YoY"
+        <KpiCard
+          label="YoY Growth"
           value={formatPct(revenue.yoy_growth)}
-          change={revenue.yoy_growth != null ? revenue.yoy_growth * 100 : undefined}
-          size="sm"
+          delta={`${yoyGrowth != null && yoyGrowth > 0 ? "+" : ""}`}
+          direction={yoyGrowth != null && yoyGrowth > 0 ? "up" : "down"}
         />
-        <StatCard
-          label={t.stock?.trend ?? "Trend"}
-          value={`${revenue.trend} (${revenue.consecutive_growth_quarters}Q)`}
-          size="sm"
+        <KpiCard
+          label="QoQ Growth"
+          value={formatPct(revenue.qoq_growth)}
+          delta=""
+          direction={qoqGrowth != null && qoqGrowth > 0 ? "up" : "down"}
+        />
+        <KpiCard
+          label="Stability Score"
+          value={revenue.consecutive_growth_quarters >= 2 ? "High" : "Mid"}
+          delta="Trend"
+          direction="flat"
         />
       </div>
 
-      {/* Revenue badges */}
-      <div className="flex gap-1.5 mb-3">
-        {revenue.is_revenue_high && (
-          <Badge variant="up">{t.stock?.revenueHigh ?? "Revenue High"}</Badge>
-        )}
-        {revenue.is_revenue_low && (
-          <Badge variant="down">{t.stock?.revenueLow ?? "Revenue Low"}</Badge>
-        )}
-      </div>
-
-      {/* Revenue bar chart (last 8 periods) */}
-      {revenue.records.length > 0 && (
-        <div className="bg-[var(--bg-secondary)] rounded-lg p-3 border border-[var(--border-subtle)]">
-          <div className="flex items-end gap-1 h-28">
-            {revenue.records.slice(-8).map((rec) => {
-              const maxRev = Math.max(...revenue.records.slice(-8).map((r) => r.revenue));
-              const height = maxRev > 0 ? (rec.revenue / maxRev) * 100 : 0;
-              return (
-                <div key={rec.period} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div
-                    className="w-full bg-[var(--accent-blue)]/50 hover:bg-[var(--accent-blue)] rounded-t transition-all duration-200"
-                    style={{ height: `${height}%`, minHeight: "2px" }}
-                    title={`${rec.period}: ${formatRevenue(rec.revenue)}`}
-                  />
-                  <span className="text-[var(--text-muted)] text-[8px] mono-nums truncate w-full text-center">
-                    {rec.period.slice(-5)}
-                  </span>
-                </div>
-              );
-            })}
+      {/* Revenue History Chart */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-bold">
+            Revenue History (Last 8 Periods)
+          </h4>
+          <div className="flex gap-2">
+            {revenue.is_revenue_high && (
+              <span className="px-2 py-0.5 rounded bg-[var(--stock-up-bg)] text-[var(--stock-up)] text-[10px] font-bold border border-[var(--stock-up)]/20">
+                {t.stock?.revenueHigh ?? "REVENUE HIGH"}
+              </span>
+            )}
           </div>
         </div>
-      )}
-    </div>
+        
+        <div className="h-[160px] w-full flex items-end gap-2 px-2 pb-2">
+          {revenue.records.slice(-8).map((rec, i) => {
+            const records = revenue.records.slice(-8);
+            const maxRev = Math.max(...records.map((r) => parseFloat(r.revenue)));
+            const currentRev = parseFloat(rec.revenue);
+            const height = maxRev > 0 ? (currentRev / maxRev) * 100 : 0;
+            return (
+              <div key={rec.period} className="flex-1 flex flex-col items-center gap-2 group">
+                <div className="relative w-full flex items-end justify-center">
+                  <div
+                    className="w-full max-w-[40px] bg-[var(--accent-primary)] opacity-40 group-hover:opacity-100 transition-all duration-300"
+                    style={{ 
+                      height: `${height}%`, 
+                      minHeight: "4px",
+                      clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+                      backgroundImage: "linear-gradient(to top, var(--accent-primary), transparent)"
+                    }}
+                  />
+                  <div className="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-secondary)] border border-[var(--border-subtle)] px-2 py-1 rounded text-[10px] tabular-nums whitespace-nowrap z-10">
+                    {formatRevenue(rec.revenue)}
+                  </div>
+                </div>
+                <span className="text-[var(--text-muted)] text-[10px] tabular-nums">
+                  {rec.period.slice(-5)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </GlassPanel>
   );
 }
 
@@ -173,156 +200,214 @@ export default function StockDetailPage() {
   const isTWSymbol = symbol.includes(".TW");
   const { data: marginData, isLoading: marginLoading } = useMarginData(symbol, activeTab === "margin" && isTWSymbol);
   const { data: revenueData, isLoading: revenueLoading } = useRevenue(symbol, activeTab === "revenue");
+  const { data: valuationData, isLoading: valuationLoading } = useValuation(symbol, activeTab === "valuation");
 
   const prices = priceData?.data ?? [];
-  const error = priceError ? (priceError as Error).message : null;
+  const error = priceError ? getErrorMessage(priceError) : null;
 
   if (loading && prices.length === 0) {
-    return <LoadingSpinner text={t.stock.loading} fullPage />;
-  }
-
-  if (error && prices.length === 0) {
     return (
-      <div className="p-6 max-w-md mx-auto">
-        <ErrorState message={error} />
+      <div className="flex-1 flex items-center justify-center h-screen bg-[var(--background)]">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   const latestPrice = prices.length > 0 ? prices[0] : null;
-  const change = latestPrice ? parseFloat(latestPrice.change) : 0;
-  const changePct = latestPrice ? latestPrice.change_percent : "0";
-  const isUp = change >= 0;
+  const isUp = latestPrice ? parseFloat(latestPrice.change) >= 0 : true;
 
   const tabs = [
-    { key: "chart", label: t.stock.chart },
-    { key: "revenue", label: t.stock?.revenue ?? "Revenue" },
-    ...(isTWSymbol ? [{ key: "margin", label: t.stock.margin }] : []),
+    { key: "chart", label: "Overview" },
+    { key: "indicators", label: "Analysis" },
+    { key: "valuation", label: "Valuation" },
+    { key: "revenue", label: "Financials" },
+    ...(isTWSymbol ? [{ key: "margin", label: "Flows" }] : []),
   ];
 
   return (
-    <div className="p-3 md:p-4 max-w-7xl mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">{symbol}</h1>
-            <button
-              onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
-              className="transition-colors duration-200"
-              title={watchlist.has(symbol) ? (t.watchlist?.remove ?? "Remove") : (t.watchlist?.add ?? "Add")}
-            >
-              <svg className="w-5 h-5" fill={watchlist.has(symbol) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                  className={watchlist.has(symbol) ? "text-yellow-400" : "text-[var(--text-muted)] hover:text-yellow-400"}
-                />
-              </svg>
-            </button>
+    <div className="flex-1 bg-[var(--background)] relative min-h-0 overflow-y-auto">
+      <AmbientBackground />
+      
+      <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 space-y-6">
+        
+        {/* -- 1. Header Section -- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8">
+            <GlassPanel className="h-full flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-[var(--accent-primary)] flex items-center justify-center text-white font-bold text-xl clip-path-polygon">
+                    {symbol[0]}
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tighter text-[var(--foreground)]">{symbol}</h1>
+                    <p className="text-[var(--text-secondary)] text-sm font-medium">{companyInfo?.name || "Stock Analysis"}</p>
+                  </div>
+                </div>
+                <ClippedButton 
+                  variant={watchlist.has(symbol) ? "white-solid" : "red-solid"} 
+                  size="sm"
+                  onClick={() => watchlist.toggle(symbol, companyInfo?.name ?? symbol, latestPrice?.market ?? "")}
+                >
+                  {watchlist.has(symbol) ? "UNFOLLOW" : "FOLLOW"}
+                </ClippedButton>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {companyInfo?.industry && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] uppercase tracking-widest">
+                    {companyInfo.industry}
+                  </span>
+                )}
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] uppercase tracking-widest">
+                  {latestPrice?.market || "MARKET"}
+                </span>
+              </div>
+            </GlassPanel>
           </div>
 
-          {/* Price line */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="lg:col-span-4">
             {latestPrice && (
-              <span className={`text-3xl font-bold mono-nums ${isUp ? "text-[var(--stock-up)] glow-red" : "text-[var(--stock-down)] glow-green"}`}>
-                {parseFloat(latestPrice.close).toLocaleString()}
-              </span>
-            )}
-            {latestPrice && <ChangeBadge change={change} changePct={changePct} />}
-            {companyInfo?.name && (
-              <span className="text-[var(--text-muted)] text-sm">{companyInfo.name}</span>
-            )}
-            {companyInfo?.industry && (
-              <Badge variant="blue">{companyInfo.industry}</Badge>
+              <KpiCard
+                label="Current Price"
+                value={parseFloat(latestPrice.close).toLocaleString()}
+                delta={`${isUp ? "+" : ""}${parseFloat(latestPrice.change_percent).toFixed(2)}%`}
+                direction={isUp ? "up" : "down"}
+              />
             )}
           </div>
         </div>
 
-        {/* Navigation tabs */}
-        <div className="flex items-center gap-2">
-          <TabGroup tabs={tabs} active={activeTab} onChange={setActiveTab} size="sm" />
-          <Link
+        {/* -- 2. Navigation Tabs -- */}
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-px">
+          <div className="flex gap-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`pb-3 text-sm font-bold tracking-tight transition-all relative ${
+                  activeTab === tab.key ? "text-[var(--foreground)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                }`}
+              >
+                {tab.label.toUpperCase()}
+                {activeTab === tab.key && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-primary)]" />
+                )}
+              </button>
+            ))}
+          </div>
+          <Link 
             href={`/stocks/${encodeURIComponent(symbol)}/financials`}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+            className="text-xs font-bold text-[var(--accent-cyan)] hover:brightness-110 transition-all mb-3"
           >
-            {t.stock.financials}
+            VIEW FULL STATEMENTS →
           </Link>
         </div>
-      </div>
 
-      {prices.length > 0 ? (
-        <>
-          {/* Price stats grid */}
-          <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
-            <StatCard label={t.stock.open} value={parseFloat(latestPrice!.open).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.close} value={parseFloat(latestPrice!.close).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.high} value={parseFloat(latestPrice!.high).toLocaleString()} size="sm" />
-            <StatCard label={t.stock.low} value={parseFloat(latestPrice!.low).toLocaleString()} size="sm" />
-            <StatCard
-              label={t.stock.volume}
-              value={latestPrice!.volume.toLocaleString()}
-              className="col-span-2 md:col-span-1"
-              size="sm"
-            />
-          </div>
-
-          {/* Chart tab */}
+        {/* -- 3. Content Area -- */}
+        <div className="min-h-[600px]">
           {activeTab === "chart" && (
-            <div className="bg-[var(--background)] border border-[var(--border-subtle)] rounded-lg">
-              <div className="flex items-center justify-between px-3 pt-3">
-                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{t.stock.chart}</h3>
-                <TabGroup tabs={TIMEFRAMES} active={timeframe} onChange={setTimeframe} size="sm" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-9">
+                <GlassPanel title="Market Performance" noPadding>
+                  <div className="p-4 flex flex-col h-full">
+                    <div className="flex justify-end mb-4">
+                      <div className="flex bg-[var(--bg-secondary)] p-1 rounded border border-[var(--border-subtle)]">
+                        {TIMEFRAMES.map((tf) => (
+                          <button
+                            key={tf.key}
+                            onClick={() => setTimeframe(tf.key)}
+                            className={`px-3 py-1 text-[10px] font-bold transition-all ${
+                              timeframe === tf.key 
+                              ? "bg-[var(--accent-primary)] text-white" 
+                              : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
+                            }`}
+                          >
+                            {tf.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <StockChart prices={prices} height={500} />
+                  </div>
+                </GlassPanel>
               </div>
-              <div className="p-3">
-                <StockChart prices={prices} height={500} />
+
+              <div className="lg:col-span-3 space-y-4">
+                <GlassPanel title="Daily Stats">
+                  <div className="space-y-4">
+                    <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                      <span className="text-[11px] text-[var(--text-muted)] font-medium">OPEN</span>
+                      <span className="text-sm font-bold tabular-nums">{parseFloat(latestPrice?.open || "0").toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                      <span className="text-[11px] text-[var(--text-muted)] font-medium">HIGH</span>
+                      <span className="text-sm font-bold tabular-nums">{parseFloat(latestPrice?.high || "0").toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                      <span className="text-[11px] text-[var(--text-muted)] font-medium">LOW</span>
+                      <span className="text-sm font-bold tabular-nums">{parseFloat(latestPrice?.low || "0").toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                      <span className="text-[11px] text-[var(--text-muted)] font-medium">VOLUME</span>
+                      <span className="text-sm font-bold tabular-nums">{latestPrice?.volume.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </GlassPanel>
+
+                <GlassPanel title="Analysis Context">
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    Based on recent performance, {symbol} is currently {isUp ? "showing bullish momentum" : "facing downward pressure"}. 
+                    Switch to Analysis tab for technical indicators.
+                  </p>
+                </GlassPanel>
               </div>
             </div>
           )}
 
-          {/* Margin tab */}
-          {activeTab === "margin" && (
-            marginLoading ? (
-              <LoadingSpinner text={t.stock.loading} size="sm" />
-            ) : marginData ? (
-              <MarginPanel margin={marginData} t={t} />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
-              </div>
-            )
+          {activeTab === "indicators" && (
+            <div className="animate-fade-up">
+              <IndicatorPanel prices={prices} t={t} />
+            </div>
           )}
 
-          {/* Revenue tab */}
+          {activeTab === "valuation" && (
+            <div className="animate-fade-up">
+              {valuationLoading ? (
+                <div className="h-64 flex items-center justify-center"><LoadingSpinner /></div>
+              ) : valuationData ? (
+                <ValuationPanel valuation={valuationData} currentPrice={latestPrice ? parseFloat(latestPrice.close) : 0} />
+              ) : (
+                <GlassPanel><div className="py-20 text-center text-[var(--text-muted)]">No valuation data available</div></GlassPanel>
+              )}
+            </div>
+          )}
+
           {activeTab === "revenue" && (
-            revenueLoading ? (
-              <LoadingSpinner text={t.stock.loading} size="sm" />
-            ) : revenueData ? (
-              <RevenuePanel revenue={revenueData} t={t} />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
-              </div>
-            )
+            <div className="animate-fade-up">
+              {revenueLoading ? (
+                <div className="h-64 flex items-center justify-center"><LoadingSpinner /></div>
+              ) : revenueData ? (
+                <RevenuePanel revenue={revenueData} t={t} />
+              ) : (
+                <GlassPanel><div className="py-20 text-center text-[var(--text-muted)]">No revenue data available</div></GlassPanel>
+              )}
+            </div>
           )}
 
-          {/* Quick links */}
-          <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
-            <Link
-              href="/low-base"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--card-bg)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-colors duration-150"
-            >
-              {t.lowBase?.viewDetail ?? "View Low-Base Score"}
-            </Link>
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-16">
-          <p className="text-[var(--text-muted)] text-sm">{t.stock.noData}</p>
+          {activeTab === "margin" && isTWSymbol && (
+            <div className="animate-fade-up">
+              {marginLoading ? (
+                <div className="h-64 flex items-center justify-center"><LoadingSpinner /></div>
+              ) : marginData ? (
+                <MarginPanel margin={marginData} t={t} />
+              ) : (
+                <GlassPanel><div className="py-20 text-center text-[var(--text-muted)]">No margin data available</div></GlassPanel>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 }

@@ -1,10 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 from app.models.enums import UserTier, UserTierType
+
+if TYPE_CHECKING:
+    from app.models.user_device import UserDevice
 
 
 class User(Base):
@@ -27,4 +31,30 @@ class User(Base):
         init=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    subscription_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    risk_tolerance: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, default=None
+    )
+    kyc_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    terms_accepted_version: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, default=None
+    )
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    devices: Mapped[list["UserDevice"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        init=False,
     )

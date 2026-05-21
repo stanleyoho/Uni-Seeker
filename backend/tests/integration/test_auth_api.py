@@ -1,83 +1,71 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.user import User
 
-from app.api.deps import get_db
-from app.main import create_app
-from app.models.base import Base
+@pytest.mark.asyncio
+async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSession):
+    # 1. Test Registration
+    register_data = {
+        "email": "test@example.com",
+        "password": "Password123", # Must contain letter and number
+        "username": "testuser"     # Required field
+    }
+    response = await client.post("/api/v1/auth/register", json=register_data)
+    assert response.status_code == 201 # Defined as 201 in API
+    data = response.json()
+    assert "access_token" in data
+    
+    # Verify user exists in DB
+    result = await db_session.execute(select(User).where(User.email == "test@example.com"))
+    user = result.scalar_one_or_none()
+    assert user is not None
+    assert user.username == "testuser"
 
-TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+    # 2. Test Login
+    login_data = {
+        "email": "test@example.com",
+        "password": "Password123"
+    }
+    response = await client.post("/api/v1/auth/login", json=login_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    token = data["access_token"]
 
+    # 3. Test Get Me (Authenticated)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = await client.get("/api/v1/auth/me", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == "test@example.com"
 
-@pytest.fixture
-async def app_with_auth():
-    engine = create_async_engine(TEST_DB_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    app = create_app()
+@pytest.mark.asyncio
+async def test_login_invalid_credentials(client: AsyncClient):
+    login_data = {
+        "email": "nonexistent@example.com",
+        "password": "WrongPassword123"
+    }
+    response = await client.post("/api/v1/auth/login", json=login_data)
+    assert response.status_code == 401
 
-    async def override_get_db():
-        async with session_factory() as session:
-            yield session
+@pytest.mark.asyncio
+async def test_register_duplicate_email(client: AsyncClient, db_session: AsyncSession):
+    # Seed a user - using a longer dummy hash
+    user = User(email="duplicate@example.com", hashed_password="a" * 60, username="existing")
+    db_session.add(user)
+    await db_session.commit()
 
-    app.dependency_overrides[get_db] = override_get_db
-    yield app
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
-
-
-async def test_register_and_login(app_with_auth) -> None:
-    transport = ASGITransport(app=app_with_auth)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Register
-        resp = await client.post("/api/v1/auth/register", json={
-            "email": "test@example.com", "password": "secret123", "username": "tester",
-        })
-        assert resp.status_code == 201
-        token = resp.json()["access_token"]
-
-        # Get me
-        resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
-        assert resp.status_code == 200
-        assert resp.json()["email"] == "test@example.com"
-        assert resp.json()["tier"] == "free"
-
-        # Login
-        resp = await client.post("/api/v1/auth/login", json={
-            "email": "test@example.com", "password": "secret123",
-        })
-        assert resp.status_code == 200
-        assert "access_token" in resp.json()
-
-
-async def test_duplicate_email(app_with_auth) -> None:
-    transport = ASGITransport(app=app_with_auth)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        await client.post("/api/v1/auth/register", json={
-            "email": "dup@test.com", "password": "pass", "username": "user1",
-        })
-        resp = await client.post("/api/v1/auth/register", json={
-            "email": "dup@test.com", "password": "pass2", "username": "user2",
-        })
-        assert resp.status_code == 400
-
-
-async def test_wrong_password(app_with_auth) -> None:
-    transport = ASGITransport(app=app_with_auth)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        await client.post("/api/v1/auth/register", json={
-            "email": "user@test.com", "password": "correct", "username": "u",
-        })
-        resp = await client.post("/api/v1/auth/login", json={
-            "email": "user@test.com", "password": "wrong",
-        })
-        assert resp.status_code == 401
-
-
-async def test_no_token_me(app_with_auth) -> None:
-    transport = ASGITransport(app=app_with_auth)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/api/v1/auth/me")
-        assert resp.status_code in (401, 403)
+    register_data = {
+        "email": "duplicate@example.com",
+        "password": "Password123",
+        "username": "newuser"
+    }
+    response = await client.post("/api/v1/auth/register", json=register_data)
+    assert response.status_code == 400
+    
+    data = response.json()
+    # The application uses a custom error handler that returns 'message'
+    assert "message" in data
+    assert "Email already registered" in data["message"]

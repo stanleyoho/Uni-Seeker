@@ -1,10 +1,23 @@
 from collections.abc import AsyncGenerator
 from decimal import Decimal
 from datetime import date
+from typing import Annotated
 
 import pytest
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCompiler
+
+# ── Patch SQLite compiler to handle PostgreSQL JSONB ─────────────────────────
+def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> str:  # type: ignore[override]
+    return self.visit_JSON(type_, **kwargs)  # type: ignore[arg-type]
+
+_SQLiteTypeCompiler.visit_JSONB = _visit_JSONB  # type: ignore[attr-defined]
+# ─────────────────────────────────────────────────────────────────────────────
+
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.main import create_app
+from app.api.deps import get_db
 from app.models.base import Base
 from app.models.enums import Market
 from app.models.price import StockPrice
@@ -25,6 +38,23 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest.fixture
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Create a test client for the FastAPI app."""
+    app = create_app()
+
+    # Override the get_db dependency
+    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as ac:
+        yield ac
 
 
 @pytest.fixture
@@ -54,8 +84,7 @@ def sample_prices() -> list[StockPrice]:
     ]
     return [
         StockPrice(
-            symbol="2330.TW",
-            market=Market.TW_TWSE,
+            stock_id=1,
             date=date(2026, 4, d + 1),
             open=Decimal(str(o)),
             high=Decimal(str(h)),

@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rubik } from "next/font/google";
 import { I18nProvider } from "@/i18n/context";
 import { AuthProvider } from "@/contexts/auth-context";
+import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryProvider } from "@/lib/query-provider";
-import { NavBar, FooterStatusBar } from "@/components/nav-bar";
+import { StratosHeader } from "@/components/stratos/header";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const rubik = Rubik({
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-rubik",
 });
 
 export const metadata: Metadata = {
@@ -29,18 +27,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${rubik.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#08090d] text-[#e2e8f0]">
-        <QueryProvider>
-          <I18nProvider>
-            <AuthProvider>
-              <NavBar />
-              {children}
-              <FooterStatusBar />
-            </AuthProvider>
-          </I18nProvider>
-        </QueryProvider>
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <ThemeProvider>
+          <QueryProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <StratosHeader />
+                {children}
+                <ServiceWorkerRegister />
+              </AuthProvider>
+            </I18nProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

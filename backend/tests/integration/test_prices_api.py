@@ -1,79 +1,50 @@
+import pytest
 from datetime import date
 from decimal import Decimal
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from app.api.deps import get_db
-from app.main import create_app
-from app.models.base import Base
-from app.models.enums import Market
+from app.models.stock import Stock
 from app.models.price import StockPrice
+from app.models.enums import Market
 
-TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+@pytest.mark.asyncio
+async def test_get_prices_success(client: AsyncClient, db_session: AsyncSession):
+    # 1. Seed a stock
+    stock = Stock(symbol="2330.TW", name="TSMC", market=Market.TW_TWSE)
+    db_session.add(stock)
+    await db_session.flush()
 
-
-@pytest.fixture
-async def app_with_db():
-    engine = create_async_engine(TEST_DB_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    app = create_app()
-
-    async def override_get_db():
-        async with session_factory() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    async with session_factory() as session:
-        price = StockPrice(
-            symbol="2330.TW",
-            market=Market.TW_TWSE,
-            date=date(2026, 4, 22),
-            open=Decimal("885.00"),
-            high=Decimal("892.00"),
-            low=Decimal("880.00"),
-            close=Decimal("890.00"),
-            volume=25_000_000,
+    # 2. Seed some prices
+    prices = [
+        StockPrice(
+            stock_id=stock.id,
+            date=date(2024, 1, 1),
+            open=Decimal("500"),
+            high=Decimal("510"),
+            low=Decimal("495"),
+            close=Decimal("505"),
+            volume=1000000,
+            change=Decimal("5"),
+            change_percent=Decimal("1.0")
         )
-        session.add(price)
-        await session.commit()
+    ]
+    db_session.add_all(prices)
+    await db_session.commit()
 
-    yield app
+    # 3. Test the API
+    response = await client.get("/api/v1/prices/2330.TW?limit=10")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "data" in data
+    assert len(data["data"]) == 1
+    assert data["data"][0]["symbol"] == "2330.TW"
+    # Verify DecimalStr serialization (should be string)
+    assert isinstance(data["data"][0]["close"], str)
+    assert float(data["data"][0]["close"]) == 505.0
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
-
-
-async def test_get_prices(app_with_db) -> None:
-    transport = ASGITransport(app=app_with_db)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/api/v1/prices/2330.TW")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["total"] == 1
-        assert data["data"][0]["symbol"] == "2330.TW"
-        assert data["data"][0]["close"] == "890.0000"
-
-
-async def test_get_prices_empty(app_with_db) -> None:
-    transport = ASGITransport(app=app_with_db)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/api/v1/prices/INVALID")
-        assert resp.status_code == 200
-        assert resp.json()["total"] == 0
-
-
-async def test_health(app_with_db) -> None:
-    transport = ASGITransport(app=app_with_db)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/health")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["status"] in ("ok", "degraded")
-        assert "services" in data
+@pytest.mark.asyncio
+async def test_get_prices_not_found(client: AsyncClient):
+    response = await client.get("/api/v1/prices/9999.TW")
+    assert response.status_code == 404

@@ -1,20 +1,31 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.config import settings
 from app.models.user import User
+from app.obs.logging import get_logger
+
+logger = get_logger(component="auth")
 
 security = HTTPBearer(auto_error=False)
 
-SECRET_KEY = "uni-seeker-jwt-secret-change-in-production"  # TODO: move to settings
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24
+
+def _get_secret_key() -> str:
+    key = settings.jwt_secret_key
+    if not key:
+        raise RuntimeError(
+            "JWT_SECRET_KEY is not set. Set UNI_JWT_SECRET_KEY environment variable."
+        )
+    return key
 
 
 def hash_password(password: str) -> str:
@@ -26,18 +37,24 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: int, email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expire_hours)
     payload = {"sub": str(user_id), "email": email, "exp": expire}
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _get_secret_key(), algorithm=settings.jwt_algorithm)
 
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(
+            token, _get_secret_key(), algorithms=[settings.jwt_algorithm]
+        )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
+        )
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
 
 async def get_current_user(
@@ -52,7 +69,9 @@ async def get_current_user(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     return user
 
 
@@ -66,5 +85,7 @@ async def require_auth(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     return user

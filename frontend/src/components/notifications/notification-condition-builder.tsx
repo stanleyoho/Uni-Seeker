@@ -80,7 +80,7 @@ export function NotificationConditionBuilder({
   };
 
   const selectClass =
-    "px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border-subtle)] text-white text-xs focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
+    "px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border-subtle)] text-[var(--foreground)] text-xs focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
 
   return (
     <div className="space-y-2">
@@ -178,7 +178,7 @@ export function NotificationConditionBuilder({
       <button
         type="button"
         onClick={addCondition}
-        className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] rounded-lg hover:border-[var(--accent-blue)]/50 hover:text-white hover:bg-[var(--card-hover)] transition-all duration-200 text-xs"
+        className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-secondary)] border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] rounded-lg hover:border-[var(--accent-blue)]/50 hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200 text-xs"
       >
         <svg
           className="w-3.5 h-3.5"

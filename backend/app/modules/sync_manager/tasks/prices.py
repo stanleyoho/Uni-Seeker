@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 
 import structlog
@@ -33,7 +34,7 @@ class PriceSyncTask(SyncTask):
         batch_size: int = 50,
     ) -> SyncResult:
         result = SyncResult(dataset=self.dataset_name)
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         # -- load all active stocks ---------------------------------------
         stocks_q = await db.execute(
@@ -159,7 +160,7 @@ class PriceSyncTask(SyncTask):
                 error_message=None,
             )
             sync_stmt = sync_stmt.on_conflict_do_update(
-                constraint="uq_sync_state",
+                constraint="uq_sync_state_with_stock",
                 set_={
                     "last_synced_date": max_date,
                     "last_run_at": now,

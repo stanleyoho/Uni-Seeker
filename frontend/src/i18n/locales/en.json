@@ -13,10 +13,43 @@
     "heatmap": "Heatmap",
     "lowBase": "Low Base",
     "institutional": "Institutional",
-    "language": "Language"
+    "portfolio": "Portfolio",
+    "scanner": "Signal Scanner",
+    "analysis": "Analysis",
+    "trading": "Trading",
+    "marketGroup": "Market",
+    "language": "Language",
+    "markets": "Markets",
+    "research": "Research",
+    "alerts": "Alerts",
+    "marketOpen": "MARKET OPEN",
+    "marketClosed": "CLOSED",
+    "quickSearch": "Search",
+    "backtestHistory": "History",
+    "journal": "Journal",
+    "holdings": "Holdings"
+  },
+  "holdings": {
+    "title": "Holdings",
+    "kpi": {
+      "total_value": "Total Value",
+      "total_cost": "Total Cost",
+      "unrealized_pnl": "Unrealized P&L",
+      "daily_change": "Daily Change",
+      "position_count": "Positions"
+    },
+    "actions": {
+      "add_account": "New Account",
+      "add_trade": "Log Trade",
+      "add_dividend": "Log Dividend"
+    },
+    "empty": {
+      "title": "No Holdings",
+      "cta": "Log a trade to begin"
+    }
   },
   "search": {
-    "placeholder": "Enter symbol or name (e.g., 2330, TSMC, AAPL)",
+    "placeholder": "Enter symbol or name",
     "button": "Search",
     "listed": "Listed",
     "otc": "OTC",
@@ -51,7 +84,15 @@
     "latestRevenue": "Latest Revenue",
     "trend": "Trend",
     "revenueHigh": "Revenue High",
-    "revenueLow": "Revenue Low"
+    "revenueLow": "Revenue Low",
+    "indicators": "Indicators"
+  },
+  "indicators": {
+    "title": "Technical Indicators",
+    "showParams": "Params",
+    "hideParams": "Hide Params",
+    "paramToggle": "Toggle parameter controls",
+    "selectIndicators": "Select indicators"
   },
   "financial": {
     "healthScore": "Health Score",
@@ -238,6 +279,52 @@
     "shares": "Shares",
     "reason": "Reason",
     "noResults": "No backtest results yet",
-    "insufficientData": "Insufficient data. Please backfill historical prices first."
+    "insufficientData": "Insufficient data. Please backfill historical prices first.",
+    "builderTab": "Strategy Builder",
+    "queueTab": "Backtest Queue",
+    "resultsTab": "Results",
+    "historyTab": "History",
+    "singleMode": "Single Strategy",
+    "compositeMode": "Composite Strategy",
+    "gridSearchOn": "Grid Search ON",
+    "gridSearchOff": "Grid Search OFF",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "addToQueue": "Add to Queue",
+    "runNow": "Run Now",
+    "paramSettings": "Parameters",
+    "riskControl": "Risk Control",
+    "capitalConfig": "Capital Allocation"
+  },
+  "portfolio": {
+    "title": "Portfolio Backtest",
+    "addStock": "Add Stock",
+    "equalWeight": "Equal Weight",
+    "weight": "Weight",
+    "strategy": "Strategy",
+    "rebalanceMode": "Rebalance Mode",
+    "noRebalance": "No Rebalance",
+    "periodic": "Periodic",
+    "threshold": "Threshold",
+    "periodDays": "Rebalance Period (days)",
+    "thresholdPct": "Deviation Threshold (%)",
+    "runPortfolio": "Run Portfolio Backtest",
+    "noResults": "No backtest results yet"
+  },
+  "scanner": {
+    "title": "Signal Scanner",
+    "subtitle": "Scan all market stocks for technical indicator signals",
+    "selectStrategy": "Select Strategy",
+    "selectAll": "Leave unchecked to use all",
+    "startScan": "Start Scan",
+    "noScan": "No scan performed yet",
+    "noScanHint": "Select strategies and click \"Start Scan\" to analyze technical signals across the market",
+    "totalScanned": "Stocks Scanned",
+    "strongBuy": "Strong Buy",
+    "buy": "Buy",
+    "hold": "Hold",
+    "sell": "Sell",
+    "strongSell": "Strong Sell",
+    "backtest": "Backtest"
   }
 }

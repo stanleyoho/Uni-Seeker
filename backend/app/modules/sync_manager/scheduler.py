@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -13,16 +13,20 @@ from app.models.sync_state import SyncState
 from app.modules.notifier.telegram import TelegramNotifier
 from app.modules.sync_manager.rate_limiter import RateLimiter
 from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
+from app.modules.sync_manager.tasks.financials import FinancialsSyncTask
 from app.modules.sync_manager.tasks.margin import MarginSyncTask
 from app.modules.sync_manager.tasks.per_pbr import PerPbrSyncTask
 from app.modules.sync_manager.tasks.prices import PriceSyncTask
+from app.modules.sync_manager.tasks.revenue import RevenueSyncTask
 from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
+from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
+from app.modules.sync_manager.tasks.industry import IndustryAggregatesSyncTask
 
 logger = structlog.get_logger()
 
 # Execution order: stock_info first (so stocks table is up to date),
-# then the per-stock datasets.
-_TASK_ORDER: list[str] = ["stock_info", "prices", "margin", "per_pbr"]
+# then the per-stock datasets, and finally industry-level aggregates.
+_TASK_ORDER: list[str] = ["stock_info", "prices", "margin", "per_pbr", "revenue", "financials", "valuation", "industry_aggregates"]
 
 
 class SyncScheduler:
@@ -35,6 +39,10 @@ class SyncScheduler:
             "prices": PriceSyncTask(),
             "margin": MarginSyncTask(),
             "per_pbr": PerPbrSyncTask(),
+            "revenue": RevenueSyncTask(),
+            "financials": FinancialsSyncTask(),
+            "valuation": ValuationSyncTask(),
+            "industry_aggregates": IndustryAggregatesSyncTask(),
         }
         self._notifier: TelegramNotifier | None = None
 
@@ -86,9 +94,12 @@ class SyncScheduler:
             )
 
         # Final status based on result
-        final_status = (
-            "completed" if result.stopped_reason == "completed" else "error"
-        )
+        if result.stopped_reason == "completed":
+            final_status = "completed"
+        elif result.stopped_reason == "rate_limit":
+            final_status = "partial"
+        else:
+            final_status = "error"
         await self._set_global_status(db, task_name, final_status)
         return result
 
@@ -109,11 +120,11 @@ class SyncScheduler:
 
             if result.stopped_reason == "rate_limit":
                 logger.warning(
-                    "sync_run_all_rate_limit_stop",
-                    stopped_at=name,
+                    "sync_run_all_task_rate_limited",
+                    task=name,
                     remaining=self._rate_limiter.remaining,
                 )
-                break
+                # Continue to next task - other datasets may need fewer API calls
 
         return results
 
@@ -215,23 +226,25 @@ class SyncScheduler:
         error_message: str | None = None,
     ) -> None:
         """Update (or create) the global sync-state row for a dataset."""
-        from sqlalchemy.dialects.postgresql import insert as pg_insert
-
         now = datetime.now(timezone.utc)
-        stmt = pg_insert(SyncState).values(
-            dataset=dataset,
-            stock_id=None,
-            status=status,
-            last_run_at=now,
-            error_message=error_message,
+        # Use partial unique index uq_sync_state_global (dataset WHERE stock_id IS NULL)
+        existing = await db.execute(
+            select(SyncState).where(
+                SyncState.dataset == dataset,
+                SyncState.stock_id.is_(None),
+            )
         )
-        stmt = stmt.on_conflict_do_update(
-            constraint="uq_sync_state",
-            set_={
-                "status": status,
-                "last_run_at": now,
-                "error_message": error_message,
-            },
-        )
-        await db.execute(stmt)
+        row = existing.scalar_one_or_none()
+        if row:
+            row.status = status
+            row.last_run_at = now
+            row.error_message = error_message
+        else:
+            db.add(SyncState(
+                dataset=dataset,
+                stock_id=None,
+                status=status,
+                last_run_at=now,
+                error_message=error_message,
+            ))
         await db.commit()

@@ -1,0 +1,42 @@
+# Validate: promtool check rules infra/prometheus/alerts.yml
+#
+# Plan 8 T10 — Uni-Seeker Prometheus alert rules.
+# Metrics module: backend/app/obs/metrics.py
+# HTTP metrics auto-exposed by prometheus_fastapi_instrumentator (http_requests_total).
+# 24/7 alerting policy — no office_hours label, no time-based silencing.
+
+groups:
+  - name: uni-seeker-alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job="uni-seeker"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: ops
+          service: uni-seeker
+        annotations:
+          summary: "uni-seeker is down"
+          description: "uni-seeker /metrics has not responded for over 1m"
+
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{job="uni-seeker",status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: ops
+          service: uni-seeker
+        annotations:
+          summary: "uni-seeker 5xx error rate above threshold"
+          description: "uni-seeker is emitting more than 0.1 req/s of 5xx responses over the last 5m"
+
+      - alert: AuditBurst
+        expr: sum(rate(uni_audit_event_total[1m])) > 50
+        for: 2m
+        labels:
+          severity: warning
+          team: ops
+          service: uni-seeker
+        annotations:
+          summary: "uni-seeker audit event burst"
+          description: "uni_audit_event_total ingest rate exceeds 50/s for over 2m — possible runaway logging or abuse"

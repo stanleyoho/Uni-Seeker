@@ -1,12 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_indicator_registry, get_stock_or_404
 from app.cache import cache_delete_pattern, cache_get, cache_set, make_cache_key
+from app.middleware.tier_guard import require_tier
+from app.models.enums import UserTier
 from app.models.price import StockPrice
+from app.models.user import User
 from app.modules.indicators.registry import IndicatorRegistry
 from app.schemas.indicator import IndicatorListResponse, IndicatorRequest, IndicatorResponse
 
@@ -14,21 +17,18 @@ router = APIRouter(prefix="/indicators", tags=["indicators"])
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 Registry = Annotated[IndicatorRegistry, Depends(get_indicator_registry)]
+BasicUser = Annotated[User, Depends(require_tier(UserTier.BASIC))]
+
+# Advanced indicators only available to Basic tier and above.
+_ADVANCED_INDICATORS = {"MACD", "KD", "BB", "OBV"}
 
 
-@router.get("/", response_model=IndicatorListResponse)
-def list_indicators(
-    registry: Registry,
-) -> IndicatorListResponse:
-    return IndicatorListResponse(indicators=registry.list_names())
-
-
-@router.post("/calculate", response_model=IndicatorResponse)
-async def calculate_indicator(
+async def _compute_indicator(
     req: IndicatorRequest,
-    db: DbSession,
-    registry: Registry,
+    db: AsyncSession,
+    registry: IndicatorRegistry,
 ) -> IndicatorResponse:
+    """Shared computation logic for indicator endpoints."""
     cache_key = make_cache_key("indicator", req.symbol, req.indicator, req.params)
     cached = await cache_get(cache_key)
     if cached is not None:
@@ -71,6 +71,41 @@ async def calculate_indicator(
     )
     await cache_set(cache_key, response.model_dump(), ttl=1800)
     return response
+
+
+@router.get("/", response_model=IndicatorListResponse)
+def list_indicators(
+    registry: Registry,
+) -> IndicatorListResponse:
+    return IndicatorListResponse(indicators=registry.list_names())
+
+
+@router.post("/calculate", response_model=IndicatorResponse)
+async def calculate_indicator(
+    req: IndicatorRequest,
+    db: DbSession,
+    registry: Registry,
+) -> IndicatorResponse:
+    return await _compute_indicator(req, db, registry)
+
+
+@router.post("/calculate/advanced", response_model=IndicatorResponse)
+async def calculate_advanced_indicator(
+    req: IndicatorRequest,
+    db: DbSession,
+    registry: Registry,
+    user: BasicUser,
+) -> IndicatorResponse:
+    """進階指標（MACD/KD/BB/OBV）— Basic tier 以上可用。"""
+    if req.indicator not in _ADVANCED_INDICATORS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"{req.indicator} is not an advanced indicator; "
+                "use /calculate instead."
+            ),
+        )
+    return await _compute_indicator(req, db, registry)
 
 
 @router.post("/cache/clear")

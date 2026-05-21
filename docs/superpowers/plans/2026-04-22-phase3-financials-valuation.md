@@ -85,28 +85,25 @@ backend/
 
 ## Task 5: Price Estimation Models
 
-- [ ] **Step 5.1: Implement PE/PB Band Model**
-    - Historical PE/PB range + Forward EPS/BPS.
-- [ ] **Step 5.2: Implement DCF (Discounted Cash Flow)**
-    - Growth stage + Terminal value.
-- [ ] **Step 5.3: Implement DDM (Dividend Discount Model)**
+- [x] **Step 5.1: Implement PE/PB Band Model**
+    - Dynamic PE range + TTM EPS.
+- [x] **Step 5.2: Implement DCF (Discounted Cash Flow)**
+    - 2-Stage model with CAGR growth and dynamic WACC.
+- [x] **Step 5.3: Implement DDM (Dividend Discount Model)**
     - For stable dividend payers.
-- [ ] **Step 5.4: Implement Composite Engine**
-    - Weighted average of multiple models.
+- [x] **Step 5.4: Implement Composite Engine**
+    - Weighted average with convergence & market deviation checks.
 
 ## Task 6: API Integration
 
-- [ ] **Step 6.1: Add `financials` and `valuation` endpoints.**
-- [ ] **Step 6.2: Add integration tests for the new endpoints.**
+- [x] **Step 6.1: Add `valuation` estimates endpoint.**
+- [x] **Step 6.2: Add unit tests for validation (`test_price_estimator.py`).**
 
 ## Task 7: Frontend Financials & Valuation Dashboard
 
-- [ ] **Step 7.1: Financials Page**
-    - Multi-period comparison table.
-    - Growth charts (Revenue, Net Income).
-- [ ] **Step 7.2: Valuation Dashboard**
-    - Fair value "speedometer".
-    - Sensitivity analysis for DCF parameters.
+- [ ] **Step 7.1: Financials Page** (In Progress)
+- [x] **Step 7.2: Valuation Dashboard**
+    - Integrated "Valuation Spectrum" in Stock Detail page.
 
 ## Task 8: (Maintenance) Frontend Test Infrastructure
 

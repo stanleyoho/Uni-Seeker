@@ -37,3 +37,14 @@ task_plan.md
 findings.md
 progress.md
 .claude/worktrees/
+*.png
+.gemini/
+
+# Tool configs (local-only)
+.superpowers/
+
+# Local databases
+*.db
+*.duckdb
+*.sqlite
+*.sqlite3

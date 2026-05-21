@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import select
@@ -102,28 +103,31 @@ class StockInfoSyncTask(SyncTask):
 
         result.stocks_processed = result.records_synced
 
-        # -- update sync state -------------------------------------------
+        # -- update sync state (global row, stock_id IS NULL) ---------------
         now = datetime.now(timezone.utc)
-        sync_stmt = pg_insert(SyncState).values(
-            dataset=self.dataset_name,
-            stock_id=None,
-            last_synced_date=date.today(),
-            last_run_at=now,
-            status="completed",
-            records_synced=result.records_synced,
-            error_message=None,
+        existing = await db.execute(
+            select(SyncState).where(
+                SyncState.dataset == self.dataset_name,
+                SyncState.stock_id.is_(None),
+            )
         )
-        sync_stmt = sync_stmt.on_conflict_do_update(
-            constraint="uq_sync_state",
-            set_={
-                "last_synced_date": date.today(),
-                "last_run_at": now,
-                "status": "completed",
-                "records_synced": result.records_synced,
-                "error_message": None,
-            },
-        )
-        await db.execute(sync_stmt)
+        row = existing.scalar_one_or_none()
+        if row:
+            row.last_synced_date = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
+            row.last_run_at = now
+            row.status = "completed"
+            row.records_synced = result.records_synced
+            row.error_message = None
+        else:
+            db.add(SyncState(
+                dataset=self.dataset_name,
+                stock_id=None,
+                last_synced_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date(),
+                last_run_at=now,
+                status="completed",
+                records_synced=result.records_synced,
+                error_message=None,
+            ))
         await db.commit()
 
         result.stopped_reason = "completed"

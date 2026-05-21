@@ -40,7 +40,7 @@ def app():
 @pytest.mark.asyncio
 async def test_get_full_analysis(app) -> None:
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=_mock_financial_data(),
     ):
@@ -51,15 +51,15 @@ async def test_get_full_analysis(app) -> None:
             data = resp.json()
             assert data["financials"]["symbol"] == "AAPL"
             assert len(data["ratios"]) == 1
-            assert data["ratios"][0]["gross_margin"] == 0.4
+            assert float(data["ratios"][0]["gross_margin"]) == 0.4
             assert len(data["health_scores"]) == 1
-            assert data["health_scores"][0]["total_score"] > 0
+            assert float(data["health_scores"][0]["total_score"]) > 0
 
 
 @pytest.mark.asyncio
 async def test_get_ratios(app) -> None:
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=_mock_financial_data(),
     ):
@@ -69,14 +69,14 @@ async def test_get_ratios(app) -> None:
             assert resp.status_code == 200
             ratios = resp.json()
             assert len(ratios) == 1
-            assert ratios[0]["net_margin"] == 0.15
+            assert float(ratios[0]["net_margin"]) == 0.15
 
 
 @pytest.mark.asyncio
 async def test_no_data_returns_404(app) -> None:
     empty = FinancialData(symbol="X", currency="USD")
     with patch(
-        "app.api.v1.financials.YFinanceFinancialProvider.fetch_financials",
+        "app.api.v1.financials.SECEdgarFinancialProvider.fetch_financials",
         new_callable=AsyncMock,
         return_value=empty,
     ):

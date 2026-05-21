@@ -13,10 +13,43 @@
     "heatmap": "熱力圖",
     "lowBase": "低基期",
     "institutional": "三大法人",
-    "language": "語言"
+    "scanner": "訊號掃描",
+    "portfolio": "投資組合",
+    "analysis": "分析",
+    "trading": "回測",
+    "marketGroup": "市場",
+    "language": "語言",
+    "markets": "市場",
+    "research": "研究",
+    "alerts": "通知",
+    "marketOpen": "盤中",
+    "marketClosed": "休市",
+    "quickSearch": "搜尋",
+    "backtestHistory": "歷史",
+    "journal": "交易日誌",
+    "holdings": "持倉"
+  },
+  "holdings": {
+    "title": "持倉對賬",
+    "kpi": {
+      "total_value": "總市值",
+      "total_cost": "總成本",
+      "unrealized_pnl": "未實現損益",
+      "daily_change": "今日漲跌",
+      "position_count": "持股檔數"
+    },
+    "actions": {
+      "add_account": "新增帳戶",
+      "add_trade": "記錄交易",
+      "add_dividend": "記錄配息"
+    },
+    "empty": {
+      "title": "無持倉",
+      "cta": "記錄交易開始"
+    }
   },
   "search": {
-    "placeholder": "輸入代號或名稱 (例: 2330、台積電、AAPL)",
+    "placeholder": "輸入代號或名稱",
     "button": "搜尋",
     "listed": "上市",
     "otc": "上櫃",
@@ -51,7 +84,15 @@
     "latestRevenue": "最新營收",
     "trend": "趨勢",
     "revenueHigh": "營收新高",
-    "revenueLow": "營收新低"
+    "revenueLow": "營收新低",
+    "indicators": "技術指標"
+  },
+  "indicators": {
+    "title": "技術指標",
+    "showParams": "參數",
+    "hideParams": "隱藏參數",
+    "paramToggle": "切換參數控制",
+    "selectIndicators": "選擇指標"
   },
   "financial": {
     "healthScore": "健康度評分",
@@ -238,6 +279,52 @@
     "shares": "股數",
     "reason": "原因",
     "noResults": "尚無回測結果",
-    "insufficientData": "資料不足，請先回補歷史股價"
+    "insufficientData": "資料不足，請先回補歷史股價",
+    "builderTab": "策略建構",
+    "queueTab": "回測佇列",
+    "resultsTab": "回測結果",
+    "historyTab": "歷史紀錄",
+    "singleMode": "單一策略",
+    "compositeMode": "複合策略",
+    "gridSearchOn": "Grid Search ON",
+    "gridSearchOff": "Grid Search OFF",
+    "stopLoss": "停損",
+    "takeProfit": "停利",
+    "addToQueue": "加入佇列",
+    "runNow": "立即執行",
+    "paramSettings": "參數設定",
+    "riskControl": "風險控制",
+    "capitalConfig": "資金配置"
+  },
+  "portfolio": {
+    "title": "組合回測",
+    "addStock": "新增標的",
+    "equalWeight": "均分權重",
+    "weight": "權重",
+    "strategy": "策略",
+    "rebalanceMode": "再平衡模式",
+    "noRebalance": "不再平衡",
+    "periodic": "定期",
+    "threshold": "偏離",
+    "periodDays": "再平衡週期 (天)",
+    "thresholdPct": "偏離閾值 (%)",
+    "runPortfolio": "執行組合回測",
+    "noResults": "尚無回測結果"
+  },
+  "scanner": {
+    "title": "訊號掃描",
+    "subtitle": "掃描全市場股票的技術指標訊號",
+    "selectStrategy": "策略選擇",
+    "selectAll": "不勾選則使用全部",
+    "startScan": "開始掃描",
+    "noScan": "尚未執行掃描",
+    "noScanHint": "選擇策略後點擊「開始掃描」，分析全市場技術指標訊號",
+    "totalScanned": "掃描股票數",
+    "strongBuy": "強力買進",
+    "buy": "買進",
+    "hold": "持有",
+    "sell": "賣出",
+    "strongSell": "強力賣出",
+    "backtest": "回測"
   }
 }
