@@ -29,6 +29,8 @@ import {
   AddHoldingDividendModal,
   AddHoldingTradeModal,
   BulkActionsBar,
+  CsvExportDropdown,
+  CsvImportModal,
   HoldingsKpiRow,
   HoldingsTable,
   PositionsEmptyState,
@@ -54,6 +56,7 @@ export default function HoldingsPage() {
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [dividendModalOpen, setDividendModalOpen] = useState(false);
+  const [csvImportModalOpen, setCsvImportModalOpen] = useState(false);
   const [accountModalState, setAccountModalState] =
     useState<AccountModalState | null>(null);
 
@@ -150,6 +153,14 @@ export default function HoldingsPage() {
             >
               + {addDividendLabel}
             </ClippedButton>
+            <ClippedButton
+              variant="cyan-ghost"
+              size="md"
+              onClick={() => setCsvImportModalOpen(true)}
+            >
+              ↑ 匯入 CSV
+            </ClippedButton>
+            <CsvExportDropdown selectedAccountId={selectedAccountId} />
           </div>
         </section>
 
@@ -212,6 +223,13 @@ export default function HoldingsPage() {
               : undefined
           }
           onClose={() => setAccountModalState(null)}
+        />
+      )}
+      {csvImportModalOpen && (
+        <CsvImportModal
+          accounts={accountList}
+          defaultAccountId={selectedAccountId ?? undefined}
+          onClose={() => setCsvImportModalOpen(false)}
         />
       )}
     </main>

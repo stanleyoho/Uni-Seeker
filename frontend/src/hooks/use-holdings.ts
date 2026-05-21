@@ -14,6 +14,7 @@ import {
   getHoldingPosition,
   getHoldingTrade,
   getUserHoldingSummary,
+  importHoldingsCsv,
   listHoldingAccounts,
   listHoldingDividends,
   listHoldingPositions,
@@ -32,6 +33,7 @@ import {
   type HoldingTrade,
   type HoldingTradeCreateRequest,
   type HoldingTradeUpdateRequest,
+  type ImportResult,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -268,6 +270,40 @@ export function useDeleteHoldingDividend() {
     mutationFn: (id: number) => deleteHoldingDividend(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.holdings.dividends.all });
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.positions.all });
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.summary.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// CSV Import (Phase 4)
+// ---------------------------------------------------------------------------
+
+interface ImportHoldingsCsvArgs {
+  accountId: number;
+  file: Blob | File | string;
+  dryRun: boolean;
+}
+
+/**
+ * Bulk-import trades from a broker CSV.
+ *
+ * Invalidates trades + positions + summary on commit so the holdings
+ * page reflects the new rows immediately. Dry-runs intentionally do NOT
+ * invalidate — they don't mutate state, and refetching trades during a
+ * preview would discard the user's open modal.
+ */
+export function useImportHoldingsCsv() {
+  const qc = useQueryClient();
+  return useMutation<ImportResult, Error, ImportHoldingsCsvArgs>({
+    mutationFn: ({ accountId, file, dryRun }) =>
+      importHoldingsCsv(accountId, file, dryRun),
+    onSuccess: (data, vars) => {
+      // Skip invalidation on dry-run (no state mutation) or atomic-rollback
+      // commits (failed_rows > 0 means zero writes landed).
+      if (vars.dryRun || data.failed_rows > 0) return;
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.trades.all });
       qc.invalidateQueries({ queryKey: queryKeys.holdings.positions.all });
       qc.invalidateQueries({ queryKey: queryKeys.holdings.summary.all });
     },

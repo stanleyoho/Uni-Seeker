@@ -1185,6 +1185,40 @@ export interface HoldingDividendUpdateRequest {
   withholding_tax?: string;
 }
 
+// ── CSV Import (Phase 4) ──────────────────────────────────────────────────
+
+/**
+ * One row in an ImportResult — successful preview rows have `error=null`,
+ * failed rows have `error` populated with a snake_case identifier
+ * (e.g. "invalid_action", "dividend_actions_not_supported").
+ *
+ * All numeric fields are echoed back as strings (not parsed) so the
+ * frontend preview table renders the verbatim CSV value.
+ */
+export interface ImportResultRow {
+  row_index: number;
+  action: string | null;
+  symbol: string | null;
+  quantity: string | null;
+  price: string | null;
+  trade_date: string | null;
+  error: string | null;
+}
+
+/**
+ * Result of a CSV import — same shape for dry-run and commit. When
+ * `dry_run=false` the only valid outcomes are
+ * `failed_rows == 0 && successful_rows == parsed_rows` (full commit)
+ * or `successful_rows == 0` (atomic rollback).
+ */
+export interface ImportResult {
+  parsed_rows: number;
+  successful_rows: number;
+  failed_rows: number;
+  errors: ImportResultRow[];
+  dry_run: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Holdings — API functions
 // ---------------------------------------------------------------------------
@@ -1348,4 +1382,213 @@ export async function deleteHoldingDividend(id: number): Promise<void> {
   await apiFetch<void>(`${API_BASE}/holdings/dividends/${id}`, {
     method: "DELETE",
   });
+}
+
+// ── CSV Import (Phase 4) ──────────────────────────────────────────────────
+
+/**
+ * Bulk-import trades from a broker CSV.
+ *
+ * Wire shape: raw `text/csv` body (NOT multipart) — keeps us off the
+ * `python-multipart` dependency on the backend. Metadata (`account_id`,
+ * `dry_run`) goes on the query string. The browser sets the boundary
+ * we want when we pass a `Blob` directly.
+ *
+ * Use `dry_run=true` first to render a preview table, then call again
+ * with `dry_run=false` to commit. Backend is atomic: on any row failure
+ * with `dry_run=false`, ZERO rows commit.
+ */
+export async function importHoldingsCsv(
+  accountId: number,
+  file: Blob | File | string,
+  dryRun: boolean,
+): Promise<ImportResult> {
+  const qs = new URLSearchParams({
+    account_id: String(accountId),
+    dry_run: dryRun ? "true" : "false",
+  });
+  const url = `${API_BASE}/holdings/imports/csv?${qs.toString()}`;
+
+  // Normalise to a Blob with the text/csv content-type. Strings get
+  // wrapped; Blobs / Files pass through but we re-wrap to FORCE the
+  // mime type (some `File` instances from <input type="file"> arrive
+  // with `application/vnd.ms-excel` which our endpoint *does* accept,
+  // but pinning text/csv keeps the contract obvious).
+  const body =
+    typeof file === "string"
+      ? new Blob([file], { type: "text/csv" })
+      : new Blob([file], { type: "text/csv" });
+
+  // We bypass `apiFetch` because that wrapper hard-codes
+  // `Content-Type: application/json`. Reuse `getAuthHeaders()` for the
+  // bearer token, then attach our own text/csv content-type.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "text/csv",
+        ...getAuthHeaders(),
+      },
+      body,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new ApiError(
+        errBody.message || errBody.detail || `Request failed: ${res.status}`,
+        res.status,
+        errBody.error,
+      );
+    }
+
+    const text = await res.text();
+    if (!text) {
+      throw new ApiError("Empty response", 500, "EMPTY_RESPONSE");
+    }
+    return JSON.parse(text) as ImportResult;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("Request timeout", 408, "TIMEOUT");
+    }
+    throw new ApiError(
+      err instanceof Error ? err.message : "Network error",
+      0,
+      "NETWORK_ERROR",
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Holdings — CSV Exports (Phase 4, /holdings/exports/*.csv)
+//
+// These endpoints return raw CSV (text/csv; charset=utf-8) with a BOM prefix
+// for Excel compatibility. We need the BINARY body (`Blob`), not JSON, so
+// we bypass the apiFetch wrapper and hit `fetch` directly while re-using
+// `getAuthHeaders()` for the bearer token.
+//
+// Tier gate (PRO only — `tax_export` feature in tier_limits.yaml). FREE / BASIC
+// users will receive 403 `feature_unavailable:tax_export`; we translate that
+// to an ApiError so callers can render the same "升級 Pro 解鎖此功能" toast
+// they already use elsewhere.
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper — fetch a CSV endpoint, returning the response body as a Blob.
+ *
+ * Centralised so all four export calls share the same error-handling and
+ * auth-injection. On non-2xx the function inspects the JSON envelope
+ * (`{ message }`) to surface a structured `ApiError`; on network failure
+ * it falls back to a NETWORK_ERROR code.
+ */
+async function fetchCsvBlob(url: string): Promise<Blob> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+    if (!res.ok) {
+      // Backend always emits a JSON error envelope (`error_handler.py`).
+      // Be defensive in case a future change ships an HTML 500 page.
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        body.message || body.detail || `Request failed: ${res.status}`,
+        res.status,
+        body.error,
+      );
+    }
+    return await res.blob();
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("Request timeout", 408, "TIMEOUT");
+    }
+    throw new ApiError(
+      err instanceof Error ? err.message : "Network error",
+      0,
+      "NETWORK_ERROR",
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export interface HoldingExportTradeOptions {
+  accountId?: number;
+  dateFrom?: string;            // ISO YYYY-MM-DD (inclusive)
+  dateTo?: string;
+}
+
+export interface HoldingExportPositionOptions {
+  accountId?: number;
+}
+
+export interface HoldingExportDividendOptions {
+  accountId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export async function exportHoldingsTrades(
+  opts: HoldingExportTradeOptions = {},
+): Promise<Blob> {
+  const qs = new URLSearchParams();
+  if (opts.accountId !== undefined) qs.set("account_id", String(opts.accountId));
+  if (opts.dateFrom) qs.set("date_from", opts.dateFrom);
+  if (opts.dateTo) qs.set("date_to", opts.dateTo);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return fetchCsvBlob(`${API_BASE}/holdings/exports/trades.csv${query}`);
+}
+
+export async function exportHoldingsPositions(
+  opts: HoldingExportPositionOptions = {},
+): Promise<Blob> {
+  const qs = new URLSearchParams();
+  if (opts.accountId !== undefined) qs.set("account_id", String(opts.accountId));
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return fetchCsvBlob(`${API_BASE}/holdings/exports/positions.csv${query}`);
+}
+
+export async function exportHoldingsDividends(
+  opts: HoldingExportDividendOptions = {},
+): Promise<Blob> {
+  const qs = new URLSearchParams();
+  if (opts.accountId !== undefined) qs.set("account_id", String(opts.accountId));
+  if (opts.dateFrom) qs.set("date_from", opts.dateFrom);
+  if (opts.dateTo) qs.set("date_to", opts.dateTo);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return fetchCsvBlob(`${API_BASE}/holdings/exports/dividends.csv${query}`);
+}
+
+export async function exportHoldingsSummary(): Promise<Blob> {
+  return fetchCsvBlob(`${API_BASE}/holdings/exports/summary.csv`);
+}
+
+/**
+ * Trigger a browser download for a Blob by clicking a hidden anchor.
+ *
+ * Uses `URL.createObjectURL` + `<a download>` (the cross-browser idiom
+ * for synthetic downloads). The ObjectURL is revoked synchronously
+ * after `click()`; the browser has already started the download by then.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+  if (typeof document === "undefined" || typeof URL === "undefined") return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

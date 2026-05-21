@@ -46,3 +46,12 @@ export {
 export { AddHoldingTradeModal } from "./add-trade-modal";
 export { AddHoldingDividendModal } from "./add-dividend-modal";
 export { AccountModal } from "./account-modal";
+
+// CSV export (Phase 4 tax-export hook)
+export {
+  CsvExportDropdown,
+  type CsvExportDropdownProps,
+} from "./csv-export-dropdown";
+
+// CSV import (Phase 4 broker-import hook)
+export { CsvImportModal } from "./csv-import-modal";
