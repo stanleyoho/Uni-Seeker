@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
@@ -13,11 +12,12 @@ from app.config import settings
 from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.billing.stripe_service import StripeService
+from app.obs.logging import get_logger
 from app.obs.metrics import TIER_DOWNGRADE_TOTAL, TIER_UPGRADE_TOTAL
 from app.schemas.billing import BillingStatusResponse, CheckoutRequest, CheckoutResponse
 from app.services.audit import log_audit_event
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="billing")
 router = APIRouter(prefix="/billing", tags=["billing"])
 
 

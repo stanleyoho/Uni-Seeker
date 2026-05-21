@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 
 from fastapi import WebSocket
 
-logger = logging.getLogger(__name__)
+from app.obs.logging import get_logger
+
+logger = get_logger(component="websocket_manager")
 
 
 class ConnectionManager:

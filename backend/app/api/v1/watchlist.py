@@ -12,7 +12,6 @@ All mutations write an audit_logs row via the shared audit service.
 """
 from __future__ import annotations
 
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -27,10 +26,11 @@ from app.models.enums import UserTier
 from app.models.stock import Stock
 from app.models.user import User
 from app.models.watchlist_item import WatchlistItem
+from app.obs.logging import get_logger
 from app.schemas.watchlist import WatchlistAddRequest, WatchlistItemResponse
 from app.services.audit import log_audit_event
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="watchlist")
 router = APIRouter(prefix="/watchlist", tags=["watchlist"])
 
 FREE_TIER_LIMIT = 10

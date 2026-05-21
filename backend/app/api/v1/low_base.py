@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta
 from typing import Annotated, Any
 from zoneinfo import ZoneInfo
@@ -17,9 +16,10 @@ from app.modules.indicators.rsi import RSIIndicator
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
 from app.modules.scanner.engine import SignalScanner
 from app.modules.strategy import create_default_registry as create_strategy_registry
+from app.obs.logging import get_logger
 from app.schemas.low_base import LowBaseRankingResponse, LowBaseScoreResponse
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="low_base")
 
 router = APIRouter(prefix="/low-base", tags=["low-base"])
 

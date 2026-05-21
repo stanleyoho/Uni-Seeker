@@ -6,7 +6,6 @@ the T3 stub.
 """
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,10 +15,11 @@ from app.api.deps import get_db
 from app.auth import require_auth
 from app.middleware.tier_guard import require_risk_tolerance
 from app.models.user import User
+from app.obs.logging import get_logger
 from app.schemas.onboarding import KYCRequest, KYCResponse
 from app.services.audit import log_audit_event
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="onboarding")
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
 

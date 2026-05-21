@@ -6,13 +6,14 @@ enabling Uni-Seeker's stock models to record and evaluate their predictions.
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+from app.obs.logging import get_logger
+
+logger = get_logger(component="predictions")
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 

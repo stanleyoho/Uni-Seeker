@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -13,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.config import settings
 from app.models.user import User
+from app.obs.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="auth")
 
 security = HTTPBearer(auto_error=False)
 

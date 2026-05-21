@@ -12,7 +12,6 @@ making it fully testable in isolation.
 from __future__ import annotations
 
 import itertools
-import logging
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
@@ -25,8 +24,9 @@ from app.modules.backtester.grid_search import (
 )
 from app.modules.strategy.composite import CompositeStrategy
 from app.modules.strategy.registry import StrategyRegistry
+from app.obs.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="backtester")
 
 # ---------------------------------------------------------------------------
 # Parameter grids per strategy (Phase 2)

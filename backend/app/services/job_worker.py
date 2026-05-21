@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -22,9 +21,10 @@ from app.modules.backtester.portfolio_backtest import (
 )
 from app.modules.strategy import create_default_registry
 from app.modules.strategy.composite import CompositeStrategy
+from app.obs.logging import get_logger
 from app.services.job_queue import BacktestJobQueue
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="job_worker")
 
 # Interval in seconds between queue polls when idle.
 _POLL_INTERVAL = 2.0

@@ -11,7 +11,6 @@ making it fully testable in isolation.
 from __future__ import annotations
 
 import itertools
-import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -19,8 +18,9 @@ from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine
 from app.modules.strategy.composite import CompositeStrategy
 from app.modules.strategy.registry import StrategyRegistry
+from app.obs.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="backtester")
 
 # ---------------------------------------------------------------------------
 # Param-to-strategy mapping

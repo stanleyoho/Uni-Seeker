@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select, update
@@ -8,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
+from app.obs.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="job_queue")
 
 
 class BacktestJobQueue:

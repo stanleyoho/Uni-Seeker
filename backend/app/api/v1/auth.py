@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -14,11 +13,12 @@ from app.api.deps import get_db
 from app.auth import create_access_token, hash_password, require_auth, verify_password
 from app.models.user import User
 from app.models.user_device import UserDevice
+from app.obs.logging import get_logger
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 from app.services.audit import log_audit_event
 from app.services.device import compute_fingerprint
 
-logger = logging.getLogger(__name__)
+logger = get_logger(component="auth_api")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
