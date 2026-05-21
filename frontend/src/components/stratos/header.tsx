@@ -69,6 +69,7 @@ export function StratosHeader() {
     { href: "/", label: t.nav.markets ?? "Markets" },
     { href: "/research", label: t.nav.research ?? "Research" },
     { href: "/portfolio", label: t.nav.portfolio ?? "Portfolio" },
+    { href: "/holdings", label: t.nav.holdings ?? "Holdings" },
     { href: "/journal", label: t.nav.journal ?? "Journal" },
   ];
 

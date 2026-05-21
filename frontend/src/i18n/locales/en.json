@@ -26,7 +26,27 @@
     "marketClosed": "CLOSED",
     "quickSearch": "Search",
     "backtestHistory": "History",
-    "journal": "Journal"
+    "journal": "Journal",
+    "holdings": "Holdings"
+  },
+  "holdings": {
+    "title": "Holdings",
+    "kpi": {
+      "total_value": "Total Value",
+      "total_cost": "Total Cost",
+      "unrealized_pnl": "Unrealized P&L",
+      "daily_change": "Daily Change",
+      "position_count": "Positions"
+    },
+    "actions": {
+      "add_account": "New Account",
+      "add_trade": "Log Trade",
+      "add_dividend": "Log Dividend"
+    },
+    "empty": {
+      "title": "No Holdings",
+      "cta": "Log a trade to begin"
+    }
   },
   "search": {
     "placeholder": "Enter symbol or name",

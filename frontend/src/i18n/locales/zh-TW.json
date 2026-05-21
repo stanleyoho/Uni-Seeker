@@ -26,7 +26,27 @@
     "marketClosed": "休市",
     "quickSearch": "搜尋",
     "backtestHistory": "歷史",
-    "journal": "交易日誌"
+    "journal": "交易日誌",
+    "holdings": "持倉"
+  },
+  "holdings": {
+    "title": "持倉對賬",
+    "kpi": {
+      "total_value": "總市值",
+      "total_cost": "總成本",
+      "unrealized_pnl": "未實現損益",
+      "daily_change": "今日漲跌",
+      "position_count": "持股檔數"
+    },
+    "actions": {
+      "add_account": "新增帳戶",
+      "add_trade": "記錄交易",
+      "add_dividend": "記錄配息"
+    },
+    "empty": {
+      "title": "無持倉",
+      "cta": "記錄交易開始"
+    }
   },
   "search": {
     "placeholder": "輸入代號或名稱",
