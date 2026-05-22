@@ -21,6 +21,7 @@ from app.middleware.trace_id import TraceIdMiddleware
 from app.modules.sync_manager.auto_scheduler import AutoSyncScheduler
 from app.obs.logging import configure_logging
 from app.obs.sentry import init_sentry
+from app.scheduler import lifespan_scheduler as f13_lifespan_scheduler
 from app.services.job_worker import BacktestJobWorker
 
 auto_scheduler = AutoSyncScheduler()
@@ -48,7 +49,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     auto_scheduler.start()
     await job_worker.start()
-    yield
+    # 13F refresh scheduler — UTC-anchored Pro daily / Basic weekly.
+    # Kept distinct from AutoSyncScheduler (Asia/Taipei) so the two
+    # cron cadences cannot interfere with each other's blast radius.
+    async with f13_lifespan_scheduler():
+        yield
     await job_worker.stop()
     auto_scheduler.stop()
 
