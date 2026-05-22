@@ -62,14 +62,28 @@ class FilingMetadata:
     in archive URLs). The dashed form ``0001234567-25-012345`` can be
     reconstructed by callers if they need to render it.
 
-    ``raw_xml_url`` points at the primary infotable XML, not the index.
+    13F filings ship **two** XML documents per accession:
+    - ``cover_xml_url`` → ``primary_doc.xml``: cover sheet with filer
+      identity, period, amendment flag. **Has no `<infoTable>` rows.**
+    - ``raw_xml_url`` → the actual ``<informationTable>`` XML (filename
+      varies per filer — ``infotable.xml``, ``form13fInfoTable.xml``,
+      or accession-derived like ``53405.xml``). Resolved by walking the
+      filing's ``index.json`` directory listing.
+
+    ``raw_xml_url`` is ``None`` when the index lookup fails (e.g. SEC
+    returns an unexpected layout). Callers must skip such filings and
+    log — there is no holdings data to ingest without it. The submissions
+    API's ``primaryDocument`` field points at ``xslForm13F_X02/primary_doc.xml``
+    (an XSL-rendered HTML view) which is unparseable as XML — never
+    use that path.
     """
 
     accession_number: str
     form_type: str  # "13F-HR" | "13F-HR/A" | "13F-NT"
     report_period_end: date
     filed_at: datetime
-    raw_xml_url: str
+    raw_xml_url: str | None
+    cover_xml_url: str | None = None
 
 
 # ───────────────────────── errors ─────────────────────────
@@ -262,6 +276,19 @@ class EdgarClient:
         (parallel arrays keyed by index). Filters by ``form_types``,
         truncates to ``max_count`` (default 4 → ~1 year of quarterlies,
         matching Phase 1 spec §8 Q8 default).
+
+        For each filing kept, this method ALSO fetches the per-accession
+        ``index.json`` directory listing and resolves the real
+        ``<informationTable>`` XML URL via filename heuristics (see
+        ``_resolve_infotable_url``). The submissions API's
+        ``primaryDocument`` field for 13F-HR points at the XSL-rendered
+        HTML view (``xslForm13F_X02/primary_doc.xml``) which is NOT
+        parseable as XML and contains no infotable rows — we ignore it.
+
+        Cost: one extra HTTP round-trip per filing (index.json). The
+        rate limiter accounts for this. With ``max_count=4`` that's
+        4 + 1 (submissions) = 5 requests per filer, well under the
+        10 req/sec budget.
         """
         if max_count <= 0:
             return []
@@ -271,7 +298,6 @@ class EdgarClient:
         recent = ((data.get("filings") or {}).get("recent")) or {}
         forms = recent.get("form") or []
         accessions = recent.get("accessionNumber") or []
-        primary_docs = recent.get("primaryDocument") or []
         period_of_report = recent.get("periodOfReport") or []
         filing_dates = recent.get("filingDate") or []
 
@@ -285,13 +311,27 @@ class EdgarClient:
             accession = accession_dashed.replace("-", "")
             if not accession:
                 continue
-            # Prefer infotable.xml when its presence can be inferred from
-            # primaryDocument; otherwise default to ``primary_doc.xml``.
-            primary = primary_docs[i] if i < len(primary_docs) else "primary_doc.xml"
-            xml_url = (
-                f"{self.BASE_URL}/Archives/edgar/data/{cik_int}/"
-                f"{accession}/{primary}"
+            base = f"{self.BASE_URL}/Archives/edgar/data/{cik_int}/{accession}"
+            cover_url = f"{base}/primary_doc.xml"
+
+            # Resolve real infotable XML via the per-accession index.json.
+            # On failure (network, schema drift), infotable_url is None;
+            # caller logs+skips that filing.
+            try:
+                items = await self._fetch_filing_index(cik_int, accession)
+            except EdgarTransientError as exc:
+                logger.warning(
+                    "edgar_index_fetch_failed",
+                    cik=cik_int,
+                    accession=accession,
+                    error=str(exc),
+                )
+                items = []
+            infotable_name = _resolve_infotable_filename(items)
+            infotable_url = (
+                f"{base}/{infotable_name}" if infotable_name else None
             )
+
             period_str = period_of_report[i] if i < len(period_of_report) else ""
             filed_str = filing_dates[i] if i < len(filing_dates) else ""
             out.append(
@@ -300,7 +340,8 @@ class EdgarClient:
                     form_type=form,
                     report_period_end=_parse_date(period_str),
                     filed_at=_parse_datetime(filed_str),
-                    raw_xml_url=xml_url,
+                    raw_xml_url=infotable_url,
+                    cover_xml_url=cover_url,
                 )
             )
             if len(out) >= max_count:
@@ -319,6 +360,23 @@ class EdgarClient:
         """
         response = await self._request_with_retry("GET", filing_url)
         return response.text
+
+    async def _fetch_filing_index(
+        self, cik_int: str, accession_no_dashes: str
+    ) -> list[dict[str, Any]]:
+        """Fetch the per-accession directory listing from ``index.json``.
+
+        Returns the ``directory.item`` list (each item has ``name``,
+        ``type``, ``size``, ``last-modified``). Note: SEC's ``type``
+        field is uninformative for 13F-HR (always ``text.gif``), so
+        callers must rely on the filename to identify the infotable XML.
+        """
+        url = (
+            f"{self.BASE_URL}/Archives/edgar/data/{cik_int}/"
+            f"{accession_no_dashes}/index.json"
+        )
+        data = await self._get_json(url)
+        return ((data.get("directory") or {}).get("item")) or []
 
     # ── internal HTTP plumbing ──
 
@@ -417,6 +475,48 @@ class EdgarClient:
 
 
 # ───────────────────────── private helpers ─────────────────────────
+
+
+def _resolve_infotable_filename(items: list[dict[str, Any]]) -> str | None:
+    """Pick the infotable XML filename from a filing-index ``item`` list.
+
+    Heuristic (filename-based — SEC's ``item.type`` is uninformative for
+    13F-HR, always ``text.gif``):
+
+    1. Any ``.xml`` whose lowercased basename contains ``infotable``
+       or ``informationtable`` (e.g. ``infotable.xml``,
+       ``form13fInfoTable.xml``).
+    2. Otherwise: the first ``.xml`` that is **not** ``primary_doc.xml``
+       and does **not** contain a directory separator (i.e. exclude
+       ``xslForm13F_X02/primary_doc.xml`` which is the XSL renderer
+       output, not a real co-resident file in the listing — but
+       defensive belt-and-suspenders).
+
+    Returns ``None`` if no candidate is found — caller treats that as
+    "no holdings ingestable for this filing".
+    """
+    candidates: list[str] = []
+    for item in items:
+        name = (item.get("name") or "").strip()
+        if not name.lower().endswith(".xml"):
+            continue
+        if "/" in name:
+            continue
+        if name == "primary_doc.xml":
+            continue
+        candidates.append(name)
+
+    # Pass 1: prefer explicit infotable naming.
+    for name in candidates:
+        lname = name.lower()
+        if "infotable" in lname or "informationtable" in lname:
+            return name
+
+    # Pass 2: any remaining .xml — accession-derived filenames like
+    # ``53405.xml`` land here (Berkshire convention).
+    if candidates:
+        return candidates[0]
+    return None
 
 
 def _pad_cik(cik: str) -> str:

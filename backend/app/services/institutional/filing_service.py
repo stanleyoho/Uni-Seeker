@@ -273,6 +273,18 @@ class F13FilingService:
                 filer.id, meta.accession_number
             ):
                 continue
+            if meta.raw_xml_url is None:
+                # EdgarClient could not resolve the real infotable XML
+                # via the filing's index.json (e.g. SEC changed layout
+                # or network glitch). Skip rather than insert a half-row
+                # we can't backfill — next refresh tick will retry.
+                logger.warning(
+                    "f13_refresh_skipped_no_infotable_url",
+                    filer_id=filer.id,
+                    accession=meta.accession_number,
+                    form_type=meta.form_type,
+                )
+                continue
             holdings_inserted = await self._ingest_one(filer.id, meta)
             filings_added += 1
             holdings_added += holdings_inserted
@@ -311,7 +323,14 @@ class F13FilingService:
     async def _ingest_one(
         self, filer_id: int, meta: FilingMetadata
     ) -> int:
-        """Fetch + parse + persist one new filing. Returns holdings count."""
+        """Fetch + parse + persist one new filing. Returns holdings count.
+
+        Caller (``_do_refresh``) guarantees ``meta.raw_xml_url`` is not
+        None; we assert here for type-narrowing.
+        """
+        assert meta.raw_xml_url is not None, (
+            "raw_xml_url None should have been filtered upstream"
+        )
         try:
             xml_text = await self._edgar.fetch_filing_xml(meta.raw_xml_url)
         except EdgarTransientError as exc:
