@@ -30,6 +30,7 @@ import {
   GlassPanel,
 } from "@/components/stratos/primitives";
 import {
+  BulkSubscribeModal,
   DiffView,
   FilerList,
   FilerSearchModal,
@@ -51,6 +52,7 @@ export default function InstitutionalPage() {
   const [selectedFilerId, setSelectedFilerId] = useState<number | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   /* --------------------------- Data --------------------------- */
   const { data: filers = [], isLoading: filersLoading } =
@@ -139,13 +141,22 @@ export default function InstitutionalPage() {
               SEC 13F-HR · QUARTERLY HOLDINGS &amp; QOQ DIFF
             </p>
           </div>
-          <ClippedButton
-            variant="red-solid"
-            size="md"
-            onClick={() => setSearchOpen(true)}
-          >
-            {subscribeLabel}
-          </ClippedButton>
+          <div style={{ display: "flex", gap: 8 }}>
+            <ClippedButton
+              variant="cyan-ghost"
+              size="md"
+              onClick={() => setBulkOpen(true)}
+            >
+              批次訂閱
+            </ClippedButton>
+            <ClippedButton
+              variant="red-solid"
+              size="md"
+              onClick={() => setSearchOpen(true)}
+            >
+              {subscribeLabel}
+            </ClippedButton>
+          </div>
         </div>
 
         {/* Filer list */}
@@ -246,6 +257,17 @@ export default function InstitutionalPage() {
             /* React-Query handles cache invalidation. We could optionally
              * auto-select the new filer once the list refetches; deferred
              * because we don't have the resolved filer_id at this point.
+             */
+          }}
+        />
+      )}
+      {bulkOpen && (
+        <BulkSubscribeModal
+          onClose={() => setBulkOpen(false)}
+          onSuccess={() => {
+            /* React-Query invalidates filers.all on success; the list
+             * refetch surfaces the new rows. The modal stays open if
+             * there were errors/duplicates so the user can review.
              */
           }}
         />

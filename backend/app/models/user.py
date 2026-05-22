@@ -53,6 +53,9 @@ class User(Base):
     terms_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
+    telegram_chat_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, default=None
+    )
     devices: Mapped[list["UserDevice"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",

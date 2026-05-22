@@ -1829,6 +1829,37 @@ export interface F13SubscriptionResponse {
   notify_on_new_filing: boolean;
 }
 
+// --- Bulk subscribe (POST /institutional/filers/bulk) ---
+
+export interface F13BulkSubscribeRequestItem {
+  /** CIK string (backend pads to 10 digits). */
+  cik: string;
+  /**
+   * Optional display name. When omitted, the backend tries
+   * EdgarClient.get_filer_metadata(cik) to auto-resolve.
+   */
+  name?: string;
+}
+
+export interface F13BulkSubscribeError {
+  cik: string;
+  /** snake_case: `invalid_cik` | `edgar_lookup_failed` | `unknown` */
+  reason: string;
+}
+
+/**
+ * Envelope for `POST /institutional/filers/bulk` (201).
+ *
+ * Quota errors (403 limit_exceeded:max_tracked_filers) short-circuit
+ * the whole batch BEFORE any row is inserted; per-row issues land in
+ * `errors[]`.
+ */
+export interface F13BulkSubscribeResponse {
+  subscribed: F13Filer[];
+  skipped_duplicates: string[];
+  errors: F13BulkSubscribeError[];
+}
+
 // ---------------------------------------------------------------------------
 // Institutional 13F — API functions
 // ---------------------------------------------------------------------------
@@ -1891,6 +1922,28 @@ export async function searchFilers(
   return apiFetch<F13FilerSearchResult[]>(
     `${API_BASE}/institutional/filers/search?${qs.toString()}`,
     { method: "POST" },
+  );
+}
+
+/**
+ * Bulk-subscribe up to 20 filers in one call.
+ *
+ * The backend is atomic at the tier-quota level: if the projected
+ * `current_subscriptions + new_unique_ciks` would exceed
+ * `max_tracked_filers`, the whole batch is rejected with 403
+ * `limit_exceeded:max_tracked_filers` and NOTHING is inserted. Per-row
+ * issues (invalid CIK, EDGAR lookup failure when `name` omitted) land
+ * inside the 201 envelope's `errors[]`.
+ */
+export async function bulkSubscribeFilers(
+  items: F13BulkSubscribeRequestItem[],
+): Promise<F13BulkSubscribeResponse> {
+  return apiFetch<F13BulkSubscribeResponse>(
+    `${API_BASE}/institutional/filers/bulk`,
+    {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    },
   );
 }
 

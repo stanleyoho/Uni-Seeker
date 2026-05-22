@@ -266,6 +266,10 @@ class F13FilingService:
 
         filings_added = 0
         holdings_added = 0
+        # Track ORM rows we just inserted so the notification service
+        # can fan out alerts without re-querying the DB. Empty list
+        # means "no new filings this cycle" — common case.
+        newly_inserted: list[F13Filing] = []
 
         # Step 4: ingest each new filing
         for meta in edgar_filings:
@@ -285,9 +289,12 @@ class F13FilingService:
                     form_type=meta.form_type,
                 )
                 continue
-            holdings_inserted = await self._ingest_one(filer.id, meta)
+            inserted_filing, holdings_inserted = await self._ingest_one(
+                filer.id, meta
+            )
             filings_added += 1
             holdings_added += holdings_inserted
+            newly_inserted.append(inserted_filing)
 
         # Step 5: refresh filer.latest_* from the freshest stored filing
         latest = await self._filing_repo.get_latest_for_filer(filer.id)
@@ -315,6 +322,34 @@ class F13FilingService:
                 "max_quarters": max_quarters,
             },
         )
+
+        # Step 7: fire-and-forget TG fan-out. Notification is a
+        # downstream side-effect — it MUST NOT roll back the refresh
+        # row even if the TG API is down. We:
+        #   1. Flush so the new filings have stable IDs (notification
+        #      service reads them by ORM row).
+        #   2. Run the notify call inline (NOT create_task) because the
+        #      service uses the same AsyncSession; spawning a task
+        #      while the session is held would cross-thread the
+        #      transaction. The cost is a few hundred ms per filing
+        #      in the refresh path — acceptable for a Q1 on-demand
+        #      flow, and we can move this off-thread (Plan 8 queue)
+        #      when scale demands.
+        # Any exception from the notifier is logged + swallowed.
+        if newly_inserted:
+            try:
+                from app.services.institutional.notification_service import (
+                    F13NotificationService,
+                )
+
+                notifier = F13NotificationService(self._db)
+                await notifier.notify_new_filings(filer.id, newly_inserted)
+            except Exception as exc:  # pragma: no cover - safety net
+                logger.warning(
+                    "f13_refresh_notify_failed",
+                    filer_id=filer.id,
+                    error=str(exc),
+                )
         return {
             "filings_added": filings_added,
             "holdings_added": holdings_added,
@@ -322,8 +357,12 @@ class F13FilingService:
 
     async def _ingest_one(
         self, filer_id: int, meta: FilingMetadata
-    ) -> int:
-        """Fetch + parse + persist one new filing. Returns holdings count.
+    ) -> tuple["F13Filing", int]:
+        """Fetch + parse + persist one new filing.
+
+        Returns ``(filing_row, holdings_count)`` so the caller can both
+        update its counter (counts) and collect the new filing rows for
+        downstream notification fan-out.
 
         Caller (``_do_refresh``) guarantees ``meta.raw_xml_url`` is not
         None; we assert here for type-narrowing.
@@ -368,9 +407,10 @@ class F13FilingService:
         )
 
         holding_dicts = [_parsed_to_holding_kwargs(p) for p in parsed]
-        return await self._holding_repo.bulk_insert(
+        holdings_count = await self._holding_repo.bulk_insert(
             filing_id=filing.id, holdings=holding_dicts
         )
+        return filing, holdings_count
 
     async def _get_lock(self, filer_id: int) -> asyncio.Lock:
         """Lazily create the per-filer lock under a global guard.

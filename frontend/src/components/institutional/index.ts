@@ -32,3 +32,4 @@ export { RefreshButton, type RefreshButtonProps } from "./refresh-button";
 
 // Modals
 export { FilerSearchModal } from "./filer-search-modal";
+export { BulkSubscribeModal } from "./bulk-subscribe-modal";

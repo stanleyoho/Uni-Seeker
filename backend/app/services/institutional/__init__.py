@@ -38,6 +38,9 @@ from app.services.institutional.filer_search_service import (
     F13FilerSearchService,
 )
 from app.services.institutional.filing_service import F13FilingService
+from app.services.institutional.notification_service import (
+    F13NotificationService,
+)
 from app.services.institutional.subscription_service import (
     F13SubscriptionService,
 )
@@ -47,6 +50,7 @@ __all__ = [
     "F13CrossStockService",
     "F13FilerSearchService",
     "F13FilingService",
+    "F13NotificationService",
     "F13SubscriptionService",
     # exceptions
     "F13EdgarError",

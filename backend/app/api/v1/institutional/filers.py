@@ -34,7 +34,12 @@ from app.schemas.institutional.filer import (
 )
 from app.schemas.institutional.filing import F13RefreshResponse
 from app.schemas.institutional.subscription import (
+    F13BulkSubscribeError,
+    F13BulkSubscribeRequest,
+    F13BulkSubscribeResponse,
     F13SubscribeRequest,
+    F13SubscriptionPreferencesResponse,
+    F13SubscriptionPreferencesUpdate,
     F13SubscriptionResponse,
 )
 from app.services.institutional import (
@@ -161,6 +166,81 @@ async def subscribe_filer(
     )
 
 
+@router.post(
+    "/bulk",
+    response_model=F13BulkSubscribeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def bulk_subscribe_filers(
+    req: F13BulkSubscribeRequest,
+    db: DbDep,
+    user: UserDep,
+    edgar: EdgarDep,
+) -> F13BulkSubscribeResponse:
+    """Bulk-subscribe up to 20 filers atomically.
+
+    Tier quota: atomic pre-check at the service layer
+    (`F13SubscriptionService.bulk_subscribe` projects current + new
+    unique CIKs against `max_tracked_filers` BEFORE any INSERT). Over
+    quota → 403 with `limit_exceeded:max_tracked_filers`; the whole
+    batch is rejected, no partial commits.
+
+    Per-row issues land in `errors[]` inside the 201 envelope:
+      - `invalid_cik`          — failed CIK normalisation
+      - `edgar_lookup_failed`  — name missing + EDGAR fetch failed
+    These NEVER short-circuit the call.
+
+    We deliberately skip the dependency-layer `tier_guard(...)` here
+    because that guard increments the count by 1, which would block
+    a Free user from any bulk attempt even when the batch fits. The
+    service layer's atomic check is the single source of truth.
+    """
+    svc = F13SubscriptionService(db, user, edgar)  # type: ignore[arg-type]
+    try:
+        result = await svc.bulk_subscribe(
+            items=[item.model_dump() for item in req.items],
+        )
+    except (F13TierLimitExceeded, F13TierFeatureUnavailable) as exc:
+        # Tier check fires BEFORE any INSERT — no rollback needed.
+        # Calling db.rollback() here would expire other ORM rows
+        # (e.g. the requesting user) and break callers that hold
+        # references across the call boundary.
+        raise _translate_tier_exc(exc) from exc
+    except F13SubscriptionExists as exc:
+        # Race: a parallel single-subscribe slipped a row in between
+        # the service's de-dup check and the INSERT. Roll back partial
+        # batch state and return 409.
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail.F13_SUBSCRIPTION_EXISTS,
+        ) from exc
+    except ValueError as exc:
+        # Defensive: only fires for our explicit "> 20 items" guard
+        # in the service which Pydantic already enforces. Service has
+        # not flushed any INSERT yet.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=detail.F13_INVALID_INPUT,
+        ) from exc
+
+    await db.commit()
+
+    # Refresh inserted filers so latest_* columns are present in the response.
+    for filer in result["subscribed"]:
+        await db.refresh(filer)
+
+    return F13BulkSubscribeResponse(
+        subscribed=[
+            F13FilerResponse.model_validate(f) for f in result["subscribed"]
+        ],
+        skipped_duplicates=list(result["skipped_duplicates"]),
+        errors=[
+            F13BulkSubscribeError(**e) for e in result["errors"]
+        ],
+    )
+
+
 @router.get(
     "",
     response_model=list[F13FilerResponse],
@@ -253,6 +333,38 @@ async def unsubscribe_filer(
         ) from exc
     await db.commit()
     return None
+
+
+@router.patch(
+    "/{filer_id}/preferences",
+    response_model=F13SubscriptionPreferencesResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_filer_preferences(
+    filer_id: int,
+    body: F13SubscriptionPreferencesUpdate,
+    db: DbDep,
+    user: UserDep,
+) -> F13SubscriptionPreferencesResponse:
+    """Toggle ``notify_on_new_filing`` for an existing subscription.
+
+    404 when the user is not subscribed to ``filer_id`` (same info-
+    hiding collapse as ``GET /filers/{id}`` — we do not reveal whether
+    the filer exists if the caller isn't subscribed).
+    """
+    sub = await _subscription_meta(db, user.id, filer_id)  # type: ignore[attr-defined]
+    if sub is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail.F13_FILER_NOT_FOUND,
+        )
+    sub.notify_on_new_filing = body.notify_on_new_filing
+    await db.commit()
+    await db.refresh(sub)
+    return F13SubscriptionPreferencesResponse(
+        filer_id=filer_id,
+        notify_on_new_filing=sub.notify_on_new_filing,
+    )
 
 
 @router.post(

@@ -40,17 +40,23 @@ from app.db.models.institutional.holding import F13Holding
 from app.models.stock import Stock
 from app.modules.institutional.cusip_mapper import (
     CusipMatch,
+    CusipMatchFigi,
     batch_resolve_cusips,
+    batch_resolve_cusips_with_figi,
 )
 from app.obs.logging import get_logger
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from app.modules.institutional.openfigi_client import OpenFigiClient
+
 
 __all__ = [
     "backfill_cusips_for_filer",
+    "backfill_cusips_for_filer_with_figi",
     "backfill_cusips_global",
+    "backfill_cusips_global_with_figi",
     "backfill_stocks_from_filings",
 ]
 
@@ -58,6 +64,7 @@ logger = get_logger(component="cusip_backfill")
 
 
 _EXACT = "EXACT"
+_FIGI = "FIGI"
 _NAME_LIKE = "NAME_LIKE"
 
 
@@ -196,6 +203,71 @@ async def backfill_stocks_from_filings(
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# Phase 3 — FIGI-aware variants
+# ─────────────────────────────────────────────────────────────────────────
+
+
+async def backfill_cusips_for_filer_with_figi(
+    db: AsyncSession,
+    filer_id: int,
+    figi_client: OpenFigiClient | None = None,
+    limit: int = 1000,
+) -> dict[str, int]:
+    """4-layer backfill for a single filer (EXACT / FIGI / NAME_LIKE / NONE).
+
+    Same selection contract as :func:`backfill_cusips_for_filer` — only
+    ``f13_holdings.stock_id IS NULL`` rows are considered. The difference
+    is the resolver: this variant uses
+    :func:`batch_resolve_cusips_with_figi`, which collects every EXACT
+    miss into a single batched FIGI call (rate-limit-efficient).
+
+    When ``figi_client`` is ``None``, this degrades gracefully to the
+    Y3 3-layer strategy — caller logic stays the same.
+
+    Returns ``{processed, exact_matches, figi_matches, fuzzy_matches,
+    still_unmapped, upgraded}``.
+    """
+    stmt = (
+        select(
+            F13Holding.id,
+            F13Holding.cusip,
+            F13Holding.name_of_issuer,
+        )
+        .join(F13Filing, F13Filing.id == F13Holding.filing_id)
+        .where(
+            F13Filing.filer_id == filer_id,
+            F13Holding.stock_id.is_(None),
+        )
+        .limit(limit)
+    )
+    rows = (await db.execute(stmt)).all()
+    return await _resolve_and_apply_with_figi(
+        db, rows, scope=f"filer_id={filer_id}", figi_client=figi_client,
+    )
+
+
+async def backfill_cusips_global_with_figi(
+    db: AsyncSession,
+    figi_client: OpenFigiClient | None = None,
+    limit: int = 10000,
+) -> dict[str, int]:
+    """4-layer global backfill — FIGI version of :func:`backfill_cusips_global`."""
+    stmt = (
+        select(
+            F13Holding.id,
+            F13Holding.cusip,
+            F13Holding.name_of_issuer,
+        )
+        .where(F13Holding.stock_id.is_(None))
+        .limit(limit)
+    )
+    rows = (await db.execute(stmt)).all()
+    return await _resolve_and_apply_with_figi(
+        db, rows, scope="global", figi_client=figi_client,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # Internals
 # ─────────────────────────────────────────────────────────────────────────
 
@@ -259,6 +331,72 @@ async def _resolve_and_apply(
         "upgraded": upgraded,
     }
     logger.info("cusip_backfill_batch_done", scope=scope, **out)
+    return out
+
+
+async def _resolve_and_apply_with_figi(
+    db: AsyncSession,
+    rows: list,
+    scope: str,
+    figi_client: OpenFigiClient | None,
+) -> dict[str, int]:
+    """FIGI-aware twin of :func:`_resolve_and_apply`.
+
+    Routes through :func:`batch_resolve_cusips_with_figi` and tracks an
+    additional ``figi_matches`` counter. UPDATE statements are still
+    guarded by ``stock_id IS NULL`` so concurrent writers cannot clash.
+
+    The upgrade-path pass (:func:`_upgrade_namelike_to_exact`) is reused
+    unchanged — its semantics ("promote a holding when ``stocks.cusip``
+    confirms an EXACT link") apply regardless of which layer first
+    populated ``f13_holdings.stock_id``.
+    """
+    pairs: list[tuple[str, str | None]] = [
+        (r.cusip, r.name_of_issuer) for r in rows
+    ]
+    matches: list[CusipMatchFigi] = await batch_resolve_cusips_with_figi(
+        db, pairs, figi_client=figi_client,
+    )
+
+    exact_matches = 0
+    figi_matches = 0
+    fuzzy_matches = 0
+    still_unmapped = 0
+    processed = len(rows)
+
+    for holding_row, match in zip(rows, matches):
+        if match.stock_id is None:
+            still_unmapped += 1
+            continue
+        upd = (
+            update(F13Holding)
+            .where(
+                F13Holding.id == holding_row.id,
+                F13Holding.stock_id.is_(None),
+            )
+            .values(stock_id=match.stock_id)
+        )
+        res = await db.execute(upd)
+        if not res.rowcount:
+            continue
+        if match.match_confidence == _EXACT:
+            exact_matches += 1
+        elif match.match_confidence == _FIGI:
+            figi_matches += 1
+        elif match.match_confidence == _NAME_LIKE:
+            fuzzy_matches += 1
+
+    upgraded = await _upgrade_namelike_to_exact(db, scope=scope)
+
+    out = {
+        "processed": processed,
+        "exact_matches": exact_matches,
+        "figi_matches": figi_matches,
+        "fuzzy_matches": fuzzy_matches,
+        "still_unmapped": still_unmapped,
+        "upgraded": upgraded,
+    }
+    logger.info("cusip_backfill_figi_batch_done", scope=scope, **out)
     return out
 
 

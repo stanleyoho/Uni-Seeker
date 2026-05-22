@@ -24,6 +24,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  bulkSubscribeFilers,
   getDiff,
   getHoldings,
   getInstitutionalForStock,
@@ -33,6 +34,8 @@ import {
   searchFilers,
   subscribeFiler,
   unsubscribeFiler,
+  type F13BulkSubscribeRequestItem,
+  type F13BulkSubscribeResponse,
   type F13Diff,
   type F13Filer,
   type F13FilerSearchResult,
@@ -74,6 +77,34 @@ export function useSubscribeFiler() {
   const qc = useQueryClient();
   return useMutation<F13Filer, Error, { cik: string; name: string }>({
     mutationFn: ({ cik, name }) => subscribeFiler(cik, name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.institutional.filers.all });
+    },
+  });
+}
+
+/**
+ * Bulk-subscribe to multiple filers in one atomic batch.
+ *
+ * Backend contract (`POST /institutional/filers/bulk`):
+ *   - 201 envelope `{ subscribed, skipped_duplicates, errors }` on
+ *     success / partial-success (per-row issues live in `errors[]`).
+ *   - 403 `limit_exceeded:max_tracked_filers` when the projected count
+ *     would exceed the user's tier quota → ATOMIC reject, no inserts.
+ *
+ * Invalidation: same as single-subscribe — refresh the filers list so
+ * the newly added rows surface. We don't try to merge the inserted
+ * filers into the existing cache because the list query already
+ * returns the canonical alphabetised order.
+ */
+export function useBulkSubscribeFilers() {
+  const qc = useQueryClient();
+  return useMutation<
+    F13BulkSubscribeResponse,
+    Error,
+    F13BulkSubscribeRequestItem[]
+  >({
+    mutationFn: (items) => bulkSubscribeFilers(items),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.institutional.filers.all });
     },
