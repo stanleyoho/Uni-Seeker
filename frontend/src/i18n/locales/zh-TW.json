@@ -12,7 +12,7 @@
     "compare": "比較",
     "heatmap": "熱力圖",
     "lowBase": "低基期",
-    "institutional": "三大法人",
+    "institutional": "機構持倉",
     "scanner": "訊號掃描",
     "portfolio": "投資組合",
     "analysis": "分析",
@@ -237,6 +237,35 @@
     "details": "詳細指標",
     "noData": "無資料，請先更新股價",
     "viewDetail": "查看個股"
+  },
+  "institutional_13f": {
+    "title": "機構持倉追蹤 (13F)",
+    "subtitle": "SEC 13F-HR 季度持倉與異動",
+    "actions": {
+      "subscribe": "+ 訂閱機構/基金",
+      "unsubscribe": "取消訂閱",
+      "refresh": "重新整理",
+      "search": "搜尋 filer"
+    },
+    "empty": {
+      "no_filers": "尚未訂閱任何機構 / 基金",
+      "search_hint": "從 SEC EDGAR 搜尋 13F 申報人"
+    },
+    "diff": {
+      "title": "季度異動",
+      "changes": {
+        "new": "新增",
+        "increased": "加碼",
+        "decreased": "減碼",
+        "exited": "清倉",
+        "unchanged": "持平"
+      }
+    },
+    "errors": {
+      "limit_exceeded": "已達追蹤上限，升級到 Pro",
+      "already_subscribed": "已在追蹤清單",
+      "refresh_in_flight": "另一個 refresh 進行中，請稍候"
+    }
   },
   "institutional": {
     "title": "三大法人買賣超",

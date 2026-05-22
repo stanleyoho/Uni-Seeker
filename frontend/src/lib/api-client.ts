@@ -1680,3 +1680,301 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// ---------------------------------------------------------------------------
+// Institutional 13F — Types (Phase 2, /institutional/* endpoints)
+//
+// Mirrors backend Pydantic schemas in
+//   `app/schemas/institutional/{filer,filing,cross_stock,subscription}.py`.
+// Spec: docs/superpowers/plans/2026-05-22-institutional-13f-tracking-design.md
+//
+// Wire conventions:
+//   - Decimal-as-string: every USD / share value lands as `string | null`;
+//     call `Number(...)` only at the render boundary.
+//   - 5-way change_type literal (NEW/INCREASED/DECREASED/EXITED/UNCHANGED) is
+//     widened to `string` to match the cross-stock single-side classification
+//     which is loosely typed on the backend (it stringifies an enum value).
+//   - `put_call` is exactly one of "PUT"/"CALL"/null on the wire.
+//
+// Trailing-slash note (mirrors watchlist): the backend uses
+//   `APIRouter(prefix="/filers")` mounted on `/institutional`, so list /
+//   subscribe live at `/institutional/filers` (NO trailing slash). The
+//   sub-router for search is a POST. We match these path shapes verbatim.
+// ---------------------------------------------------------------------------
+
+export interface F13Filer {
+  id: number;
+  cik: string;
+  name: string;
+  legal_name: string | null;
+  /** Decimal-as-string. May be null until first refresh ingests a filing. */
+  latest_total_value_usd: string | null;
+  latest_options_notional_usd: string | null;
+  /** ISO date (YYYY-MM-DD) of the most recent 13F-HR `report_period_end`. */
+  latest_filing_date: string | null;
+  latest_position_count: number | null;
+  created_at: string;
+}
+
+export interface F13FilerSearchResult {
+  cik: string;
+  name: string;
+  legal_name: string | null;
+  /** True when the local DB already has this filer (instant subscribe). */
+  is_locally_known: boolean;
+}
+
+/**
+ * One row of `f13_filings` — the per-quarter snapshot meta.
+ *
+ * `form_type` is typically "13F-HR" or "13F-HR/A" (amendment); occasionally
+ * "13F-NT" once Phase 4+ broadens scope. Kept as `string` so we don't
+ * crash on unexpected values.
+ */
+export interface F13Filing {
+  id: number;
+  filer_id: number;
+  accession_number: string;
+  form_type: string;
+  /** Quarter-end date (e.g. "2025-12-31"). */
+  report_period_end: string;
+  filed_at: string;
+  total_value_usd: string | null;
+  options_notional_usd: string | null;
+  total_positions: number | null;
+  raw_xml_url: string | null;
+}
+
+/**
+ * One row of `f13_holdings`.
+ *
+ * `stock_symbol` is denormalised by the backend when the CUSIP has been
+ * mapped to `stocks.symbol`. Null means the CUSIP is unmapped — render the
+ * raw `cusip` + `name_of_issuer` instead.
+ */
+export interface F13Holding {
+  id: number;
+  cusip: string;
+  name_of_issuer: string;
+  /** USD market value at quarter-end (already × 1000 from raw 13F units). */
+  value_usd: string;
+  shares: string | null;
+  put_call: "PUT" | "CALL" | null;
+  investment_discretion: string | null;
+  stock_id: number | null;
+  stock_symbol: string | null;
+}
+
+export interface F13HoldingsAtPeriod {
+  filing: F13Filing;
+  holdings: F13Holding[];
+}
+
+/** Backend's diff-engine 5-way classification. */
+export type F13ChangeType =
+  | "NEW"
+  | "INCREASED"
+  | "DECREASED"
+  | "EXITED"
+  | "UNCHANGED";
+
+export interface F13HoldingChange {
+  cusip: string;
+  name_of_issuer: string;
+  /** Widened from F13ChangeType so cross-stock's loose string still fits. */
+  change_type: F13ChangeType | string;
+  prev_shares: string | null;
+  curr_shares: string | null;
+  delta_shares: string;
+  delta_pct: string | null;
+  prev_value_usd: string | null;
+  curr_value_usd: string | null;
+  delta_value_usd: string;
+}
+
+export interface F13Diff {
+  /** ISO date of the previous period (the `from` query param). */
+  prev_period: string;
+  curr_period: string;
+  changes: F13HoldingChange[];
+}
+
+export interface F13RefreshResult {
+  filings_added: number;
+  holdings_added: number;
+}
+
+/** Cross-stock view: one filer-row in the per-stock institutional panel. */
+export interface F13InstitutionalHolderForStock {
+  filer_id: number;
+  filer_name: string;
+  filer_cik: string;
+  latest_shares: string | null;
+  latest_value_usd: string | null;
+  prev_shares: string | null;
+  /** Always present; "UNCHANGED" when prev/current are roughly equal. */
+  change_type: string;
+}
+
+export interface F13InstitutionalStock {
+  symbol: string;
+  stock_id: number | null;
+  holders: F13InstitutionalHolderForStock[];
+}
+
+/** POST /institutional/filers response envelope. */
+export interface F13SubscriptionResponse {
+  filer: F13Filer;
+  subscribed_at: string;
+  notify_on_new_filing: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Institutional 13F — API functions
+// ---------------------------------------------------------------------------
+
+export async function listInstitutionalFilers(): Promise<F13Filer[]> {
+  return apiFetch<F13Filer[]>(`${API_BASE}/institutional/filers`);
+}
+
+/**
+ * Subscribe the current user to a filer by CIK.
+ *
+ * Backend behaviour (`F13SubscriptionService.subscribe`):
+ *   - Local CIK exists → just insert subscription (200/201).
+ *   - CIK new → fetch EDGAR for filer metadata + create row (`name`
+ *     required for new filers; if omitted backend uses EDGAR-resolved name).
+ *   - Already subscribed → 409 `f13_subscription_exists`.
+ *   - Tier cap hit → 403 `limit_exceeded:max_tracked_filers`.
+ *
+ * Returns only the filer row (we discard `subscribed_at` /
+ * `notify_on_new_filing`); callers that need those should hit the dedicated
+ * subscription endpoints in a follow-up phase.
+ */
+export async function subscribeFiler(
+  cik: string,
+  name: string,
+): Promise<F13Filer> {
+  const res = await apiFetch<F13SubscriptionResponse>(
+    `${API_BASE}/institutional/filers`,
+    {
+      method: "POST",
+      body: JSON.stringify({ cik, name }),
+    },
+  );
+  return res.filer;
+}
+
+export async function unsubscribeFiler(filerId: number): Promise<void> {
+  await apiFetch<void>(`${API_BASE}/institutional/filers/${filerId}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Search filers across local DB + EDGAR fulltext.
+ *
+ * Backend is `POST /filers/search?q=...&limit=...` (POST despite being a
+ * pure read — matches the existing route shape). Empty / short queries
+ * are short-circuited client-side because the backend rejects q.length < 2
+ * with 422.
+ */
+export async function searchFilers(
+  q: string,
+  limit = 20,
+): Promise<F13FilerSearchResult[]> {
+  if (q.trim().length < 2) return [];
+  const qs = new URLSearchParams({
+    q: q.trim(),
+    limit: String(limit),
+  });
+  return apiFetch<F13FilerSearchResult[]>(
+    `${API_BASE}/institutional/filers/search?${qs.toString()}`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * On-demand refresh — fetch + ingest the latest N quarters for a filer.
+ *
+ * Tier-gated: FREE/BASIC users will receive 403 with
+ * `feature_unavailable:institutional_realtime_refresh`. A second concurrent
+ * refresh on the same filer returns 429 with `f13_refresh_in_flight`.
+ */
+export async function refreshFiler(
+  filerId: number,
+  maxQuarters = 4,
+): Promise<F13RefreshResult> {
+  const qs = new URLSearchParams({ max_quarters: String(maxQuarters) });
+  return apiFetch<F13RefreshResult>(
+    `${API_BASE}/institutional/filers/${filerId}/refresh?${qs.toString()}`,
+    { method: "POST" },
+  );
+}
+
+export async function listFilings(
+  filerId: number,
+  limit = 20,
+  offset = 0,
+): Promise<F13Filing[]> {
+  const qs = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return apiFetch<F13Filing[]>(
+    `${API_BASE}/institutional/filers/${filerId}/filings?${qs.toString()}`,
+  );
+}
+
+/**
+ * Fetch a filer's holdings for one period.
+ *
+ * `period` accepts the literal "latest" or an ISO date (YYYY-MM-DD) that
+ * MUST match an existing `report_period_end`. The page uses "latest" by
+ * default and an explicit date when the user changes the period selector.
+ */
+export async function getHoldings(
+  filerId: number,
+  period: string,
+): Promise<F13HoldingsAtPeriod> {
+  const qs = new URLSearchParams({ period });
+  return apiFetch<F13HoldingsAtPeriod>(
+    `${API_BASE}/institutional/filers/${filerId}/holdings?${qs.toString()}`,
+  );
+}
+
+/**
+ * Quarter-over-quarter diff between two stored filings.
+ *
+ * Both dates MUST already exist in `f13_filings`; this endpoint does NOT
+ * implicitly refresh. Callers should drive the period picker off a recent
+ * `useFilings()` result so the user can only pick stored periods.
+ *
+ * Note: the backend route aliases `from_date` ↔ `from` and `to_date` ↔ `to`
+ * (FastAPI `Query(alias=...)`). The query string here uses the wire names.
+ */
+export async function getDiff(
+  filerId: number,
+  fromDate: string,
+  toDate: string,
+): Promise<F13Diff> {
+  const qs = new URLSearchParams({ from: fromDate, to: toDate });
+  return apiFetch<F13Diff>(
+    `${API_BASE}/institutional/filers/${filerId}/diff?${qs.toString()}`,
+  );
+}
+
+/**
+ * Cross-stock institutional panel — "which filers hold this symbol?"
+ *
+ * Pro-only feature (`feature_unavailable:institutional_ownership_panel`
+ * for lower tiers). The Phase 2 page does not surface this yet; we expose
+ * the client so the per-stock page can adopt it without another round.
+ */
+export async function getInstitutionalForStock(
+  symbol: string,
+): Promise<F13InstitutionalStock> {
+  return apiFetch<F13InstitutionalStock>(
+    `${API_BASE}/institutional/stocks/${encodeURIComponent(symbol)}/institutional`,
+  );
+}

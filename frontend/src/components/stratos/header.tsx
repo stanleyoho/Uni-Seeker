@@ -70,6 +70,7 @@ export function StratosHeader() {
     { href: "/research", label: t.nav.research ?? "Research" },
     { href: "/portfolio", label: t.nav.portfolio ?? "Portfolio" },
     { href: "/holdings", label: t.nav.holdings ?? "Holdings" },
+    { href: "/institutional", label: t.nav.institutional ?? "機構持倉" },
     { href: "/journal", label: t.nav.journal ?? "Journal" },
   ];
 

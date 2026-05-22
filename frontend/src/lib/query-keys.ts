@@ -76,6 +76,30 @@ export const queryKeys = {
     all: ["watchlist"] as const,
     list: () => ["watchlist", "list"] as const,
   },
+  institutional: {
+    all: ["institutional"] as const,
+    filers: {
+      all: ["institutional", "filers"] as const,
+      list: () => ["institutional", "filers", "list"] as const,
+      detail: (id: number) => ["institutional", "filers", id] as const,
+      search: (q: string) =>
+        ["institutional", "filers", "search", q] as const,
+    },
+    filings: {
+      all: ["institutional", "filings"] as const,
+      listByFiler: (filerId: number) =>
+        ["institutional", "filings", filerId] as const,
+      holdings: (filerId: number, period: string) =>
+        ["institutional", "filings", filerId, "holdings", period] as const,
+      diff: (filerId: number, from: string, to: string) =>
+        ["institutional", "filings", filerId, "diff", from, to] as const,
+    },
+    stocks: {
+      all: ["institutional", "stocks"] as const,
+      bySymbol: (symbol: string) =>
+        ["institutional", "stocks", symbol] as const,
+    },
+  },
   holdings: {
     all: ["holdings"] as const,
     accounts: {

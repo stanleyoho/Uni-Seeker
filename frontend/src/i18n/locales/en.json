@@ -12,7 +12,7 @@
     "compare": "Compare",
     "heatmap": "Heatmap",
     "lowBase": "Low Base",
-    "institutional": "Institutional",
+    "institutional": "13F",
     "portfolio": "Portfolio",
     "scanner": "Signal Scanner",
     "analysis": "Analysis",
@@ -237,6 +237,35 @@
     "details": "Details",
     "noData": "No data. Please update stock prices first.",
     "viewDetail": "View Stock"
+  },
+  "institutional_13f": {
+    "title": "Institutional 13F Tracker",
+    "subtitle": "SEC 13F-HR quarterly holdings & QoQ moves",
+    "actions": {
+      "subscribe": "+ Subscribe Filer",
+      "unsubscribe": "Unsubscribe",
+      "refresh": "Refresh",
+      "search": "Search filers"
+    },
+    "empty": {
+      "no_filers": "No filers tracked yet",
+      "search_hint": "Search SEC EDGAR for 13F filers"
+    },
+    "diff": {
+      "title": "Quarter-over-Quarter Moves",
+      "changes": {
+        "new": "New",
+        "increased": "Increased",
+        "decreased": "Decreased",
+        "exited": "Exited",
+        "unchanged": "Unchanged"
+      }
+    },
+    "errors": {
+      "limit_exceeded": "Tracking limit reached — upgrade to Pro",
+      "already_subscribed": "Already subscribed",
+      "refresh_in_flight": "Another refresh is in flight, please wait"
+    }
   },
   "institutional": {
     "title": "Institutional Investors",
