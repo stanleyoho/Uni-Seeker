@@ -379,5 +379,40 @@
     "sell": "賣出",
     "strongSell": "強力賣出",
     "backtest": "回測"
+  },
+  "settings": {
+    "title": "設定",
+    "notifications": {
+      "title": "通知設定",
+      "subtitle": "管理你的通知通道與每檔 13F 機構的提醒開關",
+      "telegram": {
+        "title": "Telegram 通知",
+        "chat_id_label": "Chat ID",
+        "chat_id_placeholder": "例如：123456789 或 @my_channel",
+        "current_label": "目前綁定",
+        "not_set": "未設定",
+        "help": "從 @userinfobot 取得你的 Telegram chat ID",
+        "save": "儲存",
+        "clear": "清除綁定",
+        "test": "傳送測試訊息",
+        "test_coming_soon": "測試發送功能即將推出",
+        "save_success": "已更新 Telegram 通知設定",
+        "save_error": "更新失敗，請稍後再試"
+      },
+      "f13": {
+        "title": "13F 機構通知",
+        "subtitle": "新填報送達時推送 Telegram 提醒",
+        "no_subscribed": "你還沒訂閱任何機構",
+        "enable_all": "啟用全部",
+        "disable_all": "停用全部",
+        "column_filer": "機構",
+        "column_notify": "新填報通知",
+        "toggle_aria": "切換通知"
+      },
+      "channels": {
+        "title": "其他通知通道",
+        "coming_soon": "Email / LINE / Webhook 即將推出"
+      }
+    }
   }
 }

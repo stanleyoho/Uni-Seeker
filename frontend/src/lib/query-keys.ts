@@ -91,6 +91,26 @@ export const queryKeys = {
         ["institutional", "filings", filerId] as const,
       holdings: (filerId: number, period: string) =>
         ["institutional", "filings", filerId, "holdings", period] as const,
+      // Round 12 — per-stock multi-quarter timeline. Window encoded in
+      // the key so a date-range change correctly invalidates the cache.
+      holdingHistory: (
+        filerId: number,
+        identifier: string,
+        fromDate: string,
+        toDate: string,
+        limit: number,
+      ) =>
+        [
+          "institutional",
+          "filings",
+          filerId,
+          "holdings",
+          identifier,
+          "history",
+          fromDate,
+          toDate,
+          limit,
+        ] as const,
       diff: (filerId: number, from: string, to: string) =>
         ["institutional", "filings", filerId, "diff", from, to] as const,
     },
@@ -99,6 +119,10 @@ export const queryKeys = {
       bySymbol: (symbol: string) =>
         ["institutional", "stocks", symbol] as const,
     },
+  },
+  me: {
+    all: ["me"] as const,
+    notifications: () => ["me", "notifications"] as const,
   },
   holdings: {
     all: ["holdings"] as const,

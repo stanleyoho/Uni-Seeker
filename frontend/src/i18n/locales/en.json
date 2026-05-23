@@ -379,5 +379,40 @@
     "sell": "Sell",
     "strongSell": "Strong Sell",
     "backtest": "Backtest"
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": {
+      "title": "Notification Settings",
+      "subtitle": "Manage your transports and per-filer 13F notification toggles",
+      "telegram": {
+        "title": "Telegram Notifications",
+        "chat_id_label": "Chat ID",
+        "chat_id_placeholder": "e.g. 123456789 or @my_channel",
+        "current_label": "Currently linked",
+        "not_set": "Not set",
+        "help": "Get your Telegram chat ID from @userinfobot",
+        "save": "Save",
+        "clear": "Clear",
+        "test": "Send test message",
+        "test_coming_soon": "Test send is coming soon",
+        "save_success": "Telegram preferences updated",
+        "save_error": "Failed to update preferences"
+      },
+      "f13": {
+        "title": "13F Filing Notifications",
+        "subtitle": "Push a Telegram alert when a new filing arrives",
+        "no_subscribed": "You haven't subscribed to any filers yet",
+        "enable_all": "Enable all",
+        "disable_all": "Disable all",
+        "column_filer": "Filer",
+        "column_notify": "Notify on new filing",
+        "toggle_aria": "Toggle notifications"
+      },
+      "channels": {
+        "title": "Other Channels",
+        "coming_soon": "Email / LINE / Webhook coming soon"
+      }
+    }
   }
 }

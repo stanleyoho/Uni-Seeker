@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
@@ -22,6 +22,8 @@ export function StratosHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -91,7 +93,30 @@ export function StratosHeader() {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
+    setSettingsOpen(false);
   }, [pathname]);
+
+  // Close settings dropdown on outside click / Esc.
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(e.target as Node)
+      ) {
+        setSettingsOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSettingsOpen(false);
+    };
+    window.addEventListener("mousedown", handleClick);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [settingsOpen]);
 
   return (
     <>
@@ -211,6 +236,55 @@ export function StratosHeader() {
               {locale === "zh-TW" ? "EN" : "繁中"}
             </button>
 
+            {/* Settings dropdown — gear icon → notification prefs (Round 9 Y7) */}
+            <div className="relative" ref={settingsRef}>
+              <button
+                onClick={() => setSettingsOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={settingsOpen}
+                aria-label={
+                  (t.settings && (t.settings as { title?: string }).title) ??
+                  "Settings"
+                }
+                className={`p-1.5 rounded-md transition-colors duration-200 hover:bg-[var(--card-hover)] ${
+                  pathname.startsWith("/settings")
+                    ? "text-[var(--foreground)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              {settingsOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 min-w-[200px] py-1 z-50"
+                  style={{
+                    background: "var(--background)",
+                    border: "1px solid var(--border-color)",
+                    boxShadow:
+                      "0 8px 24px color-mix(in srgb, #000 40%, transparent)",
+                  }}
+                >
+                  <Link
+                    href="/settings/notifications"
+                    role="menuitem"
+                    onClick={() => setSettingsOpen(false)}
+                    className="block px-3 py-2 text-[13px] transition-colors duration-150 hover:bg-[var(--card-hover)]"
+                    style={{
+                      color: pathname.startsWith("/settings/notifications")
+                        ? "var(--foreground)"
+                        : "var(--text-secondary)",
+                    }}
+                  >
+                    {(t.settings &&
+                      (t.settings as { notifications?: { title?: string } })
+                        .notifications?.title) ??
+                      "通知設定"}
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {user ? (
               <>
                 <span className="text-[var(--text-muted)] text-xs px-2">{user.username}</span>
@@ -282,6 +356,25 @@ export function StratosHeader() {
               >
                 <Bell className="w-4 h-4" />
                 {t.nav.alerts ?? "Alerts"}
+              </Link>
+
+              <Link
+                href="/settings/notifications"
+                onClick={() => setMobileOpen(false)}
+                aria-current={
+                  isActive("/settings/notifications") ? "page" : undefined
+                }
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
+                  isActive("/settings/notifications")
+                    ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                {(t.settings &&
+                  (t.settings as { notifications?: { title?: string } })
+                    .notifications?.title) ??
+                  "通知設定"}
               </Link>
 
               {/* Search button for mobile */}

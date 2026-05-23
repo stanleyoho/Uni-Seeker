@@ -1949,6 +1949,47 @@ export interface F13RefreshResult {
   holdings_added: number;
 }
 
+/**
+ * Round 12 — per-stock multi-quarter timeline for a filer.
+ *
+ * One entry per quarterly filing in the requested window. `shares` /
+ * `value_usd` are `null` when the filer filed that quarter but didn't
+ * hold the requested stock; the timeline component renders these as
+ * "未持有". `delta_*` follow the NEW / INCREASED / DECREASED / EXITED /
+ * UNCHANGED / NOT_HELD classification on the wire.
+ */
+export type F13HistoryChangeType =
+  | "NEW"
+  | "INCREASED"
+  | "DECREASED"
+  | "EXITED"
+  | "UNCHANGED"
+  | "NOT_HELD";
+
+export interface F13HoldingHistoryEntry {
+  filing_id: number;
+  /** ISO date string. */
+  report_period_end: string;
+  form_type: string;
+  shares: string | null;
+  value_usd: string | null;
+  put_call: "PUT" | "CALL" | null;
+  investment_discretion: string | null;
+  delta_shares: string | null;
+  delta_pct: string | null;
+  change_type: F13HistoryChangeType | string;
+}
+
+export interface F13HoldingHistory {
+  filer_id: number;
+  /** CUSIP populated when the holding was found by CUSIP (or via stock JOIN). */
+  cusip: string | null;
+  /** Symbol populated when the holding was mapped to a `stocks` row. */
+  symbol: string | null;
+  /** ASC by `report_period_end` (oldest → newest). */
+  entries: F13HoldingHistoryEntry[];
+}
+
 /** Cross-stock view: one filer-row in the per-stock institutional panel. */
 export interface F13InstitutionalHolderForStock {
   filer_id: number;
@@ -2142,6 +2183,37 @@ export async function getHoldings(
 }
 
 /**
+ * Round 12 — per-stock position history across multiple quarters.
+ *
+ * Replaces the previous "fan out one /holdings request per filing"
+ * pattern with a single round trip. The backend handles change-type
+ * classification + delta math and returns ASC-sorted entries with
+ * NOT_HELD placeholders for quarters where the filer didn't hold the
+ * stock.
+ *
+ * Access: subscription to the filer OR Pro-tier
+ * `institutional_ownership_panel` feature. Window defaults to 2y on
+ * the backend when `fromDate` / `toDate` are omitted; we mirror the
+ * default behaviour by allowing the caller to omit either side.
+ */
+export async function getHoldingHistory(
+  filerId: number,
+  identifier: string,
+  opts?: { fromDate?: string; toDate?: string; limit?: number },
+): Promise<F13HoldingHistory> {
+  const qs = new URLSearchParams();
+  if (opts?.fromDate) qs.set("from_date", opts.fromDate);
+  if (opts?.toDate) qs.set("to_date", opts.toDate);
+  if (opts?.limit != null) qs.set("limit", String(opts.limit));
+  const suffix = qs.toString();
+  return apiFetch<F13HoldingHistory>(
+    `${API_BASE}/institutional/filers/${filerId}/holdings/${encodeURIComponent(
+      identifier,
+    )}/history${suffix ? `?${suffix}` : ""}`,
+  );
+}
+
+/**
  * Quarter-over-quarter diff between two stored filings.
  *
  * Both dates MUST already exist in `f13_filings`; this endpoint does NOT
@@ -2174,5 +2246,61 @@ export async function getInstitutionalForStock(
 ): Promise<F13InstitutionalStock> {
   return apiFetch<F13InstitutionalStock>(
     `${API_BASE}/institutional/stocks/${encodeURIComponent(symbol)}/institutional`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Me — notification preferences (Round 9 Y7)
+// ---------------------------------------------------------------------------
+//
+// Single-channel v1 shape. Backend deliberately keeps email/LINE/webhook
+// off the wire until those channels actually ship — see
+// `backend/app/schemas/me_notifications.py` for the rationale. Setting
+// `telegram_chat_id` to `null` is the canonical "stop sending me TG alerts"
+// gesture (column becomes NULL, F13NotificationService filters us out).
+
+export interface MeNotificationSettings {
+  /** Numeric chat id ("123456789") or @channel handle. `null` ⇒ disabled. */
+  telegram_chat_id: string | null;
+}
+
+export async function getMeNotifications(): Promise<MeNotificationSettings> {
+  return apiFetch<MeNotificationSettings>(`${API_BASE}/me/notifications`);
+}
+
+export async function updateMeNotifications(req: {
+  telegram_chat_id: string | null;
+}): Promise<MeNotificationSettings> {
+  return apiFetch<MeNotificationSettings>(`${API_BASE}/me/notifications`, {
+    method: "PATCH",
+    body: JSON.stringify(req),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Per-filer subscription preferences (Round 9 Y7)
+// ---------------------------------------------------------------------------
+//
+// Only PATCH is exposed by the backend — there is intentionally no GET
+// (the list endpoint omits `notify_on_new_filing` per Phase-2 envelope
+// trim). Frontend tracks the toggle state optimistically and reconciles
+// from PATCH responses. Backend default is `true`, so a fresh subscription
+// is "notify me" until the user opts out.
+
+export interface F13SubscriptionPreferences {
+  filer_id: number;
+  notify_on_new_filing: boolean;
+}
+
+export async function updateFilerPreferences(
+  filerId: number,
+  req: { notify_on_new_filing: boolean },
+): Promise<F13SubscriptionPreferences> {
+  return apiFetch<F13SubscriptionPreferences>(
+    `${API_BASE}/institutional/filers/${filerId}/preferences`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(req),
+    },
   );
 }
