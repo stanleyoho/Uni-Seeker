@@ -123,6 +123,14 @@ export const queryKeys = {
   me: {
     all: ["me"] as const,
     notifications: () => ["me", "notifications"] as const,
+    auditLogs: (limit?: number, offset?: number, eventTypes?: string[]) =>
+      [
+        "me",
+        "audit-logs",
+        limit ?? null,
+        offset ?? null,
+        eventTypes?.length ? [...eventTypes].sort() : null,
+      ] as const,
   },
   holdings: {
     all: ["holdings"] as const,
@@ -161,6 +169,10 @@ export const queryKeys = {
       list: (accountId?: number, limit?: number, offset?: number) =>
         ["holdings", "dividends", "list", accountId, limit, offset] as const,
       detail: (id: number) => ["holdings", "dividends", id] as const,
+    },
+    alerts: {
+      all: ["holdings", "alerts"] as const,
+      list: () => ["holdings", "alerts", "list"] as const,
     },
   },
 } as const;

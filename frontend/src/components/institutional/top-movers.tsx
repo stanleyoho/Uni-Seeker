@@ -307,7 +307,10 @@ export function TopMovers({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+        // 280px floor lets a single column survive on phone viewports
+        // (375px - 24px page padding = 351px) while still side-by-siding
+        // on tablet+. `auto-fit` collapses to 1 col automatically.
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
         gap: 16,
       }}
     >

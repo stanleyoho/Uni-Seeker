@@ -117,13 +117,11 @@ export default function InstitutionalPage() {
     >
       <AmbientBackground />
 
-      <div className="relative max-w-[1440px] mx-auto px-6 py-6 space-y-6">
+      <div className="relative max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6">
         {/* Page header */}
         <div
+          className="flex flex-col sm:flex-row sm:items-end sm:justify-between"
           style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 16,
             borderBottom: "1px solid var(--border-subtle)",
@@ -132,8 +130,8 @@ export default function InstitutionalPage() {
         >
           <div>
             <h1
+              className="text-[20px] lg:text-[28px]"
               style={{
-                fontSize: 28,
                 fontWeight: 700,
                 color: "var(--foreground)",
                 letterSpacing: "-0.04em",
@@ -156,7 +154,7 @@ export default function InstitutionalPage() {
               SEC 13F-HR · QUARTERLY HOLDINGS &amp; QOQ DIFF
             </p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="grid grid-cols-2 sm:flex gap-2">
             <ClippedButton
               variant="cyan-ghost"
               size="md"

@@ -52,6 +52,7 @@ export {
 export { AddHoldingTradeModal } from "./add-trade-modal";
 export { AddHoldingDividendModal } from "./add-dividend-modal";
 export { AccountModal } from "./account-modal";
+export { RebalanceModal } from "./rebalance-modal";
 
 // CSV export (Phase 4 tax-export hook)
 export {

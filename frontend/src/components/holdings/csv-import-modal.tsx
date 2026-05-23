@@ -199,14 +199,14 @@ export function CsvImportModal({
       onClick={(e) => e.target === e.currentTarget && !isPending && onClose()}
     >
       <div
+        className="p-4 sm:p-6"
         style={{
           background: "var(--glass-bg)",
           border: "1px solid var(--border-color)",
           width: "100%",
           maxWidth: 720,
-          maxHeight: "90vh",
+          maxHeight: "calc(100vh - 32px)",
           overflowY: "auto",
-          padding: 24,
           boxShadow: "var(--glass-shadow)",
           backgroundImage: "var(--glass-gradient)",
         }}

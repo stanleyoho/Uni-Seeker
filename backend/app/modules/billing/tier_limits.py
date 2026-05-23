@@ -90,6 +90,7 @@ class TierFeatures(BaseModel):
     tax_export: bool
     institutional_ownership_panel: bool
     multi_currency_summary: bool
+    rebalancing: bool
 
 
 class TierConfig(BaseModel):
@@ -104,6 +105,11 @@ class TierConfig(BaseModel):
     max_trades_per_month: int | None
     max_accounts: int | None
     max_tracked_filers: int | None
+    # UNI-ALERT-001 — user-defined alert rules (Free 0 / Basic 5 / Pro 20).
+    # 0 is a valid "feature off" sentinel for Free; the validator below
+    # accepts it specifically so a Free user with zero allowance is
+    # representable without a separate boolean flag.
+    max_alert_rules: int | None = 0
     features: TierFeatures
 
     @field_validator(
@@ -117,6 +123,13 @@ class TierConfig(BaseModel):
         # spec §9.3: "validate: 數值欄位若非 None 必 > 0"
         if v is not None and v <= 0:
             raise ValueError("quota must be > 0 or null for unlimited")
+        return v
+
+    @field_validator("max_alert_rules")
+    @classmethod
+    def _nonneg_or_none(cls, v: int | None) -> int | None:
+        if v is not None and v < 0:
+            raise ValueError("max_alert_rules must be >= 0 or null")
         return v
 
 
@@ -197,6 +210,7 @@ _NUMERIC_LIMIT_KEYS = frozenset(
         "max_trades_per_month",
         "max_accounts",
         "max_tracked_filers",
+        "max_alert_rules",
     }
 )
 

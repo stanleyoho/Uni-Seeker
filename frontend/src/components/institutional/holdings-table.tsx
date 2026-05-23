@@ -58,21 +58,28 @@ interface ColumnDef {
   label: string;
   align: "left" | "right";
   minWidth: number;
+  /** Optional Tailwind visibility class for breakpoint-gated columns. */
+  responsiveClass?: string;
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "symbol", label: "Symbol / CUSIP", align: "left", minWidth: 140 },
-  { key: "name_of_issuer", label: "Issuer", align: "left", minWidth: 200 },
-  { key: "shares", label: "Shares", align: "right", minWidth: 110 },
-  { key: "value_usd", label: "Value (USD)", align: "right", minWidth: 130 },
-  { key: "put_call", label: "Type", align: "right", minWidth: 70 },
+  { key: "symbol", label: "Symbol / CUSIP", align: "left", minWidth: 110 },
+  { key: "name_of_issuer", label: "Issuer", align: "left", minWidth: 180, responsiveClass: "hidden md:table-cell" },
+  { key: "shares", label: "Shares", align: "right", minWidth: 90 },
+  { key: "value_usd", label: "Value (USD)", align: "right", minWidth: 110 },
+  { key: "put_call", label: "Type", align: "right", minWidth: 60, responsiveClass: "hidden sm:table-cell" },
   {
     key: "investment_discretion",
     label: "Discretion",
     align: "right",
     minWidth: 90,
+    responsiveClass: "hidden lg:table-cell",
   },
 ];
+
+const IH_COL_CLASS_BY_KEY: Partial<Record<SortKey, string>> = Object.fromEntries(
+  COLUMNS.filter((c) => c.responsiveClass).map((c) => [c.key, c.responsiveClass!]),
+);
 
 interface DerivedRow {
   raw: F13Holding;
@@ -122,6 +129,7 @@ function HeaderCell({ col, active, dir, onClick }: HeaderCellProps) {
   return (
     <th
       onClick={onClick}
+      className={col.responsiveClass}
       style={{
         padding: "10px 14px",
         textAlign: col.align,
@@ -150,7 +158,11 @@ function SkeletonRow() {
   return (
     <tr>
       {COLUMNS.map((c) => (
-        <td key={c.key} style={{ padding: "10px 14px", textAlign: c.align }}>
+        <td
+          key={c.key}
+          className={c.responsiveClass}
+          style={{ padding: "10px 14px", textAlign: c.align }}
+        >
           <div
             style={{
               height: 12,
@@ -309,6 +321,7 @@ export function InstitutionalHoldingsTable({
 
                     {/* Issuer */}
                     <td
+                      className={IH_COL_CLASS_BY_KEY.name_of_issuer}
                       style={{
                         padding: "10px 14px",
                         textAlign: "left",
@@ -369,6 +382,7 @@ export function InstitutionalHoldingsTable({
 
                     {/* Put/Call */}
                     <td
+                      className={IH_COL_CLASS_BY_KEY.put_call}
                       style={{
                         padding: "10px 14px",
                         textAlign: "right",
@@ -379,6 +393,7 @@ export function InstitutionalHoldingsTable({
 
                     {/* Discretion */}
                     <td
+                      className={IH_COL_CLASS_BY_KEY.investment_discretion}
                       style={{
                         padding: "10px 14px",
                         textAlign: "right",

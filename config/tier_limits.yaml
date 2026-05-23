@@ -12,6 +12,7 @@ free:
   max_trades_per_month: 30
   max_accounts: 1
   max_tracked_filers: 1
+  max_alert_rules: 0
   features:
     realized_pnl: false
     dividends: false
@@ -20,12 +21,14 @@ free:
     tax_export: false
     institutional_ownership_panel: false
     multi_currency_summary: false
+    rebalancing: false
 
 basic:
   max_positions: 50
   max_trades_per_month: 200
   max_accounts: 3
   max_tracked_filers: 5
+  max_alert_rules: 5
   features:
     realized_pnl: true
     dividends: true
@@ -34,12 +37,14 @@ basic:
     tax_export: false
     institutional_ownership_panel: false
     multi_currency_summary: false
+    rebalancing: false
 
 pro:
   max_positions: null
   max_trades_per_month: null
   max_accounts: null
   max_tracked_filers: null
+  max_alert_rules: 20
   features:
     realized_pnl: true
     dividends: true
@@ -48,3 +53,4 @@ pro:
     tax_export: true
     institutional_ownership_panel: true
     multi_currency_summary: true
+    rebalancing: true

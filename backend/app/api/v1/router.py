@@ -10,6 +10,7 @@ from app.api.v1.holdings import router as holdings_router
 from app.api.v1.institutional import router as institutional_router
 from app.api.v1.journal import router as journal_router
 from app.api.v1.market import router as market_router
+from app.api.v1.me_audit import router as me_audit_router
 from app.api.v1.me_notifications import router as me_notifications_router
 from app.api.v1.financial_metrics import router as financial_metrics_router
 from app.api.v1.financials import router as financials_router
@@ -40,6 +41,7 @@ v1_router.include_router(indicators_router)
 v1_router.include_router(screener_router)
 v1_router.include_router(notifications_router)
 v1_router.include_router(me_notifications_router)
+v1_router.include_router(me_audit_router)
 v1_router.include_router(alpha_router)
 v1_router.include_router(stocks_router)
 v1_router.include_router(financial_metrics_router)

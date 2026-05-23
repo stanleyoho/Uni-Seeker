@@ -59,18 +59,28 @@ interface ColumnDef {
   align: "left" | "right";
   /** Pixel min-width to prevent column collapse on small screens. */
   minWidth?: number;
+  /**
+   * Tailwind class that controls breakpoint visibility for this column.
+   * Used to hide low-signal columns on phone-sized viewports — the table
+   * still scrolls horizontally for any remaining overflow.
+   *
+   *   - undefined          → always visible
+   *   - "hidden sm:table-cell" → tablet+ only (≥640px)
+   *   - "hidden lg:table-cell" → desktop only (≥1024px)
+   */
+  responsiveClass?: string;
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "symbol", label: "Symbol", align: "left", minWidth: 140 },
-  { key: "qty", label: "Qty", align: "right", minWidth: 80 },
-  { key: "avg_cost", label: "Avg Cost", align: "right", minWidth: 90 },
-  { key: "last_price", label: "Last", align: "right", minWidth: 90 },
+  { key: "symbol", label: "Symbol", align: "left", minWidth: 110 },
+  { key: "qty", label: "Qty", align: "right", minWidth: 70 },
+  { key: "avg_cost", label: "Avg Cost", align: "right", minWidth: 90, responsiveClass: "hidden sm:table-cell" },
+  { key: "last_price", label: "Last", align: "right", minWidth: 80 },
   { key: "market_value", label: "Market Value", align: "right", minWidth: 110 },
-  { key: "unrealized_pnl", label: "Unrealized P&L", align: "right", minWidth: 120 },
-  { key: "unrealized_pnl_pct", label: "Unrealized %", align: "right", minWidth: 100 },
-  { key: "daily_change", label: "Daily Δ", align: "right", minWidth: 100 },
-  { key: "daily_change_pct", label: "Daily %", align: "right", minWidth: 90 },
+  { key: "unrealized_pnl", label: "Unrealized P&L", align: "right", minWidth: 120, responsiveClass: "hidden md:table-cell" },
+  { key: "unrealized_pnl_pct", label: "Unrealized %", align: "right", minWidth: 100, responsiveClass: "hidden lg:table-cell" },
+  { key: "daily_change", label: "Daily Δ", align: "right", minWidth: 100, responsiveClass: "hidden lg:table-cell" },
+  { key: "daily_change_pct", label: "Daily %", align: "right", minWidth: 90, responsiveClass: "hidden lg:table-cell" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -137,6 +147,7 @@ function HeaderCell({ col, active, dir, onClick }: HeaderCellProps) {
   return (
     <th
       onClick={onClick}
+      className={col.responsiveClass}
       style={{
         padding: "10px 14px",
         textAlign: col.align,
@@ -174,7 +185,11 @@ function SkeletonRow() {
         <div style={{ width: 14, height: 14, background: "var(--card-hover)" }} />
       </td>
       {COLUMNS.map((c) => (
-        <td key={c.key} style={{ padding: "10px 14px", textAlign: c.align }}>
+        <td
+          key={c.key}
+          className={c.responsiveClass}
+          style={{ padding: "10px 14px", textAlign: c.align }}
+        >
           <div
             style={{
               height: 12,
@@ -188,6 +203,12 @@ function SkeletonRow() {
     </tr>
   );
 }
+
+// Lookup map so render-time td can pull its responsive class by key
+// without scanning COLUMNS each render.
+const COL_CLASS_BY_KEY: Partial<Record<SortKey, string>> = Object.fromEntries(
+  COLUMNS.filter((c) => c.responsiveClass).map((c) => [c.key, c.responsiveClass!]),
+);
 
 /* ------------------------------------------------------------------ */
 /*  Main component                                                     */
@@ -398,6 +419,7 @@ export function HoldingsTable({
 
                       {/* Avg Cost */}
                       <td
+                        className={COL_CLASS_BY_KEY.avg_cost}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",
@@ -433,6 +455,7 @@ export function HoldingsTable({
 
                       {/* Unrealized P&L */}
                       <td
+                        className={COL_CLASS_BY_KEY.unrealized_pnl}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",
@@ -446,6 +469,7 @@ export function HoldingsTable({
 
                       {/* Unrealized % */}
                       <td
+                        className={COL_CLASS_BY_KEY.unrealized_pnl_pct}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",
@@ -460,6 +484,7 @@ export function HoldingsTable({
 
                       {/* Daily Change */}
                       <td
+                        className={COL_CLASS_BY_KEY.daily_change}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",
@@ -472,6 +497,7 @@ export function HoldingsTable({
 
                       {/* Daily % */}
                       <td
+                        className={COL_CLASS_BY_KEY.daily_change_pct}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",

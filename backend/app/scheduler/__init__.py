@@ -47,6 +47,8 @@ _scheduler: AsyncIOScheduler | None = None
 
 JOB_ID_PRO_DAILY = "13f_pro_daily"
 JOB_ID_BASIC_WEEKLY = "13f_basic_weekly"
+JOB_ID_ALERTS_PRO_HOURLY = "alerts_pro_hourly"
+JOB_ID_ALERTS_BASIC_SIX_HOURLY = "alerts_basic_six_hourly"
 
 
 def get_scheduler() -> AsyncIOScheduler:
@@ -109,6 +111,38 @@ def register_jobs(scheduler: AsyncIOScheduler) -> None:
         coalesce=True,
     )
 
+    # ── Alert-rule scheduled evaluation (UNI-ALERT-001) ───────────────────
+    # Pro: every hour on the hour. Basic: every 6h. Free: not scheduled
+    # (max_alert_rules=0 → no rules to evaluate). Both jobs share the
+    # same misfire grace (1h) as the 13F crons so a brief downtime does
+    # not silently drop a cycle.
+    from app.services.alerts.scheduled_alert_evaluator import (
+        hourly_pro_alert_entrypoint,
+        six_hour_basic_alert_entrypoint,
+    )
+
+    scheduler.add_job(
+        hourly_pro_alert_entrypoint,
+        CronTrigger(minute=0),
+        id=JOB_ID_ALERTS_PRO_HOURLY,
+        name="Alerts Pro hourly evaluation",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+
+    scheduler.add_job(
+        six_hour_basic_alert_entrypoint,
+        CronTrigger(hour="0,6,12,18", minute=0),
+        id=JOB_ID_ALERTS_BASIC_SIX_HOURLY,
+        name="Alerts Basic 6-hourly evaluation",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+
 
 @asynccontextmanager
 async def lifespan_scheduler() -> AsyncIterator[AsyncIOScheduler]:
@@ -139,6 +173,8 @@ async def lifespan_scheduler() -> AsyncIterator[AsyncIOScheduler]:
 
 
 __all__ = [
+    "JOB_ID_ALERTS_BASIC_SIX_HOURLY",
+    "JOB_ID_ALERTS_PRO_HOURLY",
     "JOB_ID_BASIC_WEEKLY",
     "JOB_ID_PRO_DAILY",
     "get_scheduler",

@@ -414,6 +414,7 @@ export function MultiFilerCompareModal({
   return (
     <div
       onClick={onClose}
+      className="p-0 sm:p-5"
       style={{
         position: "fixed",
         inset: 0,
@@ -422,20 +423,19 @@ export function MultiFilerCompareModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 20,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="w-full h-full sm:h-auto sm:max-h-[calc(100vh-40px)]"
         style={{
-          width: "min(1200px, 100%)",
-          maxHeight: "calc(100vh - 40px)",
+          maxWidth: 1200,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
         }}
       >
-        <GlassPanel noPadding>
+        <GlassPanel noPadding style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           {/* Header */}
           <div
             style={{
@@ -574,8 +574,10 @@ export function MultiFilerCompareModal({
             </div>
           </div>
 
-          {/* Grid */}
-          <div style={{ overflow: "auto", maxHeight: "calc(100vh - 280px)" }}>
+          {/* Grid — let it consume remaining vertical space; flex parent
+             caps it. Drop the explicit maxHeight so mobile fullscreen
+             modal can scroll the grid all the way to the bottom safe area. */}
+          <div style={{ overflow: "auto", flex: 1, minHeight: 0 }}>
             {selectedFilers.length === 0 ? (
               <p
                 style={{

@@ -54,6 +54,9 @@ from app.db.models.institutional import (  # noqa: E402, F401
     F13UserSubscription,
 )
 
+# User-defined Alert Rules (UNI-ALERT-001) — same registration pattern.
+from app.db.models.alerts import AlertRule  # noqa: E402, F401
+
 __all__ = [
     "AccountGroup",
     "AccountGroupMember",

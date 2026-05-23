@@ -281,6 +281,38 @@ export function StratosHeader() {
                         .notifications?.title) ??
                       "通知設定"}
                   </Link>
+                  <Link
+                    href="/settings/audit"
+                    role="menuitem"
+                    onClick={() => setSettingsOpen(false)}
+                    className="block px-3 py-2 text-[13px] transition-colors duration-150 hover:bg-[var(--card-hover)]"
+                    style={{
+                      color: pathname.startsWith("/settings/audit")
+                        ? "var(--foreground)"
+                        : "var(--text-secondary)",
+                    }}
+                  >
+                    {(t.settings &&
+                      (t.settings as { audit?: { title?: string } }).audit
+                        ?.title) ??
+                      "操作紀錄"}
+                  </Link>
+                  <Link
+                    href="/settings/alerts"
+                    role="menuitem"
+                    onClick={() => setSettingsOpen(false)}
+                    className="block px-3 py-2 text-[13px] transition-colors duration-150 hover:bg-[var(--card-hover)]"
+                    style={{
+                      color: pathname.startsWith("/settings/alerts")
+                        ? "var(--foreground)"
+                        : "var(--text-secondary)",
+                    }}
+                  >
+                    {(t.settings &&
+                      (t.settings as { alerts?: { title?: string } }).alerts
+                        ?.title) ??
+                      "我的提醒規則"}
+                  </Link>
                 </div>
               )}
             </div>
@@ -375,6 +407,44 @@ export function StratosHeader() {
                   (t.settings as { notifications?: { title?: string } })
                     .notifications?.title) ??
                   "通知設定"}
+              </Link>
+
+              <Link
+                href="/settings/audit"
+                onClick={() => setMobileOpen(false)}
+                aria-current={
+                  isActive("/settings/audit") ? "page" : undefined
+                }
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
+                  isActive("/settings/audit")
+                    ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                {(t.settings &&
+                  (t.settings as { audit?: { title?: string } }).audit
+                    ?.title) ??
+                  "操作紀錄"}
+              </Link>
+
+              <Link
+                href="/settings/alerts"
+                onClick={() => setMobileOpen(false)}
+                aria-current={
+                  isActive("/settings/alerts") ? "page" : undefined
+                }
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
+                  isActive("/settings/alerts")
+                    ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                {(t.settings &&
+                  (t.settings as { alerts?: { title?: string } }).alerts
+                    ?.title) ??
+                  "我的提醒規則"}
               </Link>
 
               {/* Search button for mobile */}

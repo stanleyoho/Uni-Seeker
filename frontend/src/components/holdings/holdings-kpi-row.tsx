@@ -270,17 +270,20 @@ export function HoldingsKpiRow({
   const isMulti = summary ? isMultiCurrencyHoldingSummary(summary) : false;
   const columnCount = isMulti ? 6 : 5;
 
-  // We DON'T put gridTemplateColumns in a static const because the
-  // column count flips between 5 and 6 between renders. Build inline.
+  // Grid columns adapt mobile → tablet → desktop:
+  //   - mobile (<640px): 2 cols so KPI values stay readable at ~160px wide
+  //   - tablet (sm-lg):  3 cols
+  //   - desktop (xl+):   5 or 6 cols (single-row dashboard layout)
+  // Avoid setting gridTemplateColumns inline because that would override
+  // Tailwind responsive classes; rely on classes only.
   const gridStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
     gap: 12,
   };
   const responsiveGridClass =
     columnCount === 6
-      ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
-      : "grid-cols-2 md:grid-cols-5";
+      ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6"
+      : "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5";
 
   // Skeleton path — loading OR data not yet fetched
   if (loading || !summary) {

@@ -35,6 +35,7 @@ import {
   HoldingsKpiRow,
   HoldingsTable,
   PositionsEmptyState,
+  RebalanceModal,
 } from "@/components/holdings";
 import {
   useHoldingAccounts,
@@ -83,6 +84,7 @@ export default function HoldingsPage() {
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [dividendModalOpen, setDividendModalOpen] = useState(false);
   const [csvImportModalOpen, setCsvImportModalOpen] = useState(false);
+  const [rebalanceModalOpen, setRebalanceModalOpen] = useState(false);
   const [accountModalState, setAccountModalState] =
     useState<AccountModalState | null>(null);
 
@@ -144,6 +146,16 @@ export default function HoldingsPage() {
       (t.holdings as { actions?: { add_dividend?: string } }).actions
         ?.add_dividend) ??
     "記錄配息";
+  const rebalanceLabel =
+    (t.holdings &&
+      (t.holdings as { actions?: { rebalance?: string } }).actions
+        ?.rebalance) ??
+    "再平衡";
+
+  // Tier gate: rebalancing is Pro-only (see config/tier_limits.yaml).
+  // Hide the button entirely for Free/Basic — the click would 403 anyway,
+  // and we already surface the upgrade hint elsewhere on the page.
+  const rebalanceAvailable = isProTier(user?.tier);
 
   const currencyTitle =
     (t.holdings &&
@@ -164,11 +176,11 @@ export default function HoldingsPage() {
     <main className="relative flex-1 overflow-y-auto">
       <AmbientBackground />
 
-      <div className="relative max-w-[1440px] mx-auto px-6 py-6 space-y-6">
+      <div className="relative max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6">
         {/* Page title */}
         <div className="flex items-center justify-between">
           <h1
-            className="text-[20px] font-bold uppercase"
+            className="text-[18px] lg:text-[20px] font-bold uppercase"
             style={{
               color: "var(--foreground)",
               letterSpacing: "-0.04em",
@@ -236,13 +248,7 @@ export default function HoldingsPage() {
             onSelect={setSelectedAccountId}
             loading={accountsLoading}
           />
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             <ClippedButton
               variant="cyan-ghost"
               size="md"
@@ -271,6 +277,15 @@ export default function HoldingsPage() {
             >
               ↑ 匯入 CSV
             </ClippedButton>
+            {rebalanceAvailable && (
+              <ClippedButton
+                variant="cyan-ghost"
+                size="md"
+                onClick={() => setRebalanceModalOpen(true)}
+              >
+                ⇄ {rebalanceLabel}
+              </ClippedButton>
+            )}
             <CsvExportDropdown selectedAccountId={selectedAccountId} />
           </div>
         </section>
@@ -341,6 +356,14 @@ export default function HoldingsPage() {
           accounts={accountList}
           defaultAccountId={selectedAccountId ?? undefined}
           onClose={() => setCsvImportModalOpen(false)}
+        />
+      )}
+      {rebalanceModalOpen && (
+        <RebalanceModal
+          positions={positions}
+          accounts={accountList}
+          defaultAccountId={selectedAccountId}
+          onClose={() => setRebalanceModalOpen(false)}
         />
       )}
     </main>

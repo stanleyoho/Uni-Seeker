@@ -120,8 +120,24 @@ async def position_count_provider(*, user: "User") -> int:
     return await _safe_count(_q)
 
 
+async def alert_rule_count_provider(*, user: "User") -> int:
+    """Alert rule rows owned by ``user`` — for ``max_alert_rules`` quota."""
+    # Lazy import — alerts repo is in a separate package and we want to
+    # keep the holdings count-providers module from forcing import-time
+    # registration of the alert ORM. Same pattern as the other providers
+    # above (defer until first request).
+    from app.repositories.alerts.alert_repo import AlertRuleRepo
+
+    async def _q() -> int:
+        async with _session_scope() as session:
+            return await AlertRuleRepo(session).count_by_user(user.id)
+
+    return await _safe_count(_q)
+
+
 __all__ = [
     "account_count_provider",
+    "alert_rule_count_provider",
     "trade_count_provider",
     "position_count_provider",
 ]

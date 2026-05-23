@@ -185,12 +185,12 @@ export function AddHoldingTradeModal({
       onClick={(e) => e.target === e.currentTarget && !isPending && onClose()}
     >
       <div
+        className="p-4 sm:p-6 max-h-[calc(100vh-32px)] overflow-y-auto"
         style={{
           background: "var(--glass-bg)",
           border: "1px solid var(--border-color)",
           width: "100%",
           maxWidth: 520,
-          padding: 24,
           boxShadow: "var(--glass-shadow)",
           backgroundImage: "var(--glass-gradient)",
         }}
@@ -290,8 +290,8 @@ export function AddHoldingTradeModal({
             </select>
           </div>
 
-          {/* Symbol + Market (2-col) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8 }}>
+          {/* Symbol + Market — stack on mobile, 1.5fr/1fr on sm+ */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr] gap-2">
             <div>
               <label className={labelCls}>標的代碼</label>
               <input
@@ -319,8 +319,8 @@ export function AddHoldingTradeModal({
             </div>
           </div>
 
-          {/* Quantity + Price (2-col) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {/* Quantity + Price — 2-col on all sizes (qty/price stay paired) */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>數量（股）</label>
               <input
@@ -347,8 +347,8 @@ export function AddHoldingTradeModal({
             </div>
           </div>
 
-          {/* Fee + Tax (2-col) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {/* Fee + Tax — 2-col on all sizes (numeric pair, stays paired) */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>手續費</label>
               <input

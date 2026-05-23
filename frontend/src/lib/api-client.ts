@@ -2304,3 +2304,234 @@ export async function updateFilerPreferences(
     },
   );
 }
+
+// ---------------------------------------------------------------------------
+// Holdings — Rebalancing (Phase 5+, Pro-tier preview)
+// ---------------------------------------------------------------------------
+//
+// `POST /holdings/rebalance/preview` returns the trades required to move
+// the current portfolio toward a user-supplied target allocation. The
+// endpoint is preview-only — no database writes occur. The frontend
+// surfaces the suggestions and lets the user execute each one via the
+// existing `POST /holdings/trades` flow.
+//
+// Decimal-as-string: `qty`, `estimated_price`, `estimated_value`,
+// `total_portfolio_value`, `cash_residual`, and the values of
+// `final_allocation_pct` arrive as strings; convert with `Number(...)`
+// at the render boundary only.
+
+/** One target row sent to `/holdings/rebalance/preview`. */
+export interface RebalanceTarget {
+  symbol: string;
+  market: HoldingMarket;
+  /** Percentage 0..100 as Decimal-string ("33.333" preserves precision). */
+  target_pct: string;
+}
+
+export interface RebalanceRequest {
+  targets: RebalanceTarget[];
+  /** Restrict to one account; omit to aggregate across all. */
+  account_id?: number;
+  /** Skip trades below this absolute |delta_value|; defaults server-side to 100. */
+  min_trade_value?: string;
+}
+
+export interface SuggestedTrade {
+  symbol: string;
+  market: HoldingMarket;
+  action: "BUY" | "SELL";
+  qty: string;
+  estimated_price: string;
+  estimated_value: string;
+  /** Human-readable reason — surface as tooltip / secondary text. */
+  rationale: string;
+}
+
+/** Pass-through shape from the backend `skipped_trades` list. */
+export interface SkippedTrade {
+  symbol: string;
+  market: HoldingMarket;
+  target_pct: string;
+  delta_value: string;
+  /** One of: below_min_trade_value | missing_price_for_buy | missing_price_for_sell | exit_below_min_trade_value */
+  reason: string;
+}
+
+export interface RebalanceResponse {
+  total_portfolio_value: string;
+  suggested_trades: SuggestedTrade[];
+  /** Keys are `${symbol}|${market}` per the backend's composite key. */
+  final_allocation_pct: Record<string, string>;
+  skipped_trades: SkippedTrade[];
+  cash_residual: string;
+}
+
+export async function previewRebalance(
+  req: RebalanceRequest,
+): Promise<RebalanceResponse> {
+  return apiFetch<RebalanceResponse>(
+    `${API_BASE}/holdings/rebalance/preview`,
+    {
+      method: "POST",
+      body: JSON.stringify(req),
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// /me/audit-logs — user-facing audit history viewer (Round 13)
+// ---------------------------------------------------------------------------
+//
+// The backend column for the verb is named ``action`` for legacy reasons,
+// but the user-facing API renames it to ``event_type`` and the
+// JSONB sidecar ``event_metadata`` → ``metadata``. The frontend follows
+// the API contract, not the DB column names — that mapping is owned by
+// ``backend/app/schemas/audit.py``.
+//
+// Retention: the backend clamps responses to the last 10 days. If a
+// client passes a larger ``offset`` than ``total_count``, the response
+// is simply an empty page.
+
+export interface AuditLogEntry {
+  /** UUID returned as string — opaque row key for the React list. */
+  id: string;
+  event_type: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  after_state: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  /** ISO-8601 UTC timestamp. */
+  created_at: string;
+}
+
+export interface AuditLogListResponse {
+  entries: AuditLogEntry[];
+  /** Total rows matching the filter inside the 10-day window. */
+  total_count: number;
+  /** ``offset + entries.length < total_count`` — pre-computed by server. */
+  has_more: boolean;
+}
+
+export interface ListMyAuditLogsOptions {
+  limit?: number;
+  offset?: number;
+  /** Whitelist of event_type values; ``undefined`` ⇒ all types. */
+  eventTypes?: string[];
+}
+
+/**
+ * Fetch the current user's audit-log history.
+ *
+ * Multi-value query param semantics for ``event_types``:
+ *   ``?event_types=user_login&event_types=watchlist_added`` per the
+ *   FastAPI list[str] convention. We build it manually instead of
+ *   using URLSearchParams.append() with a single key so the surface
+ *   stays declarative.
+ */
+export async function listMyAuditLogs(
+  opts: ListMyAuditLogsOptions = {},
+): Promise<AuditLogListResponse> {
+  const params = new URLSearchParams();
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  if (opts.offset !== undefined) params.set("offset", String(opts.offset));
+  if (opts.eventTypes && opts.eventTypes.length > 0) {
+    for (const t of opts.eventTypes) params.append("event_types", t);
+  }
+  const qs = params.toString();
+  const url = qs
+    ? `${API_BASE}/me/audit-logs?${qs}`
+    : `${API_BASE}/me/audit-logs`;
+  return apiFetch<AuditLogListResponse>(url);
+}
+
+// ---------------------------------------------------------------------------
+// Alert rules (UNI-ALERT-001) — /holdings/alerts
+// ---------------------------------------------------------------------------
+
+export type AlertRuleType =
+  | "POSITION_PRICE_DROP"
+  | "POSITION_PRICE_RISE"
+  | "PORTFOLIO_VALUE_ABOVE"
+  | "PORTFOLIO_VALUE_BELOW"
+  | "POSITION_PNL_PCT_ABOVE"
+  | "POSITION_PNL_PCT_BELOW";
+
+export type AlertStatus = "ACTIVE" | "PAUSED" | "TRIGGERED";
+export type AlertThresholdType = "PCT" | "ABSOLUTE";
+
+export interface AlertRule {
+  id: number;
+  name: string;
+  rule_type: AlertRuleType;
+  symbol: string | null;
+  market: string | null;
+  /** Decimal-as-string per project convention. */
+  threshold_value: string;
+  threshold_type: AlertThresholdType;
+  status: AlertStatus;
+  last_evaluated_at: string | null;
+  last_triggered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AlertRuleCreateRequest {
+  name: string;
+  rule_type: AlertRuleType;
+  threshold_value: string;
+  threshold_type: AlertThresholdType;
+  symbol?: string | null;
+  market?: string | null;
+}
+
+export interface AlertRuleUpdateRequest {
+  name?: string;
+  status?: AlertStatus;
+  threshold_value?: string;
+  threshold_type?: AlertThresholdType;
+}
+
+export interface AlertEvaluationResult {
+  triggered: boolean;
+  actual_value: string;
+  threshold: string;
+  message: string;
+}
+
+export async function listAlertRules(): Promise<AlertRule[]> {
+  return apiFetch<AlertRule[]>(`${API_BASE}/holdings/alerts`);
+}
+
+export async function createAlertRule(
+  body: AlertRuleCreateRequest,
+): Promise<AlertRule> {
+  return apiFetch<AlertRule>(`${API_BASE}/holdings/alerts`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateAlertRule(
+  id: number,
+  body: AlertRuleUpdateRequest,
+): Promise<AlertRule> {
+  return apiFetch<AlertRule>(`${API_BASE}/holdings/alerts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAlertRule(id: number): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`${API_BASE}/holdings/alerts/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function evaluateAlertRule(
+  id: number,
+): Promise<AlertEvaluationResult> {
+  return apiFetch<AlertEvaluationResult>(
+    `${API_BASE}/holdings/alerts/${id}/evaluate`,
+    { method: "POST" },
+  );
+}

@@ -45,15 +45,21 @@ interface ColumnDef {
   label: string;
   align: "left" | "right";
   minWidth: number;
+  /** Optional Tailwind visibility class for breakpoint-gated columns. */
+  responsiveClass?: string;
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "name", label: "Filer", align: "left", minWidth: 200 },
-  { key: "cik", label: "CIK", align: "left", minWidth: 100 },
-  { key: "latest_filing_date", label: "Latest Filing", align: "right", minWidth: 120 },
-  { key: "latest_total_value_usd", label: "13F AUM", align: "right", minWidth: 120 },
-  { key: "latest_position_count", label: "Positions", align: "right", minWidth: 90 },
+  { key: "name", label: "Filer", align: "left", minWidth: 160 },
+  { key: "cik", label: "CIK", align: "left", minWidth: 100, responsiveClass: "hidden md:table-cell" },
+  { key: "latest_filing_date", label: "Latest Filing", align: "right", minWidth: 120, responsiveClass: "hidden sm:table-cell" },
+  { key: "latest_total_value_usd", label: "13F AUM", align: "right", minWidth: 100 },
+  { key: "latest_position_count", label: "Positions", align: "right", minWidth: 80, responsiveClass: "hidden lg:table-cell" },
 ];
+
+const FL_COL_CLASS_BY_KEY: Partial<Record<SortKey, string>> = Object.fromEntries(
+  COLUMNS.filter((c) => c.responsiveClass).map((c) => [c.key, c.responsiveClass!]),
+);
 
 interface DerivedRow {
   raw: F13Filer;
@@ -107,6 +113,7 @@ function HeaderCell({ col, active, dir, onClick }: HeaderCellProps) {
   return (
     <th
       onClick={onClick}
+      className={col.responsiveClass}
       style={{
         padding: "10px 14px",
         textAlign: col.align,
@@ -135,7 +142,11 @@ function SkeletonRow() {
   return (
     <tr>
       {COLUMNS.map((c) => (
-        <td key={c.key} style={{ padding: "10px 14px", textAlign: c.align }}>
+        <td
+          key={c.key}
+          className={c.responsiveClass}
+          style={{ padding: "10px 14px", textAlign: c.align }}
+        >
           <div
             style={{
               height: 12,
@@ -296,6 +307,7 @@ export function FilerList({
 
                       {/* CIK */}
                       <td
+                        className={FL_COL_CLASS_BY_KEY.cik}
                         style={{
                           padding: "10px 14px",
                           textAlign: "left",
@@ -310,6 +322,7 @@ export function FilerList({
 
                       {/* Latest filing date */}
                       <td
+                        className={FL_COL_CLASS_BY_KEY.latest_filing_date}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",
@@ -336,6 +349,7 @@ export function FilerList({
 
                       {/* Position count */}
                       <td
+                        className={FL_COL_CLASS_BY_KEY.latest_position_count}
                         style={{
                           padding: "10px 14px",
                           textAlign: "right",

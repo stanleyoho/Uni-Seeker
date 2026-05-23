@@ -181,10 +181,8 @@ export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
 
   return (
     <div
-      style={{
-        ...glassStyle,
-        padding: 20,
-      }}
+      className="p-3 lg:p-5"
+      style={glassStyle}
     >
       <div
         style={{
@@ -199,18 +197,20 @@ export function KpiCard({ label, value, delta, direction }: KpiCardProps) {
         {label}
       </div>
       <div
+        className="text-[20px] lg:text-[32px]"
         style={{
-          fontSize: 32,
           fontWeight: 600,
           color: "var(--foreground)",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1.1,
           marginBottom: 4,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
         {value}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 500, color }}>
+      <div className="text-[12px] lg:text-[13px]" style={{ fontWeight: 500, color }}>
         {arrow} {delta}
       </div>
     </div>

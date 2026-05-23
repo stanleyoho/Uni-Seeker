@@ -23,16 +23,11 @@ export interface BulkActionsBarProps {
   onExport?: () => void;
 }
 
+// Inline style holds the visual chrome; layout/positioning is driven by
+// the Tailwind className below so the bar stretches edge-to-edge on
+// phone viewports and snaps to centered pill on tablet+.
 const containerStyle: React.CSSProperties = {
-  position: "fixed",
-  left: "50%",
-  bottom: 24,
-  transform: "translateX(-50%)",
   zIndex: 50,
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  padding: "10px 16px",
   background: "var(--glass-bg)",
   backdropFilter: "var(--glass-blur)",
   WebkitBackdropFilter: "var(--glass-blur)",
@@ -75,15 +70,19 @@ export function BulkActionsBar({
 
   return (
     <>
-      {/* keyframes injected inline so the file is fully self-contained */}
+      {/* keyframes injected inline so the file is fully self-contained.
+         We translate Y only — horizontal centering is handled by Tailwind
+         responsive classes on the container (left/right on mobile,
+         -translate-x-1/2 on sm+ for the centered pill layout). */}
       <style>{`
         @keyframes holdings-bulk-slide-up {
-          from { opacity: 0; transform: translate(-50%, 16px); }
-          to   { opacity: 1; transform: translate(-50%, 0); }
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
       <div
+        className="fixed left-2 right-2 bottom-3 sm:left-1/2 sm:right-auto sm:bottom-6 sm:-translate-x-1/2 flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5"
         style={containerStyle}
         role="toolbar"
         aria-label="批次操作"

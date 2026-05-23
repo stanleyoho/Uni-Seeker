@@ -188,12 +188,12 @@ export function AddHoldingDividendModal({
       onClick={(e) => e.target === e.currentTarget && !isPending && onClose()}
     >
       <div
+        className="p-4 sm:p-6 max-h-[calc(100vh-32px)] overflow-y-auto"
         style={{
           background: "var(--glass-bg)",
           border: "1px solid var(--border-color)",
           width: "100%",
           maxWidth: 520,
-          padding: 24,
           boxShadow: "var(--glass-shadow)",
           backgroundImage: "var(--glass-gradient)",
         }}
@@ -300,7 +300,7 @@ export function AddHoldingDividendModal({
           </div>
 
           {/* Symbol + Market */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr] gap-2">
             <div>
               <label className={labelCls}>標的代碼</label>
               <input
@@ -328,13 +328,14 @@ export function AddHoldingDividendModal({
             </div>
           </div>
 
-          {/* Ex-dividend date + Pay date (CASH only) */}
+          {/* Ex-dividend date + Pay date — stack on mobile; CASH gets a 2-col
+             layout on sm+, non-cash always single column. */}
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCash ? "1fr 1fr" : "1fr",
-              gap: 8,
-            }}
+            className={
+              isCash
+                ? "grid grid-cols-1 sm:grid-cols-2 gap-2"
+                : "grid grid-cols-1 gap-2"
+            }
           >
             <div>
               <label className={labelCls}>除息日 / 除權日</label>
@@ -361,7 +362,7 @@ export function AddHoldingDividendModal({
           </div>
 
           {/* Amount per share / Ratio + Quantity at record */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>
                 {isCash ? `每股配息 (${currency})` : "配股比例"}
@@ -405,7 +406,7 @@ export function AddHoldingDividendModal({
           )}
 
           {/* Withholding tax + Currency (CASH only shows tax) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div className="grid grid-cols-2 gap-2">
             {isCash ? (
               <div>
                 <label className={labelCls}>預扣稅</label>

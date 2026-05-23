@@ -26,6 +26,8 @@ INVALID_CSV_FORMAT = "invalid_csv_format"
 CSV_TOO_LARGE = "csv_too_large"
 IMPORT_PARTIAL_FAILURE = "import_partial_failure"
 EXPORT_NO_DATA = "export_no_data"
+ALERT_RULE_NOT_FOUND = "alert_rule_not_found"
+INVALID_ALERT_RULE = "invalid_alert_rule"
 
 
 def limit_exceeded(limit_key: str) -> str:
@@ -50,6 +52,8 @@ __all__ = [
     "CSV_TOO_LARGE",
     "IMPORT_PARTIAL_FAILURE",
     "EXPORT_NO_DATA",
+    "ALERT_RULE_NOT_FOUND",
+    "INVALID_ALERT_RULE",
     "limit_exceeded",
     "feature_unavailable",
 ]

@@ -20,6 +20,7 @@ import {
   listHoldingDividends,
   listHoldingPositions,
   listHoldingTrades,
+  previewRebalance,
   updateHoldingAccount,
   updateHoldingDividend,
   updateHoldingTrade,
@@ -38,6 +39,8 @@ import {
   type HoldingTradeUpdateRequest,
   type ImportResult,
   type MultiCurrencyHoldingSummary,
+  type RebalanceRequest,
+  type RebalanceResponse,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -348,5 +351,27 @@ export function useImportHoldingsCsv() {
       qc.invalidateQueries({ queryKey: queryKeys.holdings.positions.all });
       qc.invalidateQueries({ queryKey: queryKeys.holdings.summary.all });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Rebalancing (Phase 5+, Pro-tier preview)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the trades required to reach a target allocation.
+ *
+ * Mutation rather than query because:
+ *   - The targets are user-edited input — re-running on key changes
+ *     would thrash the API while the user is typing.
+ *   - The preview itself is non-destructive (no DB write) but emits an
+ *     audit row on every call; firing it as a "side effect" of typing
+ *     would pollute the audit log.
+ *
+ * We do NOT invalidate caches on success: preview is read-only.
+ */
+export function usePreviewRebalance() {
+  return useMutation<RebalanceResponse, Error, RebalanceRequest>({
+    mutationFn: (req) => previewRebalance(req),
   });
 }
