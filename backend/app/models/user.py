@@ -56,6 +56,13 @@ class User(Base):
     telegram_chat_id: Mapped[str | None] = mapped_column(
         String(64), nullable=True, default=None
     )
+    # Round 14: Email notification channel opt-in (UNI_USER_003).
+    # When True, the dispatcher fans out 13F + alert-rule notifications
+    # to ``users.email`` in addition to (or instead of) Telegram. Default
+    # False so the migration does not opt existing users in passively.
+    notify_via_email: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     devices: Mapped[list["UserDevice"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",

@@ -36,7 +36,7 @@ from app.modules.alerts.evaluator import (
     evaluate_rule,
 )
 from app.modules.billing.tier_limits import get_limit
-from app.modules.notifications.telegram_sender import send_telegram_message
+from app.modules.notifications.dispatcher import dispatch_notification
 from app.obs.logging import get_logger
 from app.repositories.alerts.alert_repo import AlertRuleRepo
 from app.services.audit import log_audit_event
@@ -238,9 +238,6 @@ class AlertService:
         context = await self._build_context(fetcher, rules)
         now = datetime.now(timezone.utc)
 
-        bot_token = settings.uni_telegram_bot_token
-        chat_id = self._user.telegram_chat_id or ""
-
         for rule in rules:
             counts["evaluated"] += 1
             try:
@@ -263,16 +260,27 @@ class AlertService:
 
             if result.triggered:
                 counts["triggered"] += 1
-                if bot_token and chat_id:
-                    ok = await send_telegram_message(
-                        bot_token=bot_token,
-                        chat_id=chat_id,
-                        text=self._format_trigger_message(rule, result.message),
-                    )
-                    if ok:
-                        counts["notified"] += 1
-                    else:
-                        counts["errors"] += 1
+                # Round 14: route through the dispatcher so TG + email
+                # both fire when the user opted into each. The dispatcher
+                # checks per-channel eligibility itself — no double guard
+                # needed here.
+                tg_text = self._format_trigger_message(rule, result.message)
+                title = f"Alert triggered: {rule.name}"
+                app_url = settings.app_url.rstrip("/")
+                deep_link = f"{app_url}/settings/alerts"
+                dispatched = await dispatch_notification(
+                    self._user,
+                    title=title,
+                    body_text=result.message,
+                    tg_text=tg_text,
+                    deep_link=deep_link,
+                )
+                if int(dispatched["channels_succeeded"]) > 0:
+                    counts["notified"] += 1
+                attempted = int(dispatched["channels_attempted"])
+                succeeded = int(dispatched["channels_succeeded"])
+                if attempted > 0 and succeeded < attempted:
+                    counts["errors"] += 1
                 # Pause after firing so the user isn't spammed.
                 await self._repo.update_status(
                     rule.id,
@@ -312,14 +320,18 @@ class AlertService:
         )
         now = datetime.now(timezone.utc)
         if result.triggered:
-            bot_token = settings.uni_telegram_bot_token
-            chat_id = self._user.telegram_chat_id or ""
-            if bot_token and chat_id:
-                await send_telegram_message(
-                    bot_token=bot_token,
-                    chat_id=chat_id,
-                    text=self._format_trigger_message(rule, result.message),
-                )
+            # Round 14: dispatcher handles TG + email per user opt-in.
+            tg_text = self._format_trigger_message(rule, result.message)
+            title = f"Alert triggered: {rule.name}"
+            app_url = settings.app_url.rstrip("/")
+            deep_link = f"{app_url}/settings/alerts"
+            await dispatch_notification(
+                self._user,
+                title=title,
+                body_text=result.message,
+                tg_text=tg_text,
+                deep_link=deep_link,
+            )
             await self._repo.update_status(
                 rule.id,
                 status="TRIGGERED",

@@ -32,10 +32,10 @@ import {
 import {
   BulkSubscribeModal,
   DiffView,
-  FilerList,
+  FilerListResponsive,
   FilerSearchModal,
   HoldingsTimeline,
-  InstitutionalHoldingsTable,
+  InstitutionalHoldingsTableResponsive,
   MultiFilerCompareModal,
   RefreshButton,
   TopMovers,
@@ -174,7 +174,7 @@ export default function InstitutionalPage() {
 
         {/* Filer list */}
         <section>
-          <FilerList
+          <FilerListResponsive
             filers={filers}
             selectedFilerId={selectedFilerId}
             onSelect={setSelectedFilerId}
@@ -252,7 +252,7 @@ export default function InstitutionalPage() {
                         : undefined
                     }
                   />
-                  <InstitutionalHoldingsTable
+                  <InstitutionalHoldingsTableResponsive
                     holdings={holdingsRes?.holdings ?? []}
                     loading={holdingsLoading}
                     onRowClick={handleHoldingClick}

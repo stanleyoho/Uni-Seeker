@@ -1,12 +1,13 @@
 """Current-user notification preference DTOs.
 
 Spec: 2026-05-19 13F TG notifications on new filing — Step 5.
+Round 14: Email channel added (UNI_USER_003).
 
-These are deliberately a single-channel shape (Telegram only) — Email
-/ LINE / Webhook are advertised by ``/notifications/channels`` as
-``coming_soon`` and will get their own preference fields when the
-channels actually ship. Keeping the v1 schema small avoids API
-churn from a speculative envelope.
+Each transport opt-in is a separate field — keeping them flat avoids
+a JSONB envelope we'd have to validate on every PATCH and matches how
+the columns live on ``users`` (``telegram_chat_id`` + ``notify_via_email``).
+LINE / Webhook will follow the same additive pattern when those channels
+actually ship.
 """
 from __future__ import annotations
 
@@ -16,15 +17,21 @@ from pydantic import BaseModel, Field
 class MeNotificationPreferencesUpdate(BaseModel):
     """PATCH ``/api/v1/me/notifications`` body.
 
-    Setting ``telegram_chat_id`` to ``None`` (i.e. explicit JSON
-    ``null``) is the canonical "stop sending me TG alerts" gesture —
-    the column becomes NULL and the notification service filters us
-    out via ``telegram_chat_id IS NOT NULL`` (see
-    ``F13NotificationService``).
+    All fields are optional so the PATCH is genuinely partial — the
+    client can flip the email toggle without re-sending the
+    ``telegram_chat_id``. We distinguish "field omitted" from "field
+    set to null" by using a sentinel-free Pydantic shape: a missing
+    key in the JSON body stays as the model's default of ``None`` AND
+    the corresponding column is NOT touched on the user row. The
+    ``__fields_set__`` check inside the endpoint handles the
+    omitted-vs-explicit-null distinction.
 
-    Length cap mirrors the ``users.telegram_chat_id`` column
-    (VARCHAR(64)) so Pydantic 400s the client before we hit the DB
-    truncation error.
+    Setting ``telegram_chat_id`` to JSON ``null`` is the canonical
+    "stop sending me TG alerts" gesture (column becomes NULL, the
+    dispatcher filters us out).
+
+    Setting ``notify_via_email`` to ``false`` is the opt-out for the
+    Email channel; the user's ``email`` column is unaffected.
     """
 
     telegram_chat_id: str | None = Field(
@@ -33,6 +40,14 @@ class MeNotificationPreferencesUpdate(BaseModel):
         description=(
             "Telegram chat ID (numeric string, e.g. '123456789') or "
             "channel handle (e.g. '@my_channel'). Use JSON null to clear."
+        ),
+    )
+    notify_via_email: bool | None = Field(
+        default=None,
+        description=(
+            "Opt into Email notifications via the user's primary "
+            "``email`` address. Omit the field to leave the current "
+            "value unchanged; ``false`` to opt out."
         ),
     )
 
@@ -45,3 +60,4 @@ class MeNotificationPreferencesResponse(BaseModel):
     """
 
     telegram_chat_id: str | None
+    notify_via_email: bool

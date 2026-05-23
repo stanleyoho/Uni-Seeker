@@ -33,7 +33,7 @@ import {
   CsvImportModal,
   CurrencySwitcher,
   HoldingsKpiRow,
-  HoldingsTable,
+  HoldingsTableResponsive,
   PositionsEmptyState,
   RebalanceModal,
 } from "@/components/holdings";
@@ -191,7 +191,7 @@ export default function HoldingsPage() {
         </div>
 
         {/* Currency switcher (Round 10 Z1) */}
-        <section>
+        <section data-tour="holdings-currency">
           <CurrencySwitcher
             selectedCurrency={selectedCurrency}
             onSelect={handleSelectCurrency}
@@ -225,7 +225,7 @@ export default function HoldingsPage() {
         </section>
 
         {/* KPI row */}
-        <section>
+        <section data-tour="holdings-kpi">
           <HoldingsKpiRow
             summary={summary}
             loading={summaryLoading}
@@ -249,20 +249,24 @@ export default function HoldingsPage() {
             loading={accountsLoading}
           />
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-            <ClippedButton
-              variant="cyan-ghost"
-              size="md"
-              onClick={() => setAccountModalState({ mode: "create" })}
-            >
-              + {addAccountLabel}
-            </ClippedButton>
-            <ClippedButton
-              variant="red-solid"
-              size="md"
-              onClick={() => setTradeModalOpen(true)}
-            >
-              + {addTradeLabel}
-            </ClippedButton>
+            <div data-tour="holdings-add-account" style={{ display: "contents" }}>
+              <ClippedButton
+                variant="cyan-ghost"
+                size="md"
+                onClick={() => setAccountModalState({ mode: "create" })}
+              >
+                + {addAccountLabel}
+              </ClippedButton>
+            </div>
+            <div data-tour="holdings-add-trade" style={{ display: "contents" }}>
+              <ClippedButton
+                variant="red-solid"
+                size="md"
+                onClick={() => setTradeModalOpen(true)}
+              >
+                + {addTradeLabel}
+              </ClippedButton>
+            </div>
             <ClippedButton
               variant="cyan-ghost"
               size="md"
@@ -291,7 +295,7 @@ export default function HoldingsPage() {
         </section>
 
         {/* Positions table */}
-        <section>
+        <section data-tour="holdings-positions">
           {positions.length === 0 && !positionsLoading ? (
             <GlassPanel noPadding>
               <PositionsEmptyState
@@ -299,7 +303,7 @@ export default function HoldingsPage() {
               />
             </GlassPanel>
           ) : (
-            <HoldingsTable
+            <HoldingsTableResponsive
               positions={positions}
               loading={positionsLoading}
               selectedSymbols={selectedSymbols}

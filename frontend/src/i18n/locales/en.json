@@ -445,7 +445,17 @@
       },
       "channels": {
         "title": "Other Channels",
-        "coming_soon": "Email / LINE / Webhook coming soon"
+        "coming_soon": "LINE / Webhook coming soon"
+      },
+      "email": {
+        "title": "Email notifications",
+        "help": "When enabled, new 13F filings and triggered alert rules are sent to your primary email.",
+        "destination_label": "Destination",
+        "status_enabled": "Email notifications enabled",
+        "status_disabled": "Email notifications disabled",
+        "toggle_aria": "Toggle email notifications",
+        "save_success": "Email preferences updated",
+        "save_error": "Update failed, please retry"
       }
     },
     "audit": {
@@ -518,6 +528,46 @@
       "evaluate_not_triggered": "Not triggered: {message}",
       "limit_exceeded": "Alert-rule quota reached — upgrade your plan or delete old rules.",
       "create_error": "Could not create rule — please check the inputs."
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Get Started",
+    "got_it": "Got it!",
+    "welcome": {
+      "close": "Close",
+      "step1_title": "Welcome to Uni-Seeker",
+      "step1_subtitle": "One place to track TW + US holdings, institutional flows, and the stocks you care about.",
+      "step2_title": "Core Features",
+      "step2_subtitle": "Three workflows you'll use most — for sharper investment decisions.",
+      "feature_holdings_title": "Holdings Reconciliation",
+      "feature_holdings_desc": "Multi-account, multi-currency tracking of positions, P&L, and dividends.",
+      "feature_institutional_title": "13F Institutional Tracking",
+      "feature_institutional_desc": "Follow large-cap institutional positions and analyze buy/sell flows over time.",
+      "feature_watchlist_title": "Watchlist Research",
+      "feature_watchlist_desc": "Build watchlists with technical + flow indicators for deep research.",
+      "step3_title": "Set Up Notifications",
+      "step3_subtitle": "Choose how you receive price and position alerts — Telegram, Email, or Web Push.",
+      "step3_cta": "Open Notification Settings",
+      "step4_title": "Next Up",
+      "step4_subtitle": "Start by creating your first brokerage account to try out Holdings."
+    },
+    "tour": {
+      "holdings": {
+        "step1_title": "Create your first brokerage account",
+        "step1_content": "Uni-Seeker supports multi-account portfolios — start by creating one account to hold your positions.",
+        "step2_title": "Log trades to track positions",
+        "step2_content": "Record buys/sells and the system computes cost basis, P&L, and position size automatically.",
+        "step3_title": "Portfolio Summary",
+        "step3_content": "Total value, total cost, unrealized P&L, and today's change — all here.",
+        "step4_title": "Positions Table",
+        "step4_content": "Per-symbol holdings with avg cost, current price, and unrealized P&L.",
+        "step5_title": "Multi-Currency Portfolio",
+        "step5_content": "Pro unlocks multi-currency view — auto-converts to your chosen base currency.",
+        "step6_title": "All set!",
+        "step6_content": "You've covered the Holdings essentials. Re-open the tour anytime from Settings."
+      }
     }
   }
 }

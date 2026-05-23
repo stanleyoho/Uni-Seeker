@@ -64,7 +64,10 @@ async def test_get_me_notifications_returns_current_state(
         "/api/v1/me/notifications", headers=_auth(user)
     )
     assert resp.status_code == 200
-    assert resp.json() == {"telegram_chat_id": "chat-init"}
+    assert resp.json() == {
+        "telegram_chat_id": "chat-init",
+        "notify_via_email": False,
+    }
 
 
 async def test_patch_me_notifications_sets_telegram_chat_id(
@@ -77,7 +80,10 @@ async def test_patch_me_notifications_sets_telegram_chat_id(
         json={"telegram_chat_id": "987654"},
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"telegram_chat_id": "987654"}
+    assert resp.json() == {
+        "telegram_chat_id": "987654",
+        "notify_via_email": False,
+    }
 
     fresh = await db_session.execute(
         select(User).where(User.id == user.id)
@@ -95,12 +101,39 @@ async def test_patch_me_notifications_clears_telegram_chat_id_with_null(
         json={"telegram_chat_id": None},
     )
     assert resp.status_code == 200
-    assert resp.json() == {"telegram_chat_id": None}
+    assert resp.json() == {
+        "telegram_chat_id": None,
+        "notify_via_email": False,
+    }
 
     fresh = await db_session.execute(
         select(User).where(User.id == user.id)
     )
     assert fresh.scalar_one().telegram_chat_id is None
+
+
+async def test_patch_me_notifications_toggles_notify_via_email(
+    client: "AsyncClient", db_session: "AsyncSession"
+) -> None:
+    """Round 14: PATCH the email opt-in independently of TG chat id."""
+    user = await _mk_user(db_session, "em1@x.com", chat_id="keep-me")
+    resp = await client.patch(
+        "/api/v1/me/notifications",
+        headers=_auth(user),
+        json={"notify_via_email": True},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["notify_via_email"] is True
+    # PATCH was partial — telegram_chat_id stayed put.
+    assert body["telegram_chat_id"] == "keep-me"
+
+    fresh = await db_session.execute(
+        select(User).where(User.id == user.id)
+    )
+    row = fresh.scalar_one()
+    assert row.notify_via_email is True
+    assert row.telegram_chat_id == "keep-me"
 
 
 async def test_patch_me_notifications_401_when_unauthenticated(

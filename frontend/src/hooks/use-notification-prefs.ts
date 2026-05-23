@@ -30,6 +30,7 @@ import {
   updateMeNotifications,
   type F13SubscriptionPreferences,
   type MeNotificationSettings,
+  type MeNotificationSettingsPatch,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -53,24 +54,19 @@ export function useMeNotifications() {
   });
 }
 
-interface UpdateMeNotificationsArgs {
-  telegram_chat_id: string | null;
-}
-
 /**
  * PATCH `/me/notifications`.
  *
- * `telegram_chat_id: null` is the canonical "stop alerts" gesture per
- * the backend contract (column becomes NULL). The hook accepts the
- * full body shape so future fields (email / line / webhook) drop in
- * additively without breaking call sites.
+ * Round 14: partial PATCH shape — omit a field and the backend leaves
+ * the column untouched. `telegram_chat_id: null` clears the TG binding;
+ * `notify_via_email: true/false` toggles the Email channel.
  */
 export function useUpdateMeNotifications() {
   const qc = useQueryClient();
   return useMutation<
     MeNotificationSettings,
     Error,
-    UpdateMeNotificationsArgs
+    MeNotificationSettingsPatch
   >({
     mutationFn: (args) => updateMeNotifications(args),
     onSuccess: (data) => {

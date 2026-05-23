@@ -28,6 +28,13 @@ export {
 } from "./holdings-table";
 
 export {
+  HoldingsCardList,
+  type HoldingsCardListProps,
+} from "./holdings-card-list";
+
+export { HoldingsTableResponsive } from "./holdings-table-responsive";
+
+export {
   BulkActionsBar,
   type BulkActionsBarProps,
 } from "./bulk-actions-bar";

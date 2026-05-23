@@ -42,7 +42,7 @@ from app.db.models.institutional.filer import F13Filer
 from app.db.models.institutional.filing import F13Filing
 from app.db.models.institutional.subscription import F13UserSubscription
 from app.models.user import User
-from app.modules.notifications.telegram_sender import send_telegram_message
+from app.modules.notifications.dispatcher import dispatch_notification
 from app.obs.logging import get_logger
 from app.services.audit import log_audit_event
 
@@ -99,6 +99,10 @@ class F13NotificationService:
             "skipped_no_chat_id": 0,
             "skipped_opted_out": 0,
             "errors": 0,
+            # Round 14: per-channel breakdown so the audit row tells
+            # ops whether TG or Email did the heavy lifting.
+            "tg_sent": 0,
+            "email_sent": 0,
         }
 
         if not new_filings:
@@ -118,20 +122,22 @@ class F13NotificationService:
             )
             return result
 
-        bot_token = settings.uni_telegram_bot_token
-        if not bot_token:
-            # Global TG disabled — count every would-be recipient as a
-            # "no chat id" skip so the audit row reflects the actual
-            # reason. This keeps ops able to distinguish "configured
-            # but nobody opted in" from "not configured at all" via
-            # the structured log below.
+        # Round 14: a deployment with NO TG configured and NO SMTP
+        # configured is the "globally disabled" state. Either channel
+        # being live is enough to fan out — the dispatcher decides
+        # per-user which channels actually fire.
+        tg_globally_enabled = bool(settings.uni_telegram_bot_token)
+        email_globally_enabled = bool(
+            settings.uni_smtp_host and settings.uni_smtp_from_addr
+        )
+        if not tg_globally_enabled and not email_globally_enabled:
+            # Both channels off — log + emit a single "skipped" audit
+            # row so ops can tell "no recipients" from "no transports".
             logger.info(
                 "f13_notify_globally_disabled",
                 filer_id=filer_id,
                 new_filings=len(new_filings),
             )
-            # Still record an audit row so the user-facing behaviour
-            # is observable; counts will all be zero.
             await log_audit_event(
                 self._db,
                 action="f13_notify_skipped_disabled",
@@ -140,20 +146,28 @@ class F13NotificationService:
                 resource_id=str(filer_id),
                 after_state={
                     "new_filings": len(new_filings),
-                    "reason": "uni_telegram_bot_token_empty",
+                    "reason": "no_channels_configured",
                 },
             )
             return result
 
-        # Step 3: subscriptions × users — opt-in + has chat_id.
+        # Step 3: subscriptions × users — opt-in subscription AND
+        # (has TG chat id OR opted into email). A row with neither
+        # channel enabled is filtered here so the dispatcher fan-out
+        # only sees actionable recipients.
+        from sqlalchemy import or_
+
         stmt = (
             select(F13UserSubscription, User)
             .join(User, User.id == F13UserSubscription.user_id)
             .where(
                 F13UserSubscription.filer_id == filer_id,
                 F13UserSubscription.notify_on_new_filing.is_(True),
-                User.telegram_chat_id.is_not(None),
                 User.is_active.is_(True),
+                or_(
+                    User.telegram_chat_id.is_not(None),
+                    User.notify_via_email.is_(True),
+                ),
             )
         )
         rows = (await self._db.execute(stmt)).all()
@@ -167,20 +181,42 @@ class F13NotificationService:
 
         for sub, user in rows:
             for filing in new_filings:
-                ok = await send_telegram_message(
-                    bot_token=bot_token,
-                    chat_id=user.telegram_chat_id or "",
-                    text=self._format_message(filer, filing),
+                # Pre-rendered TG text so we preserve the existing
+                # message template; email title + body are derived
+                # from the same filing data below.
+                tg_text = self._format_message(filer, filing)
+                subject = f"🔔 新 13F filing — {filer.name}"
+                body_text = self._format_email_text(filer, filing)
+                app_url = settings.app_url.rstrip("/")
+                deep_link = f"{app_url}/institutional?filer={filer.id}"
+                dispatched = await dispatch_notification(
+                    user,
+                    title=subject,
+                    body_text=body_text,
+                    tg_text=tg_text,
+                    deep_link=deep_link,
                 )
-                if ok:
+                if int(dispatched["channels_succeeded"]) > 0:
                     result["notified"] += 1
-                else:
+                if dispatched["tg_sent"]:
+                    result["tg_sent"] += 1
+                if dispatched["email_sent"]:
+                    result["email_sent"] += 1
+                # Count an "error" when a channel was attempted but
+                # all of them failed. A partial-success (TG ok, email
+                # failed) still increments notified but ALSO bumps
+                # the error so ops can see the degraded path.
+                attempted = int(dispatched["channels_attempted"])
+                succeeded = int(dispatched["channels_succeeded"])
+                if attempted > 0 and succeeded < attempted:
                     result["errors"] += 1
                     logger.warning(
-                        "f13_notify_send_failed",
+                        "f13_notify_partial_failure",
                         filer_id=filer_id,
                         filing_id=filing.id,
                         user_id=user.id,
+                        attempted=attempted,
+                        succeeded=succeeded,
                     )
 
         # Step 5: single aggregate audit row per refresh cycle.
@@ -214,7 +250,10 @@ class F13NotificationService:
         extra round trip in the hot path matters when fan-out scales.
         """
         # Two cheap counts. Postgres will satisfy both from the
-        # ``ix_f13_user_subscriptions_filer_id`` index.
+        # ``ix_f13_user_subscriptions_filer_id`` index. Round 14:
+        # "no_chat_id" now means "no Telegram chat id AND no email
+        # opt-in" — a subscriber who has either channel live is
+        # actionable and should not be counted as skipped.
         no_chat_stmt = (
             select(F13UserSubscription.id)
             .join(User, User.id == F13UserSubscription.user_id)
@@ -222,6 +261,7 @@ class F13NotificationService:
                 F13UserSubscription.filer_id == filer_id,
                 F13UserSubscription.notify_on_new_filing.is_(True),
                 User.telegram_chat_id.is_(None),
+                User.notify_via_email.is_(False),
             )
         )
         opted_out_stmt = select(F13UserSubscription.id).where(
@@ -232,6 +272,27 @@ class F13NotificationService:
         opted_out = (await self._db.execute(opted_out_stmt)).all()
         result["skipped_no_chat_id"] = len(no_chat)
         result["skipped_opted_out"] = len(opted_out)
+
+    @staticmethod
+    def _format_email_text(filer: F13Filer, filing: F13Filing) -> str:
+        """Plain-text body for the Email channel.
+
+        Mirrors the TG message field-for-field but without HTML — the
+        email client renders monospace + plain numbers cleanly and a
+        text/plain fallback is required by RFC 2822 for accessibility.
+        """
+        total_value = (
+            float(filing.total_value_usd) if filing.total_value_usd else 0.0
+        )
+        total_positions = filing.total_positions or 0
+        period = filing.report_period_end.isoformat()
+        return (
+            f"{filer.name} 有新 13F filing\n"
+            f"期末: {period}\n"
+            f"Form: {filing.form_type}\n"
+            f"總市值: ${total_value:,.0f}\n"
+            f"持股數: {total_positions}"
+        )
 
     @staticmethod
     def _format_message(filer: F13Filer, filing: F13Filing) -> str:

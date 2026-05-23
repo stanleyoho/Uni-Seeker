@@ -135,7 +135,7 @@ async def test_notify_new_filings_sends_to_subscribed_users(
         return True
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -147,6 +147,8 @@ async def test_notify_new_filings_sends_to_subscribed_users(
         "skipped_no_chat_id": 0,
         "skipped_opted_out": 0,
         "errors": 0,
+        "tg_sent": 1,
+        "email_sent": 0,
     }
     assert len(calls) == 1
     assert calls[0]["chat_id"] == "chat-1"
@@ -175,7 +177,7 @@ async def test_notify_skips_users_without_telegram_chat_id(
         raise AssertionError("should not send when chat_id is NULL")
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -210,7 +212,7 @@ async def test_notify_respects_notify_on_new_filing_false(
         raise AssertionError("must not send when notify_on_new_filing is False")
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -247,7 +249,7 @@ async def test_notify_handles_partial_send_failures(
         return kwargs["chat_id"] == "chat-a"
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -289,7 +291,7 @@ async def test_notify_cross_user_isolation(
         return True
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -316,7 +318,7 @@ async def test_notify_handles_empty_new_filings_is_noop(
         raise AssertionError("empty new_filings should not call send")
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -327,6 +329,8 @@ async def test_notify_handles_empty_new_filings_is_noop(
         "skipped_no_chat_id": 0,
         "skipped_opted_out": 0,
         "errors": 0,
+        "tg_sent": 0,
+        "email_sent": 0,
     }
 
 
@@ -356,7 +360,7 @@ async def test_notify_message_format_contains_filer_and_filing_fields(
         return True
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -392,7 +396,7 @@ async def test_notify_audit_log_written(
         return True
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -429,7 +433,7 @@ async def test_notify_disabled_when_token_empty(
         raise AssertionError("must not send when bot_token empty")
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)
@@ -441,6 +445,8 @@ async def test_notify_disabled_when_token_empty(
         "skipped_no_chat_id": 0,
         "skipped_opted_out": 0,
         "errors": 0,
+        "tg_sent": 0,
+        "email_sent": 0,
     }
     count = await db_session.execute(
         select(func.count(AuditLog.id)).where(
@@ -474,7 +480,7 @@ async def test_notify_skips_inactive_users(
         raise AssertionError("inactive users must not receive alerts")
 
     with patch(
-        "app.services.institutional.notification_service.send_telegram_message",
+        "app.modules.notifications.dispatcher.send_telegram_message",
         side_effect=fake_send,
     ):
         svc = F13NotificationService(db_session)

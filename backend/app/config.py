@@ -53,6 +53,25 @@ class Settings(BaseSettings):
     # when --use-figi is passed.
     openfigi_api_key: str | None = None  # UNI_OPENFIGI_API_KEY
 
+    # ── Email notification channel (Round 14) ─────────────────────────
+    #
+    # SMTP send-only configuration. We use Python's stdlib ``smtplib`` so
+    # no new dependency lands; the operator points us at any SMTP server
+    # (Gmail, SendGrid, AWS SES, etc.). All fields default to None /
+    # safe values so a missing config short-circuits to a no-op in
+    # ``email_sender.send_email`` — never raises into the caller.
+    #
+    # Why not a third-party HTTP API (Resend / SendGrid)? Adding a dep
+    # for a single send path is overkill. SMTP is universal, well
+    # understood, and the failure surface (transport + auth + 5xx) is
+    # the same shape we already log for Telegram.
+    uni_smtp_host: str | None = None         # e.g. smtp.gmail.com
+    uni_smtp_port: int = 587                 # 587 STARTTLS, 465 SSL, 25 plain
+    uni_smtp_user: str | None = None         # SMTP AUTH username
+    uni_smtp_password: str | None = None     # SMTP AUTH password / app pwd
+    uni_smtp_from_addr: str | None = None    # MAIL FROM (must be set)
+    uni_smtp_use_tls: bool = True            # STARTTLS on submission port
+
     model_config = {"env_prefix": "UNI_", "env_file": ".env"}
 
 

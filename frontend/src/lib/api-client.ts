@@ -2262,15 +2262,33 @@ export async function getInstitutionalForStock(
 export interface MeNotificationSettings {
   /** Numeric chat id ("123456789") or @channel handle. `null` ⇒ disabled. */
   telegram_chat_id: string | null;
+  /**
+   * Round 14: Email channel opt-in (UNI_USER_003). When `true` the
+   * dispatcher fans 13F + alert notifications out to the user's
+   * primary `email` in addition to (or instead of) Telegram.
+   */
+  notify_via_email: boolean;
+}
+
+/**
+ * PATCH body shape — every field is optional. Omitted fields are NOT
+ * touched on the user row (backend reads `model_fields_set`), so the
+ * UI can flip the email toggle without re-sending the Telegram chat
+ * id (and vice versa). `telegram_chat_id: null` is the canonical
+ * "stop TG alerts" gesture.
+ */
+export interface MeNotificationSettingsPatch {
+  telegram_chat_id?: string | null;
+  notify_via_email?: boolean;
 }
 
 export async function getMeNotifications(): Promise<MeNotificationSettings> {
   return apiFetch<MeNotificationSettings>(`${API_BASE}/me/notifications`);
 }
 
-export async function updateMeNotifications(req: {
-  telegram_chat_id: string | null;
-}): Promise<MeNotificationSettings> {
+export async function updateMeNotifications(
+  req: MeNotificationSettingsPatch,
+): Promise<MeNotificationSettings> {
   return apiFetch<MeNotificationSettings>(`${API_BASE}/me/notifications`, {
     method: "PATCH",
     body: JSON.stringify(req),

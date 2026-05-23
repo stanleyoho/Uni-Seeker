@@ -445,7 +445,17 @@
       },
       "channels": {
         "title": "其他通知通道",
-        "coming_soon": "Email / LINE / Webhook 即將推出"
+        "coming_soon": "LINE / Webhook 即將推出"
+      },
+      "email": {
+        "title": "Email 通知",
+        "help": "啟用後，新 13F filing 與警示規則觸發會寄送到你的電子郵件",
+        "destination_label": "收件地址",
+        "status_enabled": "已啟用 Email 通知",
+        "status_disabled": "尚未啟用 Email 通知",
+        "toggle_aria": "切換 Email 通知",
+        "save_success": "已更新 Email 通知設定",
+        "save_error": "更新失敗，請稍後再試"
       }
     },
     "audit": {
@@ -518,6 +528,46 @@
       "evaluate_not_triggered": "尚未觸發：{message}",
       "limit_exceeded": "已達該方案的規則上限，請升級或刪除舊規則。",
       "create_error": "建立失敗，請檢查輸入內容。"
+    }
+  },
+  "onboarding": {
+    "skip": "略過",
+    "next": "下一步",
+    "start": "開始使用",
+    "got_it": "完成",
+    "welcome": {
+      "close": "關閉",
+      "step1_title": "歡迎來到 Uni-Seeker",
+      "step1_subtitle": "一站式追蹤台美股持倉、機構動向，與你關心的個股。",
+      "step2_title": "核心功能",
+      "step2_subtitle": "三個你最常用的工作流，讓投資決策更有依據。",
+      "feature_holdings_title": "Holdings 對賬",
+      "feature_holdings_desc": "多帳戶 / 多幣別追蹤持股、未實現損益、配息紀錄。",
+      "feature_institutional_title": "13F 機構追蹤",
+      "feature_institutional_desc": "追蹤大型機構持倉變化，分析買賣動向與時序。",
+      "feature_watchlist_title": "自選股研究",
+      "feature_watchlist_desc": "建立關注清單，搭配技術 / 籌碼指標做深度研究。",
+      "step3_title": "設定通知",
+      "step3_subtitle": "選擇透過 Telegram、Email 或 Web Push 接收價格與持倉提醒。",
+      "step3_cta": "前往通知設定",
+      "step4_title": "下一步",
+      "step4_subtitle": "從建立你的第一個券商帳戶開始，體驗持倉對賬。"
+    },
+    "tour": {
+      "holdings": {
+        "step1_title": "建立你的第一個券商帳戶",
+        "step1_content": "Uni-Seeker 支援多帳戶管理，先建立一個帳戶來存放你的持股。",
+        "step2_title": "新增交易來追蹤持股",
+        "step2_content": "記錄買進 / 賣出資料，系統自動計算成本、損益與部位。",
+        "step3_title": "Portfolio Summary",
+        "step3_content": "這裡顯示你的總市值、總成本、未實現損益與今日漲跌。",
+        "step4_title": "持股清單",
+        "step4_content": "依股票列出單檔持股、平均成本、現價與未實現損益。",
+        "step5_title": "多幣別 Portfolio",
+        "step5_content": "Pro 方案解鎖多幣別檢視 — 自動換算成你選擇的基準幣別。",
+        "step6_title": "完成！",
+        "step6_content": "你已掌握 Holdings 的核心功能。隨時可以從設定重新打開導覽。"
+      }
     }
   }
 }

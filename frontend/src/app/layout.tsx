@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/contexts/theme-context";
 import { QueryProvider } from "@/lib/query-provider";
 import { StratosHeader } from "@/components/stratos/header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { OnboardingProvider } from "@/contexts/onboarding-context";
+import { OnboardingResetHook } from "@/components/onboarding/reset-button";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -34,9 +36,12 @@ export default function RootLayout({
           <QueryProvider>
             <I18nProvider>
               <AuthProvider>
-                <StratosHeader />
-                {children}
-                <ServiceWorkerRegister />
+                <OnboardingProvider>
+                  <StratosHeader />
+                  {children}
+                  <ServiceWorkerRegister />
+                  <OnboardingResetHook />
+                </OnboardingProvider>
               </AuthProvider>
             </I18nProvider>
           </QueryProvider>

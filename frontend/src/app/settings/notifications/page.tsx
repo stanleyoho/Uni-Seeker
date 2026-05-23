@@ -145,6 +145,34 @@ export default function NotificationsSettingsPage() {
     );
   };
 
+  // ----- Email channel toggle -----
+  //
+  // Round 14: opt-in flag persisted on `users.notify_via_email`. The
+  // destination address is always `user.email` (the login email); a
+  // future iteration may add `notification_email` if the rare "send
+  // alerts to a different mailbox" need materialises.
+  const emailOptedIn = meQuery.data?.notify_via_email ?? false;
+
+  const handleToggleEmail = (next: boolean) => {
+    updateMe.mutate(
+      { notify_via_email: next },
+      {
+        onSuccess: () => {
+          setToast({
+            tone: "success",
+            message: tr("settings.notifications.email.save_success"),
+          });
+        },
+        onError: () => {
+          setToast({
+            tone: "error",
+            message: tr("settings.notifications.email.save_error"),
+          });
+        },
+      },
+    );
+  };
+
   // ----- Per-filer toggle state -----
   //
   // Local optimistic map: filerId → notify flag. The backend list endpoint
@@ -381,6 +409,69 @@ export default function NotificationsSettingsPage() {
               >
                 {tr("settings.notifications.telegram.test")}
               </ClippedButton>
+            </div>
+          </div>
+        </GlassPanel>
+
+        {/* Section 1b: Email channel (Round 14) */}
+        <GlassPanel title={tr("settings.notifications.email.title")}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--text-muted)",
+              }}
+            >
+              {tr("settings.notifications.email.help")}
+            </div>
+
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--text-secondary)",
+              }}
+            >
+              <span style={{ color: "var(--text-muted)" }}>
+                {tr("settings.notifications.email.destination_label")}:
+              </span>{" "}
+              <span
+                style={{
+                  color: "var(--foreground)",
+                  fontWeight: 500,
+                }}
+              >
+                {user.email}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                paddingTop: 4,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  color: emailOptedIn
+                    ? "var(--foreground)"
+                    : "var(--text-muted)",
+                  fontWeight: 500,
+                }}
+              >
+                {emailOptedIn
+                  ? tr("settings.notifications.email.status_enabled")
+                  : tr("settings.notifications.email.status_disabled")}
+              </div>
+              <ToggleSwitch
+                checked={emailOptedIn}
+                onChange={handleToggleEmail}
+                ariaLabel={tr("settings.notifications.email.toggle_aria")}
+                disabled={meQuery.isLoading || updateMe.isPending}
+              />
             </div>
           </div>
         </GlassPanel>

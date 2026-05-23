@@ -47,6 +47,7 @@ async def get_me_notifications(
     """Return the current user's notification preferences."""
     return MeNotificationPreferencesResponse(
         telegram_chat_id=user.telegram_chat_id,
+        notify_via_email=user.notify_via_email,
     )
 
 
@@ -62,18 +63,27 @@ async def patch_me_notifications(
 ) -> MeNotificationPreferencesResponse:
     """Update the current user's notification preferences.
 
-    Semantics:
-      - body.telegram_chat_id = ``"12345"`` → set the column.
-      - body.telegram_chat_id = ``None``    → clear the column.
+    Round-14 PATCH semantics (truly partial):
 
-    The PATCH verb is intentional: a future ``email``, ``line``, etc.
-    field would be additive and only set when the client passes it.
-    For now there is only one field so PATCH and PUT would behave
-    identically — we still expose PATCH to lock in the additive
-    semantics for v2.
+      - Field OMITTED in the JSON body → column unchanged.
+      - ``telegram_chat_id = "12345"``  → set the column.
+      - ``telegram_chat_id = null``     → clear the column.
+      - ``notify_via_email = true / false`` → set the opt-in flag.
+
+    We distinguish "omitted" from "explicit null" via Pydantic's
+    ``model_fields_set`` — only fields the client actually included
+    in the JSON body are written. This keeps the front-end safe to
+    PATCH a single toggle without round-tripping the other channels.
     """
-    before = {"telegram_chat_id": user.telegram_chat_id}
-    user.telegram_chat_id = body.telegram_chat_id
+    before = {
+        "telegram_chat_id": user.telegram_chat_id,
+        "notify_via_email": user.notify_via_email,
+    }
+    fields_set = body.model_fields_set
+    if "telegram_chat_id" in fields_set:
+        user.telegram_chat_id = body.telegram_chat_id
+    if "notify_via_email" in fields_set and body.notify_via_email is not None:
+        user.notify_via_email = body.notify_via_email
 
     await log_audit_event(
         db,
@@ -82,10 +92,14 @@ async def patch_me_notifications(
         resource_type="user",
         resource_id=str(user.id),
         before_state=before,
-        after_state={"telegram_chat_id": user.telegram_chat_id},
+        after_state={
+            "telegram_chat_id": user.telegram_chat_id,
+            "notify_via_email": user.notify_via_email,
+        },
     )
     await db.commit()
     await db.refresh(user)
     return MeNotificationPreferencesResponse(
         telegram_chat_id=user.telegram_chat_id,
+        notify_via_email=user.notify_via_email,
     )
