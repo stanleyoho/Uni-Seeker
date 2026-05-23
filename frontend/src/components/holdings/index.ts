@@ -38,6 +38,12 @@ export {
 } from "./account-switcher";
 
 export {
+  CurrencySwitcher,
+  CURRENCY_SYMBOL,
+  type CurrencySwitcherProps,
+} from "./currency-switcher";
+
+export {
   PositionsEmptyState,
   type PositionsEmptyStateProps,
 } from "./positions-empty-state";

@@ -36,12 +36,17 @@
       "total_cost": "Total Cost",
       "unrealized_pnl": "Unrealized P&L",
       "daily_change": "Daily Change",
-      "position_count": "Positions"
+      "position_count": "Positions",
+      "by_currency": "Currency Mix"
     },
     "actions": {
       "add_account": "New Account",
       "add_trade": "Log Trade",
       "add_dividend": "Log Dividend"
+    },
+    "currency": {
+      "title": "Base Currency",
+      "upgrade_hint": "Upgrade to Pro for multi-currency portfolio"
     },
     "empty": {
       "title": "No Holdings",
@@ -265,6 +270,25 @@
       "limit_exceeded": "Tracking limit reached — upgrade to Pro",
       "already_subscribed": "Already subscribed",
       "refresh_in_flight": "Another refresh is in flight, please wait"
+    },
+    "views": {
+      "holdings": "Holdings",
+      "holdings_timeline": "Timeline",
+      "multi_filer_compare": "Compare Filers",
+      "top_movers": "Top Movers"
+    },
+    "compare": {
+      "select_filers": "Select Filers (up to 5)",
+      "common_holdings": "Only common holdings (≥2 filers)",
+      "sort_by": "Sort by",
+      "sort_by_value": "Total value (USD)",
+      "sort_by_filer_count": "# of filers holding"
+    },
+    "movers": {
+      "top_buys": "TOP BUYS · New / Increased",
+      "top_sells": "TOP SELLS · Decreased / Exited",
+      "empty_buys": "No new / increased positions this period",
+      "empty_sells": "No decreased / exited positions this period"
     }
   },
   "institutional": {

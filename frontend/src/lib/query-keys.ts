@@ -122,9 +122,15 @@ export const queryKeys = {
     },
     summary: {
       all: ["holdings", "summary"] as const,
-      user: () => ["holdings", "summary", "user"] as const,
+      user: (baseCurrency?: string) =>
+        ["holdings", "summary", "user", baseCurrency ?? null] as const,
       account: (accountId: number) =>
         ["holdings", "summary", "account", accountId] as const,
+    },
+    fx: {
+      all: ["holdings", "fx"] as const,
+      rate: (base: string, quote: string, asOf?: string) =>
+        ["holdings", "fx", "rate", base, quote, asOf ?? null] as const,
     },
     dividends: {
       all: ["holdings", "dividends"] as const,

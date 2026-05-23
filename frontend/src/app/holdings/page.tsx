@@ -19,7 +19,7 @@
  *     This matches the existing `journal` / `portfolio` pages.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/context";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
@@ -31,6 +31,7 @@ import {
   BulkActionsBar,
   CsvExportDropdown,
   CsvImportModal,
+  CurrencySwitcher,
   HoldingsKpiRow,
   HoldingsTable,
   PositionsEmptyState,
@@ -40,7 +41,31 @@ import {
   useHoldingPositions,
   useUserHoldingSummary,
 } from "@/hooks/use-holdings";
-import type { HoldingAccount } from "@/lib/api-client";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  SUPPORTED_CURRENCIES,
+  type Currency,
+  type HoldingAccount,
+} from "@/lib/api-client";
+
+// localStorage key for the user's preferred base currency. Scoped to
+// `uni-seeker-` to avoid collision with future Stanley-ecosystem apps
+// sharing the same origin.
+const LS_BASE_CURRENCY = "uni-seeker-base-currency";
+
+function isCurrency(v: string | null): v is Currency {
+  return v !== null && (SUPPORTED_CURRENCIES as string[]).includes(v);
+}
+
+// Tier gate — "pro" and above (e.g. "enterprise") get multi-currency.
+// Backend gates with the `multi_currency_summary` feature flag; we
+// mirror the tier_limits.yaml allowlist here so the UI doesn't fetch a
+// guaranteed-403.
+function isProTier(tier: string | undefined): boolean {
+  if (!tier) return false;
+  const t = tier.toLowerCase();
+  return t === "pro" || t === "enterprise";
+}
 
 type AccountModalState =
   | { mode: "create" }
@@ -48,6 +73,7 @@ type AccountModalState =
 
 export default function HoldingsPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
 
   /* ----------------------------- State ----------------------------- */
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
@@ -60,11 +86,43 @@ export default function HoldingsPage() {
   const [accountModalState, setAccountModalState] =
     useState<AccountModalState | null>(null);
 
+  // Base currency for KPIs + summary. Defaults to TWD; we then upgrade
+  // to localStorage on mount so the SSR pass doesn't differ from the
+  // client-side hydration pass (hydration mismatch).
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("TWD");
+  const [currencyHydrated, setCurrencyHydrated] = useState(false);
+  const [upsellHint, setUpsellHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(LS_BASE_CURRENCY);
+    if (isCurrency(saved)) setSelectedCurrency(saved);
+    setCurrencyHydrated(true);
+  }, []);
+
+  const handleSelectCurrency = (c: Currency) => {
+    setSelectedCurrency(c);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LS_BASE_CURRENCY, c);
+    }
+  };
+
+  const multiCurrencyAvailable = isProTier(user?.tier);
+
   /* ----------------------------- Data ------------------------------ */
   const { data: accounts, isLoading: accountsLoading } = useHoldingAccounts();
   const { data: positionsRes, isLoading: positionsLoading } =
     useHoldingPositions(selectedAccountId ?? undefined);
-  const { data: summary, isLoading: summaryLoading } = useUserHoldingSummary();
+  // For Pro+ users with a non-TWD selection, send `base_currency=`.
+  // For everyone else, fall back to the legacy single-currency call so
+  // the backend doesn't 403 us on the multi-currency feature flag.
+  const useMultiCurrencyCall =
+    currencyHydrated &&
+    multiCurrencyAvailable &&
+    selectedCurrency !== "TWD";
+  const { data: summary, isLoading: summaryLoading } = useUserHoldingSummary(
+    useMultiCurrencyCall ? selectedCurrency : undefined,
+  );
 
   const accountList: HoldingAccount[] = accounts ?? [];
   const positions = positionsRes?.positions ?? [];
@@ -87,6 +145,20 @@ export default function HoldingsPage() {
         ?.add_dividend) ??
     "記錄配息";
 
+  const currencyTitle =
+    (t.holdings &&
+      (t.holdings as { currency?: { title?: string } }).currency?.title) ??
+    "基準幣別";
+  const currencyUpgradeHint =
+    (t.holdings &&
+      (t.holdings as { currency?: { upgrade_hint?: string } }).currency
+        ?.upgrade_hint) ??
+    "升級 Pro 解鎖多幣別 portfolio";
+  const byCurrencyLabel =
+    (t.holdings &&
+      (t.holdings as { kpi?: { by_currency?: string } }).kpi?.by_currency) ??
+    "幣別分布";
+
   /* ----------------------------- Render ---------------------------- */
   return (
     <main className="relative flex-1 overflow-y-auto">
@@ -106,9 +178,48 @@ export default function HoldingsPage() {
           </h1>
         </div>
 
+        {/* Currency switcher (Round 10 Z1) */}
+        <section>
+          <CurrencySwitcher
+            selectedCurrency={selectedCurrency}
+            onSelect={handleSelectCurrency}
+            multiCurrencyAvailable={multiCurrencyAvailable}
+            title={currencyTitle}
+            upgradeHint={currencyUpgradeHint}
+            onUpsellAttempt={(ccy) => {
+              setUpsellHint(
+                `${currencyUpgradeHint}（${ccy}）`,
+              );
+              // Auto-dismiss after 3s — non-blocking inline toast.
+              window.setTimeout(() => setUpsellHint(null), 3000);
+            }}
+          />
+          {upsellHint && (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                marginTop: 6,
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "var(--accent-cyan)",
+                border: "1px solid var(--accent-cyan)",
+                background: "var(--card-hover)",
+              }}
+            >
+              {upsellHint}
+            </div>
+          )}
+        </section>
+
         {/* KPI row */}
         <section>
-          <HoldingsKpiRow summary={summary} loading={summaryLoading} />
+          <HoldingsKpiRow
+            summary={summary}
+            loading={summaryLoading}
+            displayCurrency={selectedCurrency}
+            byCurrencyLabel={byCurrencyLabel}
+          />
         </section>
 
         {/* Account switcher + action buttons */}

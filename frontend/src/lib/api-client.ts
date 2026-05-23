@@ -1231,6 +1231,54 @@ export interface HoldingSummary {
   account_count: number;
 }
 
+// ── Multi-currency (Phase 4+ / Round 10 Z1) ────────────────────────────────
+
+/**
+ * Supported FX base/quote currencies — kept in sync with backend
+ * `_SUPPORTED_BASE_CURRENCIES` in `app/api/v1/holdings/summary.py` and
+ * `app/api/v1/holdings/fx.py`. Add new ISO 4217 codes in BOTH places.
+ */
+export type Currency = "TWD" | "USD" | "JPY" | "HKD" | "EUR" | "GBP" | "CNY";
+
+export const SUPPORTED_CURRENCIES: Currency[] = [
+  "TWD",
+  "USD",
+  "JPY",
+  "HKD",
+  "EUR",
+  "GBP",
+  "CNY",
+];
+
+/**
+ * One per-currency slice returned inside `MultiCurrencyHoldingSummary.by_currency`.
+ *
+ * Wire shape mirrors backend `CurrencyBreakdown` in
+ * `app/api/v1/holdings/summary.py` — Decimal-as-string for every numeric.
+ */
+export interface CurrencyBreakdown {
+  currency: string;
+  total_cost_native: string;
+  total_value_native: string;
+  total_cost_in_base: string;
+  total_value_in_base: string;
+  rate_to_base: string;
+}
+
+/**
+ * Extended summary returned by `GET /holdings/summary?base_currency=...`.
+ *
+ * Type discriminator: presence of `by_currency` field distinguishes this
+ * from the legacy `HoldingSummary` shape. Backend may flag with 403
+ * `feature_unavailable:multi_currency_summary` for Free/Basic tiers
+ * when positions span > 1 currency, or 503 `fx_rate_unavailable:...`
+ * when FX service can't resolve a rate.
+ */
+export interface MultiCurrencyHoldingSummary extends HoldingSummary {
+  base_currency: string;
+  by_currency: CurrencyBreakdown[];
+}
+
 // ── Dividends ──────────────────────────────────────────────────────────────
 
 export interface HoldingDividend {
@@ -1432,14 +1480,74 @@ export async function getHoldingPosition(
 
 // ── Summary ────────────────────────────────────────────────────────────────
 
-export async function getUserHoldingSummary(): Promise<HoldingSummary> {
-  return apiFetch<HoldingSummary>(`${API_BASE}/holdings/summary`);
+/**
+ * Type guard — distinguishes the multi-currency response from the
+ * legacy single-currency one. The backend returns the multi shape only
+ * when the caller passed `?base_currency=`.
+ */
+export function isMultiCurrencyHoldingSummary(
+  s: HoldingSummary | MultiCurrencyHoldingSummary,
+): s is MultiCurrencyHoldingSummary {
+  return (
+    typeof (s as MultiCurrencyHoldingSummary).by_currency !== "undefined" &&
+    Array.isArray((s as MultiCurrencyHoldingSummary).by_currency)
+  );
+}
+
+/**
+ * Fetch the user-wide KPI row.
+ *
+ *   - `baseCurrency=undefined` → legacy `HoldingSummary` (same-currency
+ *     aggregation; preserves backwards compat with X1/X2 callers).
+ *   - `baseCurrency="USD"` → `MultiCurrencyHoldingSummary` with
+ *     cross-currency totals + per-currency breakdown. Pro-only when
+ *     positions span >1 currency (403 propagated to caller).
+ */
+export async function getUserHoldingSummary(
+  baseCurrency?: Currency,
+): Promise<HoldingSummary | MultiCurrencyHoldingSummary> {
+  if (baseCurrency === undefined) {
+    return apiFetch<HoldingSummary>(`${API_BASE}/holdings/summary`);
+  }
+  const qs = new URLSearchParams({ base_currency: baseCurrency });
+  return apiFetch<MultiCurrencyHoldingSummary>(
+    `${API_BASE}/holdings/summary?${qs.toString()}`,
+  );
 }
 
 export async function getAccountHoldingSummary(
   accountId: number,
 ): Promise<HoldingSummary> {
   return apiFetch<HoldingSummary>(`${API_BASE}/holdings/summary/${accountId}`);
+}
+
+// ── FX (Round 10 Z1) ──────────────────────────────────────────────────────
+
+/**
+ * Spot or historical FX rate, such that
+ *   `quote_amount = base_amount * rate`.
+ *
+ * Wire shape mirrors backend `FxRateResponse` in
+ * `app/api/v1/holdings/fx.py`. `rate` is Decimal-as-string. `as_of` is
+ * either the requested ISO date or `null` (spot).
+ */
+export interface FxRateResponse {
+  base: string;
+  quote: string;
+  rate: string;
+  as_of: string | null;
+}
+
+export async function getFxRate(
+  base: Currency,
+  quote: Currency,
+  asOf?: string,
+): Promise<FxRateResponse> {
+  const qs = new URLSearchParams({ base, quote });
+  if (asOf) qs.set("as_of", asOf);
+  return apiFetch<FxRateResponse>(
+    `${API_BASE}/holdings/fx/rate?${qs.toString()}`,
+  );
 }
 
 // ── Dividends ──────────────────────────────────────────────────────────────

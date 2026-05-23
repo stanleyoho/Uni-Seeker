@@ -9,6 +9,7 @@ import {
   deleteHoldingDividend,
   deleteHoldingTrade,
   getAccountHoldingSummary,
+  getFxRate,
   getHoldingAccount,
   getHoldingDividend,
   getHoldingPosition,
@@ -22,6 +23,7 @@ import {
   updateHoldingAccount,
   updateHoldingDividend,
   updateHoldingTrade,
+  type Currency,
   type HoldingAccount,
   type HoldingAccountCreateRequest,
   type HoldingAccountUpdateRequest,
@@ -30,10 +32,12 @@ import {
   type HoldingDividendUpdateRequest,
   type HoldingMarket,
   type HoldingPositionListResponse,
+  type HoldingSummary,
   type HoldingTrade,
   type HoldingTradeCreateRequest,
   type HoldingTradeUpdateRequest,
   type ImportResult,
+  type MultiCurrencyHoldingSummary,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -191,11 +195,41 @@ export function useHoldingPosition(
 // Summary
 // ---------------------------------------------------------------------------
 
-export function useUserHoldingSummary() {
-  return useQuery({
-    queryKey: queryKeys.holdings.summary.user(),
-    queryFn: getUserHoldingSummary,
+/**
+ * User-wide holding summary.
+ *
+ * Pass `baseCurrency` to get the multi-currency response shape
+ * (`MultiCurrencyHoldingSummary` with `by_currency` breakdown); omit
+ * for the legacy single-currency response. The TS return is the union
+ * — callers use `isMultiCurrencyHoldingSummary()` to discriminate.
+ */
+export function useUserHoldingSummary(baseCurrency?: Currency) {
+  return useQuery<HoldingSummary | MultiCurrencyHoldingSummary>({
+    queryKey: queryKeys.holdings.summary.user(baseCurrency),
+    queryFn: () => getUserHoldingSummary(baseCurrency),
     staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Spot or historical FX rate. Sensible cache because FX rates change
+ * slowly in our use case (we're not building a trading desk).
+ *
+ * Pass `asOf` (ISO YYYY-MM-DD) for historical; omit for spot. Same
+ * currency on both sides short-circuits to `rate=1` without a network
+ * round-trip.
+ */
+export function useFxRate(
+  base: Currency | undefined,
+  quote: Currency | undefined,
+  asOf?: string,
+) {
+  return useQuery({
+    queryKey: queryKeys.holdings.fx.rate(base ?? "", quote ?? "", asOf),
+    queryFn: () => getFxRate(base as Currency, quote as Currency, asOf),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    enabled: Boolean(base) && Boolean(quote) && base !== quote,
   });
 }
 

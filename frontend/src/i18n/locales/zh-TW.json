@@ -36,12 +36,17 @@
       "total_cost": "總成本",
       "unrealized_pnl": "未實現損益",
       "daily_change": "今日漲跌",
-      "position_count": "持股檔數"
+      "position_count": "持股檔數",
+      "by_currency": "幣別分布"
     },
     "actions": {
       "add_account": "新增帳戶",
       "add_trade": "記錄交易",
       "add_dividend": "記錄配息"
+    },
+    "currency": {
+      "title": "基準幣別",
+      "upgrade_hint": "升級 Pro 解鎖多幣別 portfolio"
     },
     "empty": {
       "title": "無持倉",
@@ -265,6 +270,25 @@
       "limit_exceeded": "已達追蹤上限，升級到 Pro",
       "already_subscribed": "已在追蹤清單",
       "refresh_in_flight": "另一個 refresh 進行中，請稍候"
+    },
+    "views": {
+      "holdings": "持倉快照",
+      "holdings_timeline": "持倉時間軸",
+      "multi_filer_compare": "多 Filer 比較",
+      "top_movers": "Top Movers"
+    },
+    "compare": {
+      "select_filers": "選擇 Filer (最多 5)",
+      "common_holdings": "只顯示共同持倉 (≥2 filer)",
+      "sort_by": "排序",
+      "sort_by_value": "總價值 (USD)",
+      "sort_by_filer_count": "持有 filer 數"
+    },
+    "movers": {
+      "top_buys": "TOP BUYS · 新增 / 加碼",
+      "top_sells": "TOP SELLS · 減碼 / 清倉",
+      "empty_buys": "本期無新增 / 加碼",
+      "empty_sells": "本期無減碼 / 清倉"
     }
   },
   "institutional": {
