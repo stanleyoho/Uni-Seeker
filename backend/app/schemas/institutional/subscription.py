@@ -23,7 +23,16 @@ class F13SubscribeRequest(BaseModel):
     """
 
     cik: str = Field(..., min_length=1, max_length=20)
-    name: str | None = Field(default=None, max_length=255)
+    name: str | None = Field(
+        default=None,
+        max_length=255,
+        description=(
+            "Required when the CIK is not yet in the local DB "
+            "(f13_filers.name is NOT NULL). For known CIKs name is "
+            "optional. Missing name on an unknown CIK → 422 "
+            "f13_invalid_input."
+        ),
+    )
     legal_name: str | None = Field(default=None, max_length=500)
 
 
