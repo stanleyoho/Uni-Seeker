@@ -40,13 +40,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             LoggingIntegration(level=_logging.INFO, event_level=_logging.ERROR),
         ],
     )
-    # Plan 8 T5: Prometheus instrumentation — auto-emits HTTP
-    # latency/throughput metrics and exposes /metrics for scraping.
-    # Custom business counters defined in app.obs.metrics are picked
-    # up via shared default REGISTRY at import time.
-    Instrumentator().instrument(app).expose(
-        app, endpoint="/metrics", include_in_schema=False
-    )
+    # Plan 8 T5: Prometheus /metrics expose is wired in create_app()
+    # (BEFORE uvicorn starts the lifespan) — starlette refuses
+    # add_middleware after startup. Instrument call is left as a no-op
+    # safety in case future code re-enters lifespan; the .expose() side
+    # effect on a started app would re-throw the same RuntimeError.
     auto_scheduler.start()
     await job_worker.start()
     # 13F refresh scheduler — UTC-anchored Pro daily / Basic weekly.
@@ -75,9 +73,19 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
 
+    # Plan 8 T5: register Prometheus middleware BEFORE uvicorn enters
+    # lifespan. starlette throws RuntimeError("Cannot add middleware
+    # after an application has started") if this lives inside lifespan.
+    Instrumentator().instrument(app).expose(
+        app, endpoint="/metrics", include_in_schema=False
+    )
+
     allowed_origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        # Next.js dev fallback when port 3000 is busy
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
     ]
     app.add_middleware(
         CORSMiddleware,
