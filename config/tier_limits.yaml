@@ -19,6 +19,7 @@ free:
     multi_account: false
     tax_export: false
     institutional_ownership_panel: false
+    multi_currency_summary: false
 
 basic:
   max_positions: 50
@@ -32,6 +33,7 @@ basic:
     multi_account: true
     tax_export: false
     institutional_ownership_panel: false
+    multi_currency_summary: false
 
 pro:
   max_positions: null
@@ -45,3 +47,4 @@ pro:
     multi_account: true
     tax_export: true
     institutional_ownership_panel: true
+    multi_currency_summary: true

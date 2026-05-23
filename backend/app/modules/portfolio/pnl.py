@@ -17,6 +17,7 @@ __all__ = [
     "UnrealizedPnL",
     "DailyChange",
     "PortfolioSummary",
+    "MultiCurrencyPortfolioSummary",
     "unrealized",
     "daily_change",
     "summarize",
@@ -51,6 +52,33 @@ class PortfolioSummary:
     total_daily_change: Decimal
     gain_simple: Decimal  # Q6 (A): total_value - total_cost
     gain_simple_pct: Decimal
+
+
+@dataclass
+class MultiCurrencyPortfolioSummary:
+    """Phase 4+ cross-currency aggregate.
+
+    Wraps a base-currency `PortfolioSummary` with two breakdown maps so the
+    UI can render per-currency KPI slices (e.g. "USD subtotal", "JPY
+    subtotal") alongside the converted base-currency total.
+
+    - `base_currency`: the ISO code the totals are expressed in.
+    - `summary`: totals in `base_currency` (multi-currency sum already
+      converted via FX rates).
+    - `by_currency_native`: per-currency `PortfolioSummary` in that
+      currency's own units (no conversion). The user's native view.
+    - `by_currency_in_base`: per-currency `(total_cost, total_value)` pair
+      already converted to `base_currency`. Used for stacked bar / pie
+      breakdowns where every slice must share the same unit.
+    - `rates_used`: snapshot of the FX rates applied (ccy → base
+      multiplier). Surfaced for transparency / audit.
+    """
+
+    base_currency: str
+    summary: PortfolioSummary
+    by_currency_native: dict[str, "PortfolioSummary"]
+    by_currency_in_base: dict[str, tuple[Decimal, Decimal]]
+    rates_used: dict[str, Decimal]
 
 
 def unrealized(

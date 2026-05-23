@@ -89,6 +89,7 @@ class TierFeatures(BaseModel):
     multi_account: bool
     tax_export: bool
     institutional_ownership_panel: bool
+    multi_currency_summary: bool
 
 
 class TierConfig(BaseModel):

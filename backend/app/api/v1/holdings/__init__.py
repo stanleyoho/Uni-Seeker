@@ -22,6 +22,7 @@ from app.api.v1.holdings.accounts import router as accounts_router
 from app.api.v1.holdings.analytics import router as analytics_router
 from app.api.v1.holdings.dividends import router as dividends_router
 from app.api.v1.holdings.exports import router as exports_router
+from app.api.v1.holdings.fx import router as fx_router
 from app.api.v1.holdings.imports import router as imports_router
 from app.api.v1.holdings.positions import router as positions_router
 from app.api.v1.holdings.summary import router as summary_router
@@ -36,5 +37,6 @@ router.include_router(dividends_router)
 router.include_router(imports_router)
 router.include_router(exports_router)
 router.include_router(analytics_router)
+router.include_router(fx_router)
 
 __all__ = ["router"]
