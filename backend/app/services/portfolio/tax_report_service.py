@@ -39,6 +39,11 @@ from app.modules.portfolio.tax_report import (
     compute_matched_pairs,
     summarize_by_year,
 )
+from app.modules.portfolio.wash_sale_detector import (
+    WashSaleAdjustment,
+    apply_wash_sale_adjustments,
+    detect_wash_sales,
+)
 from app.repositories.portfolio import (
     PortfolioAccountRepo,
     PortfolioTradeRepo,
@@ -149,17 +154,87 @@ class TaxReportService:
         summary = summarize_by_year(matches)
         return matches, summary
 
+    async def generate_form_8949_with_wash_sales(
+        self,
+        account_id: int | None = None,
+        tax_year: int | None = None,
+    ) -> tuple[
+        list[TaxLotMatch],
+        list[WashSaleAdjustment],
+        dict[int, TaxYearSummary],
+    ]:
+        """Like `generate_form_8949` but also runs §1091 wash-sale detection.
+
+        Algorithm:
+            1. Tier check + load trades (re-uses the private collectors).
+            2. Run FIFO matcher → ``matches`` (raw, pre-wash-sale).
+            3. Run `detect_wash_sales(trades, matches)` → adjustments.
+            4. Fold adjustments back into matches via
+               `apply_wash_sale_adjustments` (frozen-dataclass rebuild).
+            5. Optional `tax_year` filter on `sale_date`.
+            6. `summarize_by_year` on the *adjusted* matches so the
+               year totals already reflect disallowed-loss zero-outs.
+
+        Returns:
+            (adjusted_matches, adjustments, summary_by_year)
+
+        Raises:
+            TierFeatureUnavailable: caller's tier lacks ``tax_export``.
+        """
+        self._assert_tax_export_feature()
+
+        trades = await self._collect_user_trades(account_id=account_id)
+        buy_lots, sell_trades = _project_trades(trades)
+        matches = compute_matched_pairs(buy_lots, sell_trades)
+
+        # Detector needs the full trade list (BUYs to scan as
+        # replacement candidates), projected to the dict shape it
+        # consumes — see `_project_trades_for_wash_sale`.
+        trade_dicts = _project_trades_for_wash_sale(trades)
+        result = detect_wash_sales(trade_dicts, matches)
+        adjusted = apply_wash_sale_adjustments(matches, result.adjustments)
+
+        if tax_year is not None:
+            adjusted = [m for m in adjusted if m.sale_date.year == tax_year]
+
+        summary = summarize_by_year(adjusted)
+        return adjusted, result.adjustments, summary
+
     async def export_form_8949_csv(
         self,
         account_id: int | None = None,
         tax_year: int | None = None,
+        apply_wash_sales: bool = False,
     ) -> bytes:
-        """Return Form 8949-style CSV bytes (UTF-8 + BOM)."""
-        matches, _ = await self.generate_form_8949(
-            account_id=account_id, tax_year=tax_year
-        )
+        """Return Form 8949-style CSV bytes (UTF-8 + BOM).
+
+        Args:
+            account_id / tax_year: standard filters (see
+                `generate_form_8949`).
+            apply_wash_sales: opt-in flag. When True the export runs
+                `generate_form_8949_with_wash_sales` so the **Code** and
+                **Adjustment** columns reflect IRS §1091 disallowance.
+                Default False for backward compatibility with the
+                Round 10 wire format.
+        """
+        if apply_wash_sales:
+            matches, _adj, _summary = await self.generate_form_8949_with_wash_sales(
+                account_id=account_id, tax_year=tax_year
+            )
+        else:
+            matches, _ = await self.generate_form_8949(
+                account_id=account_id, tax_year=tax_year
+            )
         rows: list[list[str]] = []
         for m in matches:
+            # When the row is a wash sale we emit:
+            #   Code = "W"
+            #   Adjustment = +disallowed (positive magnitude per IRS form)
+            #   Gain/Loss = 0 (loss fully disallowed) — the matcher
+            #               already zeroed gain_loss in
+            #               apply_wash_sale_adjustments.
+            code = "W" if m.is_wash_sale else ""
+            adjustment = _dec(m.wash_sale_disallowed_loss) if m.is_wash_sale else ""
             rows.append(
                 [
                     f"{_dec(m.quantity)} {m.symbol} ({m.market})",
@@ -167,8 +242,8 @@ class TaxReportService:
                     m.sale_date.isoformat(),
                     _dec(m.proceeds),
                     _dec(m.cost_basis),
-                    "",  # Code — blank until wash-sale / adjustments land
-                    "",  # Adjustment
+                    code,
+                    adjustment,
                     _dec(m.gain_loss),
                     m.term,
                     str(m.holding_period_days),
@@ -303,6 +378,34 @@ def _project_trades(
                 }
             )
     return buys, sells
+
+
+def _project_trades_for_wash_sale(
+    trades: list[PortfolioTrade],
+) -> list[dict]:
+    """Project ORM trades into the dict shape `wash_sale_detector` consumes.
+
+    Detector keys: ``id``, ``trade_date``, ``symbol``, ``market``,
+    ``action``, ``qty``, ``price`` (price is optional but useful for
+    auditing). DIVIDEND / SPLIT rows are filtered out upstream so we
+    can safely include every action the caller passed in.
+    """
+    out: list[dict] = []
+    for t in trades:
+        if t.quantity is None or t.price is None:
+            continue
+        out.append(
+            {
+                "id": t.id,
+                "trade_date": t.trade_date,
+                "symbol": t.symbol,
+                "market": t.market.value if t.market else "",
+                "action": t.action,
+                "qty": t.quantity,
+                "price": t.price,
+            }
+        )
+    return out
 
 
 def _dec(v: Decimal | None) -> str:

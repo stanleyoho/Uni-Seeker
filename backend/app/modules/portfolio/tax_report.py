@@ -41,7 +41,7 @@ downstream CSV consumers see the canonical Form 8949 column layout.
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -79,7 +79,13 @@ class TaxLotMatch:
     gain_loss: Decimal           # proceeds - cost_basis
     holding_period_days: int
     term: str                    # "SHORT" or "LONG"
-    is_wash_sale: bool           # Phase 4+ placeholder — always False today
+    is_wash_sale: bool           # True iff wash_sale_detector flagged the row
+    # Magnitude (positive Decimal) of loss disallowed under IRS §1091.
+    # `compute_matched_pairs` always emits 0 here; the wash-sale post-pass
+    # in `wash_sale_detector.apply_wash_sale_adjustments` populates real
+    # values. Kept as a default-zero field so existing callers / tests
+    # constructing TaxLotMatch positionally remain unaffected.
+    wash_sale_disallowed_loss: Decimal = field(default_factory=lambda: Decimal("0"))
 
 
 @dataclass(frozen=True)

@@ -39,6 +39,7 @@ from app.services.portfolio.position_service import (
     PositionWithPnL,
 )
 from app.services.portfolio.summary_service import PortfolioSummaryService
+from app.services.portfolio.tax_report_service import TaxReportService
 from app.services.portfolio.trade_service import PortfolioTradeService
 
 __all__ = [
@@ -57,4 +58,5 @@ __all__ = [
     "PortfolioTradeNotFound",
     "TierLimitExceeded",
     "TierFeatureUnavailable",
+    "TaxReportService",
 ]

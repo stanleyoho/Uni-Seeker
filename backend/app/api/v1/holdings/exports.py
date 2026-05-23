@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.api.v1.holdings import _detail as detail
 from app.auth import require_auth
-from app.services.portfolio import CsvExportService
+from app.services.portfolio import CsvExportService, TaxReportService
 from app.services.portfolio.exceptions import TierFeatureUnavailable
 
 router = APIRouter(prefix="/exports", tags=["holdings.exports"])
@@ -168,6 +168,74 @@ async def export_summary(
         content=csv_bytes,
         media_type=_MEDIA_TYPE,
         headers=_disposition("summary"),
+    )
+
+
+@router.get("/form8949.csv")
+async def export_form_8949(
+    db: DbDep,
+    user: UserDep,
+    account_id: int | None = Query(default=None),
+    tax_year: int | None = Query(default=None),
+    apply_wash_sales: bool = Query(
+        default=False,
+        description=(
+            "When true, run IRS §1091 wash-sale detection and populate "
+            "Code='W' + Adjustment columns. Default false for backward "
+            "compatibility with the Round 10 export shape."
+        ),
+    ),
+) -> Response:
+    """Export Form 8949-style matched buy-sell pairs as CSV.
+
+    Tier: ``tax_export`` (PRO only). Service-level guard raises
+    `TierFeatureUnavailable`; translated to 403 here.
+
+    Query params:
+        * ``account_id`` — scope to a single owned account.
+        * ``tax_year`` — narrow to one sale-year.
+        * ``apply_wash_sales`` — opt-in wash-sale post-pass.
+    """
+    service = TaxReportService(db, user)  # type: ignore[arg-type]
+    try:
+        csv_bytes = await service.export_form_8949_csv(
+            account_id=account_id,
+            tax_year=tax_year,
+            apply_wash_sales=apply_wash_sales,
+        )
+    except TierFeatureUnavailable as exc:
+        raise _translate_tier(exc) from exc
+    return Response(
+        content=csv_bytes,
+        media_type=_MEDIA_TYPE,
+        headers=_disposition("form8949"),
+    )
+
+
+@router.get("/schedule_d.csv")
+async def export_schedule_d(
+    db: DbDep,
+    user: UserDep,
+    account_id: int | None = Query(default=None),
+    tax_year: int | None = Query(default=None),
+) -> Response:
+    """Export Schedule D-style annual rollup as CSV.
+
+    Tier: ``tax_export`` (PRO only). One row per tax year present in
+    the matched-pair set; ``tax_year`` narrows to a single year.
+    """
+    service = TaxReportService(db, user)  # type: ignore[arg-type]
+    try:
+        csv_bytes = await service.export_year_summary_csv(
+            account_id=account_id,
+            tax_year=tax_year,
+        )
+    except TierFeatureUnavailable as exc:
+        raise _translate_tier(exc) from exc
+    return Response(
+        content=csv_bytes,
+        media_type=_MEDIA_TYPE,
+        headers=_disposition("schedule_d"),
     )
 
 
