@@ -29,7 +29,16 @@ export {
 } from "./holdings-table";
 export { DiffView, type DiffViewProps } from "./diff-view";
 export { RefreshButton, type RefreshButtonProps } from "./refresh-button";
+export {
+  HoldingsTimeline,
+  type HoldingsTimelineProps,
+} from "./holdings-timeline";
+export { TopMovers, type TopMoversProps } from "./top-movers";
 
 // Modals
 export { FilerSearchModal } from "./filer-search-modal";
 export { BulkSubscribeModal } from "./bulk-subscribe-modal";
+export {
+  MultiFilerCompareModal,
+  type MultiFilerCompareModalProps,
+} from "./multi-filer-compare-modal";

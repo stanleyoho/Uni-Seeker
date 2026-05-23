@@ -35,6 +35,12 @@ import {
 export interface InstitutionalHoldingsTableProps {
   holdings: F13Holding[];
   loading?: boolean;
+  /**
+   * Optional row click handler. When provided, rows become focusable and
+   * clickable — used by Round 11 to drive the per-stock Timeline view from
+   * the main page. Omit for read-only callers (no behaviour change).
+   */
+  onRowClick?: (holding: F13Holding) => void;
 }
 
 type SortKey =
@@ -188,6 +194,7 @@ function PutCallBadge({ value }: { value: "PUT" | "CALL" | null }) {
 export function InstitutionalHoldingsTable({
   holdings,
   loading = false,
+  onRowClick,
 }: InstitutionalHoldingsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("value_usd");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -271,9 +278,11 @@ export function InstitutionalHoldingsTable({
               : rows.map((r) => (
                   <tr
                     key={`${r.raw.id}`}
+                    onClick={onRowClick ? () => onRowClick(r.raw) : undefined}
                     style={{
                       borderBottom: "1px solid var(--border-subtle)",
                       transition: "background 0.12s",
+                      cursor: onRowClick ? "pointer" : "default",
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = "var(--card-hover)";

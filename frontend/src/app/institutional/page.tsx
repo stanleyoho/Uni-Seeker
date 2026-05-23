@@ -1,26 +1,26 @@
 "use client";
 
 /**
- * Institutional 13F Page — Phase 2 frontend assembly.
+ * Institutional 13F Page — Phase 2 + Round 11 advanced views.
  *
- * Composes:
- *   - `useInstitutionalFilers` (X1 hook)             → filer list
- *   - `useFilings(filerId)`                          → period picker
- *   - `useHoldings(filerId, period)`                 → snapshot table
- *   - <FilerList />, <InstitutionalHoldingsTable />, <DiffView />,
- *     <RefreshButton />, <FilerSearchModal />        (X2 components)
+ * Round 11 adds a view-switcher toolbar layered over the original Y1 page:
  *
- * Selection flow:
- *   1. List loads → first row auto-selected once available (keeps the
- *      page non-empty for newcomers without forcing them to click).
- *   2. Selected filer → fetch filings → period picker materialises with
- *      the latest filing pre-selected.
- *   3. Diff view defaults to (filings[1].period, filings[0].period) once
- *      we have at least two filings; before that, it renders the
- *      "select periods" stub.
+ *   - HOLDINGS   (default)  → original snapshot + QoQ diff (Y1 behaviour)
+ *   - TIMELINE              → per-stock multi-quarter shares/value trail
+ *                              for a single filer (HoldingsTimeline)
+ *   - TOP MOVERS            → ranked buys/sells across one QoQ window
+ *                              (TopMovers)
+ *   - COMPARE    (modal)    → side-by-side N-filer matrix
+ *                              (MultiFilerCompareModal)
  *
- * The legacy Taiwan-stock 三大法人 page lives under
- * `/institutional/daily-flows` (renamed; no behaviour change).
+ * Tab state lives in `view`. The "compare" action is a modal trigger, not
+ * a view — opening it doesn't unmount the underlying page. The timeline
+ * view requires a symbol selection; clicking a row in the holdings table
+ * sets `selectedSymbol` and the page auto-switches to the timeline view.
+ *
+ * The original Y1 paths (selectedFilerId, selectedPeriod, diffFromDate/
+ * diffToDate) remain authoritative; new views consume those same values
+ * so navigation stays cheap (cached React-Query keys are reused).
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -34,8 +34,13 @@ import {
   DiffView,
   FilerList,
   FilerSearchModal,
+  HoldingsTimeline,
   InstitutionalHoldingsTable,
+  MultiFilerCompareModal,
   RefreshButton,
+  TopMovers,
+  holdingDisplaySymbol,
+  type F13Holding,
 } from "@/components/institutional";
 import {
   useFilings,
@@ -44,15 +49,21 @@ import {
 } from "@/hooks/use-institutional";
 import { useI18n } from "@/i18n/context";
 
+type ViewMode = "holdings" | "timeline" | "top_movers";
+
 export default function InstitutionalPage() {
   const { t } = useI18n();
   const f13 = t.institutional_13f ?? {};
+  const viewsLabels = f13.views ?? {};
 
   /* --------------------------- State --------------------------- */
   const [selectedFilerId, setSelectedFilerId] = useState<number | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [view, setView] = useState<ViewMode>("holdings");
+  const [selectedSymbol, setSelectedSymbol] = useState<string>("");
 
   /* --------------------------- Data --------------------------- */
   const { data: filers = [], isLoading: filersLoading } =
@@ -63,10 +74,7 @@ export default function InstitutionalPage() {
     selectedPeriod,
   );
 
-  /* Auto-select the first filer once the list resolves. We only do this
-   * when the user has no current selection; this lets the user clear &
-   * pick something else (or stay on the empty state) without the UI
-   * snapping back. */
+  /* Auto-select the first filer once the list resolves. */
   useEffect(() => {
     if (selectedFilerId == null && filers.length > 0) {
       setSelectedFilerId(filers[0].id);
@@ -80,9 +88,10 @@ export default function InstitutionalPage() {
     }
   }, [filings, selectedPeriod]);
 
-  /* Reset period whenever the filer changes. */
+  /* Reset period + symbol whenever the filer changes. */
   useEffect(() => {
     setSelectedPeriod("");
+    setSelectedSymbol("");
   }, [selectedFilerId]);
 
   /* Diff defaults to (1 quarter ago, current). */
@@ -93,6 +102,12 @@ export default function InstitutionalPage() {
 
   const titleLabel = f13.title ?? "機構持倉追蹤 (13F)";
   const subscribeLabel = f13.actions?.subscribe ?? "+ 訂閱機構/基金";
+
+  /* Click a holding row → switch to timeline pinned to that symbol. */
+  const handleHoldingClick = (h: F13Holding) => {
+    setSelectedSymbol(holdingDisplaySymbol(h));
+    setView("timeline");
+  };
 
   /* --------------------------- Render --------------------------- */
   return (
@@ -181,83 +196,175 @@ export default function InstitutionalPage() {
         {/* Detail panes (visible only when a filer is selected) */}
         {selectedFilerId != null && (
           <>
-            {/* Period selector + refresh */}
+            {/* View toolbar */}
             <section
               style={{
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
-                gap: 12,
+                gap: 8,
               }}
             >
-              <PeriodSelector
-                filings={filings}
-                value={selectedPeriod}
-                onChange={setSelectedPeriod}
+              <ViewTab
+                active={view === "holdings"}
+                label={viewsLabels.holdings ?? "Holdings"}
+                onClick={() => setView("holdings")}
               />
-              <RefreshButton filerId={selectedFilerId} />
+              <ViewTab
+                active={view === "timeline"}
+                label={viewsLabels.holdings_timeline ?? "Timeline"}
+                onClick={() => setView("timeline")}
+                disabled={!selectedSymbol}
+                hint={!selectedSymbol ? "點 Holdings 表內任一筆以鎖定 symbol" : undefined}
+              />
+              <ViewTab
+                active={view === "top_movers"}
+                label={viewsLabels.top_movers ?? "Top Movers"}
+                onClick={() => setView("top_movers")}
+              />
+              <ClippedButton
+                variant="cyan-ghost"
+                size="sm"
+                onClick={() => setCompareOpen(true)}
+              >
+                {viewsLabels.multi_filer_compare ?? "Compare"}
+              </ClippedButton>
+
+              <div style={{ marginLeft: "auto", display: "flex", gap: 12, alignItems: "center" }}>
+                {view === "holdings" && (
+                  <PeriodSelector
+                    filings={filings}
+                    value={selectedPeriod}
+                    onChange={setSelectedPeriod}
+                  />
+                )}
+                <RefreshButton filerId={selectedFilerId} />
+              </div>
             </section>
 
-            {/* Holdings table */}
-            <section>
-              <SectionHeading
-                label="HOLDINGS SNAPSHOT"
-                meta={
-                  holdingsRes?.filing.report_period_end
-                    ? `Period ending ${holdingsRes.filing.report_period_end}`
-                    : undefined
-                }
-              />
-              <InstitutionalHoldingsTable
-                holdings={holdingsRes?.holdings ?? []}
-                loading={holdingsLoading}
-              />
-            </section>
+            {/* Body — driven by `view` */}
+            {view === "holdings" && (
+              <>
+                <section>
+                  <SectionHeading
+                    label="HOLDINGS SNAPSHOT"
+                    meta={
+                      holdingsRes?.filing.report_period_end
+                        ? `Period ending ${holdingsRes.filing.report_period_end}`
+                        : undefined
+                    }
+                  />
+                  <InstitutionalHoldingsTable
+                    holdings={holdingsRes?.holdings ?? []}
+                    loading={holdingsLoading}
+                    onRowClick={handleHoldingClick}
+                  />
+                </section>
 
-            {/* Diff view */}
-            <section>
-              <SectionHeading
-                label="QUARTER-OVER-QUARTER MOVES"
-                meta={
-                  diffFromDate && diffToDate
-                    ? `${diffFromDate} → ${diffToDate}`
-                    : "需至少兩個季度的 filing"
-                }
-              />
-              {diffFromDate && diffToDate ? (
-                <DiffView
-                  filerId={selectedFilerId}
-                  fromDate={diffFromDate}
-                  toDate={diffToDate}
+                <section>
+                  <SectionHeading
+                    label="QUARTER-OVER-QUARTER MOVES"
+                    meta={
+                      diffFromDate && diffToDate
+                        ? `${diffFromDate} → ${diffToDate}`
+                        : "需至少兩個季度的 filing"
+                    }
+                  />
+                  {diffFromDate && diffToDate ? (
+                    <DiffView
+                      filerId={selectedFilerId}
+                      fromDate={diffFromDate}
+                      toDate={diffToDate}
+                    />
+                  ) : (
+                    <GlassPanel>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          textAlign: "center",
+                          padding: "20px 0",
+                        }}
+                      >
+                        觸發 refresh 拉至少 2 個季度的 filing 即可顯示異動
+                      </p>
+                    </GlassPanel>
+                  )}
+                </section>
+              </>
+            )}
+
+            {view === "timeline" && (
+              <section>
+                <SectionHeading
+                  label="HOLDINGS TIMELINE"
+                  meta={selectedSymbol ? `Tracking ${selectedSymbol}` : "未選擇 symbol"}
                 />
-              ) : (
-                <GlassPanel>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "var(--text-muted)",
-                      textAlign: "center",
-                      padding: "20px 0",
-                    }}
-                  >
-                    觸發 refresh 拉至少 2 個季度的 filing 即可顯示異動
-                  </p>
-                </GlassPanel>
-              )}
-            </section>
+                {selectedSymbol ? (
+                  <HoldingsTimeline
+                    filerId={selectedFilerId}
+                    symbolOrCusip={selectedSymbol}
+                  />
+                ) : (
+                  <GlassPanel>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-muted)",
+                        textAlign: "center",
+                        padding: "20px 0",
+                      }}
+                    >
+                      請回到 Holdings 點選一筆持倉
+                    </p>
+                  </GlassPanel>
+                )}
+              </section>
+            )}
+
+            {view === "top_movers" && (
+              <section>
+                <SectionHeading
+                  label="TOP MOVERS"
+                  meta={
+                    diffFromDate && diffToDate
+                      ? `${diffFromDate} → ${diffToDate}`
+                      : "需至少兩個季度的 filing"
+                  }
+                />
+                {diffFromDate && diffToDate ? (
+                  <TopMovers
+                    filerId={selectedFilerId}
+                    fromDate={diffFromDate}
+                    toDate={diffToDate}
+                    limit={10}
+                  />
+                ) : (
+                  <GlassPanel>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-muted)",
+                        textAlign: "center",
+                        padding: "20px 0",
+                      }}
+                    >
+                      觸發 refresh 拉至少 2 個季度的 filing 即可顯示 movers
+                    </p>
+                  </GlassPanel>
+                )}
+              </section>
+            )}
           </>
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       {searchOpen && (
         <FilerSearchModal
           onClose={() => setSearchOpen(false)}
           onSubscribed={() => {
-            /* React-Query handles cache invalidation. We could optionally
-             * auto-select the new filer once the list refetches; deferred
-             * because we don't have the resolved filer_id at this point.
-             */
+            /* React-Query handles cache invalidation. */
           }}
         />
       )}
@@ -265,14 +372,58 @@ export default function InstitutionalPage() {
         <BulkSubscribeModal
           onClose={() => setBulkOpen(false)}
           onSuccess={() => {
-            /* React-Query invalidates filers.all on success; the list
-             * refetch surfaces the new rows. The modal stays open if
-             * there were errors/duplicates so the user can review.
-             */
+            /* React-Query handles cache invalidation. */
           }}
         />
       )}
+      {compareOpen && (
+        <MultiFilerCompareModal
+          preselectedFilerIds={selectedFilerId != null ? [selectedFilerId] : []}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
     </main>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  View tab button                                                    */
+/* ------------------------------------------------------------------ */
+
+interface ViewTabProps {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  hint?: string;
+}
+
+function ViewTab({ active, label, onClick, disabled, hint }: ViewTabProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={hint}
+      style={{
+        padding: "8px 14px",
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        background: active ? "var(--accent-cyan)" : "transparent",
+        color: active
+          ? "#000"
+          : disabled
+            ? "var(--text-muted)"
+            : "var(--accent-cyan)",
+        border: `1px solid ${disabled ? "var(--border-subtle)" : "var(--accent-cyan)"}`,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "background 0.12s, color 0.12s",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
