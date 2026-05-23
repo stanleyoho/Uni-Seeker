@@ -23,7 +23,6 @@ cd "$FRONTEND_ROOT"
 mkdir -p "$(dirname "$OUTPUT")"
 
 echo "Fetching OpenAPI spec from $API_URL/api/openapi.json ..."
-curl -fsS "$API_URL/api/openapi.json" \
-  | npx --no-install openapi-typescript - --output "$OUTPUT"
+npx --no-install openapi-typescript "$API_URL/api/openapi.json" --output "$OUTPUT"
 
 echo "Generated: $FRONTEND_ROOT/$OUTPUT"
