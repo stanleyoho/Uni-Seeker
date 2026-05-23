@@ -21,6 +21,8 @@ from app.schemas.institutional.filing import (
     F13DiffResponse,
     F13FilingResponse,
     F13HoldingChangeResponse,
+    F13HoldingHistoryEntry,
+    F13HoldingHistoryResponse,
     F13HoldingResponse,
     F13HoldingsAtPeriodResponse,
 )
@@ -160,5 +162,55 @@ async def get_diff(
                 delta_value_usd=c.delta_value_usd,
             )
             for c in changes
+        ],
+    )
+
+
+@router.get(
+    "/holdings/{identifier}/history",
+    response_model=F13HoldingHistoryResponse,
+)
+async def get_holding_history(
+    filer_id: int,
+    identifier: str,
+    db: DbDep,
+    user: UserDep,
+    edgar: EdgarDep,
+    from_date: date | None = Query(None, alias="from_date"),
+    to_date: date | None = Query(None, alias="to_date"),
+    limit: int = Query(20, ge=1, le=40),
+) -> F13HoldingHistoryResponse:
+    """Per-stock time-series across multiple quarterly filings.
+
+    `identifier` is either a 9-char CUSIP or a stock symbol — the
+    service matches CUSIP first, then falls back to a
+    `stocks.symbol` JOIN. Defaults: `from_date` = today − 2y,
+    `to_date` = today.
+
+    Access: subscription to the filer OR Pro-tier
+    `institutional_ownership_panel` feature flag. Lower tiers without
+    a subscription get 404 (information-hiding parity with the rest
+    of `/filers/{id}/*`).
+    """
+    svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
+    try:
+        payload = await svc.get_holding_history(
+            filer_id=filer_id,
+            identifier=identifier,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+        )
+    except F13FilerNotFound as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail.F13_FILER_NOT_FOUND,
+        ) from exc
+    return F13HoldingHistoryResponse(
+        filer_id=payload["filer_id"],
+        cusip=payload["cusip"],
+        symbol=payload["symbol"],
+        entries=[
+            F13HoldingHistoryEntry(**e) for e in payload["entries"]
         ],
     )

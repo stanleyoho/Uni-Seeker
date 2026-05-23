@@ -27,12 +27,14 @@ process.
 from __future__ import annotations
 
 import asyncio
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import structlog
 
+from app.config import settings
+from app.modules.billing.tier_limits import has_feature
 from app.modules.institutional.diff import HoldingChange, compute_diff
 from app.modules.institutional.edgar_client import (
     EdgarClient,
@@ -203,6 +205,191 @@ class F13FilingService:
         curr_parsed = [_orm_holding_to_parsed(r) for r in curr_rows]
         changes = compute_diff(prev_parsed, curr_parsed)
         return prev_rows, curr_rows, changes
+
+    async def get_holding_history(
+        self,
+        filer_id: int,
+        identifier: str,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        limit: int = 20,
+    ) -> dict:
+        """Per-stock time-series across multiple quarterly filings.
+
+        Replaces the frontend's "N parallel useHoldings + filter"
+        pattern with a single round trip. Returns a plain dict that
+        the API layer wraps in `F13HoldingHistoryResponse`.
+
+        Access control: caller is allowed iff
+            - the user is subscribed to `filer_id`, OR
+            - the user's tier carries `institutional_ownership_panel`
+              (Pro). The Pro bypass exists because the cross-stock
+              panel already lets a Pro user inspect any filer's
+              positions on a stock; this endpoint is the per-filer
+              counterpart and must offer the same reach.
+          We do NOT collapse the two failure cases into a single 404:
+          when the user is subscribed but the identifier never
+          appeared in any filing within the window, we return an
+          empty `entries` list with `cusip=symbol=None`. That keeps
+          the timeline component renderable as "filed but never held".
+
+        Algorithm:
+          1. Validate access (subscription OR Pro feature flag).
+          2. Default window: 2 years ago → today (inclusive).
+          3. Pull ASC-sorted `(filing, holding | None)` tuples via the
+             repo.
+          4. Collapse same-period amendments by keeping the row with
+             the most recent `filed_at` (mirrors `get_at_period`).
+          5. Walk forward computing deltas + change_type:
+             - prev NOT_HELD, curr held → NEW
+             - prev held, curr NOT_HELD → EXITED
+             - prev held, curr held → INCREASED / DECREASED / UNCHANGED
+             - prev NOT_HELD, curr NOT_HELD → NOT_HELD
+          6. Pick `cusip` / `symbol` from the first held entry (when
+             any) so the response carries display metadata.
+
+        Args:
+            filer_id: subscribed filer id.
+            identifier: CUSIP (9 chars) or stock symbol. Matched as
+                CUSIP first; falls back to `stocks.symbol` JOIN when
+                the holding has been mapped.
+            from_date: inclusive lower bound. Defaults to 2y ago.
+            to_date: inclusive upper bound. Defaults to today.
+            limit: max number of filings to consider (bounded by the
+                filings count). Defaults to 20.
+
+        Raises:
+            F13FilerNotFound: caller has neither a subscription nor
+                the Pro feature flag for this filer.
+        """
+        # Step 1: access control — subscription OR Pro feature bypass.
+        # `_require_subscribed` already collapses "filer missing" and
+        # "not yours" into the same 404; we mirror that for the Pro
+        # branch by requiring the filer to exist before bypassing.
+        if not await self._sub_repo.is_subscribed(
+            self._user.id, filer_id
+        ):
+            pro_bypass = (
+                not settings.enable_monetization
+                or has_feature(
+                    self._user.tier, "institutional_ownership_panel"
+                )
+            )
+            if not pro_bypass:
+                raise F13FilerNotFound(
+                    f"filer_id={filer_id} not accessible"
+                )
+            # Pro bypass still needs the filer to exist so we don't
+            # return a phantom timeline. Re-use `_require_filer` —
+            # raises `F13FilerNotFound` when missing.
+            await self._require_filer(filer_id)
+
+        # Step 2: resolve the window.
+        if to_date is None:
+            to_date = date.today()
+        if from_date is None:
+            # 2y default. Use 730 days for a stable arithmetic window
+            # — leap-year drift is irrelevant at quarter granularity.
+            from_date = to_date - timedelta(days=730)
+        if from_date > to_date:
+            # Empty window: short-circuit with an empty response so
+            # the caller doesn't have to special-case it.
+            return {
+                "filer_id": filer_id,
+                "cusip": None,
+                "symbol": None,
+                "entries": [],
+            }
+
+        # Step 3: repo query (ASC sorted, LEFT join on identifier).
+        tuples = await self._holding_repo.list_history_for_filer_and_symbol(
+            filer_id=filer_id,
+            identifier=identifier,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+        )
+
+        # Step 4: amendment collapse. When (filing.report_period_end)
+        # appears twice (13F-HR + 13F-HR/A), keep the one with the
+        # latest `filed_at`. The tuples are ASC by period_end already
+        # so we walk once and overwrite on conflict.
+        by_period: dict[date, tuple] = {}
+        for filing, holding in tuples:
+            existing = by_period.get(filing.report_period_end)
+            if existing is None or filing.filed_at > existing[0].filed_at:
+                by_period[filing.report_period_end] = (filing, holding)
+        collapsed = [by_period[k] for k in sorted(by_period.keys())]
+
+        # Step 5: walk forward + compute deltas.
+        entries: list[dict] = []
+        prev_shares: Decimal | None = None
+        cusip_out: str | None = None
+        symbol_out: str | None = None
+
+        for filing, holding in collapsed:
+            if holding is None:
+                # Filed but didn't hold the requested stock.
+                shares = None
+                value_usd = None
+                put_call = None
+                investment_discretion = None
+            else:
+                shares = holding.shares
+                value_usd = holding.value_usd
+                put_call = holding.put_call
+                investment_discretion = holding.investment_discretion
+                # Capture display metadata from the first match.
+                if cusip_out is None:
+                    cusip_out = holding.cusip
+                if symbol_out is None and holding.stock_id is not None:
+                    symbol_out = await self._resolve_stock_symbol(
+                        holding.stock_id
+                    )
+
+            # change_type + deltas
+            change_type, delta_shares, delta_pct = _classify_history_point(
+                prev_shares=prev_shares,
+                curr_shares=shares,
+            )
+
+            entries.append({
+                "filing_id": filing.id,
+                "report_period_end": filing.report_period_end,
+                "form_type": filing.form_type,
+                "shares": shares,
+                "value_usd": value_usd,
+                "put_call": put_call,
+                "investment_discretion": investment_discretion,
+                "delta_shares": delta_shares,
+                "delta_pct": delta_pct,
+                "change_type": change_type,
+            })
+            prev_shares = shares
+
+        return {
+            "filer_id": filer_id,
+            "cusip": cusip_out,
+            "symbol": symbol_out,
+            "entries": entries,
+        }
+
+    async def _resolve_stock_symbol(self, stock_id: int) -> str | None:
+        """Look up `stocks.symbol` for the holding's stock_id.
+
+        Used only to populate the response envelope's `symbol` field —
+        the timeline itself does not depend on the lookup, so a miss
+        (deleted stock row, race with the SET NULL FK) just leaves
+        `symbol` as None.
+        """
+        from sqlalchemy import select
+
+        from app.models.stock import Stock
+
+        result = await self._db.execute(
+            select(Stock.symbol).where(Stock.id == stock_id)
+        )
+        return result.scalar_one_or_none()
 
     # ── on-demand refresh (Q1) ─────────────────────────────────────────
 
@@ -450,6 +637,57 @@ def _parsed_to_holding_kwargs(p: ParsedHolding) -> dict:
         "voting_authority_shared": p.voting_authority_shared,
         "voting_authority_none": p.voting_authority_none,
     }
+
+
+def _classify_history_point(
+    *,
+    prev_shares: Decimal | None,
+    curr_shares: Decimal | None,
+) -> tuple[str, Decimal | None, Decimal | None]:
+    """Classify a single (prev, curr) shares pair for the history endpoint.
+
+    Returns ``(change_type, delta_shares, delta_pct)``. The semantics
+    extend the 5-way diff classification with a 6th state — NOT_HELD —
+    for "filer filed the quarter but didn't hold the requested stock
+    that period AND we have no prior position to diff against".
+
+    Rules (in evaluation order):
+        prev=None, curr=None  → NOT_HELD,    Δshares=None, Δpct=None
+        prev=None, curr=value → NEW,         Δshares=None, Δpct=None
+        prev=value, curr=None → EXITED,      Δshares=-prev, Δpct=None
+        prev=value, curr=value
+            curr > prev       → INCREASED
+            curr < prev       → DECREASED
+            curr == prev      → UNCHANGED
+
+    Δpct is the percent change vs prev (basis = prev_shares). It is
+    None when prev is None / zero or curr is None (no meaningful %
+    when one side is missing).
+    """
+    if prev_shares is None and curr_shares is None:
+        return ("NOT_HELD", None, None)
+    if prev_shares is None and curr_shares is not None:
+        # First time we see the position: NEW. Δshares stays None
+        # because there is no prior baseline to subtract from — the
+        # frontend renders the bare `shares` instead.
+        return ("NEW", None, None)
+    if prev_shares is not None and curr_shares is None:
+        return ("EXITED", -prev_shares, None)
+    # Both non-None.
+    assert prev_shares is not None and curr_shares is not None
+    delta = curr_shares - prev_shares
+    if prev_shares == 0:
+        # Divide-by-zero guard. Treat any movement off a zero base as
+        # NEW for classification purposes (rare; can happen when a
+        # filer reported zero shares in the prior quarter — defensive).
+        pct: Decimal | None = None
+    else:
+        pct = (delta / prev_shares) * Decimal("100")
+    if delta > 0:
+        return ("INCREASED", delta, pct)
+    if delta < 0:
+        return ("DECREASED", delta, pct)
+    return ("UNCHANGED", delta, pct)
 
 
 def _orm_holding_to_parsed(row) -> ParsedHolding:

@@ -3,21 +3,13 @@
 /**
  * Holdings Timeline — per-stock multi-quarter view for a single filer.
  *
- * Given (filerId, symbolOrCusip) we:
- *   1. Pull the filer's filing list (`useFilings`).
- *   2. Fan-out `getHoldings` calls for each filing via `useQueries` so the
- *      hook count stays stable across renders (React rules-of-hooks). We
- *      cap at MAX_QUARTERS (8) — beyond that the chart gets noisy and the
- *      EDGAR retention story breaks down anyway.
- *   3. For each filing's holdings, find the row matching the requested
- *      symbol or CUSIP. Missing → "未持有" cell.
- *   4. Compose timeline rows in ascending date order, compute QoQ deltas,
- *      and render a sparkline-style bar mini-chart + a table.
+ * Round 12 update: now backed by a single `/filers/{id}/holdings/{identifier}/history`
+ * endpoint instead of N parallel `getHoldings` fan-outs. The backend handles
+ * change_type classification + delta math, so this component is purely
+ * presentational — it consumes the response, renders the sparkline + table.
  *
- * No new backend endpoint is required; this is a pure composition over
- * existing `/filers/{id}/filings` + `/filers/{id}/holdings` endpoints.
- * Cache keys are (filerId, period) — the same as the snapshot view, so
- * navigation between Timeline and Holdings shares the cache.
+ * The previous fan-out pattern lives on as a fallback elsewhere if needed,
+ * but the per-stock timeline is the canonical caller for the new endpoint.
  *
  * Color polarity follows the TAIWAN convention via `--stock-up` (red for
  * increases) and `--stock-down` (green for decreases), matching the rest
@@ -25,19 +17,10 @@
  */
 
 import { useMemo } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { GlassPanel } from "@/components/stratos/primitives";
-import { getHoldings, type F13HoldingsAtPeriod } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
-import { useFilings } from "@/hooks/use-institutional";
-import {
-  fmtCompact,
-  fmtInt,
-  fmtPct,
-  holdingDisplaySymbol,
-  toDecimal,
-  type F13Holding,
-} from "./types";
+import { useHoldingHistory } from "@/hooks/use-institutional";
+import type { F13HoldingHistoryEntry } from "@/lib/api-client";
+import { fmtCompact, fmtInt, fmtPct, toDecimal } from "./types";
 
 export interface HoldingsTimelineProps {
   filerId: number;
@@ -51,21 +34,14 @@ interface TimelinePoint {
   period: string;
   shares: number | null;
   valueUsd: number | null;
-  /** Holding row pulled from the per-period query, or `null` if not held. */
-  holding: F13Holding | null;
-  /** Δ shares vs previous period (oldest → newest scan). null on first row. */
+  /** Raw entry from the backend — carries change_type + deltas. */
+  entry: F13HoldingHistoryEntry;
+  /** Δ shares vs previous period (already computed server-side). */
   deltaShares: number | null;
-  /** Δ value vs previous period. null on first row. */
+  /** Δ value vs previous period (derived locally — server only sends Δ shares). */
   deltaValue: number | null;
-  /** Δ percent (shares basis) vs previous period. null on first row. */
+  /** Δ percent (shares basis) vs previous period (server-computed). */
   deltaPct: number | null;
-}
-
-function matchesHolding(h: F13Holding, query: string): boolean {
-  const q = query.toUpperCase();
-  if (h.stock_symbol && h.stock_symbol.toUpperCase() === q) return true;
-  if (h.cusip.toUpperCase() === q) return true;
-  return false;
 }
 
 /* ----------------------------- Sparkline ----------------------------- */
@@ -100,7 +76,6 @@ function Sparkline({ points, metric, height = 56 }: SparklineProps) {
   }
 
   const max = Math.max(...nonNull);
-  const barCount = values.length;
   const gap = 4;
 
   return (
@@ -144,38 +119,33 @@ function Sparkline({ points, metric, height = 56 }: SparklineProps) {
 
 /* ----------------------------- Status pill ---------------------------- */
 
-function StatusCell({
-  point,
-  isFirst,
-}: {
-  point: TimelinePoint;
-  isFirst: boolean;
-}) {
-  if (point.holding == null) {
-    return (
-      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>未持有</span>
-    );
-  }
-  // First row: only label as "持有" since there's no prior period to diff.
-  if (isFirst) {
-    return (
-      <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>持有</span>
-    );
-  }
-  if (point.deltaShares == null) {
-    return (
-      <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>—</span>
-    );
-  }
-  if (point.deltaShares > 0) {
-    return (
-      <span style={{ fontSize: 11, color: "var(--stock-up)", fontWeight: 600 }}>
-        加碼
-      </span>
-    );
-  }
-  if (point.deltaShares < 0) {
-    if (point.shares === 0 || point.shares == null) {
+function StatusCell({ point }: { point: TimelinePoint }) {
+  switch (point.entry.change_type) {
+    case "NOT_HELD":
+      return (
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>未持有</span>
+      );
+    case "NEW":
+      return (
+        <span style={{ fontSize: 11, color: "var(--stock-up)", fontWeight: 600 }}>
+          新建倉
+        </span>
+      );
+    case "INCREASED":
+      return (
+        <span style={{ fontSize: 11, color: "var(--stock-up)", fontWeight: 600 }}>
+          加碼
+        </span>
+      );
+    case "DECREASED":
+      return (
+        <span
+          style={{ fontSize: 11, color: "var(--stock-down)", fontWeight: 600 }}
+        >
+          減碼
+        </span>
+      );
+    case "EXITED":
       return (
         <span
           style={{ fontSize: 11, color: "var(--stock-down)", fontWeight: 600 }}
@@ -183,18 +153,15 @@ function StatusCell({
           已清倉
         </span>
       );
-    }
-    return (
-      <span
-        style={{ fontSize: 11, color: "var(--stock-down)", fontWeight: 600 }}
-      >
-        減碼
-      </span>
-    );
+    case "UNCHANGED":
+      return (
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>持平</span>
+      );
+    default:
+      return (
+        <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>—</span>
+      );
   }
-  return (
-    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>持平</span>
-  );
 }
 
 /* ------------------------------- Main -------------------------------- */
@@ -204,80 +171,48 @@ export function HoldingsTimeline({
   symbolOrCusip,
   maxQuarters = 8,
 }: HoldingsTimelineProps) {
-  const { data: filings = [], isLoading: filingsLoading } = useFilings(filerId);
-
-  /* Trim to the most recent N filings (the API returns newest-first). */
-  const tracked = useMemo(
-    () => filings.slice(0, maxQuarters),
-    [filings, maxQuarters],
-  );
-
-  /* Fan-out one holdings query per filing. `useQueries` keeps the hook
-   * count constant across renders for a stable `tracked` length. */
-  const holdingsQueries = useQueries({
-    queries: tracked.map((f) => ({
-      queryKey: queryKeys.institutional.filings.holdings(
-        filerId,
-        f.report_period_end,
-      ),
-      queryFn: (): Promise<F13HoldingsAtPeriod> =>
-        getHoldings(filerId, f.report_period_end),
-      enabled: filerId > 0 && symbolOrCusip.length > 0,
-      staleTime: 60 * 1000,
-    })),
+  const { data, isLoading } = useHoldingHistory(filerId, symbolOrCusip, {
+    limit: maxQuarters,
   });
 
-  const someLoading = holdingsQueries.some((q) => q.isLoading);
-  const allLoading = holdingsQueries.length > 0 && holdingsQueries.every((q) => q.isLoading);
-
-  /* Compose timeline rows in ascending order (oldest → newest). The diff
-   * is meaningful only after we have at least two consecutive points. */
+  /* Compose timeline rows. Backend returns ASC by report_period_end already,
+   * with delta_* / change_type pre-computed. We just translate Decimal-as-string
+   * to numbers and derive delta_value locally (server only sends delta_shares).
+   */
   const points = useMemo<TimelinePoint[]>(() => {
-    const asc = [...tracked].reverse();
-    const rawPoints: TimelinePoint[] = asc.map((filing) => {
-      const queryIndex = tracked.findIndex((f) => f.id === filing.id);
-      const res = queryIndex >= 0 ? holdingsQueries[queryIndex]?.data : null;
-      const match = res?.holdings.find((h) => matchesHolding(h, symbolOrCusip));
-      const shares = match ? toDecimal(match.shares) : null;
-      const value = match ? toDecimal(match.value_usd) : null;
-      return {
-        period: filing.report_period_end,
+    const entries = data?.entries ?? [];
+    let prevValue: number | null = null;
+    const rows: TimelinePoint[] = [];
+    for (const entry of entries) {
+      const shares = toDecimal(entry.shares);
+      const valueUsd = toDecimal(entry.value_usd);
+      const deltaShares = toDecimal(entry.delta_shares);
+      const deltaPct = toDecimal(entry.delta_pct);
+      const deltaValue =
+        prevValue != null && valueUsd != null ? valueUsd - prevValue : null;
+      rows.push({
+        period: entry.report_period_end,
         shares,
-        valueUsd: value,
-        holding: match ?? null,
-        deltaShares: null,
-        deltaValue: null,
-        deltaPct: null,
-      };
-    });
-
-    /* Second pass: compute deltas vs previous point. */
-    for (let i = 1; i < rawPoints.length; i++) {
-      const prev = rawPoints[i - 1];
-      const curr = rawPoints[i];
-      const prevShares = prev.shares ?? 0;
-      const currShares = curr.shares ?? 0;
-      const prevValue = prev.valueUsd ?? 0;
-      const currValue = curr.valueUsd ?? 0;
-      curr.deltaShares = currShares - prevShares;
-      curr.deltaValue = currValue - prevValue;
-      curr.deltaPct =
-        prevShares > 0 ? ((currShares - prevShares) / prevShares) * 100 : null;
+        valueUsd,
+        entry,
+        deltaShares,
+        deltaValue,
+        deltaPct,
+      });
+      prevValue = valueUsd;
     }
-
-    return rawPoints;
-  }, [tracked, holdingsQueries, symbolOrCusip]);
+    return rows;
+  }, [data]);
 
   const displaySymbol = useMemo(() => {
-    for (const p of points) {
-      if (p.holding) return holdingDisplaySymbol(p.holding);
-    }
+    if (data?.symbol) return data.symbol;
+    if (data?.cusip) return data.cusip;
     return symbolOrCusip;
-  }, [points, symbolOrCusip]);
+  }, [data, symbolOrCusip]);
 
   /* --------------------------- Render --------------------------- */
 
-  if (filingsLoading || allLoading) {
+  if (isLoading) {
     return (
       <GlassPanel>
         <p
@@ -294,7 +229,7 @@ export function HoldingsTimeline({
     );
   }
 
-  if (tracked.length === 0) {
+  if (points.length === 0) {
     return (
       <GlassPanel>
         <p
@@ -311,7 +246,9 @@ export function HoldingsTimeline({
     );
   }
 
-  const heldCount = points.filter((p) => p.holding != null).length;
+  const heldCount = points.filter(
+    (p) => p.entry.change_type !== "NOT_HELD",
+  ).length;
 
   return (
     <GlassPanel noPadding>
@@ -357,7 +294,6 @@ export function HoldingsTimeline({
           }}
         >
           持有 {heldCount} / {points.length} 個季度
-          {someLoading && !allLoading && <span> · 更新中…</span>}
         </span>
       </div>
 
@@ -439,8 +375,7 @@ export function HoldingsTimeline({
           </thead>
           <tbody>
             {/* Display newest → oldest for readability (matches snapshot view). */}
-            {[...points].reverse().map((p, i) => {
-              const isFirst = i === points.length - 1; // oldest row
+            {[...points].reverse().map((p) => {
               const deltaSharesColor =
                 p.deltaShares == null
                   ? "var(--text-muted)"
@@ -457,6 +392,7 @@ export function HoldingsTimeline({
                     : p.deltaValue < 0
                       ? "var(--stock-down)"
                       : "var(--text-muted)";
+              const isNotHeld = p.entry.change_type === "NOT_HELD";
               return (
                 <tr
                   key={p.period}
@@ -481,7 +417,7 @@ export function HoldingsTimeline({
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {p.holding ? fmtInt(p.shares) : "—"}
+                    {isNotHeld ? "—" : fmtInt(p.shares)}
                   </td>
                   <td
                     style={{
@@ -491,7 +427,7 @@ export function HoldingsTimeline({
                       fontWeight: 600,
                     }}
                   >
-                    {p.holding ? fmtCompact(p.valueUsd) : "—"}
+                    {isNotHeld ? "—" : fmtCompact(p.valueUsd)}
                   </td>
                   <td
                     style={{
@@ -523,7 +459,7 @@ export function HoldingsTimeline({
                         )}`}
                   </td>
                   <td style={{ padding: "10px 14px", textAlign: "left" }}>
-                    <StatusCell point={p} isFirst={isFirst} />
+                    <StatusCell point={p} />
                   </td>
                 </tr>
               );

@@ -26,6 +26,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   bulkSubscribeFilers,
   getDiff,
+  getHoldingHistory,
   getHoldings,
   getInstitutionalForStock,
   listFilings,
@@ -40,6 +41,7 @@ import {
   type F13Filer,
   type F13FilerSearchResult,
   type F13Filing,
+  type F13HoldingHistory,
   type F13HoldingsAtPeriod,
   type F13InstitutionalStock,
   type F13RefreshResult,
@@ -212,6 +214,38 @@ export function useHoldings(filerId: number | null, period: string) {
     ),
     queryFn: () => getHoldings(filerId as number, period || "latest"),
     enabled: filerId != null && filerId > 0 && period.length > 0,
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Round 12 — per-stock multi-quarter position timeline for a filer.
+ *
+ * One request returns N quarters of data already enriched with
+ * delta + change_type classification, replacing the previous
+ * "fan-out useQueries over each filing" pattern. The `identifier`
+ * is matched as CUSIP first, then by `stocks.symbol` JOIN, so
+ * callers can pass either.
+ *
+ * Defaults: window = 2y when `fromDate` / `toDate` omitted; limit =
+ * 20 (capped at 40 by the backend).
+ */
+export function useHoldingHistory(
+  filerId: number | null,
+  identifier: string,
+  opts?: { fromDate?: string; toDate?: string; limit?: number },
+) {
+  return useQuery<F13HoldingHistory>({
+    queryKey: queryKeys.institutional.filings.holdingHistory(
+      filerId ?? 0,
+      identifier,
+      opts?.fromDate ?? "",
+      opts?.toDate ?? "",
+      opts?.limit ?? 20,
+    ),
+    queryFn: () => getHoldingHistory(filerId as number, identifier, opts),
+    enabled:
+      filerId != null && filerId > 0 && identifier.length > 0,
     staleTime: 60 * 1000,
   });
 }

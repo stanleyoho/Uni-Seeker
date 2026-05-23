@@ -133,3 +133,51 @@ class F13RefreshResponse(BaseModel):
 
     filings_added: int
     holdings_added: int
+
+
+class F13HoldingHistoryEntry(BaseModel):
+    """One point in the per-stock position timeline for a filer.
+
+    A NULL `shares` / `value_usd` means the filer filed that quarter
+    but did not hold the requested stock — surfaced as `NOT_HELD` in
+    `change_type`. `delta_*` are computed against the previous entry
+    in chronological order (oldest → newest). `delta_pct` uses
+    `prev_shares` as the denominator and is null when the previous
+    quarter was NOT_HELD or shares were zero.
+    """
+
+    filing_id: int
+    report_period_end: date
+    form_type: str
+    shares: Decimal | None
+    value_usd: Decimal | None
+    put_call: str | None
+    investment_discretion: str | None
+    delta_shares: Decimal | None
+    delta_pct: Decimal | None
+    change_type: str  # "NEW" | "INCREASED" | "DECREASED" | "EXITED" | "UNCHANGED" | "NOT_HELD"
+
+    @field_serializer(
+        "shares",
+        "value_usd",
+        "delta_shares",
+        "delta_pct",
+        when_used="json",
+    )
+    def _serialize_decimal(self, value: Decimal | None) -> str | None:
+        return None if value is None else str(value)
+
+
+class F13HoldingHistoryResponse(BaseModel):
+    """`GET /filers/{id}/holdings/{identifier}/history` envelope.
+
+    `cusip` is set when the identifier resolved by CUSIP (or by
+    JOINing to a stock that has a CUSIP). `symbol` is set when the
+    identifier resolved through `stocks.symbol`. Both can be present
+    when the holding is mapped to a stock row.
+    """
+
+    filer_id: int
+    cusip: str | None
+    symbol: str | None
+    entries: list[F13HoldingHistoryEntry]
