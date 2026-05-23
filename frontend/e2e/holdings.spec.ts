@@ -96,7 +96,7 @@ test.describe("/holdings page", () => {
 
   test("opens add trade modal via + record-trade button", async ({ page }) => {
     await page.goto("/holdings");
-    await page.getByRole("button", { name: /記錄交易|新增交易/ }).click();
+    await page.getByRole("button", { name: /記錄交易|新增交易/ }).first().click();
     // The modal heading is "新增持倉交易".
     await expect(page.getByText("新增持倉交易")).toBeVisible();
   });

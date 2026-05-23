@@ -41,14 +41,14 @@ const MOCK_HOLDINGS_RES = {
   holdings: [
     {
       id: 901,
-      filing_id: 11,
       cusip: "037833100",
-      ticker: "AAPL",
-      issuer_name: "APPLE INC",
-      class_title: "COM",
-      shares: "5500000",
+      name_of_issuer: "APPLE INC",
       value_usd: "1100000000",
+      shares: "5500000",
       put_call: null,
+      investment_discretion: "SOLE",
+      stock_id: 1,
+      stock_symbol: "AAPL",
     },
   ],
 };
@@ -200,7 +200,7 @@ test.describe("/institutional page", () => {
 
     // Back to HOLDINGS tab.
     await page
-      .getByRole("button", { name: /^Holdings$|HOLDINGS$/i })
+      .getByRole("button", { name: /^Holdings$|HOLDINGS$|^持倉快照$/i })
       .first()
       .click();
     await expect(

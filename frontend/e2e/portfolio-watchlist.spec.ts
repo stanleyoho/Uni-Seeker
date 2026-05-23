@@ -57,7 +57,7 @@ test.describe("/portfolio watchlist page", () => {
 
     // Header label.
     await expect(
-      page.getByRole("heading", { name: /WATCHLIST|Watchlist Management/i }),
+      page.getByRole("heading", { name: /自選股|Watchlist/i }),
     ).toBeVisible();
     // Both mocked symbols should render in the table.
     await expect(page.getByText("2330").first()).toBeVisible();
