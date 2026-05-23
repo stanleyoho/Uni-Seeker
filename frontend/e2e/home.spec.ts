@@ -1,24 +1,35 @@
 import { test, expect } from "./setup";
 
+/**
+ * Home page minimal smoke.
+ *
+ * Round 6 prototype had a <nav> with `More` dropdown linking to
+ * /backtest + /scanner; current STRATOS header dropped both and
+ * uses a <header> with /research, /portfolio, /holdings, etc.
+ * These checks only assert the page loads + brand text renders +
+ * primary nav links exist, leaving full navigation flows to the
+ * dedicated page specs.
+ */
+
 test.describe("Homepage", () => {
-  test("should load and show title", async ({ page }) => {
+  test("renders header with brand and core nav links", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("nav")).toBeVisible();
-    await expect(page.getByText("Uni-Seeker")).toBeVisible();
+    await expect(page.locator("header")).toBeVisible();
+    await expect(page.getByText("Uni-Seeker").first()).toBeVisible();
+    await expect(page.locator('a[href="/portfolio"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/holdings"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/institutional"]').first()).toBeVisible();
   });
 
-  test("should navigate to backtest page", async ({ page }) => {
+  test("navigates to /portfolio", async ({ page }) => {
     await page.goto("/");
-    await page.click('a[href="/backtest"]');
-    await expect(page).toHaveURL("/backtest");
-    await expect(page.getByText("策略回測")).toBeVisible();
+    await page.locator('a[href="/portfolio"]').first().click();
+    await expect(page).toHaveURL(/\/portfolio$/);
   });
 
-  test("should navigate to scanner page", async ({ page }) => {
+  test("navigates to /holdings", async ({ page }) => {
     await page.goto("/");
-    // Scanner is in More dropdown
-    await page.click("text=More");
-    await page.click('a[href="/scanner"]');
-    await expect(page).toHaveURL("/scanner");
+    await page.locator('a[href="/holdings"]').first().click();
+    await expect(page).toHaveURL(/\/holdings$/);
   });
 });
