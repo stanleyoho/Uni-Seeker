@@ -17,14 +17,16 @@
  *     `limit_exceeded:max_trades_per_month` (403).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClippedButton } from "@/components/stratos/primitives";
 import { useImportHoldingsCsv } from "@/hooks/use-holdings";
 import {
   ApiError,
+  type BrokerInfo,
   type HoldingAccount,
   type ImportResult,
   type ImportResultRow,
+  listImportBrokers,
 } from "@/lib/api-client";
 
 interface CsvImportModalProps {
@@ -103,7 +105,27 @@ export function CsvImportModal({
   const [filename, setFilename] = useState<string | null>(null);
   const [preview, setPreview] = useState<ImportResult | null>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
+  // Round 10 — broker selection. Empty string = auto-detect (default).
+  const [brokerKey, setBrokerKey] = useState<string>("");
+  const [brokers, setBrokers] = useState<BrokerInfo[]>([]);
   const importMutation = useImportHoldingsCsv();
+
+  // Fetch the broker registry once on modal mount. We don't gate the
+  // UI on this — auto-detect (empty broker_key) still works even if
+  // the list fetch fails.
+  useEffect(() => {
+    let cancelled = false;
+    listImportBrokers()
+      .then((list) => {
+        if (!cancelled) setBrokers(list);
+      })
+      .catch(() => {
+        // Non-fatal — user can still upload with auto-detect.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isPending = importMutation.isPending;
   const canPreview = accountId > 0 && csvText.trim().length > 0 && !isPending;
@@ -148,6 +170,7 @@ export function CsvImportModal({
         accountId,
         file: csvText,
         dryRun,
+        brokerKey: brokerKey || null,
       });
       setPreview(result);
       // On a committed success surface the result upward so the parent
@@ -243,6 +266,27 @@ export function CsvImportModal({
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.name} ({acc.currency})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Broker selector — Round 10. Empty value = auto-detect. */}
+          <div>
+            <label className={labelCls}>券商格式（留空 = 自動偵測）</label>
+            <select
+              className={inputCls}
+              value={brokerKey}
+              onChange={(e) => {
+                setBrokerKey(e.target.value);
+                setPreview(null);
+              }}
+              disabled={isPending}
+            >
+              <option value="">自動偵測</option>
+              {brokers.map((b) => (
+                <option key={b.broker_key} value={b.broker_key}>
+                  {b.display_name}
                 </option>
               ))}
             </select>

@@ -1,0 +1,8 @@
+Statement,Header,Field Name,Field Value
+Statement,Data,BrokerName,Interactive Brokers
+Account Information,Header,Field Name,Field Value
+Account Information,Data,AccountID,U1234567
+Trades,Header,DataDiscriminator,Asset Category,Symbol,Date/Time,Quantity,T. Price,Comm/Fee,Currency,OrderID
+Trades,Data,Order,Stocks,NVDA,2026-04-15;09:35:11,100,500.00,-1.00,USD,O111
+Trades,Data,Order,Stocks,NVDA,2026-04-16;10:00:00,-50,510.00,-1.00,USD,O112
+Trades,Data,Order,Stocks,AAPL,2026-04-17;11:30:00,200,175.50,-2.00,USD,O113

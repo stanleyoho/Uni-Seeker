@@ -1,23 +1,21 @@
-"""CSV import endpoint — /api/v1/holdings/imports/csv (Phase 4).
+"""CSV import endpoint — /api/v1/holdings/imports/* (Phase 4 + Round 10).
 
-Spec §11 extensibility hook: broker CSV → bulk trades. One endpoint,
-two modes:
+Two endpoints:
 
-    dry_run=True  → parse + validate only; no DB writes. Returns the
-                    same ImportResult shape used by the commit path so
-                    the frontend can render an identical preview table.
-    dry_run=False → commit when zero rows failed; full rollback when
-                    any row failed (atomic at the session level — see
-                    `CsvImportService` docstring for the model).
+    POST /imports/csv?broker_key=...&account_id=X&dry_run=...
+        Bulk-import trades from a broker CSV. Optional `broker_key`
+        selects an adapter explicitly; omit to auto-detect.
 
-Wire shape
-~~~~~~~~~~
+    GET /imports/brokers
+        List available broker adapters — used by the frontend dropdown.
+
+Wire shape (POST)
+~~~~~~~~~~~~~~~~~
 
 We accept the CSV as the **raw request body** with content-type
 ``text/csv`` (or ``text/plain``). Multipart/form-data is intentionally
 avoided so we don't pull in `python-multipart`. Metadata
-(``account_id``, ``dry_run``) goes on the query string. The frontend
-posts the file via ``fetch(..., { body: file })``.
+(``account_id``, ``dry_run``, ``broker_key``) goes on the query string.
 
 File constraints:
     * Content-Type: text/csv or text/plain.
@@ -41,7 +39,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.api.v1.holdings import _detail as detail
 from app.auth import require_auth
-from app.schemas.holdings.import_csv import ImportResult
+from app.schemas.holdings.import_csv import (
+    BrokerInfo,
+    BrokerListResponse,
+    ImportResult,
+)
 from app.services.portfolio import CsvImportService
 from app.services.portfolio.exceptions import (
     InsufficientShares,
@@ -69,6 +71,27 @@ _ACCEPTED_CONTENT_TYPES = {
 }
 
 
+@router.get(
+    "/brokers",
+    response_model=BrokerListResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def list_brokers(
+    db: DbDep,
+    user: UserDep,
+) -> BrokerListResponse:
+    """List the broker adapters available for CSV import.
+
+    Auth-gated (same dependency stack as every other holdings route)
+    so we don't leak the registry to anonymous callers. The list is
+    process-stable; the frontend caches it on modal open.
+    """
+    service = CsvImportService(db, user)  # type: ignore[arg-type]
+    return BrokerListResponse(
+        brokers=[BrokerInfo(**b) for b in service.list_brokers()]
+    )
+
+
 @router.post(
     "/csv",
     response_model=ImportResult,
@@ -84,6 +107,14 @@ async def import_csv(
         description=(
             "When true, parse + validate only — no DB writes. The "
             "frontend uses this for the preview pass before commit."
+        ),
+    ),
+    broker_key: str | None = Query(
+        default=None,
+        description=(
+            "Optional explicit broker adapter key (e.g. 'interactive_brokers',"
+            " 'yuanta'). When omitted, the service auto-detects via "
+            "BrokerParser.can_handle() heuristics."
         ),
     ),
 ) -> ImportResult:
@@ -139,6 +170,7 @@ async def import_csv(
         result = await service.import_csv(
             account_id=account_id,
             csv_content=csv_content,
+            broker_key=broker_key,
             dry_run=dry_run,
         )
     except PortfolioAccountNotFound as exc:
@@ -152,16 +184,12 @@ async def import_csv(
             detail=detail.limit_exceeded(exc.limit_key),
         ) from exc
     except InsufficientShares as exc:
-        # SELL row exceeded the running open-lot total. Whole batch
-        # rolls back via no-commit; surface as 422 with the standard
-        # detail so the frontend can render the same banner it shows
-        # for the manual trade flow.
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,
         ) from exc
     except ValueError as exc:
-        # Header missing / malformed.
+        # Header missing / malformed / unknown broker_key.
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INVALID_CSV_FORMAT,
@@ -173,9 +201,6 @@ async def import_csv(
     if not dry_run and result.failed_rows == 0:
         await db.commit()
     else:
-        # Explicit rollback even on dry-run so any speculative reads
-        # don't get accidentally promoted to a commit by a later sibling
-        # request reusing the session pool.
         await db.rollback()
 
     return result

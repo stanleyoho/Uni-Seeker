@@ -1,8 +1,9 @@
-"""CSV import DTOs for /api/v1/holdings/imports/csv.
+"""CSV import DTOs for /api/v1/holdings/imports/*.
 
-Phase 4 extensibility hook (spec §11). Module is named `import_csv.py`
-(not `import.py`) because `import` is a Python reserved word and would
-break `from app.schemas.holdings.import import …` re-exports.
+Phase 4 / Round 10 extensibility hook (spec §11). Module is named
+`import_csv.py` (not `import.py`) because `import` is a Python reserved
+word and would break `from app.schemas.holdings.import import …`
+re-exports.
 
 Wire contract:
 
@@ -13,6 +14,10 @@ Wire contract:
     ImportResult — top-level body: rows parsed, successes, failures,
     full error list, and a `dry_run` echo so the client knows whether
     DB writes actually happened.
+
+    BrokerInfo / BrokerListResponse — Round 10 envelope for
+    GET /imports/brokers. The frontend renders the list as a select
+    dropdown in the CSV-import modal.
 """
 from __future__ import annotations
 
@@ -55,4 +60,32 @@ class ImportResult(BaseModel):
     dry_run: bool
 
 
-__all__ = ["ImportResult", "ImportResultRow"]
+class BrokerInfo(BaseModel):
+    """One broker adapter registered in the import service.
+
+    ``broker_key`` is the stable wire identifier sent back on the
+    POST /imports/csv?broker_key=... query string. ``display_name`` is
+    the human-readable label rendered in the dropdown.
+    """
+
+    broker_key: str
+    display_name: str
+
+
+class BrokerListResponse(BaseModel):
+    """Envelope for GET /imports/brokers.
+
+    Returned in canonical auto-detect order — broker-specific adapters
+    first, generic fallback last — so the frontend can rely on the
+    order for UI grouping if desired.
+    """
+
+    brokers: list[BrokerInfo]
+
+
+__all__ = [
+    "ImportResult",
+    "ImportResultRow",
+    "BrokerInfo",
+    "BrokerListResponse",
+]

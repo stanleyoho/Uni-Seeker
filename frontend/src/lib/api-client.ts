@@ -1307,6 +1307,22 @@ export interface ImportResult {
   dry_run: boolean;
 }
 
+/**
+ * One broker adapter exposed by GET /imports/brokers (Round 10).
+ *
+ * `broker_key` is the stable wire identifier passed back on the import
+ * call's `broker_key` query param. `display_name` is the human label
+ * rendered in the dropdown.
+ */
+export interface BrokerInfo {
+  broker_key: string;
+  display_name: string;
+}
+
+export interface BrokerListResponse {
+  brokers: BrokerInfo[];
+}
+
 // ---------------------------------------------------------------------------
 // Holdings — API functions
 // ---------------------------------------------------------------------------
@@ -1475,12 +1491,31 @@ export async function deleteHoldingDividend(id: number): Promise<void> {
 // ── CSV Import (Phase 4) ──────────────────────────────────────────────────
 
 /**
+ * List the broker adapters available for CSV import (Round 10).
+ *
+ * Returns the registry in canonical order — broker-specific adapters
+ * first, generic fallback last. The modal renders this as a select
+ * dropdown with an extra "auto-detect" sentinel at the top (frontend-only).
+ */
+export async function listImportBrokers(): Promise<BrokerInfo[]> {
+  const data = await apiFetch<BrokerListResponse>(
+    `${API_BASE}/holdings/imports/brokers`,
+  );
+  return data.brokers;
+}
+
+/**
  * Bulk-import trades from a broker CSV.
  *
  * Wire shape: raw `text/csv` body (NOT multipart) — keeps us off the
  * `python-multipart` dependency on the backend. Metadata (`account_id`,
- * `dry_run`) goes on the query string. The browser sets the boundary
- * we want when we pass a `Blob` directly.
+ * `dry_run`, `broker_key`) goes on the query string. The browser sets
+ * the boundary we want when we pass a `Blob` directly.
+ *
+ * `brokerKey` is optional; omit to let the backend auto-detect via
+ * BrokerParser.can_handle() heuristics. Round 10 added per-broker
+ * adapters: "interactive_brokers", "yuanta", "fubon", "schwab",
+ * "fidelity", "generic" (Y2 canonical fallback).
  *
  * Use `dry_run=true` first to render a preview table, then call again
  * with `dry_run=false` to commit. Backend is atomic: on any row failure
@@ -1490,11 +1525,13 @@ export async function importHoldingsCsv(
   accountId: number,
   file: Blob | File | string,
   dryRun: boolean,
+  brokerKey?: string | null,
 ): Promise<ImportResult> {
   const qs = new URLSearchParams({
     account_id: String(accountId),
     dry_run: dryRun ? "true" : "false",
   });
+  if (brokerKey) qs.set("broker_key", brokerKey);
   const url = `${API_BASE}/holdings/imports/csv?${qs.toString()}`;
 
   // Normalise to a Blob with the text/csv content-type. Strings get

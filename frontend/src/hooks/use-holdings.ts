@@ -284,6 +284,13 @@ interface ImportHoldingsCsvArgs {
   accountId: number;
   file: Blob | File | string;
   dryRun: boolean;
+  /**
+   * Optional explicit broker adapter key (Round 10). When omitted, the
+   * backend auto-detects via BrokerParser.can_handle() heuristics.
+   * Recognised keys: "interactive_brokers", "yuanta", "fubon", "schwab",
+   * "fidelity", "generic".
+   */
+  brokerKey?: string | null;
 }
 
 /**
@@ -297,8 +304,8 @@ interface ImportHoldingsCsvArgs {
 export function useImportHoldingsCsv() {
   const qc = useQueryClient();
   return useMutation<ImportResult, Error, ImportHoldingsCsvArgs>({
-    mutationFn: ({ accountId, file, dryRun }) =>
-      importHoldingsCsv(accountId, file, dryRun),
+    mutationFn: ({ accountId, file, dryRun, brokerKey }) =>
+      importHoldingsCsv(accountId, file, dryRun, brokerKey ?? null),
     onSuccess: (data, vars) => {
       // Skip invalidation on dry-run (no state mutation) or atomic-rollback
       // commits (failed_rows > 0 means zero writes landed).
