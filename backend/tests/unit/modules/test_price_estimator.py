@@ -157,12 +157,13 @@ async def test_composite_returns_none_when_all_models_fail():
 @pytest.mark.asyncio
 async def test_composite_divergence_penalty():
     session = AsyncMock()
-    
+    session.add = MagicMock()  # SQLAlchemy add() is sync — keep it sync to avoid unawaited-coroutine RuntimeWarning
+
     # Mock current price = 100
     price_res = MagicMock()
     price_res.scalar_one_or_none.return_value = 100.0
     session.execute.return_value = price_res
-    
+
     estimator = CompositeEstimator(session)
     
     # Mock two models with wildly different results
