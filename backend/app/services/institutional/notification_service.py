@@ -47,7 +47,6 @@ from app.modules.notifications.dispatcher import dispatch_notification
 from app.obs.logging import get_logger
 from app.services.audit import log_audit_event
 
-
 logger = get_logger(component="f13_notification_service")
 
 
