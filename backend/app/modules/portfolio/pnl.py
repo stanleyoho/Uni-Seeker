@@ -76,7 +76,7 @@ class MultiCurrencyPortfolioSummary:
 
     base_currency: str
     summary: PortfolioSummary
-    by_currency_native: dict[str, "PortfolioSummary"]
+    by_currency_native: dict[str, PortfolioSummary]
     by_currency_in_base: dict[str, tuple[Decimal, Decimal]]
     rates_used: dict[str, Decimal]
 

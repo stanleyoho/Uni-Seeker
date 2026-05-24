@@ -91,10 +91,10 @@ class F13Filing(Base):
         DateTime(timezone=True), init=False, server_default=func.now(),
     )
 
-    filer: Mapped["F13Filer"] = relationship(
+    filer: Mapped[F13Filer] = relationship(
         back_populates="filings", init=False,
     )
-    holdings: Mapped[list["F13Holding"]] = relationship(
+    holdings: Mapped[list[F13Holding]] = relationship(
         back_populates="filing",
         cascade="all, delete-orphan",
         init=False,

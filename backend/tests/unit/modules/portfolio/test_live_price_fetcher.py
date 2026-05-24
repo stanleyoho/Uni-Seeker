@@ -56,7 +56,7 @@ class _FakeSession:
         self._rows_by_sid = rows_by_sid
         self.calls: list[str] = []
 
-    def __enter__(self) -> "_FakeSession":
+    def __enter__(self) -> _FakeSession:
         return self
 
     def __exit__(self, *_exc) -> None:

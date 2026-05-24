@@ -54,22 +54,22 @@ class PortfolioAccount(Base):
     )
 
     # relationships (init=False — populated by ORM, not constructor)
-    trades: Mapped[list["PortfolioTrade"]] = relationship(
+    trades: Mapped[list[PortfolioTrade]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
         init=False,
     )
-    lots: Mapped[list["PortfolioLot"]] = relationship(
+    lots: Mapped[list[PortfolioLot]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
         init=False,
     )
-    positions: Mapped[list["PortfolioPosition"]] = relationship(
+    positions: Mapped[list[PortfolioPosition]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
         init=False,
     )
-    dividends: Mapped[list["PortfolioDividend"]] = relationship(
+    dividends: Mapped[list[PortfolioDividend]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
         init=False,

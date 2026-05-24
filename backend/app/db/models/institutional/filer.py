@@ -71,12 +71,12 @@ class F13Filer(Base):
     )
 
     # relationships
-    filings: Mapped[list["F13Filing"]] = relationship(
+    filings: Mapped[list[F13Filing]] = relationship(
         back_populates="filer",
         cascade="all, delete-orphan",
         init=False,
     )
-    subscriptions: Mapped[list["F13UserSubscription"]] = relationship(
+    subscriptions: Mapped[list[F13UserSubscription]] = relationship(
         back_populates="filer",
         cascade="all, delete-orphan",
         init=False,

@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 async def _mk_user(
-    db: "AsyncSession",
+    db: AsyncSession,
     email: str,
     *,
     tier: UserTier = UserTier.PRO,
@@ -59,7 +59,7 @@ def _auth(user: User) -> dict[str, str]:
 
 
 async def _seed_event(
-    db: "AsyncSession",
+    db: AsyncSession,
     user: User,
     *,
     action: str,
@@ -97,7 +97,7 @@ async def _seed_event(
 
 
 async def test_list_my_audit_logs_returns_newest_first(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_order@x.com")
     base = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -134,7 +134,7 @@ async def test_list_my_audit_logs_returns_newest_first(
 
 
 async def test_list_my_audit_logs_paginates(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_page@x.com")
     base = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -181,7 +181,7 @@ async def test_list_my_audit_logs_paginates(
 
 
 async def test_list_my_audit_logs_filters_by_event_types(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_filter@x.com")
     await _seed_event(db_session, user, action="user_login")
@@ -202,7 +202,7 @@ async def test_list_my_audit_logs_filters_by_event_types(
 
 
 async def test_list_my_audit_logs_empty_when_no_rows(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_empty@x.com")
 
@@ -215,7 +215,7 @@ async def test_list_my_audit_logs_empty_when_no_rows(
 
 
 async def test_list_my_audit_logs_isolates_users(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     alice = await _mk_user(db_session, "alice@x.com")
     bob = await _mk_user(db_session, "bob@x.com")
@@ -245,7 +245,7 @@ async def test_list_my_audit_logs_isolates_users(
 
 
 async def test_list_my_audit_logs_rejects_excessive_limit(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_cap@x.com")
 
@@ -263,7 +263,7 @@ async def test_list_my_audit_logs_rejects_excessive_limit(
 
 
 async def test_list_my_audit_logs_preserves_all_fields(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_fields@x.com")
     after = {"telegram_chat_id": "12345"}
@@ -296,7 +296,7 @@ async def test_list_my_audit_logs_preserves_all_fields(
 
 
 async def test_list_my_audit_logs_requires_auth(
-    client: "AsyncClient",
+    client: AsyncClient,
 ) -> None:
     resp = await client.get("/api/v1/me/audit-logs")
     assert resp.status_code in (401, 403)

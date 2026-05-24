@@ -92,7 +92,7 @@ class F13Holding(Base):
         DateTime(timezone=True), init=False, server_default=func.now(),
     )
 
-    filing: Mapped["F13Filing"] = relationship(
+    filing: Mapped[F13Filing] = relationship(
         back_populates="holdings", init=False,
     )
 

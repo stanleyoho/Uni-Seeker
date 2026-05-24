@@ -64,7 +64,7 @@ class F13UserSubscription(Base):
         DateTime(timezone=True), init=False, server_default=func.now(),
     )
 
-    filer: Mapped["F13Filer"] = relationship(
+    filer: Mapped[F13Filer] = relationship(
         back_populates="subscriptions", init=False,
     )
 

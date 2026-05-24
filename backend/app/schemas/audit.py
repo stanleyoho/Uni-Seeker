@@ -58,7 +58,7 @@ class AuditLogEntry(BaseModel):
     )
 
     @classmethod
-    def from_orm_row(cls, row: AuditLog) -> "AuditLogEntry":
+    def from_orm_row(cls, row: AuditLog) -> AuditLogEntry:
         """Map the ORM row's legacy column names onto the viewer
         contract. Centralised here so the rename only lives in one
         place — handlers stay generic.

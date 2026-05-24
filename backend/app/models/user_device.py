@@ -48,4 +48,4 @@ class UserDevice(Base):
         DateTime(timezone=True), init=False, default=None
     )
 
-    user: Mapped["User"] = relationship(back_populates="devices", init=False)
+    user: Mapped[User] = relationship(back_populates="devices", init=False)
