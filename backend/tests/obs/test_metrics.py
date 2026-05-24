@@ -59,7 +59,7 @@ async def test_metrics_endpoint_returns_prometheus_text(monkeypatch):
     monkeypatch.setenv("ENV", "test")
     from prometheus_fastapi_instrumentator import Instrumentator
 
-    from app.obs.metrics import TIER_UPGRADE_TOTAL  # noqa: F401 — register
+    from app.obs.metrics import TIER_UPGRADE_TOTAL
 
     # Bump once so the counter is materialized in the registry text output.
     TIER_UPGRADE_TOTAL.labels(

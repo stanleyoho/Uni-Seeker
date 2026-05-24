@@ -8,10 +8,10 @@ from app.db.models.portfolio.snapshot import HoldingsSnapshot
 from app.db.models.portfolio.trade import PortfolioTrade
 
 __all__ = [
+    "HoldingsSnapshot",
     "PortfolioAccount",
     "PortfolioDividend",
     "PortfolioLot",
     "PortfolioPosition",
     "PortfolioTrade",
-    "HoldingsSnapshot",
 ]

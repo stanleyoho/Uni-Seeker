@@ -29,7 +29,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
-import pytest  # noqa: F401  (pytest fixtures resolved by name)
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 

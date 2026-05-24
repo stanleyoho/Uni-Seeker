@@ -357,10 +357,10 @@ def tier_guard(
 
 
 __all__ = [
+    "TIER_LIMIT_BLOCK_TOTAL",
     "AllTierLimits",
     "TierConfig",
     "TierFeatures",
-    "TIER_LIMIT_BLOCK_TOTAL",
     "get_limit",
     "has_feature",
     "load_tier_limits",

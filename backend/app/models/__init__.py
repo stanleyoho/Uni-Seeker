@@ -1,10 +1,10 @@
 # User-defined Alert Rules (UNI-ALERT-001) — same registration pattern.
-from app.db.models.alerts import AlertRule  # noqa: E402, F401
+from app.db.models.alerts import AlertRule
 
 # 13F Holdings Tracker (UNI-F13-001) — ORM lives under
 # app/db/models/institutional/ per design doc §6.5. Same registration
 # pattern as portfolio above.
-from app.db.models.institutional import (  # noqa: E402, F401
+from app.db.models.institutional import (
     F13Filer,
     F13Filing,
     F13Holding,
@@ -14,7 +14,7 @@ from app.db.models.institutional import (  # noqa: E402, F401
 # Portfolio Tracker (UNI-PORT-001) — ORM lives under app/db/models/portfolio/
 # per design doc §5.5. Import here so the tables register on Base.metadata
 # and Alembic autogenerate / create_all see them.
-from app.db.models.portfolio import (  # noqa: E402, F401
+from app.db.models.portfolio import (
     PortfolioAccount,
     PortfolioDividend,
     PortfolioLot,
@@ -64,13 +64,13 @@ __all__ = [
     "BacktestJob",
     "BacktestResultRecord",
     "Base",
+    "FXRate",
     "FinancialMetrics",
     "FinancialStatement",
-    "FXRate",
     "Industry",
     "IndustryMetrics",
-    "Market",
     "MarginTrading",
+    "Market",
     "MonthlyRevenue",
     "NotificationLog",
     "NotificationRule",

@@ -108,7 +108,7 @@ class F13FilerSearchService:
                 error=str(exc),
             )
             return merged
-        except Exception as exc:  # noqa: BLE001 — search is non-critical
+        except Exception as exc:
             logger.warning(
                 "f13_filer_search_edgar_failed",
                 query=query,

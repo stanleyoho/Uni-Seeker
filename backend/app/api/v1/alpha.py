@@ -10,7 +10,7 @@ service) lives outside this module.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
@@ -69,7 +69,7 @@ class NbaPredictionsResponse(BaseModel):
 @router.get("/nba/predictions/today", response_model=NbaPredictionsResponse)
 async def get_nba_predictions_today(user: ProUser) -> NbaPredictionsResponse:
     """Today's NBA predictions with calibrated win probabilities. Pro only."""
-    today = datetime.now(tz=timezone.utc).date().isoformat()
+    today = datetime.now(tz=UTC).date().isoformat()
     raw = await fetch_nba_predictions_today()
     items = [NbaPredictionItem(**item) for item in raw]
     return NbaPredictionsResponse(date=today, tier="pro", predictions=items)

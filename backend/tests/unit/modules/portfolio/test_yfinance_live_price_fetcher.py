@@ -111,7 +111,7 @@ def _install_fake_yfinance(
 
     class _FakeYF:
         @staticmethod
-        def Ticker(symbol: str) -> _FakeTicker:  # noqa: N802 — match yfinance
+        def Ticker(symbol: str) -> _FakeTicker:
             call_count[symbol] = call_count.get(symbol, 0) + 1
             return _FakeTicker(frames, symbol, raise_on)
 

@@ -116,12 +116,12 @@ class F13TierLimitExceeded(F13ServiceError):
 
 
 __all__ = [
-    "F13ServiceError",
+    "F13EdgarError",
     "F13FilerNotFound",
     "F13FilingNotFound",
-    "F13SubscriptionExists",
     "F13RefreshInFlight",
-    "F13EdgarError",
+    "F13ServiceError",
+    "F13SubscriptionExists",
     "F13TierFeatureUnavailable",
     "F13TierLimitExceeded",
 ]

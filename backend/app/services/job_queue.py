@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,7 +56,7 @@ class BacktestJobQueue:
             return None
 
         job.status = "running"
-        job.started_at = datetime.now(timezone.utc)
+        job.started_at = datetime.now(UTC)
         await db.flush()
         logger.info("Claimed backtest job id=%s", job.id)
         return job
@@ -73,7 +73,7 @@ class BacktestJobQueue:
 
     async def complete(self, db: AsyncSession, job_id: int, result: dict) -> None:
         """Mark a job as completed with its result payload."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         stmt = (
             update(BacktestJob)
             .where(BacktestJob.id == job_id)
@@ -90,7 +90,7 @@ class BacktestJobQueue:
 
     async def fail(self, db: AsyncSession, job_id: int, error: str) -> None:
         """Mark a job as failed with an error message."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         stmt = (
             update(BacktestJob)
             .where(BacktestJob.id == job_id)
@@ -115,7 +115,7 @@ class BacktestJobQueue:
             .where(BacktestJob.id == job_id, BacktestJob.status == "pending")
             .values(
                 status="cancelled",
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
             )
         )
         result = await db.execute(stmt)

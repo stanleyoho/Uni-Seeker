@@ -31,10 +31,10 @@ from decimal import Decimal
 import structlog
 
 __all__ = [
-    "FxQuote",
-    "FxFetcher",
-    "YFinanceFxFetcher",
     "FxFetchError",
+    "FxFetcher",
+    "FxQuote",
+    "YFinanceFxFetcher",
 ]
 
 logger = structlog.get_logger()
@@ -278,7 +278,7 @@ class YFinanceFxFetcher(FxFetcher):
             rate = Decimal(str(closes[-1]))
             dt = self._coerce_as_of(indices[-1])
             return rate, dt
-        except Exception as exc:  # noqa: BLE001 — yfinance raises broad types
+        except Exception as exc:
             logger.warning(
                 "fx_fetch_failed",
                 symbol=symbol,
@@ -304,11 +304,11 @@ class YFinanceFxFetcher(FxFetcher):
                 value = to_pydt()
                 if isinstance(value, datetime):
                     return value
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         year = getattr(idx, "year", None)
         month = getattr(idx, "month", None)
         day = getattr(idx, "day", None)
         if year and month and day:
             return datetime(year, month, day)
-        return datetime.utcnow()  # noqa: DTZ003 — best-effort fallback
+        return datetime.utcnow()

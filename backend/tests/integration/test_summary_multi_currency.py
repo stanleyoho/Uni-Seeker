@@ -90,7 +90,7 @@ class _MockFx(YFinanceFxFetcher):
         self._fail = fail_pairs or set()
 
     async def fetch_rate(
-        self, base: str, quote: str, as_of=None  # noqa: ARG002
+        self, base: str, quote: str, as_of=None
     ) -> Decimal:
         if base == quote:
             return Decimal("1")

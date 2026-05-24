@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import structlog
 from sqlalchemy import select
@@ -226,7 +226,7 @@ class SyncScheduler:
         error_message: str | None = None,
     ) -> None:
         """Update (or create) the global sync-state row for a dataset."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Use partial unique index uq_sync_state_global (dataset WHERE stock_id IS NULL)
         existing = await db.execute(
             select(SyncState).where(

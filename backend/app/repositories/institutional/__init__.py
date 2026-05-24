@@ -26,7 +26,7 @@ User isolation per table:
 # repositories path races with `app.models/__init__.py`'s own
 # institutional re-export and explodes with a circular ImportError —
 # same gotcha that `app.repositories.portfolio` works around.
-from app import models as _app_models  # noqa: F401
+from app import models as _app_models
 from app.repositories.institutional.filer_repo import F13FilerRepo
 from app.repositories.institutional.filing_repo import F13FilingRepo
 from app.repositories.institutional.holding_repo import F13HoldingRepo

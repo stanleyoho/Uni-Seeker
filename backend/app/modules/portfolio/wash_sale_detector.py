@@ -106,9 +106,9 @@ from app.modules.portfolio.tax_report import TaxLotMatch
 __all__ = [
     "WashSaleAdjustment",
     "WashSaleResult",
+    "apply_wash_sale_adjustments",
     "date_within_window",
     "detect_wash_sales",
-    "apply_wash_sale_adjustments",
 ]
 
 

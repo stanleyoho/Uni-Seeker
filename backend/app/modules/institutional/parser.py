@@ -34,12 +34,12 @@ from typing import Iterable
 import structlog
 
 __all__ = [
-    "ParsedHolding",
     "FilingSummary",
     "ParseError",
+    "ParsedHolding",
+    "is_valid_cusip",
     "parse_infotable_xml",
     "summarize_filing",
-    "is_valid_cusip",
 ]
 
 logger = structlog.get_logger(__name__)

@@ -417,7 +417,7 @@ async def test_list_filings_returns_none_when_infotable_not_in_index(
         "000123456724000030",
         "000123456723000040",
     ]
-    index_items = {acc: degenerate_items for acc in accessions}
+    index_items = dict.fromkeys(accessions, degenerate_items)
     transport = httpx.MockTransport(
         _make_router_handler(index_items=index_items)
     )

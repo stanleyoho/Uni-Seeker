@@ -17,7 +17,7 @@ infrastructure.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -236,7 +236,7 @@ class AlertService:
             return counts
 
         context = await self._build_context(fetcher, rules)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for rule in rules:
             counts["evaluated"] += 1
@@ -318,7 +318,7 @@ class AlertService:
             market=rule.market,
             context=context,
         )
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if result.triggered:
             # Round 14: dispatcher handles TG + email per user opt-in.
             tg_text = self._format_trigger_message(rule, result.message)
@@ -475,7 +475,7 @@ class AlertService:
 
 
 __all__ = [
-    "AlertService",
     "AlertRuleNotFound",
+    "AlertService",
     "InvalidAlertRule",
 ]

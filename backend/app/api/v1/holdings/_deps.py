@@ -81,7 +81,7 @@ def get_fx_service(
 
 
 __all__ = [
-    "get_live_price_fetcher",
     "get_fx_fetcher",
     "get_fx_service",
+    "get_live_price_fetcher",
 ]

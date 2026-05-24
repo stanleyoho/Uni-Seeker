@@ -29,7 +29,7 @@ async def trigger_price_update(
     db: DbSession,
 ) -> PriceUpdateResponse:
     """Trigger a full market price update (TWSE + TPEX)."""
-    async with httpx.AsyncClient(timeout=120.0, verify=False) as client:  # noqa: S501 - TWSE SSL cert issue
+    async with httpx.AsyncClient(timeout=120.0, verify=False) as client:
         providers = [TWSEProvider(client=client), TPEXProvider(client=client)]
         updater = PriceUpdater(providers=providers, session=db, retry_delay=1.0)
         result = await updater.update_all()

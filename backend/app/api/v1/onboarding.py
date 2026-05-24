@@ -6,7 +6,7 @@ the T3 stub.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +40,7 @@ async def submit_kyc(
     """Submit a 5-question KYC and lock in the user's risk_tolerance."""
     total = sum(req.answers)
     risk = _classify(total)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     before = {"risk_tolerance": current_user.risk_tolerance}
     current_user.risk_tolerance = risk

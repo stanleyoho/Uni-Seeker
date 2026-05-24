@@ -40,8 +40,8 @@ from app.obs.logging import get_logger
 
 __all__ = [
     "FigiMapping",
-    "OpenFigiRateLimiter",
     "OpenFigiClient",
+    "OpenFigiRateLimiter",
     "OpenFigiTransientError",
 ]
 

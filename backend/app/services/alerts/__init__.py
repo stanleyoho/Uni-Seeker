@@ -6,7 +6,7 @@ from app.services.alerts.alert_service import (
 )
 
 __all__ = [
-    "AlertService",
     "AlertRuleNotFound",
+    "AlertService",
     "InvalidAlertRule",
 ]

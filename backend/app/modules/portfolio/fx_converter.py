@@ -29,8 +29,8 @@ from decimal import Decimal
 __all__ = [
     "FxRateMissing",
     "convert",
-    "convert_to_base",
     "convert_dict",
+    "convert_to_base",
 ]
 
 _ZERO = Decimal("0")

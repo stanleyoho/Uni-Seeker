@@ -11,7 +11,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sqlalchemy import text
 
-import app.obs.metrics  # noqa: F401 — register custom Prometheus metrics at import time
+import app.obs.metrics
 from app.api.v1.router import v1_router
 from app.config import settings
 from app.logging_config import setup_logging

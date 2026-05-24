@@ -247,6 +247,6 @@ async def _aggregate_positions(
 
 
 __all__ = [
-    "take_daily_snapshot_for_user",
     "take_daily_snapshot_for_all_active_users",
+    "take_daily_snapshot_for_user",
 ]

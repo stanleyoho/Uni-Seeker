@@ -29,11 +29,11 @@ import httpx
 import structlog
 
 __all__ = [
-    "FilerMetadata",
-    "FilingMetadata",
+    "EdgarClient",
     "EdgarRateLimiter",
     "EdgarTransientError",
-    "EdgarClient",
+    "FilerMetadata",
+    "FilingMetadata",
 ]
 
 logger = structlog.get_logger(__name__)

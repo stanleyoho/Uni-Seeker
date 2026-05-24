@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone, UTC
 from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
@@ -155,7 +155,7 @@ class RevenueSyncTask(SyncTask):
                     max_date = row_date
 
             # -- update sync state ----------------------------------------
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             sync_stmt = pg_insert(SyncState).values(
                 dataset=self.dataset_name,
                 stock_id=stock.id,

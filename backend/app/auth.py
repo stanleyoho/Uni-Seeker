@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 
 import bcrypt
 import jwt
@@ -37,7 +37,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: int, email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expire_hours)
+    expire = datetime.now(UTC) + timedelta(hours=settings.jwt_expire_hours)
     payload = {"sub": str(user_id), "email": email, "exp": expire}
     return jwt.encode(payload, _get_secret_key(), algorithm=settings.jwt_algorithm)
 

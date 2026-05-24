@@ -138,6 +138,6 @@ async def alert_rule_count_provider(*, user: User) -> int:
 __all__ = [
     "account_count_provider",
     "alert_rule_count_provider",
-    "trade_count_provider",
     "position_count_provider",
+    "trade_count_provider",
 ]

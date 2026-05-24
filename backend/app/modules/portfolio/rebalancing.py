@@ -51,9 +51,9 @@ from typing import Literal
 
 __all__ = [
     "CurrentPosition",
-    "TargetAllocation",
-    "SuggestedTrade",
     "RebalanceResult",
+    "SuggestedTrade",
+    "TargetAllocation",
     "compute_rebalance",
     "validate_targets",
 ]

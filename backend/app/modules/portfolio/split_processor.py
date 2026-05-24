@@ -51,8 +51,8 @@ __all__ = [
     "SplitType",
     "StockSplitInputs",
     "StockSplitResult",
-    "process_stock_split",
     "compute_split_multiplier",
+    "process_stock_split",
     "validate_split_inputs",
 ]
 
