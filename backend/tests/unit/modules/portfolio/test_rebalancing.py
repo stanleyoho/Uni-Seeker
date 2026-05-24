@@ -33,7 +33,6 @@ import pytest
 
 from app.modules.portfolio.rebalancing import (
     CurrentPosition,
-    RebalanceResult,
     SuggestedTrade,
     TargetAllocation,
     compute_rebalance,

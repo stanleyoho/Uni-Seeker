@@ -10,7 +10,6 @@ from decimal import Decimal
 
 from app.modules.institutional.diff import (
     ChangeType,
-    HoldingChange,
     compute_diff,
 )
 from app.modules.institutional.parser import ParsedHolding

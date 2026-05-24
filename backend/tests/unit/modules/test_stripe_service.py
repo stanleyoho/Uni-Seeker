@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.modules.billing.stripe_service import StripeService, WebhookResult
+from app.modules.billing.stripe_service import StripeService
 
 
 def _make_event(event_type: str, data: dict) -> bytes:

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
 from sqlalchemy import select
 
 from app.auth import create_access_token

@@ -44,7 +44,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.institutional._deps import get_edgar_client
 from app.auth import create_access_token
-from app.db.models.institutional.subscription import F13UserSubscription
 from app.models.enums import Market, UserTier
 from app.models.stock import Stock
 from app.models.user import User

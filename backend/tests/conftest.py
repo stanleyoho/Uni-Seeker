@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 from datetime import date
 from decimal import Decimal
-from typing import Annotated
 
 import pytest
 from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCompiler
@@ -21,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.api.deps import get_db
 from app.main import create_app
 from app.models.base import Base
-from app.models.enums import Market
 from app.models.price import StockPrice
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

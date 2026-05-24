@@ -10,7 +10,6 @@ status parsing) is exercised end-to-end.
 from __future__ import annotations
 
 import httpx
-import pytest
 
 from app.modules.notifications.telegram_sender import send_telegram_message
 

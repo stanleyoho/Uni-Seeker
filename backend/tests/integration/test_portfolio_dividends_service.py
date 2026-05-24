@@ -33,7 +33,6 @@ from app.models.audit_log import AuditLog
 from app.models.enums import Market, UserTier
 from app.models.user import User
 from app.repositories.portfolio import (
-    PortfolioAccountRepo,
     PortfolioDividendRepo,
 )
 from app.services.portfolio import (

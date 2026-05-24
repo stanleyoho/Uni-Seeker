@@ -1,6 +1,6 @@
 """Plan 4.5 T7 — login device fingerprint registry + 3-device limit."""
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from httpx import AsyncClient
@@ -123,9 +123,7 @@ async def test_blocked_device_with_same_fingerprint_rejected(
     (would violate the unique constraint) and NOT pass the active count
     check (would let blocked attackers in)."""
     u = await _register_user(db_session, "dev4@x.tw", "dev4")
-    from types import SimpleNamespace
 
-    from app.services.device import compute_fingerprint
 
     # We need the fingerprint that the TestClient will produce. Easiest:
     # do one normal login to register it, then mark it blocked.

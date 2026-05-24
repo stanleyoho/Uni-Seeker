@@ -2,10 +2,8 @@
 
 from datetime import date
 
-import pytest
 
 from app.modules.stock_signals.sharp_detector import (
-    EdgeSignal,
     StockSharpDetector,
     StockSharpSignal,
 )

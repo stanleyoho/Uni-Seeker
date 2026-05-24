@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.holdings._deps import get_live_price_fetcher
 from app.auth import create_access_token
 from app.models.audit_log import AuditLog
-from app.models.enums import Market, UserTier
+from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.portfolio.live_price_fetcher import PriceQuote
 

@@ -12,8 +12,6 @@ from pathlib import Path
 import pytest
 
 from app.modules.institutional.parser import (
-    FilingSummary,
-    ParsedHolding,
     ParseError,
     is_valid_cusip,
     parse_infotable_xml,

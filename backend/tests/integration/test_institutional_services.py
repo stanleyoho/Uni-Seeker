@@ -39,13 +39,11 @@ from app.repositories.institutional import (
     F13FilerRepo,
     F13FilingRepo,
     F13HoldingRepo,
-    F13UserSubscriptionRepo,
 )
 from app.services.institutional import (
     F13CrossStockService,
     F13FilerNotFound,
     F13FilerSearchService,
-    F13FilingNotFound,
     F13FilingService,
     F13RefreshInFlight,
     F13SubscriptionExists,

@@ -20,7 +20,6 @@ from sqlalchemy import select
 
 from app.db.models.portfolio import (
     HoldingsSnapshot,
-    PortfolioAccount,
 )
 from app.models.enums import Market, UserTier
 from app.models.user import User
