@@ -25,7 +25,11 @@ select = [
 # - RUF001/002/003: 中文字 / EN-DASH / 全形符號 in strings/docstrings/comments are
 #         intentional (Stanley's primary language is zh-TW). The "ambiguous" warnings
 #         are signal-zero in this codebase.
-ignore = ["N802", "RUF001", "RUF002", "RUF003"]
+# TC001/002/003 disabled project-wide: FastAPI Annotated[..., Depends(...)] +
+# SQLAlchemy 2.0 Mapped[X] need runtime-visible types. Moving them into
+# TYPE_CHECKING blocks breaks DI resolution and ORM reflection across the
+# codebase (verified empirically — 2026-05-24 attempt broke 164 tests).
+ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003"]
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
@@ -33,12 +37,6 @@ allowed-confusables = ["：", "（", "）"]
 "**/conftest.py" = ["DTZ"]
 "scripts/**" = ["T20"]
 "alembic/**" = ["DTZ", "T20"]
-# SQLAlchemy 2.0 mapped_column needs runtime-visible types (Mapped[Decimal],
-# Mapped[datetime] etc) — moving these imports into TYPE_CHECKING breaks ORM
-# reflection. TC001/002/003 must stay disabled in model dirs.
-"app/models/**" = ["TC001", "TC002", "TC003"]
-"app/db/models/**" = ["TC001", "TC002", "TC003"]
-"app/api/v1/valuation_models.py" = ["TC001", "TC002", "TC003"]
 
 [lint.isort]
 known-first-party = ["app"]
