@@ -18,6 +18,14 @@ select = [
     "DTZ",    # flake8-datetimez
     "T20",    # flake8-print (Plan 8 T11: no print() in production)
 ]
+# Project-wide rule suppressions (added Phase 8 V.3, 2026-05-24):
+# - N802: FastAPI route handlers + SQLAlchemy override methods (e.g. _visit_JSONB)
+#         + test functions like test_WalkForwardValidator_init_kwargs intentionally
+#         mirror class names — snake_case 強制違反設計意圖
+# - RUF001/002/003: 中文字 / EN-DASH / 全形符號 in strings/docstrings/comments are
+#         intentional (Stanley's primary language is zh-TW). The "ambiguous" warnings
+#         are signal-zero in this codebase.
+ignore = ["N802", "RUF001", "RUF002", "RUF003"]
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
@@ -25,6 +33,12 @@ allowed-confusables = ["：", "（", "）"]
 "**/conftest.py" = ["DTZ"]
 "scripts/**" = ["T20"]
 "alembic/**" = ["DTZ", "T20"]
+# SQLAlchemy 2.0 mapped_column needs runtime-visible types (Mapped[Decimal],
+# Mapped[datetime] etc) — moving these imports into TYPE_CHECKING breaks ORM
+# reflection. TC001/002/003 must stay disabled in model dirs.
+"app/models/**" = ["TC001", "TC002", "TC003"]
+"app/db/models/**" = ["TC001", "TC002", "TC003"]
+"app/api/v1/valuation_models.py" = ["TC001", "TC002", "TC003"]
 
 [lint.isort]
 known-first-party = ["app"]
