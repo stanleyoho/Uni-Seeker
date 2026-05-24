@@ -25,11 +25,13 @@ dependencies = [
     "stripe>=7.0.0",
     "backtesting_core",
     "prediction-engine",
+    "observability-core",
 ]
 
 [tool.uv.sources]
 backtesting_core = { path = "../../adaptive-alpha-engine/packages/backtesting_core", editable = true }
 prediction-engine = { path = "../../adaptive-alpha-engine/packages/prediction_engine", editable = true }
+observability-core = { git = "ssh://git@github.com/stanleyoho/observability-core.git", rev = "v0.2.1" }
 
 [project.optional-dependencies]
 dev = [

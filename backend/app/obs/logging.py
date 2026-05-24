@@ -1,24 +1,20 @@
-"""Plan 8 T1 — structlog config.
+"""Service-side structlog adopter — thin wrapper over observability-core.
 
-Two output modes:
-- ``ENV in {dev, test}`` → ``structlog.dev.ConsoleRenderer(colors=True)``
-- otherwise → ``structlog.processors.JSONRenderer()`` (production)
+Uni-Seeker is a SERVICE: ``configure_logging()`` is called once at app
+startup (see ``app.main.lifespan``), then ``get_logger("module.name")``
+is used everywhere. No ``library=`` tag (services own their pipeline).
 
-Common fields injected into every log line: timestamp / level / event /
-service / environment / component / version. ``trace_id`` is merged from
-ContextVar by T2 (added separately) — already wired via
-``merge_contextvars`` processor.
+Since 2026-05-24 Stage 2 migration the actual implementation lives in
+``observability_core.logging`` (v0.2.0+). This module preserves the
+existing ``from app.obs.logging import configure_logging, get_logger``
+call sites without modification.
 """
 from __future__ import annotations
 
-import logging
-import os
-import sys
 from typing import Any
 
-import structlog
-
-_CONFIGURED = False
+from observability_core.logging import configure_logging as _core_configure_logging
+from observability_core.logging import get_logger as _core_get_logger
 
 
 def configure_logging(
@@ -30,46 +26,23 @@ def configure_logging(
 ) -> None:
     """Configure structlog globally for this process.
 
-    Safe to call multiple times (idempotent re-configure each time);
-    designed to be invoked exactly once at application startup.
+    Service-side initialiser. Safe to call multiple times (idempotent
+    re-configure); designed to be invoked exactly once at application
+    startup.
     """
-    global _CONFIGURED
-    env = environment or os.getenv("ENV", "dev")
-    ver = version or os.getenv("OBS_VERSION", "unknown")
-
-    # Bind common static fields once via contextvars so every record carries them.
-    structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(
+    _core_configure_logging(
         service=service,
-        environment=env,
-        version=ver,
+        environment=environment,
+        version=version,
+        log_level=log_level,
     )
 
-    shared_processors: list[Any] = [
-        structlog.contextvars.merge_contextvars,
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso", utc=True),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-    ]
 
-    if env in {"dev", "test"}:
-        renderer = structlog.dev.ConsoleRenderer(colors=True)
-    else:
-        renderer = structlog.processors.JSONRenderer()
+def get_logger(component: str) -> Any:
+    """Return a structlog logger pre-bound with the caller's component name.
 
-    structlog.configure(
-        processors=[*shared_processors, renderer],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            logging.getLevelName(log_level)
-        ),
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stdout),
-        cache_logger_on_first_use=False,
-    )
-    _CONFIGURED = True
-
-
-def get_logger(component: str) -> structlog.stdlib.BoundLogger:
-    """Return a structlog logger pre-bound with the caller's component name."""
-    return structlog.get_logger().bind(component=component)
+    Service-side: no ``library=`` tag — Uni-Seeker owns the structlog
+    pipeline (via :func:`configure_logging`), unlike library packages
+    such as AAE.
+    """
+    return _core_get_logger(component)

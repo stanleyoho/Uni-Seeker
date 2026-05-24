@@ -1,4 +1,12 @@
-"""Plan 8 T3 — Sentry SDK init tests."""
+"""Plan 8 T3 — Sentry SDK init tests.
+
+Since 2026-05-24 Stage 2 migration ``app.obs.sentry.init_sentry`` is a
+thin wrapper over ``observability_core.sentry.init_sentry``. Patches
+target the package's ``sentry_sdk`` symbol since that is where the real
+init call now lives. The filter-policy assertions still exercise
+Uni-Seeker-specific kwargs (Stripe webhook full-sample, ExpectedDriftAlert
+drop) via ``app.obs._sentry_filters``.
+"""
 from unittest.mock import patch
 
 
@@ -13,8 +21,8 @@ def test_init_sentry_returns_false_when_dsn_missing(monkeypatch):
 def test_init_sentry_returns_true_when_dsn_set(monkeypatch):
     monkeypatch.setenv("SENTRY_DSN", "https://fakekey@sentry.io/123")
     monkeypatch.setenv("ENV", "prod")
-    with patch("app.obs.sentry.sentry_sdk.init") as mock_init, \
-         patch("app.obs.sentry.sentry_sdk.set_tag"):
+    with patch("observability_core.sentry.sentry_sdk.init") as mock_init, \
+         patch("observability_core.sentry.sentry_sdk.set_tag"):
         from app.obs.sentry import init_sentry
         ok = init_sentry(service="uni-seeker-backend")
     assert ok is True
@@ -25,8 +33,8 @@ def test_init_sentry_passes_environment_release_sample_rate(monkeypatch):
     monkeypatch.setenv("SENTRY_DSN", "https://fakekey@sentry.io/123")
     monkeypatch.setenv("ENV", "staging")
     monkeypatch.setenv("OBS_VERSION", "1.2.3+abc")
-    with patch("app.obs.sentry.sentry_sdk.init") as mock_init, \
-         patch("app.obs.sentry.sentry_sdk.set_tag"):
+    with patch("observability_core.sentry.sentry_sdk.init") as mock_init, \
+         patch("observability_core.sentry.sentry_sdk.set_tag"):
         from app.obs.sentry import init_sentry
         init_sentry(service="uni-seeker-backend", traces_sample_rate=0.25)
     kwargs = mock_init.call_args.kwargs
@@ -46,7 +54,7 @@ def test_init_sentry_skipped_in_test_env(monkeypatch):
     """ENV=test must short-circuit even if DSN is set."""
     monkeypatch.setenv("ENV", "test")
     monkeypatch.setenv("SENTRY_DSN", "https://fakekey@sentry.io/123")
-    with patch("app.obs.sentry.sentry_sdk.init") as mock_init:
+    with patch("observability_core.sentry.sentry_sdk.init") as mock_init:
         from app.obs.sentry import init_sentry
         ok = init_sentry(service="uni-seeker-backend")
     assert ok is False

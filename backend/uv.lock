@@ -1005,6 +1005,15 @@ wheels = [
 ]
 
 [[package]]
+name = "observability-core"
+version = "0.2.1"
+source = { git = "ssh://git@github.com/stanleyoho/observability-core.git?rev=v0.2.1#cc5beaf582582e916a2f0cdafc02a0e8d7f44e69" }
+dependencies = [
+    { name = "sentry-sdk" },
+    { name = "structlog" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1123,6 +1132,7 @@ version = "0.1.0"
 source = { editable = "../../adaptive-alpha-engine/packages/prediction_engine" }
 dependencies = [
     { name = "numpy" },
+    { name = "observability-core" },
     { name = "pandas" },
     { name = "scipy" },
     { name = "sqlalchemy" },
@@ -1131,6 +1141,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
+    { name = "observability-core", git = "ssh://****@github.com/stanleyoho/observability-core.git?rev=v0.2.1" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
@@ -1804,6 +1815,7 @@ dependencies = [
     { name = "bcrypt" },
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "observability-core" },
     { name = "pandas" },
     { name = "prediction-engine" },
     { name = "prometheus-client" },
@@ -1846,6 +1858,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
+    { name = "observability-core", git = "ssh://****@github.com/stanleyoho/observability-core.git?rev=v0.2.1" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "prediction-engine", editable = "../../adaptive-alpha-engine/packages/prediction_engine" },
