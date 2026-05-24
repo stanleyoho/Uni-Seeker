@@ -20,6 +20,7 @@ import {
   listHoldingDividends,
   listHoldingPositions,
   listHoldingTrades,
+  executeRebalance,
   previewRebalance,
   updateHoldingAccount,
   updateHoldingDividend,
@@ -39,6 +40,7 @@ import {
   type HoldingTradeUpdateRequest,
   type ImportResult,
   type MultiCurrencyHoldingSummary,
+  type RebalanceExecuteResponse,
   type RebalanceRequest,
   type RebalanceResponse,
 } from "@/lib/api-client";
@@ -373,5 +375,34 @@ export function useImportHoldingsCsv() {
 export function usePreviewRebalance() {
   return useMutation<RebalanceResponse, Error, RebalanceRequest>({
     mutationFn: (req) => previewRebalance(req),
+  });
+}
+
+/**
+ * Persist the suggested trades for a rebalance plan.
+ *
+ * Unlike preview, execute MUTATES state: every successful row writes a
+ * `portfolio_trades` row through `PortfolioTradeService.record_trade`.
+ * On success we invalidate trades + positions + summary so the holdings
+ * page reflects the new state immediately.
+ *
+ * Partial-success semantics: the endpoint returns 200 even when some
+ * trades land in `failed` (e.g. `InsufficientShares` from snapshot drift).
+ * We still invalidate on every successful call — at least one row may
+ * have committed, and revalidation is cheap.
+ *
+ * Whole-batch errors (403 feature_unavailable, 404 account_not_found,
+ * 422 invalid_rebalance_input / account_id_required_for_execute) bubble
+ * up as `ApiError` for the caller's error mapper to translate.
+ */
+export function useExecuteRebalance() {
+  const qc = useQueryClient();
+  return useMutation<RebalanceExecuteResponse, Error, RebalanceRequest>({
+    mutationFn: (req) => executeRebalance(req),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.trades.all });
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.positions.all });
+      qc.invalidateQueries({ queryKey: queryKeys.holdings.summary.all });
+    },
   });
 }

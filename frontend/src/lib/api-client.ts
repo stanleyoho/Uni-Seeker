@@ -2396,6 +2396,64 @@ export async function previewRebalance(
   );
 }
 
+// ── Phase 2: execute (persists trades server-side) ─────────────────────────
+//
+// The execute endpoint re-computes `suggested_trades` server-side from the
+// same `RebalanceRequest` payload as preview and writes each row through
+// the regular `PortfolioTradeService.record_trade` pipeline. Returns a
+// per-row summary (executed / skipped / failed) — never throws on partial
+// success; only the whole-batch errors (403 / 404 / 422) bubble.
+//
+// `account_id` is REQUIRED for execute (preview allows aggregate mode);
+// the backend returns 422 `account_id_required_for_execute` when omitted.
+
+export interface ExecutedRebalanceTrade {
+  symbol: string;
+  market: HoldingMarket;
+  action: "BUY" | "SELL";
+  qty: string;
+  price: string;
+  /** Primary key of the inserted `portfolio_trades` row. */
+  trade_id: number;
+}
+
+export interface SkippedRebalanceTrade {
+  symbol: string;
+  market: HoldingMarket;
+  reason: string;
+  target_pct?: string | null;
+  delta_value?: string | null;
+}
+
+export interface FailedRebalanceTrade {
+  symbol: string;
+  market: HoldingMarket;
+  action: "BUY" | "SELL";
+  /** Canonical `_detail` string — e.g. `insufficient_shares`. */
+  error_code: string;
+  message: string;
+}
+
+export interface RebalanceExecuteResponse {
+  executed: ExecutedRebalanceTrade[];
+  skipped: SkippedRebalanceTrade[];
+  failed: FailedRebalanceTrade[];
+  /** Sum of `qty * price` across `executed` rows (Decimal as string). */
+  total_executed_value: string;
+}
+
+export async function executeRebalance(
+  req: RebalanceRequest,
+): Promise<RebalanceExecuteResponse> {
+  return apiFetch<RebalanceExecuteResponse>(
+    `${API_BASE}/holdings/rebalance/execute`,
+    {
+      method: "POST",
+      body: JSON.stringify(req),
+    },
+  );
+}
+
 // ---------------------------------------------------------------------------
 // /me/audit-logs — user-facing audit history viewer (Round 13)
 // ---------------------------------------------------------------------------
