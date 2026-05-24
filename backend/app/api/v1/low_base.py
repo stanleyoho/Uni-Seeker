@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_indicator_registry, get_stock_or_404
+from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider

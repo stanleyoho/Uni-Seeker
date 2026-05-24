@@ -18,7 +18,7 @@ infrastructure.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -32,8 +32,6 @@ from app.db.models.alerts.alert_rule import (
 from app.modules.alerts.evaluator import (
     EvaluationContext,
     PositionSnapshot,
-    RuleType,
-    ThresholdType,
     evaluate_rule,
 )
 from app.modules.billing.tier_limits import get_limit

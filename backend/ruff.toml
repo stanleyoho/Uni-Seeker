@@ -34,6 +34,7 @@ allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "ANN", "ARG", "PLR2004", "DTZ", "T20"]
+"**/__init__.py" = ["F401"]  # re-exports intentional
 "**/conftest.py" = ["DTZ"]
 "scripts/**" = ["T20"]
 "alembic/**" = ["DTZ", "T20"]

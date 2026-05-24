@@ -67,7 +67,6 @@ from app.services.portfolio.exceptions import (
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.db.models.portfolio.snapshot import HoldingsSnapshot
     from app.models.user import User
 
 

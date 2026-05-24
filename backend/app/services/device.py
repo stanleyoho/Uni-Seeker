@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 
 from sqlalchemy import select

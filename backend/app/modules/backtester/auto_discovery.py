@@ -12,16 +12,11 @@ making it fully testable in isolation.
 from __future__ import annotations
 
 import itertools
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine
-from app.modules.backtester.grid_search import (
-    GridSearchConfig,
-    GridSearchEngine,
-    compute_composite_scores,
-)
 from app.modules.strategy.composite import CompositeStrategy
 from app.modules.strategy.registry import StrategyRegistry
 from app.obs.logging import get_logger

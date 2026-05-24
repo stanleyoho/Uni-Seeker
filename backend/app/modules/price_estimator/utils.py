@@ -1,5 +1,4 @@
-from decimal import Decimal
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import structlog

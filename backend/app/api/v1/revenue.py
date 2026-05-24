@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_stock_or_404
+from app.api.deps import get_db
 from app.models.revenue import MonthlyRevenue
 from app.models.stock import Stock
 from app.modules.revenue.analyzer import analyze_revenue
