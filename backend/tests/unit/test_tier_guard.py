@@ -25,7 +25,7 @@ def _make_app(min_tier: UserTier) -> FastAPI:
     app = FastAPI()
 
     @app.get("/protected")
-    async def protected(user: User = Depends(require_tier(min_tier))):
+    async def protected(user: User = Depends(require_tier(min_tier))):  # noqa: B008
         return {"tier": user.tier}
 
     return app
