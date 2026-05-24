@@ -27,7 +27,7 @@ from typing import Any
 import yaml
 from fastapi import Depends, HTTPException, status
 from prometheus_client import REGISTRY, Counter
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.auth import require_auth
 from app.config import settings

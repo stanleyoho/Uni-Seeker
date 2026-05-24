@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 import structlog
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 

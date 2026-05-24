@@ -14,7 +14,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.financial_statement import FinancialStatement as FSModel

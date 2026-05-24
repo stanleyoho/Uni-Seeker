@@ -98,7 +98,7 @@ Cost-basis inheritance strategy (applied later via
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from typing import Any
 

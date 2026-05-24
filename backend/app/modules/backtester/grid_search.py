@@ -11,7 +11,7 @@ making it fully testable in isolation.
 from __future__ import annotations
 
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.models.price import StockPrice
