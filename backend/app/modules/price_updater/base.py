@@ -7,6 +7,7 @@ from typing import Protocol, runtime_checkable
 @dataclass(frozen=True)
 class StockPriceData:
     """Normalized price data returned by all providers."""
+
     symbol: str
     market: str
     date: date

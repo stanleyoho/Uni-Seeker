@@ -11,6 +11,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCom
 def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> str:  # type: ignore[override]
     return self.visit_JSON(type_, **kwargs)  # type: ignore[arg-type]
 
+
 _SQLiteTypeCompiler.visit_JSONB = _visit_JSONB  # type: ignore[attr-defined]
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -52,9 +53,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
         yield ac
 
 

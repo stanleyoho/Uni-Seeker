@@ -14,6 +14,7 @@ The service deliberately does not depend on the User model — it accepts
 case lookup) can reuse the same retention math without dragging in the
 auth dependency.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone, UTC
@@ -50,9 +51,7 @@ class AuditQueryService:
         viewer is allowed to show. Computed at call time so test-time
         freezegun fixtures work without monkey-patching the service.
         """
-        return datetime.now(UTC) - timedelta(
-            days=USER_VISIBLE_RETENTION_DAYS
-        )
+        return datetime.now(UTC) - timedelta(days=USER_VISIBLE_RETENTION_DAYS)
 
     async def list_my_audit_logs(
         self,

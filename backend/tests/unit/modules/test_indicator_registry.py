@@ -6,6 +6,7 @@ from app.modules.indicators.registry import IndicatorRegistry
 
 class DummyIndicator:
     name = "dummy"
+
     def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
         return IndicatorResult(name="dummy", values={"dummy": closes})
 

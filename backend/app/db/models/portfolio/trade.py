@@ -3,6 +3,7 @@
 One row per executed trade (BUY / SELL / DIVIDEND / SPLIT). Belongs to
 exactly one `portfolio_accounts` row; cascade-deletes its lots on removal.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -36,7 +37,10 @@ class PortfolioTrade(Base):
     __table_args__ = (
         Index(
             "ix_portfolio_trades_account_symbol",
-            "account_id", "symbol", "market", "trade_date",
+            "account_id",
+            "symbol",
+            "market",
+            "trade_date",
         ),
         # Defensive: positive price and qty when present. Allow NULL because
         # DIVIDEND / SPLIT rows may omit one or both per spec §6.2 Table 2.
@@ -78,9 +82,7 @@ class PortfolioTrade(Base):
         onupdate=func.now(),
     )
 
-    account: Mapped[PortfolioAccount] = relationship(
-        back_populates="trades", init=False
-    )
+    account: Mapped[PortfolioAccount] = relationship(back_populates="trades", init=False)
     lots: Mapped[list[PortfolioLot]] = relationship(
         back_populates="trade",
         cascade="all, delete-orphan",

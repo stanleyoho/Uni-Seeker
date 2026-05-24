@@ -10,6 +10,7 @@ Exercises the end-to-end flow:
 
 Reuses helpers / fixtures from `test_holdings_csv_import` style.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -51,9 +52,7 @@ def _csv_headers(user: User) -> dict[str, str]:
     return {**_auth(user), "Content-Type": "text/csv"}
 
 
-async def _create_account_via_api(
-    client: AsyncClient, user: User, market: str = "TW_TWSE"
-) -> int:
+async def _create_account_via_api(client: AsyncClient, user: User, market: str = "TW_TWSE") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": "Broker", "market": market},
@@ -64,15 +63,18 @@ async def _create_account_via_api(
 
 
 async def _trade_count(db: AsyncSession, user_id: int) -> int:
-    return await db.scalar(
-        select(func.count())
-        .select_from(PortfolioTrade)
-        .join(
-            PortfolioAccount,
-            PortfolioAccount.id == PortfolioTrade.account_id,
+    return (
+        await db.scalar(
+            select(func.count())
+            .select_from(PortfolioTrade)
+            .join(
+                PortfolioAccount,
+                PortfolioAccount.id == PortfolioTrade.account_id,
+            )
+            .where(PortfolioAccount.user_id == user_id)
         )
-        .where(PortfolioAccount.user_id == user_id)
-    ) or 0
+        or 0
+    )
 
 
 # ── sample CSV bodies ───────────────────────────────────────────────────────
@@ -139,9 +141,7 @@ async def test_list_brokers_returns_default_registry(
 
 
 @pytest.mark.asyncio
-async def test_explicit_broker_key_ib(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_explicit_broker_key_ib(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "brokers2@x.tw")
     uid = user.id
     aid = await _create_account_via_api(client, user, market="US_NASDAQ")
@@ -158,9 +158,7 @@ async def test_explicit_broker_key_ib(
 
 
 @pytest.mark.asyncio
-async def test_explicit_broker_key_yuanta(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_explicit_broker_key_yuanta(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "brokers3@x.tw")
     uid = user.id
     aid = await _create_account_via_api(client, user)
@@ -177,9 +175,7 @@ async def test_explicit_broker_key_yuanta(
 
 
 @pytest.mark.asyncio
-async def test_auto_detect_fubon(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_auto_detect_fubon(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "brokers4@x.tw")
     uid = user.id
     aid = await _create_account_via_api(client, user)
@@ -198,9 +194,7 @@ async def test_auto_detect_fubon(
 
 
 @pytest.mark.asyncio
-async def test_auto_detect_schwab_commits(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_auto_detect_schwab_commits(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "brokers5@x.tw")
     uid = user.id
     aid = await _create_account_via_api(client, user, market="US_NYSE")
@@ -229,8 +223,7 @@ async def test_auto_detect_fidelity_with_dividend_rejection(
     uid = user.id
     aid = await _create_account_via_api(client, user, market="US_NYSE")
     body_with_div = (
-        _FIDELITY
-        + b"04/20/2026,DIVIDEND RECEIVED,NVDA,NVIDIA CORP,Cash,0,0.00,0.00,0.00,45.00\n"
+        _FIDELITY + b"04/20/2026,DIVIDEND RECEIVED,NVDA,NVIDIA CORP,Cash,0,0.00,0.00,0.00,45.00\n"
     )
     r = await client.post(
         f"/api/v1/holdings/imports/csv?account_id={aid}&dry_run=false",

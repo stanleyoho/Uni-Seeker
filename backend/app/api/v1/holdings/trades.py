@@ -4,6 +4,7 @@ Spec §5.4 Table 2 + §9. Same `tier_guard + service-layer second line`
 pattern as `accounts.py`. Adds `InsufficientShares` → 422 mapping for
 SELL trades that exceed the open-lot total.
 """
+
 from __future__ import annotations
 
 from datetime import date as date_type

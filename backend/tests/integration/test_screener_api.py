@@ -43,16 +43,28 @@ async def app_with_screener_data():
         start = today - timedelta(days=19)
         for i in range(20):
             d = start + timedelta(days=i)
-            session.add(StockPrice(
-                stock_id=stock_rise.id, date=d,
-                open=Decimal(str(100 + i)), high=Decimal(str(102 + i)),
-                low=Decimal(str(98 + i)), close=Decimal(str(101 + i)), volume=10_000_000,
-            ))
-            session.add(StockPrice(
-                stock_id=stock_fall.id, date=d,
-                open=Decimal(str(100 - i)), high=Decimal(str(102 - i)),
-                low=Decimal(str(98 - i)), close=Decimal(str(99 - i)), volume=10_000_000,
-            ))
+            session.add(
+                StockPrice(
+                    stock_id=stock_rise.id,
+                    date=d,
+                    open=Decimal(str(100 + i)),
+                    high=Decimal(str(102 + i)),
+                    low=Decimal(str(98 + i)),
+                    close=Decimal(str(101 + i)),
+                    volume=10_000_000,
+                )
+            )
+            session.add(
+                StockPrice(
+                    stock_id=stock_fall.id,
+                    date=d,
+                    open=Decimal(str(100 - i)),
+                    high=Decimal(str(102 - i)),
+                    low=Decimal(str(98 - i)),
+                    close=Decimal(str(99 - i)),
+                    volume=10_000_000,
+                )
+            )
         await session.commit()
 
     yield app
@@ -64,10 +76,15 @@ async def app_with_screener_data():
 async def test_screen_finds_oversold(app_with_screener_data) -> None:
     transport = ASGITransport(app=app_with_screener_data)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/screener/screen", json={
-            "conditions": [{"indicator": "RSI", "params": {"period": 14}, "op": "<", "value": 30}],
-            "operator": "AND",
-        })
+        resp = await client.post(
+            "/api/v1/screener/screen",
+            json={
+                "conditions": [
+                    {"indicator": "RSI", "params": {"period": 14}, "op": "<", "value": 30}
+                ],
+                "operator": "AND",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         symbols = [r["symbol"] for r in data["results"]]
@@ -78,8 +95,13 @@ async def test_screen_finds_oversold(app_with_screener_data) -> None:
 async def test_screen_empty_result(app_with_screener_data) -> None:
     transport = ASGITransport(app=app_with_screener_data)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/screener/screen", json={
-            "conditions": [{"indicator": "RSI", "params": {"period": 14}, "op": "<", "value": 0}],
-        })
+        resp = await client.post(
+            "/api/v1/screener/screen",
+            json={
+                "conditions": [
+                    {"indicator": "RSI", "params": {"period": 14}, "op": "<", "value": 0}
+                ],
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["total"] == 0

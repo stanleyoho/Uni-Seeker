@@ -2,6 +2,7 @@
 
 Pure functions — no DB queries. Callers pass pre-fetched rules and positions.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from typing import Literal
 @dataclass
 class AllocationRuleData:
     """Input: one allocation rule for a symbol."""
+
     symbol: str
     target_weight: Decimal
     lower_threshold: Decimal
@@ -22,6 +24,7 @@ class AllocationRuleData:
 @dataclass
 class PositionData:
     """Input: one position's current market value."""
+
     symbol: str
     market_value: Decimal
 
@@ -29,10 +32,11 @@ class PositionData:
 @dataclass
 class AlertData:
     """Output: one triggered rebalance alert."""
+
     symbol: str
     current_weight: Decimal
     target_weight: Decimal
-    deviation: Decimal       # current - target (positive = overweight)
+    deviation: Decimal  # current - target (positive = overweight)
     direction: Literal["over", "under"]
 
 
@@ -66,20 +70,24 @@ def compute_account_alerts(
         deviation = current_weight - rule.target_weight
 
         if deviation > rule.upper_threshold:
-            alerts.append(AlertData(
-                symbol=rule.symbol,
-                current_weight=current_weight.quantize(Decimal("0.0001")),
-                target_weight=rule.target_weight,
-                deviation=deviation.quantize(Decimal("0.0001")),
-                direction="over",
-            ))
+            alerts.append(
+                AlertData(
+                    symbol=rule.symbol,
+                    current_weight=current_weight.quantize(Decimal("0.0001")),
+                    target_weight=rule.target_weight,
+                    deviation=deviation.quantize(Decimal("0.0001")),
+                    direction="over",
+                )
+            )
         elif deviation < -rule.lower_threshold:
-            alerts.append(AlertData(
-                symbol=rule.symbol,
-                current_weight=current_weight.quantize(Decimal("0.0001")),
-                target_weight=rule.target_weight,
-                deviation=deviation.quantize(Decimal("0.0001")),
-                direction="under",
-            ))
+            alerts.append(
+                AlertData(
+                    symbol=rule.symbol,
+                    current_weight=current_weight.quantize(Decimal("0.0001")),
+                    target_weight=rule.target_weight,
+                    deviation=deviation.quantize(Decimal("0.0001")),
+                    direction="under",
+                )
+            )
 
     return alerts

@@ -19,6 +19,7 @@ Spec §5.4 Table 3 + §9 + §13 AC matrix. ~17 cases covering:
 Mirrors `test_holdings_api.py` conventions (`_mk_user`, `_auth`,
 `_create_account_via_api`) so reviewer cognitive load stays low.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -57,9 +58,7 @@ def _auth(user: User) -> dict[str, str]:
     return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
-async def _create_account_via_api(
-    client: AsyncClient, user: User, name: str = "Yuanta"
-) -> int:
+async def _create_account_via_api(client: AsyncClient, user: User, name: str = "Yuanta") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": name, "market": "TW_TWSE", "broker": "Yuanta"},
@@ -81,8 +80,12 @@ async def _seed_buy(
     r = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": symbol,
-            "market": "TW_TWSE", "qty": qty, "price": price,
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": symbol,
+            "market": "TW_TWSE",
+            "qty": qty,
+            "price": price,
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -187,9 +190,10 @@ async def test_create_dividend_free_user_403_feature_unavailable(
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
 
-    with patch("app.modules.billing.tier_limits.settings") as s_tg, patch(
-        "app.services.portfolio.dividend_service.settings"
-    ) as s_svc:
+    with (
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+        patch("app.services.portfolio.dividend_service.settings") as s_svc,
+    ):
         s_tg.enable_monetization = True
         s_svc.enable_monetization = True
         r = await client.post(
@@ -211,9 +215,10 @@ async def test_create_dividend_basic_user_201(
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
 
-    with patch("app.modules.billing.tier_limits.settings") as s_tg, patch(
-        "app.services.portfolio.dividend_service.settings"
-    ) as s_svc:
+    with (
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+        patch("app.services.portfolio.dividend_service.settings") as s_svc,
+    ):
         s_tg.enable_monetization = True
         s_svc.enable_monetization = True
         r = await client.post(
@@ -301,17 +306,13 @@ async def test_create_dividend_cross_user_account_404(
 
 
 @pytest.mark.asyncio
-async def test_list_dividends_basic_user_200(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_list_dividends_basic_user_200(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "div_l1@x.tw")
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
     for i in range(3):
         body = _cash_body(aid, ex_dividend_date=f"2026-05-1{i}")
-        await client.post(
-            "/api/v1/holdings/dividends", json=body, headers=_auth(user)
-        )
+        await client.post("/api/v1/holdings/dividends", json=body, headers=_auth(user))
 
     r = await client.get("/api/v1/holdings/dividends", headers=_auth(user))
     assert r.status_code == 200, r.text
@@ -340,9 +341,7 @@ async def test_list_dividends_filter_by_account(
         headers=_auth(user),
     )
 
-    r1 = await client.get(
-        f"/api/v1/holdings/dividends?account_id={a1}", headers=_auth(user)
-    )
+    r1 = await client.get(f"/api/v1/holdings/dividends?account_id={a1}", headers=_auth(user))
     assert r1.status_code == 200
     rows = r1.json()
     assert len(rows) == 1
@@ -350,35 +349,25 @@ async def test_list_dividends_filter_by_account(
 
 
 @pytest.mark.asyncio
-async def test_list_dividends_pagination(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_list_dividends_pagination(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "div_l3@x.tw")
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
     for i in range(5):
         body = _cash_body(aid, ex_dividend_date=f"2026-05-1{i}")
-        await client.post(
-            "/api/v1/holdings/dividends", json=body, headers=_auth(user)
-        )
+        await client.post("/api/v1/holdings/dividends", json=body, headers=_auth(user))
 
-    r = await client.get(
-        "/api/v1/holdings/dividends?limit=2&offset=0", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/dividends?limit=2&offset=0", headers=_auth(user))
     assert r.status_code == 200
     assert len(r.json()) == 2
 
-    r2 = await client.get(
-        "/api/v1/holdings/dividends?limit=2&offset=4", headers=_auth(user)
-    )
+    r2 = await client.get("/api/v1/holdings/dividends?limit=2&offset=4", headers=_auth(user))
     assert r2.status_code == 200
     assert len(r2.json()) == 1  # 5 total - offset 4 = 1 row left
 
 
 @pytest.mark.asyncio
-async def test_get_dividend_by_id_200(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_dividend_by_id_200(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "div_g1@x.tw")
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
@@ -389,17 +378,13 @@ async def test_get_dividend_by_id_200(
     )
     did = r.json()["id"]
 
-    rg = await client.get(
-        f"/api/v1/holdings/dividends/{did}", headers=_auth(user)
-    )
+    rg = await client.get(f"/api/v1/holdings/dividends/{did}", headers=_auth(user))
     assert rg.status_code == 200, rg.text
     assert rg.json()["id"] == did
 
 
 @pytest.mark.asyncio
-async def test_get_dividend_cross_user_404(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_dividend_cross_user_404(client: AsyncClient, db_session: AsyncSession) -> None:
     a = await _mk_user(db_session, "div_g2a@x.tw")
     b = await _mk_user(db_session, "div_g2b@x.tw")
     aid_a = await _create_account_via_api(client, a)
@@ -411,9 +396,7 @@ async def test_get_dividend_cross_user_404(
     )
     did = r.json()["id"]
 
-    rg = await client.get(
-        f"/api/v1/holdings/dividends/{did}", headers=_auth(b)
-    )
+    rg = await client.get(f"/api/v1/holdings/dividends/{did}", headers=_auth(b))
     assert rg.status_code == 404
     assert rg.json()["message"] == "portfolio_dividend_not_found"
 
@@ -489,9 +472,7 @@ async def test_patch_dividend_immutable_field_422(
 
 
 @pytest.mark.asyncio
-async def test_delete_dividend_204(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_delete_dividend_204(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "div_d1@x.tw")
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
@@ -502,14 +483,10 @@ async def test_delete_dividend_204(
     )
     did = r.json()["id"]
 
-    rd = await client.delete(
-        f"/api/v1/holdings/dividends/{did}", headers=_auth(user)
-    )
+    rd = await client.delete(f"/api/v1/holdings/dividends/{did}", headers=_auth(user))
     assert rd.status_code == 204, rd.text
     # Re-fetch → 404
-    rg = await client.get(
-        f"/api/v1/holdings/dividends/{did}", headers=_auth(user)
-    )
+    rg = await client.get(f"/api/v1/holdings/dividends/{did}", headers=_auth(user))
     assert rg.status_code == 404
 
 
@@ -528,9 +505,7 @@ async def test_delete_dividend_cross_user_404(
     )
     did = r.json()["id"]
 
-    rd = await client.delete(
-        f"/api/v1/holdings/dividends/{did}", headers=_auth(b)
-    )
+    rd = await client.delete(f"/api/v1/holdings/dividends/{did}", headers=_auth(b))
     assert rd.status_code == 404
     assert rd.json()["message"] == "portfolio_dividend_not_found"
 

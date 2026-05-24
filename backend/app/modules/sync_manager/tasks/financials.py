@@ -85,12 +85,8 @@ class FinancialsSyncTask(SyncTask):
             return result
 
         # -- sync state map -----------------------------------------------
-        sync_q = await db.execute(
-            select(SyncState).where(SyncState.dataset == self.dataset_name)
-        )
-        sync_map: dict[int | None, SyncState] = {
-            s.stock_id: s for s in sync_q.scalars().all()
-        }
+        sync_q = await db.execute(select(SyncState).where(SyncState.dataset == self.dataset_name))
+        sync_map: dict[int | None, SyncState] = {s.stock_id: s for s in sync_q.scalars().all()}
 
         client = FinMindClient(
             token=settings.finmind_api_token,
@@ -136,9 +132,7 @@ class FinancialsSyncTask(SyncTask):
                         error=str(exc),
                     )
                     result.errors += 1
-                    result.error_details.append(
-                        f"{stock.symbol}/{stmt_type}: {exc}"
-                    )
+                    result.error_details.append(f"{stock.symbol}/{stmt_type}: {exc}")
                     continue
 
                 pivoted = _pivot_eav(raw)

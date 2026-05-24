@@ -18,6 +18,7 @@ Tier-flag behaviour is exercised via `patch(...settings)` on the
 dividend_service module so we can toggle `enable_monetization=True`
 selectively (rest of the suite runs with the default `False`).
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -69,18 +70,14 @@ async def _mk_user(
     return u
 
 
-async def _seed_account(
-    db: AsyncSession, user: User, name: str = "acc"
-) -> int:
+async def _seed_account(db: AsyncSession, user: User, name: str = "acc") -> int:
     svc = PortfolioAccountService(db, user)
     acc = await svc.create_account(name=name, market=Market.TW_TWSE)
     await db.commit()
     return acc.id
 
 
-async def _count_audit(
-    db: AsyncSession, action: str, user_id: int
-) -> int:
+async def _count_audit(db: AsyncSession, action: str, user_id: int) -> int:
     result = await db.execute(
         select(func.count(AuditLog.id)).where(
             AuditLog.action == action, AuditLog.user_id == user_id
@@ -202,9 +199,9 @@ async def test_update_dividend_drops_unknown_keys(
         row.id,
         user_id=user.id,
         note="bumped",
-        bogus_field=999,          # unknown — silently dropped
-        id=42,                    # immutable — silently dropped
-        account_id=99999,         # immutable — silently dropped
+        bogus_field=999,  # unknown — silently dropped
+        id=42,  # immutable — silently dropped
+        account_id=99999,  # immutable — silently dropped
     )
     await db_session.commit()
     assert updated is not None
@@ -236,17 +233,11 @@ async def test_delete_dividend_cross_user_returns_false(
     assert row_a is not None
 
     # B's delete blocked.
-    assert (
-        await repo.delete(row_a.id, user_id=b.id) is False
-    )
+    assert await repo.delete(row_a.id, user_id=b.id) is False
     # Row still exists.
-    assert (
-        await repo.get_by_id(row_a.id, user_id=a.id) is not None
-    )
+    assert await repo.get_by_id(row_a.id, user_id=a.id) is not None
     # A can still delete.
-    assert (
-        await repo.delete(row_a.id, user_id=a.id) is True
-    )
+    assert await repo.delete(row_a.id, user_id=a.id) is True
     await db_session.commit()
 
 
@@ -304,9 +295,7 @@ async def test_record_cash_dividend_happy_path(
     # Pull the position row from the trade service to confirm realized_pnl
     # accrued: net_amount = 100*5 - 50 = 450.
     trade_svc = PortfolioTradeService(db_session, user)
-    pos = await trade_svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await trade_svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos is not None
     # No SELL → realized started at 0, dividend added 450.
     assert pos.realized_pnl == Decimal("450")
@@ -344,9 +333,7 @@ async def test_record_stock_dividend_happy_path(
     assert row.dividend_type == "STOCK"
     assert "ratio=0.25" in (row.note or "")
     trade_svc = PortfolioTradeService(db_session, user)
-    pos = await trade_svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await trade_svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos is not None
     # 100 * 1.25 = 125
     assert pos.quantity == Decimal("125")
@@ -369,14 +356,22 @@ async def test_record_stock_dividend_preserves_lot_total_cost_invariant(
     # Build TWO lots via separate BUYs.
     trade_svc = PortfolioTradeService(db_session, user)
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("20"),
-        price=Decimal("200"), trade_date=date(2026, 5, 2),
+        account_id=acc_id,
+        action="BUY",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("20"),
+        price=Decimal("200"),
+        trade_date=date(2026, 5, 2),
     )
     await db_session.commit()
 
@@ -384,9 +379,7 @@ async def test_record_stock_dividend_preserves_lot_total_cost_invariant(
     pre_lots = await trade_svc._lot_repo.list_open_for_position(
         account_id=acc_id, symbol="X", market=Market.TW_TWSE
     )
-    pre_totals = {
-        lot.id: lot.remaining_qty * lot.cost_per_unit for lot in pre_lots
-    }
+    pre_totals = {lot.id: lot.remaining_qty * lot.cost_per_unit for lot in pre_lots}
 
     svc = PortfolioDividendService(db_session, user)
     await svc.record_dividend(
@@ -413,8 +406,7 @@ async def test_record_stock_dividend_preserves_lot_total_cost_invariant(
     for lot in post_lots:
         post_total = lot.remaining_qty * lot.cost_per_unit
         assert post_total == pre_totals[lot.id], (
-            f"lot {lot.id} total cost drifted: "
-            f"{post_total} != {pre_totals[lot.id]}"
+            f"lot {lot.id} total cost drifted: {post_total} != {pre_totals[lot.id]}"
         )
 
 
@@ -422,16 +414,12 @@ async def test_record_dividend_tier_blocked_free_user(
     db_session: AsyncSession,
 ) -> None:
     """FREE tier: dividends feature is false → TierFeatureUnavailable."""
-    user = await _mk_user(
-        db_session, "s4@x.com", "s4", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "s4@x.com", "s4", tier=UserTier.FREE)
     acc_id = await _seed_account(db_session, user)
     # Need a real position for the CASH path to mean something, but the
     # tier guard is asserted BEFORE we hit the position layer.
     svc = PortfolioDividendService(db_session, user)
-    with patch(
-        "app.services.portfolio.dividend_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.dividend_service.settings") as s:
         s.enable_monetization = True
         with pytest.raises(TierFeatureUnavailable) as exc:
             await svc.record_dividend(
@@ -450,16 +438,12 @@ async def test_record_dividend_basic_user_passes(
     db_session: AsyncSession,
 ) -> None:
     """BASIC tier has dividends=true → recording succeeds with monetization on."""
-    user = await _mk_user(
-        db_session, "s5@x.com", "s5", tier=UserTier.BASIC
-    )
+    user = await _mk_user(db_session, "s5@x.com", "s5", tier=UserTier.BASIC)
     acc_id = await _seed_account(db_session, user)
     await _seed_position(db_session, user, acc_id)
 
     svc = PortfolioDividendService(db_session, user)
-    with patch(
-        "app.services.portfolio.dividend_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.dividend_service.settings") as s:
         s.enable_monetization = True
         row = await svc.record_dividend(
             account_id=acc_id,
@@ -478,16 +462,12 @@ async def test_record_dividend_pro_user_passes(
     db_session: AsyncSession,
 ) -> None:
     """PRO tier has dividends=true → recording succeeds."""
-    user = await _mk_user(
-        db_session, "s6@x.com", "s6", tier=UserTier.PRO
-    )
+    user = await _mk_user(db_session, "s6@x.com", "s6", tier=UserTier.PRO)
     acc_id = await _seed_account(db_session, user)
     await _seed_position(db_session, user, acc_id)
 
     svc = PortfolioDividendService(db_session, user)
-    with patch(
-        "app.services.portfolio.dividend_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.dividend_service.settings") as s:
         s.enable_monetization = True
         row = await svc.record_dividend(
             account_id=acc_id,
@@ -595,12 +575,7 @@ async def test_audit_log_written_on_record_dividend(
         ratio=Decimal("0.05"),
     )
     await db_session.commit()
-    assert (
-        await _count_audit(
-            db_session, "portfolio_dividend_recorded", user.id
-        )
-        == 2
-    )
+    assert await _count_audit(db_session, "portfolio_dividend_recorded", user.id) == 2
 
 
 async def test_update_dividend_immutable_field_raises(
@@ -659,9 +634,7 @@ async def test_delete_dividend_simple_delete_no_rebuild(
     await db_session.commit()
 
     trade_svc = PortfolioTradeService(db_session, user)
-    pos_before = await trade_svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos_before = await trade_svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos_before is not None
     realized_before_delete = pos_before.realized_pnl
     assert realized_before_delete == Decimal("500")
@@ -674,19 +647,12 @@ async def test_delete_dividend_simple_delete_no_rebuild(
         await svc.get_dividend(row.id)
 
     # Position's realized_pnl is unchanged (no rebuild).
-    pos_after = await trade_svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos_after = await trade_svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos_after is not None
     assert pos_after.realized_pnl == realized_before_delete
 
     # Audit emitted.
-    assert (
-        await _count_audit(
-            db_session, "portfolio_dividend_deleted", user.id
-        )
-        == 1
-    )
+    assert await _count_audit(db_session, "portfolio_dividend_deleted", user.id) == 1
 
 
 # ── A2 semantic confirmation: cash dividend realized_pnl_delta == net_amount
@@ -715,8 +681,6 @@ async def test_record_cash_dividend_zero_withholding_equals_total(
     )
     await db_session.commit()
     trade_svc = PortfolioTradeService(db_session, user)
-    pos = await trade_svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await trade_svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos is not None
     assert pos.realized_pnl == Decimal("300")  # 3 * 100 - 0

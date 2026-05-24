@@ -19,9 +19,7 @@ from app.models.base import Base
 class StockValuation(Base):
     __tablename__ = "stock_valuations"
     __table_args__ = (
-        UniqueConstraint(
-            "stock_id", "date", name="uq_stock_valuations_stock_id_date"
-        ),
+        UniqueConstraint("stock_id", "date", name="uq_stock_valuations_stock_id_date"),
         Index("ix_stock_valuations_stock_id_date", "stock_id", "date"),
     )
 
@@ -33,9 +31,7 @@ class StockValuation(Base):
     date: Mapped[date] = mapped_column(Date)
     pe_ratio: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), default=None)
     pb_ratio: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), default=None)
-    dividend_yield: Mapped[Decimal | None] = mapped_column(
-        Numeric(8, 4), default=None
-    )
+    dividend_yield: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
     )

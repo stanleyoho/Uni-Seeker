@@ -4,6 +4,7 @@ from app.modules.indicators.volume import VolumeIndicator
 def test_volume_name() -> None:
     assert VolumeIndicator().name == "VOL"
 
+
 def test_obv_basic() -> None:
     closes = [10.0, 11.0, 10.5, 11.5, 12.0]
     volumes = [1000, 1500, 1200, 1800, 2000]
@@ -15,6 +16,7 @@ def test_obv_basic() -> None:
     assert obv[3] == 3100
     assert obv[4] == 5100
 
+
 def test_volume_ma() -> None:
     closes = [100.0] * 10
     volumes = [1000 * (i + 1) for i in range(10)]
@@ -22,6 +24,7 @@ def test_volume_ma() -> None:
     vma = result.values["VMA"]
     assert vma[3] is None
     assert vma[4] == sum(volumes[:5]) / 5
+
 
 def test_volume_ratio() -> None:
     closes = [100.0] * 10

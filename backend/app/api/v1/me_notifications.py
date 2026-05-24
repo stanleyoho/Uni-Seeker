@@ -14,6 +14,7 @@ different concern from per-user transport identifiers. Keeping the
 two surfaces apart prevents the chat_id from accidentally getting
 nested under a rule body.
 """
+
 from __future__ import annotations
 
 from typing import Annotated

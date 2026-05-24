@@ -1,4 +1,5 @@
 """Pure alert evaluator module — no DB, no I/O."""
+
 from app.modules.alerts.evaluator import (
     EvaluationContext,
     EvaluationResult,

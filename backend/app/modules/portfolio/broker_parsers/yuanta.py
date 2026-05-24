@@ -21,6 +21,7 @@ Real-format caveat: Yuanta exports vary by account type (現股 vs.
 against a real export — see report for the exact list of columns
 to confirm.
 """
+
 from __future__ import annotations
 
 import csv
@@ -76,9 +77,7 @@ class YuantaParser:
             out.append(self._parse_row(idx, raw, header))
         return out
 
-    def _parse_row(
-        self, row_index: int, raw: list[str], header: list[str]
-    ) -> ParsedRow:
+    def _parse_row(self, row_index: int, raw: list[str], header: list[str]) -> ParsedRow:
         def col(name: str) -> str:
             try:
                 i = header.index(name)

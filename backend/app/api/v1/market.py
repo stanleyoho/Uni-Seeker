@@ -129,8 +129,13 @@ def _demo_movers() -> MarketMoversResponse:
     def _make_movers(data: list) -> list[MarketMover]:
         return [
             MarketMover(
-                symbol=d[0], name=d[1], market=d[2],
-                close=d[3], change=d[4], change_percent=d[5], volume=d[6],
+                symbol=d[0],
+                name=d[1],
+                market=d[2],
+                close=d[3],
+                change=d[4],
+                change_percent=d[5],
+                volume=d[6],
             )
             for d in data
         ]

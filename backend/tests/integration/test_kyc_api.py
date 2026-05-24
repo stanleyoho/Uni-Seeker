@@ -1,4 +1,5 @@
 """Plan 4.5 T5 integration tests — POST /api/v1/onboarding/kyc."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
@@ -71,9 +72,9 @@ async def test_kyc_writes_audit_log(client: AsyncClient, db_session: AsyncSessio
         select(func.count()).select_from(AuditLog).where(AuditLog.action == "kyc_completed")
     )
     assert count == 1
-    log = (await db_session.scalars(
-        select(AuditLog).where(AuditLog.action == "kyc_completed")
-    )).one()
+    log = (
+        await db_session.scalars(select(AuditLog).where(AuditLog.action == "kyc_completed"))
+    ).one()
     assert log.user_id == u.id
     assert log.after_state == {"risk_tolerance": "moderate"}
     assert log.event_metadata == {"terms_version": "v2026.05.14"}

@@ -19,9 +19,7 @@ from app.models.enums import NotificationStatus, NotificationStatusType
 
 class NotificationRule(Base):
     __tablename__ = "notification_rules"
-    __table_args__ = (
-        Index("ix_notification_rules_user_id", "user_id"),
-    )
+    __table_args__ = (Index("ix_notification_rules_user_id", "user_id"),)
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     user_id: Mapped[int] = mapped_column(
@@ -50,9 +48,9 @@ class NotificationRule(Base):
         onupdate=func.now(),
     )
 
-
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None,
+        DateTime(timezone=True),
+        default=None,
     )
 
 

@@ -16,6 +16,7 @@ second time during pytest's module reloading). Placing the counter here
 keeps the change scope tight per spec §9.5 ("counter 註冊放在 tier_limits.py
 內").
 """
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -188,9 +189,7 @@ def load_tier_limits(path: str | None = None) -> AllTierLimits:
 
     raw: Any = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"tier_limits.yaml must be a mapping, got {type(raw).__name__}"
-        )
+        raise ValueError(f"tier_limits.yaml must be a mapping, got {type(raw).__name__}")
 
     config = AllTierLimits.model_validate(raw)
     logger.info(
@@ -226,9 +225,7 @@ def get_limit(tier: UserTier, key: str) -> int | None:
         KeyError: unknown limit key.
     """
     if key not in _NUMERIC_LIMIT_KEYS:
-        raise KeyError(
-            f"unknown limit key {key!r}; expected one of {sorted(_NUMERIC_LIMIT_KEYS)}"
-        )
+        raise KeyError(f"unknown limit key {key!r}; expected one of {sorted(_NUMERIC_LIMIT_KEYS)}")
     tier_cfg = load_tier_limits().for_tier(tier)
     return getattr(tier_cfg, key)  # type: ignore[no-any-return]
 
@@ -290,8 +287,7 @@ def tier_guard(
 
     if limit_key is not None and limit_key not in _NUMERIC_LIMIT_KEYS:
         raise ValueError(
-            f"unknown limit_key {limit_key!r}; expected one of "
-            f"{sorted(_NUMERIC_LIMIT_KEYS)}"
+            f"unknown limit_key {limit_key!r}; expected one of {sorted(_NUMERIC_LIMIT_KEYS)}"
         )
 
     async def _dependency(
@@ -328,8 +324,7 @@ def tier_guard(
                     # meaningless. Surface as 500 because it's a programmer
                     # error, not a user-facing 403.
                     raise RuntimeError(
-                        f"tier_guard(limit_key={limit_key!r}) requires "
-                        "current_count_provider"
+                        f"tier_guard(limit_key={limit_key!r}) requires current_count_provider"
                     )
                 current = await current_count_provider(user=user)
                 if current >= limit:

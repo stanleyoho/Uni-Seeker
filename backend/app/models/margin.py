@@ -18,9 +18,7 @@ from app.models.base import Base
 class MarginTrading(Base):
     __tablename__ = "margin_trading"
     __table_args__ = (
-        UniqueConstraint(
-            "stock_id", "date", name="uq_margin_trading_stock_id_date"
-        ),
+        UniqueConstraint("stock_id", "date", name="uq_margin_trading_stock_id_date"),
         Index("ix_margin_trading_stock_id_date", "stock_id", "date"),
     )
 

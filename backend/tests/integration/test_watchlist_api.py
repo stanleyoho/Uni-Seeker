@@ -1,4 +1,5 @@
 """Integration tests for /api/v1/watchlist — WATCH-001 / Plan 4 Task 7."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
@@ -51,9 +52,7 @@ async def test_add_to_watchlist_creates_row_and_audits(
     u = await _make_user(db_session, "add1@x.tw", "add1")
     await _make_stock(db_session, "2330.TW", "TSMC")
 
-    r = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u)
-    )
+    r = await client.post("/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u))
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["symbol"] == "2330.TW"
@@ -61,9 +60,7 @@ async def test_add_to_watchlist_creates_row_and_audits(
     assert body["created_at"]
 
     count = await db_session.scalar(
-        select(func.count())
-        .select_from(WatchlistItem)
-        .where(WatchlistItem.user_id == u.id)
+        select(func.count()).select_from(WatchlistItem).where(WatchlistItem.user_id == u.id)
     )
     assert count == 1
 
@@ -76,30 +73,20 @@ async def test_add_to_watchlist_creates_row_and_audits(
 
 
 @pytest.mark.asyncio
-async def test_add_unknown_symbol_returns_404(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_add_unknown_symbol_returns_404(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "unk@x.tw", "unk")
-    r = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "ABCDEF.NA"}, headers=_auth(u)
-    )
+    r = await client.post("/api/v1/watchlist/", json={"symbol": "ABCDEF.NA"}, headers=_auth(u))
     assert r.status_code == 404
     assert r.json()["message"] == "stock_not_found"
 
 
 @pytest.mark.asyncio
-async def test_duplicate_add_returns_409(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_duplicate_add_returns_409(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "dup@x.tw", "dup")
     await _make_stock(db_session, "2454.TW", "MediaTek")
-    r1 = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "2454.TW"}, headers=_auth(u)
-    )
+    r1 = await client.post("/api/v1/watchlist/", json={"symbol": "2454.TW"}, headers=_auth(u))
     assert r1.status_code == 201
-    r2 = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "2454.TW"}, headers=_auth(u)
-    )
+    r2 = await client.post("/api/v1/watchlist/", json={"symbol": "2454.TW"}, headers=_auth(u))
     assert r2.status_code == 409
     assert r2.json()["message"] == "watchlist_already_exists"
 
@@ -110,9 +97,7 @@ async def test_duplicate_add_returns_409(
 
 
 @pytest.mark.asyncio
-async def test_list_watchlist_returns_user_items(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_list_watchlist_returns_user_items(client: AsyncClient, db_session: AsyncSession):
     u1 = await _make_user(db_session, "l1@x.tw", "l1")
     u2 = await _make_user(db_session, "l2@x.tw", "l2")
     s1 = await _make_stock(db_session, "2330.TW", "TSMC")
@@ -155,9 +140,7 @@ async def test_remove_from_watchlist_deletes_and_audits(
     assert r.json() == {"ok": True}
 
     count = await db_session.scalar(
-        select(func.count())
-        .select_from(WatchlistItem)
-        .where(WatchlistItem.user_id == u.id)
+        select(func.count()).select_from(WatchlistItem).where(WatchlistItem.user_id == u.id)
     )
     assert count == 0
 
@@ -170,21 +153,15 @@ async def test_remove_from_watchlist_deletes_and_audits(
 
 
 @pytest.mark.asyncio
-async def test_remove_then_re_add_works(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_remove_then_re_add_works(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "redo@x.tw", "redo")
     await _make_stock(db_session, "2330.TW", "TSMC")
 
-    r1 = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u)
-    )
+    r1 = await client.post("/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u))
     assert r1.status_code == 201
     r2 = await client.delete("/api/v1/watchlist/2330.TW", headers=_auth(u))
     assert r2.status_code == 200
-    r3 = await client.post(
-        "/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u)
-    )
+    r3 = await client.post("/api/v1/watchlist/", json={"symbol": "2330.TW"}, headers=_auth(u))
     assert r3.status_code == 201
 
 
@@ -203,14 +180,9 @@ async def test_free_user_at_10_items_cannot_add_11th(
     _enable_monetization, client: AsyncClient, db_session: AsyncSession
 ):
     u = await _make_user(db_session, "cap@x.tw", "cap", tier=UserTier.FREE)
-    stocks = [
-        await _make_stock(db_session, f"CAP{i:02d}.TW", f"cap{i}")
-        for i in range(11)
-    ]
+    stocks = [await _make_stock(db_session, f"CAP{i:02d}.TW", f"cap{i}") for i in range(11)]
     # Seed 10 items
-    db_session.add_all(
-        [WatchlistItem(user_id=u.id, stock_id=s.id) for s in stocks[:10]]
-    )
+    db_session.add_all([WatchlistItem(user_id=u.id, stock_id=s.id) for s in stocks[:10]])
     await db_session.commit()
 
     r = await client.post(

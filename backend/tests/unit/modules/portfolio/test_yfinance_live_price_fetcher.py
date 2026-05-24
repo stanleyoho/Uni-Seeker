@@ -15,6 +15,7 @@ Mocking strategy:
   - clock: we replace `_now` on the instance with a deterministic counter to
     avoid `time.sleep` (which slows the suite and is flake-prone).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -88,8 +89,7 @@ class _FakeDataFrame:
 
 
 class _FakeTicker:
-    def __init__(self, frames: dict[str, _FakeDataFrame], symbol: str,
-                 raise_on: set[str]) -> None:
+    def __init__(self, frames: dict[str, _FakeDataFrame], symbol: str, raise_on: set[str]) -> None:
         self._frames = frames
         self._symbol = symbol
         self._raise_on = raise_on
@@ -428,9 +428,7 @@ class _StubFetcher:
         self._raise = raise_on_call
         self.received_symbols: list[list[str]] = []
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         self.received_symbols.append(list(stock_ids))
         if self._raise:
             raise RuntimeError("simulated upstream outage")
@@ -447,13 +445,17 @@ def _quote(sym: str, last: str, prev: str) -> PriceQuote:
 
 
 def test_X01_composite_returns_primary_results_when_all_present():
-    primary = _StubFetcher({
-        "NVDA": _quote("NVDA", "1000", "980"),
-        "AAPL": _quote("AAPL", "200", "198"),
-    })
-    secondary = _StubFetcher({
-        "NVDA": _quote("NVDA", "999", "888"),  # should be ignored
-    })
+    primary = _StubFetcher(
+        {
+            "NVDA": _quote("NVDA", "1000", "980"),
+            "AAPL": _quote("AAPL", "200", "198"),
+        }
+    )
+    secondary = _StubFetcher(
+        {
+            "NVDA": _quote("NVDA", "999", "888"),  # should be ignored
+        }
+    )
     composite = CompositeLivePriceFetcher(primary, secondary)
 
     result = _run(composite.fetch_quotes(["NVDA", "AAPL"]))
@@ -467,9 +469,11 @@ def test_X01_composite_returns_primary_results_when_all_present():
 def test_X02_composite_falls_back_for_missing_symbols():
     # Primary covers NVDA only; secondary covers GHOST.
     primary = _StubFetcher({"NVDA": _quote("NVDA", "1000", "980")})
-    secondary = _StubFetcher({
-        "GHOST": _quote("GHOST", "5", "4"),
-    })
+    secondary = _StubFetcher(
+        {
+            "GHOST": _quote("GHOST", "5", "4"),
+        }
+    )
     composite = CompositeLivePriceFetcher(primary, secondary)
 
     result = _run(composite.fetch_quotes(["NVDA", "GHOST"]))
@@ -484,10 +488,12 @@ def test_X02_composite_falls_back_for_missing_symbols():
 def test_X03_composite_falls_back_for_all_missing():
     # Primary's network is dead → all symbols routed to secondary.
     primary = _StubFetcher(raise_on_call=True)
-    secondary = _StubFetcher({
-        "NVDA": _quote("NVDA", "1000", "980"),
-        "AAPL": _quote("AAPL", "200", "198"),
-    })
+    secondary = _StubFetcher(
+        {
+            "NVDA": _quote("NVDA", "1000", "980"),
+            "AAPL": _quote("AAPL", "200", "198"),
+        }
+    )
     composite = CompositeLivePriceFetcher(primary, secondary)
 
     result = _run(composite.fetch_quotes(["NVDA", "AAPL"]))
@@ -515,9 +521,7 @@ def test_X05_composite_primary_wins_on_overlap():
     primary = _StubFetcher({"NVDA": _quote("NVDA", "1000", "980")})
 
     class _PromiscuousSecondary:
-        async def fetch_quotes(
-            self, stock_ids: list[str]
-        ) -> dict[str, PriceQuote]:
+        async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
             # Ignores the requested list — returns its own NVDA anyway.
             return {"NVDA": _quote("NVDA", "1", "1")}
 

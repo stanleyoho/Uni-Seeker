@@ -37,24 +37,28 @@ class InstitutionalFollowStrategy:
         if len(self._history) < self._days:
             return Signal(action="HOLD", symbol="", reason="Insufficient chip history")
 
-        recent = self._history[-self._days:]
+        recent = self._history[-self._days :]
 
         if all(v > 0 for v in recent):
             strength = min(sum(recent) / (self._days * 1000), 1.0)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"{self._investor_type} net-buy for {self._days} consecutive days",
                 strength=max(strength, 0.5),
             )
         elif all(v < 0 for v in recent):
             strength = min(abs(sum(recent)) / (self._days * 1000), 1.0)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"{self._investor_type} net-sell for {self._days} consecutive days",
                 strength=max(strength, 0.5),
             )
 
-        return Signal(action="HOLD", symbol="", reason=f"{self._investor_type} no consecutive trend")
+        return Signal(
+            action="HOLD", symbol="", reason=f"{self._investor_type} no consecutive trend"
+        )
 
 
 class MarginDivergenceStrategy:
@@ -85,8 +89,8 @@ class MarginDivergenceStrategy:
         if len(self._margin_history) < self._lookback + 1:
             return Signal(action="HOLD", symbol="", reason="Insufficient margin history")
 
-        recent_margin = self._margin_history[-(self._lookback + 1):]
-        recent_short = self._short_history[-(self._lookback + 1):]
+        recent_margin = self._margin_history[-(self._lookback + 1) :]
+        recent_short = self._short_history[-(self._lookback + 1) :]
 
         margin_trend = recent_margin[-1] - recent_margin[0]
         short_trend = recent_short[-1] - recent_short[0]
@@ -95,7 +99,8 @@ class MarginDivergenceStrategy:
         if margin_trend < 0 and short_trend > 0:
             strength = min(abs(margin_trend) / (abs(margin_trend) + abs(short_trend) + 1), 1.0)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"Margin down {margin_trend:.0f}, short up {short_trend:.0f} (retail bearish)",
                 strength=max(strength, 0.5),
             )
@@ -103,7 +108,8 @@ class MarginDivergenceStrategy:
         elif margin_trend > 0 and abs(margin_trend) > abs(short_trend) * 2:
             strength = min(margin_trend / (margin_trend + abs(short_trend) + 1), 1.0)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"Margin surging up {margin_trend:.0f} (retail FOMO)",
                 strength=max(strength, 0.5),
             )
@@ -140,7 +146,8 @@ class ForeignTrustSyncStrategy:
             combined = foreign_net + trust_net
             strength = min(combined / (combined + 10000), 1.0)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"Foreign net +{foreign_net:.0f}, Trust net +{trust_net:.0f} (sync buy)",
                 strength=max(strength, 0.6),
             )
@@ -148,7 +155,8 @@ class ForeignTrustSyncStrategy:
             combined = abs(foreign_net) + abs(trust_net)
             strength = min(combined / (combined + 10000), 1.0)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"Foreign net {foreign_net:.0f}, Trust net {trust_net:.0f} (sync sell)",
                 strength=max(strength, 0.6),
             )
@@ -182,7 +190,7 @@ class OwnershipConcentrationStrategy:
         if len(self._ratio_history) < self._days + 1:
             return Signal(action="HOLD", symbol="", reason="Insufficient ownership history")
 
-        recent = self._ratio_history[-(self._days + 1):]
+        recent = self._ratio_history[-(self._days + 1) :]
 
         # Check if ratio has been increasing for N consecutive days
         increasing = all(recent[i + 1] > recent[i] for i in range(self._days))
@@ -192,7 +200,8 @@ class OwnershipConcentrationStrategy:
             change = recent[-1] - recent[0]
             strength = min(change / 5.0, 1.0)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"Foreign ownership ratio increasing {self._days} days ({recent[0]:.2f}% -> {recent[-1]:.2f}%)",
                 strength=max(strength, 0.5),
             )
@@ -200,7 +209,8 @@ class OwnershipConcentrationStrategy:
             change = recent[0] - recent[-1]
             strength = min(change / 5.0, 1.0)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"Foreign ownership ratio decreasing {self._days} days ({recent[0]:.2f}% -> {recent[-1]:.2f}%)",
                 strength=max(strength, 0.5),
             )
@@ -234,21 +244,26 @@ class MarginOverleverageStrategy:
             return Signal(action="HOLD", symbol="", reason="No margin utilization data")
 
         if utilization > self._sell_threshold:
-            strength = min((utilization - self._sell_threshold) / (100 - self._sell_threshold + 1), 1.0)
+            strength = min(
+                (utilization - self._sell_threshold) / (100 - self._sell_threshold + 1), 1.0
+            )
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"Margin utilization {utilization:.1f}% > {self._sell_threshold}% (overleveraged)",
                 strength=max(strength, 0.5),
             )
         elif utilization < self._buy_threshold:
             strength = min((self._buy_threshold - utilization) / self._buy_threshold, 1.0)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"Margin utilization {utilization:.1f}% < {self._buy_threshold}% (deleveraged)",
                 strength=max(strength, 0.5),
             )
 
         return Signal(
-            action="HOLD", symbol="",
+            action="HOLD",
+            symbol="",
             reason=f"Margin utilization {utilization:.1f}% in neutral range",
         )

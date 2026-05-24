@@ -6,6 +6,7 @@ Pattern mirrors `test_yfinance_live_price_fetcher.py`: we install a tiny
 fake `yfinance` module into `sys.modules` so the lazy import inside
 `_fetch_one_sync` is rerouted per-test.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -189,9 +190,7 @@ def test_F06_batch_skips_failures(monkeypatch: pytest.MonkeyPatch):
     }
     _install_fake_yf(monkeypatch, frames)
     fetcher = YFinanceFxFetcher(ttl_seconds=60)
-    out = _run(
-        fetcher.fetch_rates_batch([("USD", "TWD"), ("JPY", "TWD")])
-    )
+    out = _run(fetcher.fetch_rates_batch([("USD", "TWD"), ("JPY", "TWD")]))
     assert ("USD", "TWD") in out
     assert out[("USD", "TWD")] == Decimal("31")
     assert ("JPY", "TWD") not in out  # Failure omitted.
@@ -204,9 +203,7 @@ def test_F07_network_error_treated_as_miss(monkeypatch: pytest.MonkeyPatch):
         "USDTWD=X": _FakeDF(
             closes=[31.0], dates=[datetime(2026, 5, 19)]
         ),  # not raised — see raise_on below
-        "TWDUSD=X": _FakeDF(
-            closes=[0.032], dates=[datetime(2026, 5, 19)]
-        ),
+        "TWDUSD=X": _FakeDF(closes=[0.032], dates=[datetime(2026, 5, 19)]),
     }
     _install_fake_yf(monkeypatch, frames, raise_on={"USDTWD=X"})
     fetcher = YFinanceFxFetcher(ttl_seconds=60)

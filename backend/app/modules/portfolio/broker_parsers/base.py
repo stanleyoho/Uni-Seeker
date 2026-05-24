@@ -17,6 +17,7 @@ the surrounding service layer is responsible for ORM mapping. This
 keeps adapter unit tests trivial (no DB fixtures) and mirrors the
 spec §11 R1/R3 rule already enforced for FIFO / cost-basis.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -108,11 +109,9 @@ class BrokerParser(Protocol):
     DISPLAY_NAME: str
     EXPECTED_HEADERS: tuple[str, ...]
 
-    def parse(self, csv_content: str) -> list[ParsedRow]:
-        ...
+    def parse(self, csv_content: str) -> list[ParsedRow]: ...
 
-    def can_handle(self, csv_content: str) -> bool:
-        ...
+    def can_handle(self, csv_content: str) -> bool: ...
 
 
 __all__ = [

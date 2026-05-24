@@ -55,9 +55,7 @@ class StockInfoSyncTask(SyncTask):
 
         # -- build industry lookup ----------------------------------------
         industry_result = await db.execute(select(Industry))
-        industry_map: dict[str, int] = {
-            ind.name: ind.id for ind in industry_result.scalars().all()
-        }
+        industry_map: dict[str, int] = {ind.name: ind.id for ind in industry_result.scalars().all()}
 
         # -- process records ----------------------------------------------
         for record in raw:
@@ -119,15 +117,17 @@ class StockInfoSyncTask(SyncTask):
             row.records_synced = result.records_synced
             row.error_message = None
         else:
-            db.add(SyncState(
-                dataset=self.dataset_name,
-                stock_id=None,
-                last_synced_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date(),
-                last_run_at=now,
-                status="completed",
-                records_synced=result.records_synced,
-                error_message=None,
-            ))
+            db.add(
+                SyncState(
+                    dataset=self.dataset_name,
+                    stock_id=None,
+                    last_synced_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date(),
+                    last_run_at=now,
+                    status="completed",
+                    records_synced=result.records_synced,
+                    error_message=None,
+                )
+            )
         await db.commit()
 
         result.stopped_reason = "completed"

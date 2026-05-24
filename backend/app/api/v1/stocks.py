@@ -48,7 +48,6 @@ async def search_stocks(
 
     return StockSearchResponse(
         results=[
-            StockSearchResult(symbol=s.symbol, name=s.name, market=s.market.value)
-            for s in stocks
+            StockSearchResult(symbol=s.symbol, name=s.name, market=s.market.value) for s in stocks
         ]
     )

@@ -15,6 +15,7 @@ contract those services consume (`search_filers_by_name`,
 `list_filings_for_filer`, `fetch_filing_xml`) and provides simple
 `set_*_response` setters per the task brief.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -82,9 +83,7 @@ class MockEdgarClient:
 
     # configuration ----------------------------------------------------
 
-    def set_filings_response(
-        self, cik: str, filings: list[FilingMetadata]
-    ) -> None:
+    def set_filings_response(self, cik: str, filings: list[FilingMetadata]) -> None:
         self._filings_responses[cik] = filings
 
     def set_xml_response(self, url: str, xml: str) -> None:
@@ -95,9 +94,7 @@ class MockEdgarClient:
 
     # contract --------------------------------------------------------
 
-    async def search_filers_by_name(
-        self, name_query: str, limit: int = 20
-    ) -> list[FilerMetadata]:
+    async def search_filers_by_name(self, name_query: str, limit: int = 20) -> list[FilerMetadata]:
         self.calls_search.append(name_query)
         return list(self._search_response)[:limit]
 
@@ -132,9 +129,7 @@ async def _mk_user(
     return u
 
 
-async def _count_audit(
-    db: AsyncSession, action: str, user_id: int
-) -> int:
+async def _count_audit(db: AsyncSession, action: str, user_id: int) -> int:
     result = await db.execute(
         select(func.count(AuditLog.id)).where(
             AuditLog.action == action, AuditLog.user_id == user_id
@@ -220,41 +215,28 @@ async def test_subscribe_happy_path_creates_filer_and_sub(
 
     # 2nd attempt to same filer (different name ignored) raises 409.
     with pytest.raises(F13SubscriptionExists) as exc:
-        await svc.subscribe(
-            cik_or_filer_id="0001234567", name="Acme LP"
-        )
+        await svc.subscribe(cik_or_filer_id="0001234567", name="Acme LP")
     assert exc.value.filer_id == filer.id
 
     # audit log written
-    assert (
-        await _count_audit(db_session, "f13_filer_subscribed", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "f13_filer_subscribed", user.id) == 1
 
 
 async def test_subscribe_free_tier_quota_blocks_second(
     db_session: AsyncSession,
 ) -> None:
     """FREE.max_tracked_filers = 1 → 2nd subscribe raises TierLimitExceeded."""
-    user = await _mk_user(
-        db_session, "ss2@x.com", "ss2", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "ss2@x.com", "ss2", tier=UserTier.FREE)
     svc = F13SubscriptionService(db_session, user)
 
-    with patch(
-        "app.services.institutional.subscription_service.settings"
-    ) as s:
+    with patch("app.services.institutional.subscription_service.settings") as s:
         s.enable_monetization = True
         # First subscribe allowed (count 0 → 1, limit 1: 0 < 1).
-        await svc.subscribe(
-            cik_or_filer_id="0001111111", name="Filer One"
-        )
+        await svc.subscribe(cik_or_filer_id="0001111111", name="Filer One")
         await db_session.commit()
 
         with pytest.raises(F13TierLimitExceeded) as exc:
-            await svc.subscribe(
-                cik_or_filer_id="0002222222", name="Filer Two"
-            )
+            await svc.subscribe(cik_or_filer_id="0002222222", name="Filer Two")
         assert exc.value.limit_key == "max_tracked_filers"
         assert exc.value.limit == 1
 
@@ -276,17 +258,12 @@ async def test_unsubscribe_happy_then_missing(
     """unsubscribe returns None on hit + audit; raises on missing."""
     user = await _mk_user(db_session, "ss4@x.com", "ss4")
     svc = F13SubscriptionService(db_session, user)
-    filer = await svc.subscribe(
-        cik_or_filer_id="0001000004", name="Sub-Test"
-    )
+    filer = await svc.subscribe(cik_or_filer_id="0001000004", name="Sub-Test")
     await db_session.commit()
 
     await svc.unsubscribe(filer.id)
     await db_session.commit()
-    assert (
-        await _count_audit(db_session, "f13_filer_unsubscribed", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "f13_filer_unsubscribed", user.id) == 1
 
     # Second unsubscribe raises.
     with pytest.raises(F13FilerNotFound):
@@ -302,9 +279,7 @@ async def test_list_subscriptions_cross_user_isolation(
     svc_a = F13SubscriptionService(db_session, a)
     svc_b = F13SubscriptionService(db_session, b)
 
-    await svc_a.subscribe(
-        cik_or_filer_id="0009000001", name="Shared Fund"
-    )
+    await svc_a.subscribe(cik_or_filer_id="0009000001", name="Shared Fund")
     await db_session.commit()
 
     assert len(await svc_a.list_subscriptions()) == 1
@@ -333,24 +308,24 @@ async def test_filer_search_merges_local_and_edgar(
     user = await _mk_user(db_session, "fs1@x.com", "fs1")
 
     # Seed a local filer with name matching the query
-    await F13FilerRepo(db_session).create(
-        cik="0001000111", name="Berkshire Hathaway"
-    )
+    await F13FilerRepo(db_session).create(cik="0001000111", name="Berkshire Hathaway")
     await db_session.commit()
 
     edgar = MockEdgarClient()
-    edgar.set_search_response([
-        FilerMetadata(
-            cik="0001000111",  # dup with local → should be deduped
-            name="Berkshire Hathaway",
-            legal_name="BERKSHIRE HATHAWAY INC",
-        ),
-        FilerMetadata(
-            cik="0001000222",
-            name="Berkshire Partners",
-            legal_name="BERKSHIRE PARTNERS LLC",
-        ),
-    ])
+    edgar.set_search_response(
+        [
+            FilerMetadata(
+                cik="0001000111",  # dup with local → should be deduped
+                name="Berkshire Hathaway",
+                legal_name="BERKSHIRE HATHAWAY INC",
+            ),
+            FilerMetadata(
+                cik="0001000222",
+                name="Berkshire Partners",
+                legal_name="BERKSHIRE PARTNERS LLC",
+            ),
+        ]
+    )
 
     svc = F13FilerSearchService(db_session, user, edgar)
     hits = await svc.search_filers("berkshire", limit=10)
@@ -394,21 +369,19 @@ async def test_refresh_filer_happy_path(
         "0007111111",
         [
             _mk_filing_meta(
-                "acc-q4", date(2025, 12, 31),
+                "acc-q4",
+                date(2025, 12, 31),
                 url="https://example.com/q4.xml",
             ),
             _mk_filing_meta(
-                "acc-q3", date(2025, 9, 30),
+                "acc-q3",
+                date(2025, 9, 30),
                 url="https://example.com/q3.xml",
             ),
         ],
     )
-    edgar.set_xml_response(
-        "https://example.com/q4.xml", _MINIMAL_INFOTABLE_XML
-    )
-    edgar.set_xml_response(
-        "https://example.com/q3.xml", _MINIMAL_INFOTABLE_XML
-    )
+    edgar.set_xml_response("https://example.com/q4.xml", _MINIMAL_INFOTABLE_XML)
+    edgar.set_xml_response("https://example.com/q3.xml", _MINIMAL_INFOTABLE_XML)
 
     svc = F13FilingService(db_session, user, edgar)
     result = await svc.refresh_filer(filer.id, max_quarters=4)
@@ -458,14 +431,13 @@ async def test_refresh_filer_updates_latest_aum(
         "0007333333",
         [
             _mk_filing_meta(
-                "fresh-acc", date(2025, 12, 31),
+                "fresh-acc",
+                date(2025, 12, 31),
                 url="https://example.com/fresh.xml",
             ),
         ],
     )
-    edgar.set_xml_response(
-        "https://example.com/fresh.xml", _MINIMAL_INFOTABLE_XML
-    )
+    edgar.set_xml_response("https://example.com/fresh.xml", _MINIMAL_INFOTABLE_XML)
 
     svc = F13FilingService(db_session, user, edgar)
     await svc.refresh_filer(filer.id)
@@ -513,9 +485,7 @@ async def test_list_filings_requires_subscription(
     """list_filings_for_filer raises NotFound when user not subscribed."""
     user_a = await _mk_user(db_session, "lf1a@x.com", "lf1a")
     user_b = await _mk_user(db_session, "lf1b@x.com", "lf1b")
-    filer = await _setup_subscribed_filer(
-        db_session, user_a, cik="0007555555"
-    )
+    filer = await _setup_subscribed_filer(db_session, user_a, cik="0007555555")
     # Add a filing manually so we know the listing would have content.
     await F13FilingRepo(db_session).create(
         filer_id=filer.id,
@@ -555,55 +525,63 @@ async def test_compute_diff_round_trip_via_stored_holdings(
 
     # Q3: holds AAPL only.
     q3 = await filing_repo.create(
-        filer_id=filer.id, accession_number="q3", form_type="13F-HR",
+        filer_id=filer.id,
+        accession_number="q3",
+        form_type="13F-HR",
         report_period_end=date(2025, 9, 30),
         filed_at=datetime(2025, 11, 1, tzinfo=UTC),
         total_value_usd=Decimal("1000000"),
         options_notional_usd=Decimal("0"),
-        total_positions=1, raw_xml_url="x",
+        total_positions=1,
+        raw_xml_url="x",
     )
     await holding_repo.bulk_insert(
         filing_id=q3.id,
-        holdings=[{
-            "cusip": "037833100",
-            "name_of_issuer": "APPLE INC",
-            "value_usd": Decimal("1000000"),
-            "shares": Decimal("100"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("100"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-        }],
+        holdings=[
+            {
+                "cusip": "037833100",
+                "name_of_issuer": "APPLE INC",
+                "value_usd": Decimal("1000000"),
+                "shares": Decimal("100"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("100"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+            }
+        ],
     )
     # Q4: drops AAPL, picks up NVDA.
     q4 = await filing_repo.create(
-        filer_id=filer.id, accession_number="q4", form_type="13F-HR",
+        filer_id=filer.id,
+        accession_number="q4",
+        form_type="13F-HR",
         report_period_end=date(2025, 12, 31),
         filed_at=datetime(2026, 2, 14, tzinfo=UTC),
         total_value_usd=Decimal("2000000"),
         options_notional_usd=Decimal("0"),
-        total_positions=1, raw_xml_url="x",
+        total_positions=1,
+        raw_xml_url="x",
     )
     await holding_repo.bulk_insert(
         filing_id=q4.id,
-        holdings=[{
-            "cusip": "67066G104",
-            "name_of_issuer": "NVIDIA CORP",
-            "value_usd": Decimal("2000000"),
-            "shares": Decimal("50"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("50"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-        }],
+        holdings=[
+            {
+                "cusip": "67066G104",
+                "name_of_issuer": "NVIDIA CORP",
+                "value_usd": Decimal("2000000"),
+                "shares": Decimal("50"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("50"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+            }
+        ],
     )
     await db_session.commit()
 
     edgar = MockEdgarClient()
     svc = F13FilingService(db_session, user, edgar)
-    prev, curr, changes = await svc.compute_diff(
-        filer.id, date(2025, 9, 30), date(2025, 12, 31)
-    )
+    prev, curr, changes = await svc.compute_diff(filer.id, date(2025, 9, 30), date(2025, 12, 31))
     assert len(prev) == 1
     assert len(curr) == 1
     change_types = {c.change_type.value for c in changes}
@@ -620,13 +598,9 @@ async def test_cross_stock_free_tier_blocked(
     db_session: AsyncSession,
 ) -> None:
     """FREE tier without institutional_ownership_panel feature → blocked."""
-    user = await _mk_user(
-        db_session, "cs1@x.com", "cs1", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "cs1@x.com", "cs1", tier=UserTier.FREE)
     svc = F13CrossStockService(db_session, user)
-    with patch(
-        "app.services.institutional.cross_stock_service.settings"
-    ) as s:
+    with patch("app.services.institutional.cross_stock_service.settings") as s:
         s.enable_monetization = True
         with pytest.raises(F13TierFeatureUnavailable) as exc:
             await svc.get_institutional_holders_for_stock("AAPL")
@@ -637,9 +611,7 @@ async def test_cross_stock_pro_tier_returns_grouped_holders(
     db_session: AsyncSession,
 ) -> None:
     """PRO tier: returns one row per filer (latest period wins)."""
-    user = await _mk_user(
-        db_session, "cs2@x.com", "cs2", tier=UserTier.PRO
-    )
+    user = await _mk_user(db_session, "cs2@x.com", "cs2", tier=UserTier.PRO)
 
     # Seed two filers each with a filing on AAPL stock.
     repo = F13FilerRepo(db_session)
@@ -658,7 +630,9 @@ async def test_cross_stock_pro_tier_returns_grouped_holders(
         (filer_b, date(2025, 12, 31), Decimal("75"), "b-q4"),
     ]:
         filing = await filing_repo.create(
-            filer_id=f.id, accession_number=accession, form_type="13F-HR",
+            filer_id=f.id,
+            accession_number=accession,
+            form_type="13F-HR",
             report_period_end=period,
             filed_at=datetime(period.year, period.month, period.day, tzinfo=UTC),
             total_value_usd=Decimal("1"),
@@ -668,17 +642,19 @@ async def test_cross_stock_pro_tier_returns_grouped_holders(
         )
         await holding_repo.bulk_insert(
             filing_id=filing.id,
-            holdings=[{
-                "cusip": "037833100",
-                "name_of_issuer": "APPLE INC",
-                "value_usd": Decimal("1000"),
-                "shares": shares,
-                "investment_discretion": "SOLE",
-                "voting_authority_sole": shares,
-                "voting_authority_shared": Decimal("0"),
-                "voting_authority_none": Decimal("0"),
-                "stock_id": stock.id,
-            }],
+            holdings=[
+                {
+                    "cusip": "037833100",
+                    "name_of_issuer": "APPLE INC",
+                    "value_usd": Decimal("1000"),
+                    "shares": shares,
+                    "investment_discretion": "SOLE",
+                    "voting_authority_sole": shares,
+                    "voting_authority_shared": Decimal("0"),
+                    "voting_authority_none": Decimal("0"),
+                    "stock_id": stock.id,
+                }
+            ],
         )
     await db_session.commit()
 
@@ -715,10 +691,7 @@ async def test_refresh_emits_audit_event(
     await svc.refresh_filer(filer.id)
     await db_session.commit()
 
-    assert (
-        await _count_audit(db_session, "f13_filer_refreshed", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "f13_filer_refreshed", user.id) == 1
 
 
 # Silence pyflakes for the asyncio import in case future tests grow into using it.

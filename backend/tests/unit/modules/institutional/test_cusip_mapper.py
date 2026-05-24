@@ -11,6 +11,7 @@ Phase 2 / UNI-F13-002. Covers:
   * Multi-suffix names ("APPLE INC COM CLASS A") strip recursively
   * Punctuation tolerance ("INC." vs "INC")
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -90,9 +91,7 @@ def test_normalize_empty_returns_empty() -> None:
 
 @pytest.mark.asyncio
 async def test_resolve_cusip_exact_match(db_session: AsyncSession) -> None:
-    stock = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100"
-    )
+    stock = await _mk_stock(db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100")
     match = await resolve_cusip(db_session, "037833100", "APPLE INC")
     assert isinstance(match, CusipMatch)
     assert match.stock_id == stock.id
@@ -110,7 +109,10 @@ async def test_resolve_cusip_name_like_strips_inc(
 ) -> None:
     # Stock.cusip is NULL → EXACT path misses → falls to NAME_LIKE.
     stock = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip=None,
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip=None,
     )
     match = await resolve_cusip(db_session, "037833100", "APPLE INC")
     assert match.stock_id == stock.id
@@ -156,12 +158,8 @@ async def test_resolve_cusip_ambiguous_name_returns_none(
 async def test_batch_resolve_cusips_preserves_order(
     db_session: AsyncSession,
 ) -> None:
-    s_apple = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100"
-    )
-    s_msft = await _mk_stock(
-        db_session, symbol="MSFT", name="Microsoft Corp", cusip="594918104"
-    )
+    s_apple = await _mk_stock(db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100")
+    s_msft = await _mk_stock(db_session, symbol="MSFT", name="Microsoft Corp", cusip="594918104")
     pairs = [
         ("037833100", "APPLE INC"),
         ("999999999", "Nonexistent"),

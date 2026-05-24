@@ -11,6 +11,7 @@ Isolation: **NO `user_id` filter** here either — a filing belongs to a
 filer, not a user. Access control is enforced at the service layer by
 checking `subscription_repo.is_subscribed(user_id, filer_id)` first.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -65,9 +66,7 @@ class F13FilingRepo:
         return filing
 
     async def get_by_id(self, filing_id: int) -> F13Filing | None:
-        result = await self.db.execute(
-            select(F13Filing).where(F13Filing.id == filing_id)
-        )
+        result = await self.db.execute(select(F13Filing).where(F13Filing.id == filing_id))
         return result.scalar_one_or_none()
 
     async def list_by_filer(
@@ -89,9 +88,7 @@ class F13FilingRepo:
         )
         return list(result.scalars().all())
 
-    async def get_latest_for_filer(
-        self, filer_id: int
-    ) -> F13Filing | None:
+    async def get_latest_for_filer(self, filer_id: int) -> F13Filing | None:
         """Most recent filing by `report_period_end` (DESC).
 
         Distinct from "latest by `filed_at`" — for an amendment
@@ -106,9 +103,7 @@ class F13FilingRepo:
         )
         return result.scalar_one_or_none()
 
-    async def get_at_period(
-        self, filer_id: int, report_period_end: date
-    ) -> F13Filing | None:
+    async def get_at_period(self, filer_id: int, report_period_end: date) -> F13Filing | None:
         """Exact period-end match — used by `compute_diff(from, to)`.
 
         When both 13F-HR and 13F-HR/A exist for the same period (spec
@@ -127,9 +122,7 @@ class F13FilingRepo:
         )
         return result.scalar_one_or_none()
 
-    async def exists(
-        self, filer_id: int, accession_number: str
-    ) -> bool:
+    async def exists(self, filer_id: int, accession_number: str) -> bool:
         """Cheap UNIQUE-key probe for refresh idempotency."""
         result = await self.db.execute(
             select(F13Filing.id).where(

@@ -31,14 +31,13 @@ _registry = create_default_registry()
 
 
 async def _fetch_prices_for_symbol(
-    db: AsyncSession, symbol: str,
+    db: AsyncSession,
+    symbol: str,
 ) -> list[StockPrice]:
     """Fetch price data for a single symbol, raising appropriate errors."""
     stock = await get_stock_or_404(db, symbol)
     query = (
-        select(StockPrice)
-        .where(StockPrice.stock_id == stock.id)
-        .order_by(StockPrice.date.asc())
+        select(StockPrice).where(StockPrice.stock_id == stock.id).order_by(StockPrice.date.asc())
     )
     result = await db.execute(query)
     prices = list(result.scalars().all())
@@ -76,9 +75,9 @@ async def run_portfolio_backtest(
     allocations: list[PortfolioAllocation] = []
     for alloc in req.allocations:
         try:
-            strategy = _registry.get(alloc.strategy, **{
-                k: v for k, v in alloc.params.items() if v is not None
-            })
+            strategy = _registry.get(
+                alloc.strategy, **{k: v for k, v in alloc.params.items() if v is not None}
+            )
         except KeyError as e:
             raise HTTPException(status_code=400, detail=str(e))
 

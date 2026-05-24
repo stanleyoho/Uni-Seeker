@@ -30,6 +30,7 @@ that were JUST inserted in this refresh cycle. Empty list is a no-op
 NOT query "all filings since X" inside this service: the refresh
 service is the source of truth for "what is new in this cycle."
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
@@ -125,9 +126,7 @@ class F13NotificationService:
         # being live is enough to fan out — the dispatcher decides
         # per-user which channels actually fire.
         tg_globally_enabled = bool(settings.uni_telegram_bot_token)
-        email_globally_enabled = bool(
-            settings.uni_smtp_host and settings.uni_smtp_from_addr
-        )
+        email_globally_enabled = bool(settings.uni_smtp_host and settings.uni_smtp_from_addr)
         if not tg_globally_enabled and not email_globally_enabled:
             # Both channels off — log + emit a single "skipped" audit
             # row so ops can tell "no recipients" from "no transports".
@@ -236,9 +235,7 @@ class F13NotificationService:
 
     # ── helpers ────────────────────────────────────────────────────────
 
-    async def _count_skips(
-        self, filer_id: int, result: dict[str, int]
-    ) -> None:
+    async def _count_skips(self, filer_id: int, result: dict[str, int]) -> None:
         """Populate skipped_* counters when the eligible-recipients
         query came back empty.
 
@@ -279,9 +276,7 @@ class F13NotificationService:
         email client renders monospace + plain numbers cleanly and a
         text/plain fallback is required by RFC 2822 for accessibility.
         """
-        total_value = (
-            float(filing.total_value_usd) if filing.total_value_usd else 0.0
-        )
+        total_value = float(filing.total_value_usd) if filing.total_value_usd else 0.0
         total_positions = filing.total_positions or 0
         period = filing.report_period_end.isoformat()
         return (
@@ -306,9 +301,7 @@ class F13NotificationService:
         # parse produced zero holdings (edge case logged inside
         # _ingest_one). Use sensible fallbacks rather than emit
         # ``$None`` in the user-visible message.
-        total_value = (
-            float(filing.total_value_usd) if filing.total_value_usd else 0.0
-        )
+        total_value = float(filing.total_value_usd) if filing.total_value_usd else 0.0
         total_positions = filing.total_positions or 0
         period = filing.report_period_end.isoformat()
         app_url = settings.app_url.rstrip("/")

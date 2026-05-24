@@ -17,6 +17,7 @@ Response codes:
   * 403 — tier feature unavailable
   * 404 — account_id given but not owned by the user
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -63,9 +64,7 @@ async def get_analytics(
     """TWR / Sharpe / max-drawdown for the requested period."""
     service = AnalyticsService(db, user, fetcher)  # type: ignore[arg-type]
     try:
-        result = await service.compute_period_analytics(
-            period=period, account_id=account_id
-        )
+        result = await service.compute_period_analytics(period=period, account_id=account_id)
     except TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

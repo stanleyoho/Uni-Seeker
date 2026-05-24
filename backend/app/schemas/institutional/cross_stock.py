@@ -4,6 +4,7 @@ Spec §5 (cross-stock view) + §8 (`institutional_ownership_panel` Pro
 feature). The response answers "which filers hold this stock?" — the
 inverse of the per-filer surface.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

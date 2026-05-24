@@ -42,13 +42,17 @@ def calculate_health_score(ratios: FinancialRatios) -> HealthScore:
     om = _score_range(ratios.operating_margin, -0.05, 0.2, 8)
     roe_s = _score_range(ratios.roe, 0.0, 0.2, 9)
     profitability = round(gm + om + roe_s, 2)
-    details["profitability"] = f"GM:{ratios.gross_margin} OM:{ratios.operating_margin} ROE:{ratios.roe}"
+    details["profitability"] = (
+        f"GM:{ratios.gross_margin} OM:{ratios.operating_margin} ROE:{ratios.roe}"
+    )
 
     # Efficiency (0-25)
     it = _score_range(ratios.inventory_turnover, 1.0, 10.0, 12)
     rt = _score_range(ratios.receivable_turnover, 2.0, 12.0, 13)
     efficiency = round(it + rt, 2)
-    details["efficiency"] = f"InvTurn:{ratios.inventory_turnover} RecTurn:{ratios.receivable_turnover}"
+    details["efficiency"] = (
+        f"InvTurn:{ratios.inventory_turnover} RecTurn:{ratios.receivable_turnover}"
+    )
 
     # Leverage (0-25) -- lower debt is better
     cr = _score_range(ratios.current_ratio, 0.5, 2.0, 10)

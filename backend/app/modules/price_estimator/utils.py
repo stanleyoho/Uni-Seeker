@@ -11,6 +11,7 @@ from app.models.price import StockPrice
 
 logger = structlog.get_logger()
 
+
 class ValuationUtils:
     @staticmethod
     def calculate_cagr(values: List[float]) -> float:

@@ -20,6 +20,7 @@ Anti-coupling contract:
   caught per-user — one user's bad rule cannot abort the whole tier
   run.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -63,9 +64,7 @@ async def evaluate_for_tier(
         "errors": 0,
     }
 
-    result = await db.execute(
-        select(User).where(User.tier == tier, User.is_active.is_(True))
-    )
+    result = await db.execute(select(User).where(User.tier == tier, User.is_active.is_(True)))
     users = list(result.scalars().all())
 
     for user in users:

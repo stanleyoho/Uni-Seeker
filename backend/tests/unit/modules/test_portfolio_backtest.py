@@ -234,7 +234,9 @@ class TestTradeExecution:
         result = engine.run(allocs, {"A": prices})
 
         # BuyThenSellStrategy sells on bar 5; position was from initial allocation
-        sell_trades = [t for t in result.trade_log if t.action == "SELL" and t.reason == "sell signal"]
+        sell_trades = [
+            t for t in result.trade_log if t.action == "SELL" and t.reason == "sell signal"
+        ]
         assert len(sell_trades) == 1
 
     def test_buy_after_sell_creates_trade(self) -> None:
@@ -257,7 +259,9 @@ class TestTradeExecution:
         engine = PortfolioBacktestEngine()
         result = engine.run(allocs, {"A": prices})
 
-        buy_trades = [t for t in result.trade_log if t.action == "BUY" and t.reason == "re-buy signal"]
+        buy_trades = [
+            t for t in result.trade_log if t.action == "BUY" and t.reason == "re-buy signal"
+        ]
         assert len(buy_trades) == 1
 
     def test_force_close_at_end(self) -> None:
@@ -390,9 +394,14 @@ class TestMetrics:
         result = engine.run(allocs, {"A": prices})
 
         expected_keys = {
-            "total_return", "annualized_return", "max_drawdown",
-            "sharpe_ratio", "win_rate", "total_trades",
-            "avg_holding_days", "profit_factor",
+            "total_return",
+            "annualized_return",
+            "max_drawdown",
+            "sharpe_ratio",
+            "win_rate",
+            "total_trades",
+            "avg_holding_days",
+            "profit_factor",
         }
         assert expected_keys.issubset(result.portfolio_metrics.keys())
 

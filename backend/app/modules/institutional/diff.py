@@ -25,6 +25,7 @@ Pure-function rules (anti-coupling §11.2):
 - ``ParsedHolding`` is the only inbound type; ``HoldingChange`` is the
   only outbound type. Service layer translates to ORM.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

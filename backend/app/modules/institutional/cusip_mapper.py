@@ -23,6 +23,7 @@ NAME_LIKE — opt-in via the ``_with_figi`` variants below. The original
 Y3 functions remain untouched and keep their 3-layer behaviour so
 service code that chose not to wire FIGI sees zero behavioural change.
 """
+
 from __future__ import annotations
 
 import re
@@ -362,9 +363,7 @@ async def resolve_cusip_with_figi(
             mappings = []
         if mappings and mappings[0].ticker:
             figi_ticker = mappings[0].ticker
-            symbol_stmt = select(Stock.id, Stock.name).where(
-                Stock.symbol == figi_ticker
-            )
+            symbol_stmt = select(Stock.id, Stock.name).where(Stock.symbol == figi_ticker)
             sym_row = (await db.execute(symbol_stmt)).first()
             if sym_row is not None:
                 return CusipMatchFigi(
@@ -381,9 +380,7 @@ async def resolve_cusip_with_figi(
     if normalized and len(normalized) >= 2:
         like_pattern = f"%{normalized}%"
         fuzzy_stmt = (
-            select(Stock.id, Stock.name)
-            .where(func.lower(Stock.name).like(like_pattern))
-            .limit(2)
+            select(Stock.id, Stock.name).where(func.lower(Stock.name).like(like_pattern)).limit(2)
         )
         candidates = (await db.execute(fuzzy_stmt)).all()
         if len(candidates) == 1:
@@ -457,9 +454,7 @@ async def batch_resolve_cusips_with_figi(
     if live_cusips:
         rows = (
             await db.execute(
-                select(Stock.id, Stock.name, Stock.cusip).where(
-                    Stock.cusip.in_(live_cusips)
-                )
+                select(Stock.id, Stock.name, Stock.cusip).where(Stock.cusip.in_(live_cusips))
             )
         ).all()
         for row in rows:
@@ -507,9 +502,7 @@ async def batch_resolve_cusips_with_figi(
         tickers = list(set(cusip_to_ticker.values()))
         rows = (
             await db.execute(
-                select(Stock.id, Stock.name, Stock.symbol).where(
-                    Stock.symbol.in_(tickers)
-                )
+                select(Stock.id, Stock.name, Stock.symbol).where(Stock.symbol.in_(tickers))
             )
         ).all()
         for row in rows:
@@ -576,11 +569,15 @@ async def batch_resolve_cusips_with_figi(
 
     # Defensive — every slot must be filled.
     return [
-        m if m is not None
+        m
+        if m is not None
         else CusipMatchFigi(
-            cusip="", stock_id=None,
-            match_confidence=_CONFIDENCE_NONE, match_via=_VIA_NONE,
-            matched_name=None, figi_ticker=None,
+            cusip="",
+            stock_id=None,
+            match_confidence=_CONFIDENCE_NONE,
+            match_via=_VIA_NONE,
+            matched_name=None,
+            figi_ticker=None,
         )
         for m in out
     ]

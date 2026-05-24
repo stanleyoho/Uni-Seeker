@@ -46,7 +46,9 @@ class PriceEstimate(Base):
     confidence: Mapped[Decimal] = mapped_column(Numeric(4, 2), default=0.5)
 
     # Model-specific parameters and metadata
-    details: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default='{}', default_factory=dict)
+    details: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, server_default="{}", default_factory=dict
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()

@@ -4,6 +4,7 @@ User isolation: trade rows do not carry `user_id` directly. Every
 method that takes `user_id` enforces it via JOIN to `portfolio_accounts`.
 Per §5.3 + §11 R3, no business logic here.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -47,9 +48,7 @@ class PortfolioTradeRepo:
         await self.db.refresh(trade)
         return trade
 
-    async def get_by_id(
-        self, trade_id: int, user_id: int
-    ) -> PortfolioTrade | None:
+    async def get_by_id(self, trade_id: int, user_id: int) -> PortfolioTrade | None:
         """Fetch trade only if its parent account belongs to `user_id`."""
         result = await self.db.execute(
             select(PortfolioTrade)
@@ -83,9 +82,7 @@ class PortfolioTradeRepo:
                 PortfolioTrade.account_id == account_id,
                 PortfolioAccount.user_id == user_id,
             )
-            .order_by(
-                PortfolioTrade.trade_date.desc(), PortfolioTrade.id.desc()
-            )
+            .order_by(PortfolioTrade.trade_date.desc(), PortfolioTrade.id.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -96,9 +93,7 @@ class PortfolioTradeRepo:
         current UTC month — for tier quota (counted on `trade_date`, not
         `created_at`, per spec §6 schema semantics)."""
         now = datetime.now(UTC)
-        month_start = now.replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0
-        ).date()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
         result = await self.db.execute(
             select(func.count(PortfolioTrade.id))
             .join(
@@ -112,9 +107,7 @@ class PortfolioTradeRepo:
         )
         return int(result.scalar() or 0)
 
-    async def update(
-        self, trade_id: int, user_id: int, **fields: Any
-    ) -> PortfolioTrade | None:
+    async def update(self, trade_id: int, user_id: int, **fields: Any) -> PortfolioTrade | None:
         """Patch a trade if it belongs to `user_id`'s account.
 
         Note: callers (services) are responsible for rebuilding lots /
@@ -132,9 +125,7 @@ class PortfolioTradeRepo:
         if not patch:
             return existing
         await self.db.execute(
-            update(PortfolioTrade)
-            .where(PortfolioTrade.id == trade_id)
-            .values(**patch)
+            update(PortfolioTrade).where(PortfolioTrade.id == trade_id).values(**patch)
         )
         await self.db.flush()
         return await self.get_by_id(trade_id, user_id)
@@ -145,8 +136,6 @@ class PortfolioTradeRepo:
         existing = await self.get_by_id(trade_id, user_id)
         if existing is None:
             return False
-        await self.db.execute(
-            delete(PortfolioTrade).where(PortfolioTrade.id == trade_id)
-        )
+        await self.db.execute(delete(PortfolioTrade).where(PortfolioTrade.id == trade_id))
         await self.db.flush()
         return True

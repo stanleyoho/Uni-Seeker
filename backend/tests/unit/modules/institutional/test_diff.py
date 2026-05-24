@@ -3,6 +3,7 @@
 Covers all 5 ChangeType classifications, empty-side scenarios, multi-row
 aggregation (CUSIP + put_call variants), and Decimal precision.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -182,12 +183,18 @@ def test_diff_decimal_precision_preserved() -> None:
     """No float drift — sums of fractional shares remain exact."""
     prev = [
         _make_holding(
-            "AAA111111", "Apple", Decimal("0.0001"), Decimal("0.0001"),
+            "AAA111111",
+            "Apple",
+            Decimal("0.0001"),
+            Decimal("0.0001"),
         )
     ]
     curr = [
         _make_holding(
-            "AAA111111", "Apple", Decimal("0.0002"), Decimal("0.0003"),
+            "AAA111111",
+            "Apple",
+            Decimal("0.0002"),
+            Decimal("0.0003"),
         )
     ]
     changes = compute_diff(prev, curr)

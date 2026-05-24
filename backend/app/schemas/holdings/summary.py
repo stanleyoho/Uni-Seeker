@@ -4,6 +4,7 @@ Flat mapping of the domain `PortfolioSummary` dataclass; spec §7.4.
 `position_count` and `account_count` are added at the API layer for
 frontend convenience (UI shows them as KPI badges).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

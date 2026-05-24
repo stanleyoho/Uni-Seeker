@@ -6,16 +6,25 @@ from app.modules.valuation.twse_valuation import TWSEValuationProvider
 
 BWIBBU_SAMPLE = [
     {
-        "Code": "2330", "Name": "\u53f0\u7a4d\u96fb",
-        "PEratio": "22.50", "DividendYield": "1.80", "PBratio": "5.60",
+        "Code": "2330",
+        "Name": "\u53f0\u7a4d\u96fb",
+        "PEratio": "22.50",
+        "DividendYield": "1.80",
+        "PBratio": "5.60",
     },
     {
-        "Code": "2317", "Name": "\u9d3b\u6d77",
-        "PEratio": "12.47", "DividendYield": "6.52", "PBratio": "0.69",
+        "Code": "2317",
+        "Name": "\u9d3b\u6d77",
+        "PEratio": "12.47",
+        "DividendYield": "6.52",
+        "PBratio": "0.69",
     },
     {
-        "Code": "1101", "Name": "\u53f0\u6ce5",
-        "PEratio": "", "DividendYield": "3.23", "PBratio": "0.82",
+        "Code": "1101",
+        "Name": "\u53f0\u6ce5",
+        "PEratio": "",
+        "DividendYield": "3.23",
+        "PBratio": "0.82",
     },
 ]
 

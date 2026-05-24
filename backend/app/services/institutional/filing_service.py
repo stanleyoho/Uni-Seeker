@@ -24,6 +24,7 @@ lock dictionary lives at class scope because we want the lock identity
 to survive across request-scoped service instances within the same
 process.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -112,13 +113,9 @@ class F13FilingService:
         information-hiding convention as portfolio module's
         `PortfolioAccountNotFound`).
         """
-        if not await self._sub_repo.is_subscribed(
-            self._user.id, filer_id
-        ):
+        if not await self._sub_repo.is_subscribed(self._user.id, filer_id):
             # Whether the filer exists or not is intentionally indistinguishable
-            raise F13FilerNotFound(
-                f"filer_id={filer_id} not accessible"
-            )
+            raise F13FilerNotFound(f"filer_id={filer_id} not accessible")
 
     # ── reads ──────────────────────────────────────────────────────────
 
@@ -126,9 +123,7 @@ class F13FilingService:
         self, filer_id: int, limit: int = 20, offset: int = 0
     ) -> list[F13Filing]:
         await self._require_subscribed(filer_id)
-        return await self._filing_repo.list_by_filer(
-            filer_id, limit=limit, offset=offset
-        )
+        return await self._filing_repo.list_by_filer(filer_id, limit=limit, offset=offset)
 
     async def get_holdings_at_period(
         self, filer_id: int, period: str = "latest"
@@ -159,15 +154,11 @@ class F13FilingService:
             try:
                 target = date.fromisoformat(period)
             except ValueError as exc:
-                raise ValueError(
-                    f"period must be 'latest' or ISO date, got {period!r}"
-                ) from exc
+                raise ValueError(f"period must be 'latest' or ISO date, got {period!r}") from exc
             filing = await self._filing_repo.get_at_period(filer_id, target)
 
         if filing is None:
-            raise F13FilingNotFound(
-                f"no filing for filer_id={filer_id} period={period}"
-            )
+            raise F13FilingNotFound(f"no filing for filer_id={filer_id} period={period}")
         holdings = await self._holding_repo.list_by_filing(filing.id)
         return filing, holdings
 
@@ -195,8 +186,7 @@ class F13FilingService:
         curr_filing = await self._filing_repo.get_at_period(filer_id, to_date)
         if prev_filing is None or curr_filing is None:
             raise F13FilingNotFound(
-                f"missing filing(s) for diff: filer_id={filer_id} "
-                f"from={from_date} to={to_date}"
+                f"missing filing(s) for diff: filer_id={filer_id} from={from_date} to={to_date}"
             )
         prev_rows = await self._holding_repo.list_by_filing(prev_filing.id)
         curr_rows = await self._holding_repo.list_by_filing(curr_filing.id)
@@ -266,19 +256,12 @@ class F13FilingService:
         # `_require_subscribed` already collapses "filer missing" and
         # "not yours" into the same 404; we mirror that for the Pro
         # branch by requiring the filer to exist before bypassing.
-        if not await self._sub_repo.is_subscribed(
-            self._user.id, filer_id
-        ):
-            pro_bypass = (
-                not settings.enable_monetization
-                or has_feature(
-                    self._user.tier, "institutional_ownership_panel"
-                )
+        if not await self._sub_repo.is_subscribed(self._user.id, filer_id):
+            pro_bypass = not settings.enable_monetization or has_feature(
+                self._user.tier, "institutional_ownership_panel"
             )
             if not pro_bypass:
-                raise F13FilerNotFound(
-                    f"filer_id={filer_id} not accessible"
-                )
+                raise F13FilerNotFound(f"filer_id={filer_id} not accessible")
             # Pro bypass still needs the filer to exist so we don't
             # return a phantom timeline. Re-use `_require_filer` —
             # raises `F13FilerNotFound` when missing.
@@ -343,9 +326,7 @@ class F13FilingService:
                 if cusip_out is None:
                     cusip_out = holding.cusip
                 if symbol_out is None and holding.stock_id is not None:
-                    symbol_out = await self._resolve_stock_symbol(
-                        holding.stock_id
-                    )
+                    symbol_out = await self._resolve_stock_symbol(holding.stock_id)
 
             # change_type + deltas
             change_type, delta_shares, delta_pct = _classify_history_point(
@@ -353,18 +334,20 @@ class F13FilingService:
                 curr_shares=shares,
             )
 
-            entries.append({
-                "filing_id": filing.id,
-                "report_period_end": filing.report_period_end,
-                "form_type": filing.form_type,
-                "shares": shares,
-                "value_usd": value_usd,
-                "put_call": put_call,
-                "investment_discretion": investment_discretion,
-                "delta_shares": delta_shares,
-                "delta_pct": delta_pct,
-                "change_type": change_type,
-            })
+            entries.append(
+                {
+                    "filing_id": filing.id,
+                    "report_period_end": filing.report_period_end,
+                    "form_type": filing.form_type,
+                    "shares": shares,
+                    "value_usd": value_usd,
+                    "put_call": put_call,
+                    "investment_discretion": investment_discretion,
+                    "delta_shares": delta_shares,
+                    "delta_pct": delta_pct,
+                    "change_type": change_type,
+                }
+            )
             prev_shares = shares
 
         return {
@@ -386,16 +369,12 @@ class F13FilingService:
 
         from app.models.stock import Stock
 
-        result = await self._db.execute(
-            select(Stock.symbol).where(Stock.id == stock_id)
-        )
+        result = await self._db.execute(select(Stock.symbol).where(Stock.id == stock_id))
         return result.scalar_one_or_none()
 
     # ── on-demand refresh (Q1) ─────────────────────────────────────────
 
-    async def refresh_filer(
-        self, filer_id: int, max_quarters: int = 4
-    ) -> dict[str, int]:
+    async def refresh_filer(self, filer_id: int, max_quarters: int = 4) -> dict[str, int]:
         """Fetch + persist the most recent N quarterly 13F filings.
 
         Algorithm (spec §6.2 + Q1 + Q8 backfill = 4):
@@ -436,9 +415,7 @@ class F13FilingService:
         async with lock:
             return await self._do_refresh(filer, max_quarters)
 
-    async def _do_refresh(
-        self, filer, max_quarters: int
-    ) -> dict[str, int]:
+    async def _do_refresh(self, filer, max_quarters: int) -> dict[str, int]:
         """Inner refresh body — runs under the per-filer lock."""
         # Step 3: list filings on EDGAR
         try:
@@ -460,9 +437,7 @@ class F13FilingService:
 
         # Step 4: ingest each new filing
         for meta in edgar_filings:
-            if await self._filing_repo.exists(
-                filer.id, meta.accession_number
-            ):
+            if await self._filing_repo.exists(filer.id, meta.accession_number):
                 continue
             if meta.raw_xml_url is None:
                 # EdgarClient could not resolve the real infotable XML
@@ -476,9 +451,7 @@ class F13FilingService:
                     form_type=meta.form_type,
                 )
                 continue
-            inserted_filing, holdings_inserted = await self._ingest_one(
-                filer.id, meta
-            )
+            inserted_filing, holdings_inserted = await self._ingest_one(filer.id, meta)
             filings_added += 1
             holdings_added += holdings_inserted
             newly_inserted.append(inserted_filing)
@@ -489,9 +462,7 @@ class F13FilingService:
             await self._filer_repo.update_latest_aum(
                 filer_id=filer.id,
                 total_value_usd=latest.total_value_usd or Decimal("0"),
-                options_notional_usd=(
-                    latest.options_notional_usd or Decimal("0")
-                ),
+                options_notional_usd=(latest.options_notional_usd or Decimal("0")),
                 position_count=latest.total_positions or 0,
                 filing_date=latest.report_period_end,
             )
@@ -542,9 +513,7 @@ class F13FilingService:
             "holdings_added": holdings_added,
         }
 
-    async def _ingest_one(
-        self, filer_id: int, meta: FilingMetadata
-    ) -> tuple[F13Filing, int]:
+    async def _ingest_one(self, filer_id: int, meta: FilingMetadata) -> tuple[F13Filing, int]:
         """Fetch + parse + persist one new filing.
 
         Returns ``(filing_row, holdings_count)`` so the caller can both
@@ -554,9 +523,7 @@ class F13FilingService:
         Caller (``_do_refresh``) guarantees ``meta.raw_xml_url`` is not
         None; we assert here for type-narrowing.
         """
-        assert meta.raw_xml_url is not None, (
-            "raw_xml_url None should have been filtered upstream"
-        )
+        assert meta.raw_xml_url is not None, "raw_xml_url None should have been filtered upstream"
         try:
             xml_text = await self._edgar.fetch_filing_xml(meta.raw_xml_url)
         except EdgarTransientError as exc:
@@ -701,9 +668,7 @@ def _orm_holding_to_parsed(row) -> ParsedHolding:
         name_of_issuer=row.name_of_issuer,
         value_usd=row.value_usd,
         shares=row.shares,
-        shares_or_principal_type=(
-            "SH" if row.shares is not None else "PRN"
-        ),
+        shares_or_principal_type=("SH" if row.shares is not None else "PRN"),
         put_call=row.put_call,
         investment_discretion=row.investment_discretion or "SOLE",
         voting_authority_sole=row.voting_authority_sole or Decimal("0"),

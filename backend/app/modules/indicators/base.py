@@ -11,4 +11,5 @@ class IndicatorResult:
 @runtime_checkable
 class Indicator(Protocol):
     name: str
+
     def calculate(self, closes: list[float], **params: object) -> IndicatorResult: ...

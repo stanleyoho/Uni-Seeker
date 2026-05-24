@@ -1,4 +1,5 @@
 """Plan 4.5 T8 — block_device helper."""
+
 import uuid
 
 import pytest
@@ -11,7 +12,9 @@ from app.models.user_device import UserDevice
 from app.services.device import block_device
 
 
-async def _user_with_device(db, email="bd1@x.tw", username="bd1", fp="fp1") -> tuple[User, UserDevice]:
+async def _user_with_device(
+    db, email="bd1@x.tw", username="bd1", fp="fp1"
+) -> tuple[User, UserDevice]:
     u = User(email=email, hashed_password="x" * 60, username=username)
     u.tier = UserTier.FREE
     db.add(u)
@@ -37,9 +40,9 @@ async def test_block_device_sets_blocked_at(db_session):
 async def test_block_device_writes_audit(db_session):
     u, d = await _user_with_device(db_session, "bd2@x.tw", "bd2", "fp2")
     await block_device(db_session, d.id, reason="suspicious_activity")
-    audits = (await db_session.scalars(
-        select(AuditLog).where(AuditLog.action == "device_blocked")
-    )).all()
+    audits = (
+        await db_session.scalars(select(AuditLog).where(AuditLog.action == "device_blocked"))
+    ).all()
     assert len(audits) == 1
     log = audits[0]
     assert log.user_id == u.id
@@ -54,9 +57,9 @@ async def test_block_device_writes_audit(db_session):
 async def test_block_device_actor_type_override(db_session):
     u, d = await _user_with_device(db_session, "bd3@x.tw", "bd3", "fp3")
     await block_device(db_session, d.id, reason="admin_action", actor_type="admin")
-    log = (await db_session.scalars(
-        select(AuditLog).where(AuditLog.action == "device_blocked")
-    )).one()
+    log = (
+        await db_session.scalars(select(AuditLog).where(AuditLog.action == "device_blocked"))
+    ).one()
     assert log.actor_type == "admin"
 
 

@@ -8,6 +8,7 @@ Edge-case contract (spec §7):
   - `avg_cost == 0`       → unrealized_pnl_pct = 0 (avoid div-by-zero)
   - `total_cost == 0`     → gain_simple_pct = 0 (all closed)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -81,9 +82,7 @@ class MultiCurrencyPortfolioSummary:
     rates_used: dict[str, Decimal]
 
 
-def unrealized(
-    qty: Decimal, avg_cost: Decimal, last_price: Decimal
-) -> UnrealizedPnL:
+def unrealized(qty: Decimal, avg_cost: Decimal, last_price: Decimal) -> UnrealizedPnL:
     """Per-position unrealized P&L (spec §7.1).
 
     unrealized_pnl     = (last_price - avg_cost) * qty
@@ -116,9 +115,7 @@ def unrealized(
     )
 
 
-def daily_change(
-    qty: Decimal, last_price: Decimal, prev_close: Decimal
-) -> DailyChange:
+def daily_change(qty: Decimal, last_price: Decimal, prev_close: Decimal) -> DailyChange:
     """Per-position daily change (spec §7.3).
 
     delta_per_share = last_price - prev_close

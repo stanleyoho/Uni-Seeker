@@ -25,6 +25,4 @@ class ProcessedWebhookEvent(Base):
         init=False,
         server_default=func.now(),
     )
-    event_type: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, default=None
-    )
+    event_type: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)

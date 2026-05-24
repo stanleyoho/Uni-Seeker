@@ -12,6 +12,7 @@ Covers the end-to-end HTTP path:
   N09 cross-user isolation — user B cannot see user A's snapshots
   N10 Decimal-as-string contract on the wire
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -28,11 +29,8 @@ from app.models.enums import Market, UserTier
 from app.models.user import User
 
 
-
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 async def _mk_user(
@@ -54,7 +52,9 @@ async def _mk_user(
 
 
 async def _mk_account(
-    db: AsyncSession, user_id: int, name: str = "AAcc",
+    db: AsyncSession,
+    user_id: int,
+    name: str = "AAcc",
 ) -> PortfolioAccount:
     acc = PortfolioAccount(user_id=user_id, name=name, market=Market.TW_TWSE)
     db.add(acc)
@@ -73,16 +73,18 @@ async def _add_snap(
     total_cost: str = "100",
     position_count: int = 1,
 ) -> None:
-    db.add(HoldingsSnapshot(
-        user_id=user_id,
-        snapshot_date=snapshot_date,
-        total_value=Decimal(total_value),
-        total_cost=Decimal(total_cost),
-        total_unrealized_pnl=Decimal(total_value) - Decimal(total_cost),
-        realized_pnl_cum=Decimal("0"),
-        position_count=position_count,
-        account_id=account_id,
-    ))
+    db.add(
+        HoldingsSnapshot(
+            user_id=user_id,
+            snapshot_date=snapshot_date,
+            total_value=Decimal(total_value),
+            total_cost=Decimal(total_cost),
+            total_unrealized_pnl=Decimal(total_value) - Decimal(total_cost),
+            realized_pnl_cum=Decimal("0"),
+            position_count=position_count,
+            account_id=account_id,
+        )
+    )
     await db.commit()
 
 
@@ -101,7 +103,8 @@ async def test_N01_happy_path_returns_analytics(
     await _add_snap(db_session, user.id, today, "115")
 
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -122,12 +125,11 @@ async def test_N01_happy_path_returns_analytics(
 # N02 — FREE tier → 403
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N02_free_tier_blocked(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N02_free_tier_blocked(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "n2@x.tw", tier=UserTier.FREE)
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 403
     assert r.json()["message"] == "feature_unavailable:daily_change_breakdown"
@@ -137,12 +139,11 @@ async def test_N02_free_tier_blocked(
 # N03 — BASIC tier also blocked (proxy feature is Pro-only)
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N03_basic_tier_blocked(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N03_basic_tier_blocked(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "n3@x.tw", tier=UserTier.BASIC)
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 403
     assert r.json()["message"] == "feature_unavailable:daily_change_breakdown"
@@ -152,13 +153,12 @@ async def test_N03_basic_tier_blocked(
 # N04 — insufficient snapshots (1 row only) → 200 with sharpe=None
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N04_insufficient_snapshots(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N04_insufficient_snapshots(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "n4@x.tw")
     await _add_snap(db_session, user.id, date.today(), "100")
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 200
     body = r.json()
@@ -171,29 +171,42 @@ async def test_N04_insufficient_snapshots(
 # N05 — account_id filter scopes to that account
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N05_account_id_filter(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N05_account_id_filter(client: AsyncClient, db_session: AsyncSession) -> None:
     from datetime import timedelta
+
     user = await _mk_user(db_session, "n5@x.tw")
     acc_a = await _mk_account(db_session, user.id, "AccA")
     acc_b = await _mk_account(db_session, user.id, "AccB")
     today = date.today()
     # Two snapshots for A within window
     await _add_snap(
-        db_session, user.id, today - timedelta(days=10), "100",
+        db_session,
+        user.id,
+        today - timedelta(days=10),
+        "100",
         account_id=acc_a.id,
     )
     await _add_snap(
-        db_session, user.id, today, "150", account_id=acc_a.id,
+        db_session,
+        user.id,
+        today,
+        "150",
+        account_id=acc_a.id,
     )
     # B has different numbers in the same period
     await _add_snap(
-        db_session, user.id, today - timedelta(days=10), "200",
+        db_session,
+        user.id,
+        today - timedelta(days=10),
+        "200",
         account_id=acc_b.id,
     )
     await _add_snap(
-        db_session, user.id, today, "210", account_id=acc_b.id,
+        db_session,
+        user.id,
+        today,
+        "210",
+        account_id=acc_b.id,
     )
 
     r_a = await client.get(
@@ -218,9 +231,7 @@ async def test_N05_account_id_filter(
 # N06 — unowned account_id → 404
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N06_unowned_account_404(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N06_unowned_account_404(client: AsyncClient, db_session: AsyncSession) -> None:
     a = await _mk_user(db_session, "n6a@x.tw")
     b = await _mk_user(db_session, "n6b@x.tw")
     acc = await _mk_account(db_session, a.id, "Aown")
@@ -240,6 +251,7 @@ async def test_N07_period_boundary_excludes_old_snapshots(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     from datetime import timedelta
+
     user = await _mk_user(db_session, "n7@x.tw")
     today = date.today()
     # OLD: 90 days ago — falls OUTSIDE 1m (30 day) window.
@@ -249,7 +261,8 @@ async def test_N07_period_boundary_excludes_old_snapshots(
     await _add_snap(db_session, user.id, today, "110")
 
     r = await client.get(
-        "/api/v1/holdings/analytics?period=1m", headers=_auth(user),
+        "/api/v1/holdings/analytics?period=1m",
+        headers=_auth(user),
     )
     assert r.status_code == 200
     body = r.json()
@@ -262,12 +275,11 @@ async def test_N07_period_boundary_excludes_old_snapshots(
 # N08 — empty data still returns 200 with all-zero result, sharpe=None
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N08_empty_data_returns_zeros(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N08_empty_data_returns_zeros(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "n8@x.tw")
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 200
     body = r.json()
@@ -281,10 +293,9 @@ async def test_N08_empty_data_returns_zeros(
 # N09 — cross-user isolation
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N09_cross_user_isolation(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N09_cross_user_isolation(client: AsyncClient, db_session: AsyncSession) -> None:
     from datetime import timedelta
+
     a = await _mk_user(db_session, "n9a@x.tw")
     b = await _mk_user(db_session, "n9b@x.tw")
     today = date.today()
@@ -293,7 +304,8 @@ async def test_N09_cross_user_isolation(
     await _add_snap(db_session, a.id, today, "200")
     # B has none
     r_b = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(b),
+        "/api/v1/holdings/analytics",
+        headers=_auth(b),
     )
     assert r_b.status_code == 200
     assert r_b.json()["snapshot_count"] == 0
@@ -303,16 +315,16 @@ async def test_N09_cross_user_isolation(
 # N10 — Decimal-as-string contract
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
-async def test_N10_decimal_as_string_on_wire(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_N10_decimal_as_string_on_wire(client: AsyncClient, db_session: AsyncSession) -> None:
     from datetime import timedelta
+
     user = await _mk_user(db_session, "n10@x.tw")
     today = date.today()
     await _add_snap(db_session, user.id, today - timedelta(days=10), "100")
     await _add_snap(db_session, user.id, today, "110")
     r = await client.get(
-        "/api/v1/holdings/analytics", headers=_auth(user),
+        "/api/v1/holdings/analytics",
+        headers=_auth(user),
     )
     assert r.status_code == 200
     body = r.json()

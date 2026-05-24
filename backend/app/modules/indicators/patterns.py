@@ -3,6 +3,7 @@ from app.modules.indicators.base import IndicatorResult
 
 class PatternIndicator:
     """Detects technical patterns: MA alignment, crossovers, divergence."""
+
     name = "PATTERN"
 
     def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
@@ -23,7 +24,7 @@ class PatternIndicator:
     def _sma(self, data: list[float], period: int, idx: int) -> float | None:
         if idx < period - 1:
             return None
-        return sum(data[idx - period + 1:idx + 1]) / period
+        return sum(data[idx - period + 1 : idx + 1]) / period
 
     def _ma_alignment(self, closes: list[float], params: dict) -> IndicatorResult:
         """
@@ -158,8 +159,8 @@ class PatternIndicator:
             if rsi_now is None:
                 continue
 
-            price_window = closes[i - lookback:i]
-            rsi_window = [v for v in rsi_values[i - lookback:i] if v is not None]
+            price_window = closes[i - lookback : i]
+            rsi_window = [v for v in rsi_values[i - lookback : i] if v is not None]
 
             if not rsi_window:
                 continue

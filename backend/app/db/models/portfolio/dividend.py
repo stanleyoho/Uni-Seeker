@@ -13,6 +13,7 @@ Notes
   layer from `amount_per_share × quantity_at_record − withholding_tax`.
   Keeps SQLite test parity with Postgres prod.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -45,7 +46,8 @@ class PortfolioDividend(Base):
     __table_args__ = (
         Index(
             "ix_portfolio_dividends_account_ex_date",
-            "account_id", "ex_dividend_date",
+            "account_id",
+            "ex_dividend_date",
         ),
         CheckConstraint(
             "dividend_type IN ('CASH', 'STOCK')",
@@ -96,9 +98,7 @@ class PortfolioDividend(Base):
         onupdate=func.now(),
     )
 
-    account: Mapped[PortfolioAccount] = relationship(
-        back_populates="dividends", init=False
-    )
+    account: Mapped[PortfolioAccount] = relationship(back_populates="dividends", init=False)
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
         return (

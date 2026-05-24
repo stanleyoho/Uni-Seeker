@@ -20,9 +20,14 @@ def calculate_metrics(portfolio: Portfolio, trading_days: int = 252) -> Backtest
     equity = portfolio.equity_curve
     if len(equity) < 2:
         return BacktestMetrics(
-            total_return=0, annualized_return=0, max_drawdown=0,
-            sharpe_ratio=0, win_rate=0, total_trades=0,
-            avg_holding_days=0, profit_factor=0,
+            total_return=0,
+            annualized_return=0,
+            max_drawdown=0,
+            sharpe_ratio=0,
+            win_rate=0,
+            total_trades=0,
+            avg_holding_days=0,
+            profit_factor=0,
         )
 
     # Total return
@@ -47,10 +52,14 @@ def calculate_metrics(portfolio: Portfolio, trading_days: int = 252) -> Backtest
             max_dd = dd
 
     # Daily returns for Sharpe
-    daily_returns = [(equity[i] / equity[i - 1] - 1) for i in range(1, len(equity)) if equity[i - 1] > 0]
+    daily_returns = [
+        (equity[i] / equity[i - 1] - 1) for i in range(1, len(equity)) if equity[i - 1] > 0
+    ]
     if daily_returns:
         avg_return = sum(daily_returns) / len(daily_returns)
-        std_return = math.sqrt(sum((r - avg_return) ** 2 for r in daily_returns) / len(daily_returns))
+        std_return = math.sqrt(
+            sum((r - avg_return) ** 2 for r in daily_returns) / len(daily_returns)
+        )
         sharpe = (avg_return / std_return * math.sqrt(trading_days)) if std_return > 0 else 0.0
     else:
         sharpe = 0.0
@@ -76,7 +85,9 @@ def calculate_metrics(portfolio: Portfolio, trading_days: int = 252) -> Backtest
                 total_loss += abs(pnl)
 
     win_rate = (wins / len(sell_trades) * 100) if sell_trades else 0.0
-    profit_factor = (total_profit / total_loss) if total_loss > 0 else float("inf") if total_profit > 0 else 0.0
+    profit_factor = (
+        (total_profit / total_loss) if total_loss > 0 else float("inf") if total_profit > 0 else 0.0
+    )
 
     return BacktestMetrics(
         total_return=round(total_return, 2),

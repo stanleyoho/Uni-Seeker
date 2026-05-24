@@ -28,9 +28,12 @@ def test_screen_finds_matching_stocks() -> None:
     engine = ScreenerEngine(registry=create_default_registry())
     rising = _make_prices("RISE.TW", [float(100 + i) for i in range(20)])
     falling = _make_prices("FALL.TW", [float(100 - i) for i in range(20)])
-    conditions = ConditionGroup(operator="AND", rules=[
-        Condition(indicator="RSI", params={"period": 14}, op="<", value=30),
-    ])
+    conditions = ConditionGroup(
+        operator="AND",
+        rules=[
+            Condition(indicator="RSI", params={"period": 14}, op="<", value=30),
+        ],
+    )
     results = engine.screen({"RISE.TW": rising, "FALL.TW": falling}, conditions)
     symbols = [r.symbol for r in results]
     assert "FALL.TW" in symbols
@@ -40,9 +43,12 @@ def test_screen_finds_matching_stocks() -> None:
 def test_screen_result_includes_indicator_values() -> None:
     engine = ScreenerEngine(registry=create_default_registry())
     prices = _make_prices("TEST.TW", [float(100 - i) for i in range(20)])
-    conditions = ConditionGroup(operator="AND", rules=[
-        Condition(indicator="RSI", params={"period": 14}, op="<", value=50),
-    ])
+    conditions = ConditionGroup(
+        operator="AND",
+        rules=[
+            Condition(indicator="RSI", params={"period": 14}, op="<", value=50),
+        ],
+    )
     results = engine.screen({"TEST.TW": prices}, conditions)
     assert len(results) == 1
     assert "RSI" in results[0].indicator_values
@@ -51,9 +57,12 @@ def test_screen_result_includes_indicator_values() -> None:
 def test_screen_empty_when_no_match() -> None:
     engine = ScreenerEngine(registry=create_default_registry())
     rising = _make_prices("RISE.TW", [float(100 + i) for i in range(20)])
-    conditions = ConditionGroup(operator="AND", rules=[
-        Condition(indicator="RSI", params={"period": 14}, op="<", value=5),
-    ])
+    conditions = ConditionGroup(
+        operator="AND",
+        rules=[
+            Condition(indicator="RSI", params={"period": 14}, op="<", value=5),
+        ],
+    )
     assert engine.screen({"RISE.TW": rising}, conditions) == []
 
 
@@ -61,9 +70,12 @@ def test_screen_sort_by_indicator() -> None:
     engine = ScreenerEngine(registry=create_default_registry())
     stock_a = _make_prices("A.TW", [float(100 - i * 2) for i in range(20)])
     stock_b = _make_prices("B.TW", [float(100 - i) for i in range(20)])
-    conditions = ConditionGroup(operator="AND", rules=[
-        Condition(indicator="RSI", params={"period": 14}, op="<", value=50),
-    ])
+    conditions = ConditionGroup(
+        operator="AND",
+        rules=[
+            Condition(indicator="RSI", params={"period": 14}, op="<", value=50),
+        ],
+    )
     results = engine.screen(
         {"A.TW": stock_a, "B.TW": stock_b},
         conditions,

@@ -1,4 +1,5 @@
 """Integration tests for AlertService — CRUD + evaluation + TG fan-out."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -23,9 +24,7 @@ class _MockFetcher:
     def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]]) -> None:
         self._quotes = quotes
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid in self._quotes:

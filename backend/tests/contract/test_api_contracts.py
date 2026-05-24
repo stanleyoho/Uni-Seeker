@@ -5,6 +5,7 @@ Run with: pytest tests/contract/ -v
 Requirements:
     pip install httpx  (if not already installed)
 """
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 

@@ -8,6 +8,7 @@ A stub OpenFigiClient (no real network) is injected — the production
 client's HTTP layer is covered by the unit suite. We only assert the
 4-layer routing logic here.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -134,12 +135,18 @@ async def test_F01_resolve_cusip_with_figi_uses_exact_first(
     db_session: AsyncSession,
 ) -> None:
     aapl = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100",
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip="037833100",
     )
     figi = _StubFigiClient({"037833100": "AAPL"})
 
     match = await resolve_cusip_with_figi(
-        db_session, "037833100", "APPLE INC", figi_client=figi,
+        db_session,
+        "037833100",
+        "APPLE INC",
+        figi_client=figi,
     )
     assert match.stock_id == aapl.id
     assert match.match_confidence == "EXACT"
@@ -160,12 +167,18 @@ async def test_F02_resolve_cusip_with_figi_falls_through_to_figi(
     # Stock exists but has no CUSIP — EXACT misses, FIGI resolves ticker
     # 'NVDA' which matches Stock.symbol.
     nvda = await _mk_stock(
-        db_session, symbol="NVDA", name="NVIDIA Corp.", cusip=None,
+        db_session,
+        symbol="NVDA",
+        name="NVIDIA Corp.",
+        cusip=None,
     )
     figi = _StubFigiClient({"67066G104": "NVDA"})
 
     match = await resolve_cusip_with_figi(
-        db_session, "67066G104", "NVIDIA CORP", figi_client=figi,
+        db_session,
+        "67066G104",
+        "NVIDIA CORP",
+        figi_client=figi,
     )
     assert match.stock_id == nvda.id
     assert match.match_confidence == "FIGI"
@@ -184,13 +197,19 @@ async def test_F03_resolve_cusip_with_figi_falls_through_to_name_like(
     db_session: AsyncSession,
 ) -> None:
     msft = await _mk_stock(
-        db_session, symbol="MSFT", name="Microsoft Corp", cusip=None,
+        db_session,
+        symbol="MSFT",
+        name="Microsoft Corp",
+        cusip=None,
     )
     # FIGI knows the CUSIP but has no US common stock candidate.
     figi = _StubFigiClient({"594918104": None})
 
     match = await resolve_cusip_with_figi(
-        db_session, "594918104", "MICROSOFT CORP", figi_client=figi,
+        db_session,
+        "594918104",
+        "MICROSOFT CORP",
+        figi_client=figi,
     )
     assert match.stock_id == msft.id
     assert match.match_confidence == "NAME_LIKE"
@@ -208,11 +227,17 @@ async def test_F04_resolve_cusip_with_figi_skips_figi_when_client_none(
     db_session: AsyncSession,
 ) -> None:
     aapl = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip=None,
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip=None,
     )
     # No FIGI client → only EXACT + NAME_LIKE available.
     match = await resolve_cusip_with_figi(
-        db_session, "037833100", "APPLE INC", figi_client=None,
+        db_session,
+        "037833100",
+        "APPLE INC",
+        figi_client=None,
     )
     # CUSIP not on the stock row, so EXACT misses; NAME_LIKE picks it up.
     assert match.stock_id == aapl.id
@@ -232,13 +257,22 @@ async def test_F05_batch_resolve_with_figi_collects_misses_efficiently(
     # AAPL hits EXACT (cusip on row). NVDA + MSFT miss EXACT — they should
     # be collected into a single FIGI call.
     await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100",
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip="037833100",
     )
     await _mk_stock(
-        db_session, symbol="NVDA", name="NVIDIA Corp.", cusip=None,
+        db_session,
+        symbol="NVDA",
+        name="NVIDIA Corp.",
+        cusip=None,
     )
     await _mk_stock(
-        db_session, symbol="MSFT", name="Microsoft Corp", cusip=None,
+        db_session,
+        symbol="MSFT",
+        name="Microsoft Corp",
+        cusip=None,
     )
 
     figi = _StubFigiClient(
@@ -249,13 +283,15 @@ async def test_F05_batch_resolve_with_figi_collects_misses_efficiently(
     )
 
     pairs = [
-        ("037833100", "APPLE INC"),   # EXACT
-        ("67066G104", "NVIDIA CORP"), # FIGI
+        ("037833100", "APPLE INC"),  # EXACT
+        ("67066G104", "NVIDIA CORP"),  # FIGI
         ("594918104", "MICROSOFT CORP"),  # FIGI
-        ("999999999", "ZZZ UNKNOWN"), # FIGI miss → NONE
+        ("999999999", "ZZZ UNKNOWN"),  # FIGI miss → NONE
     ]
     matches = await batch_resolve_cusips_with_figi(
-        db_session, pairs, figi_client=figi,
+        db_session,
+        pairs,
+        figi_client=figi,
     )
 
     assert len(matches) == 4
@@ -268,9 +304,7 @@ async def test_F05_batch_resolve_with_figi_collects_misses_efficiently(
     # EXACT-misses, not three. Calls list looks like:
     #   [["67066G104", "594918104", "999999999"]]
     assert len(figi.calls) == 1
-    assert sorted(figi.calls[0]) == sorted(
-        ["67066G104", "594918104", "999999999"]
-    )
+    assert sorted(figi.calls[0]) == sorted(["67066G104", "594918104", "999999999"])
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -287,13 +321,22 @@ async def test_F06_backfill_cusips_for_filer_with_figi_happy_path(
     # MSFT → NAME_LIKE (FIGI doesn't know it; name fuzzy match wins).
     # ZZZ  → NONE.
     await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100",
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip="037833100",
     )
     await _mk_stock(
-        db_session, symbol="NVDA", name="NVIDIA Corp.", cusip=None,
+        db_session,
+        symbol="NVDA",
+        name="NVIDIA Corp.",
+        cusip=None,
     )
     await _mk_stock(
-        db_session, symbol="MSFT", name="Microsoft Corp", cusip=None,
+        db_session,
+        symbol="MSFT",
+        name="Microsoft Corp",
+        cusip=None,
     )
 
     filer = await _mk_filer(db_session, cik="0009993001")
@@ -317,7 +360,9 @@ async def test_F06_backfill_cusips_for_filer_with_figi_happy_path(
     )
 
     result = await backfill_cusips_for_filer_with_figi(
-        db_session, filer.id, figi_client=figi,
+        db_session,
+        filer.id,
+        figi_client=figi,
     )
     await db_session.commit()
 
@@ -329,10 +374,10 @@ async def test_F06_backfill_cusips_for_filer_with_figi_happy_path(
 
     # Ensure stock_id was actually persisted on each holding.
     rows = (
-        await db_session.execute(
-            select(F13Holding).where(F13Holding.filing_id == filing.id)
-        )
-    ).scalars().all()
+        (await db_session.execute(select(F13Holding).where(F13Holding.filing_id == filing.id)))
+        .scalars()
+        .all()
+    )
     by_cusip = {r.cusip: r for r in rows}
     assert by_cusip["037833100"].stock_id is not None
     assert by_cusip["67066G104"].stock_id is not None

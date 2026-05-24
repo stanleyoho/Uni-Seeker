@@ -15,6 +15,7 @@ Uses the shared SQLite-in-memory `db_session` fixture from
 `PRAGMA foreign_keys=ON` — enabled here via the same pattern as the
 watchlist model tests.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -46,6 +47,7 @@ def _enable_sqlite_fk():
             cur.close()
         except Exception:
             pass
+
     yield
     event.remove(Engine, "connect", _set_fk)
 
@@ -60,7 +62,10 @@ async def _mk_user(db, email: str = "p@x.tw", username: str = "p") -> User:
 
 
 async def _mk_account(
-    db, user_id: int, name: str = "Main", market: Market = Market.TW_TWSE,
+    db,
+    user_id: int,
+    name: str = "Main",
+    market: Market = Market.TW_TWSE,
 ) -> PortfolioAccount:
     acc = PortfolioAccount(user_id=user_id, name=name, market=market)
     db.add(acc)
@@ -157,9 +162,13 @@ async def test_portfolio_lot_remaining_qty_default_zero_check(db_session):
     u = await _mk_user(db_session, "lot@x.tw", "lotu")
     acc = await _mk_account(db_session, u.id)
     tr = PortfolioTrade(
-        account_id=acc.id, symbol="2330.TW", market=Market.TW_TWSE,
-        action="BUY", trade_date=date(2026, 5, 1),
-        price=Decimal("900"), quantity=Decimal("100"),
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
+        action="BUY",
+        trade_date=date(2026, 5, 1),
+        price=Decimal("900"),
+        quantity=Decimal("100"),
     )
     db_session.add(tr)
     await db_session.commit()
@@ -167,8 +176,10 @@ async def test_portfolio_lot_remaining_qty_default_zero_check(db_session):
 
     # 0 is allowed (exhausted lot)
     ok = PortfolioLot(
-        trade_id=tr.id, account_id=acc.id,
-        symbol="2330.TW", market=Market.TW_TWSE,
+        trade_id=tr.id,
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
         original_qty=Decimal("100"),
         remaining_qty=Decimal("0"),
         cost_per_unit=Decimal("900"),
@@ -178,8 +189,10 @@ async def test_portfolio_lot_remaining_qty_default_zero_check(db_session):
 
     # Negative remaining_qty must raise.
     bad = PortfolioLot(
-        trade_id=tr.id, account_id=acc.id,
-        symbol="2330.TW", market=Market.TW_TWSE,
+        trade_id=tr.id,
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
         original_qty=Decimal("100"),
         remaining_qty=Decimal("-1"),
         cost_per_unit=Decimal("900"),
@@ -198,15 +211,19 @@ async def test_portfolio_position_unique_per_account_stock(db_session):
     u = await _mk_user(db_session, "pos@x.tw", "posu")
     acc = await _mk_account(db_session, u.id)
     p1 = PortfolioPosition(
-        account_id=acc.id, symbol="2330.TW",
-        market=Market.TW_TWSE, currency="TWD",
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
+        currency="TWD",
     )
     db_session.add(p1)
     await db_session.commit()
 
     p2 = PortfolioPosition(
-        account_id=acc.id, symbol="2330.TW",
-        market=Market.TW_TWSE, currency="TWD",
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
+        currency="TWD",
     )
     db_session.add(p2)
     with pytest.raises(IntegrityError):
@@ -248,17 +265,23 @@ async def test_relationship_trade_to_lots(db_session):
     u = await _mk_user(db_session, "rel2@x.tw", "rel2u")
     acc = await _mk_account(db_session, u.id)
     tr = PortfolioTrade(
-        account_id=acc.id, symbol="2330.TW", market=Market.TW_TWSE,
-        action="BUY", trade_date=date(2026, 5, 1),
-        price=Decimal("900"), quantity=Decimal("100"),
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
+        action="BUY",
+        trade_date=date(2026, 5, 1),
+        price=Decimal("900"),
+        quantity=Decimal("100"),
     )
     db_session.add(tr)
     await db_session.commit()
     await db_session.refresh(tr)
 
     lot = PortfolioLot(
-        trade_id=tr.id, account_id=acc.id,
-        symbol="2330.TW", market=Market.TW_TWSE,
+        trade_id=tr.id,
+        account_id=acc.id,
+        symbol="2330.TW",
+        market=Market.TW_TWSE,
         original_qty=Decimal("100"),
         remaining_qty=Decimal("100"),
         cost_per_unit=Decimal("900"),
@@ -279,9 +302,13 @@ async def test_cascade_delete_account_removes_trades(db_session):
     acc = await _mk_account(db_session, u.id)
     db_session.add(
         PortfolioTrade(
-            account_id=acc.id, symbol="2330.TW", market=Market.TW_TWSE,
-            action="BUY", trade_date=date(2026, 5, 1),
-            price=Decimal("900"), quantity=Decimal("100"),
+            account_id=acc.id,
+            symbol="2330.TW",
+            market=Market.TW_TWSE,
+            action="BUY",
+            trade_date=date(2026, 5, 1),
+            price=Decimal("900"),
+            quantity=Decimal("100"),
         )
     )
     await db_session.commit()
@@ -302,7 +329,8 @@ async def test_cascade_delete_account_removes_trades(db_session):
 async def test_user_id_not_null_constraint(db_session):
     acc = PortfolioAccount(
         user_id=None,  # type: ignore[arg-type]
-        name="No-owner", market=Market.TW_TWSE,
+        name="No-owner",
+        market=Market.TW_TWSE,
     )
     db_session.add(acc)
     with pytest.raises(IntegrityError):

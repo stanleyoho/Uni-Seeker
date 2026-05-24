@@ -1,4 +1,5 @@
 """WatchlistItem ORM model tests — Plan 4 Task 7 / WATCH-001."""
+
 import pytest
 from sqlalchemy import event, func, select
 from sqlalchemy.engine import Engine
@@ -23,6 +24,7 @@ def _enable_sqlite_fk():
             cur.close()
         except Exception:
             pass
+
     yield
     event.remove(Engine, "connect", _set_fk)
 

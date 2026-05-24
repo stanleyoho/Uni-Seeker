@@ -26,9 +26,7 @@ class FinancialMetrics(Base):
     )
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    stock_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("stocks.id", ondelete="CASCADE")
-    )
+    stock_id: Mapped[int] = mapped_column(Integer, ForeignKey("stocks.id", ondelete="CASCADE"))
     period: Mapped[str] = mapped_column(String(10))  # "2024-Q1"
     fiscal_year: Mapped[int] = mapped_column(SmallInteger)
     fiscal_quarter: Mapped[int] = mapped_column(SmallInteger)
@@ -54,9 +52,7 @@ class FinancialMetrics(Base):
     # Growth (YoY)
     revenue_growth_yoy: Mapped[float | None] = mapped_column(Float, default=None)
     eps_growth_yoy: Mapped[float | None] = mapped_column(Float, default=None)
-    operating_income_growth_yoy: Mapped[float | None] = mapped_column(
-        Float, default=None
-    )
+    operating_income_growth_yoy: Mapped[float | None] = mapped_column(Float, default=None)
 
     # Cash flow
     fcf: Mapped[float | None] = mapped_column(Float, default=None)

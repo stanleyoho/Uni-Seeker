@@ -82,7 +82,10 @@ async def register(req: RegisterRequest, request: Request, db: DbSession) -> Tok
     )
     await db.commit()
 
-    logger.info("user_registered", extra={"email": req.email, "ip": request.client.host if request.client else "unknown"})
+    logger.info(
+        "user_registered",
+        extra={"email": req.email, "ip": request.client.host if request.client else "unknown"},
+    )
     token = create_access_token(user.id, user.email)
     return TokenResponse(access_token=token)
 
@@ -151,21 +154,28 @@ async def _register_device(db: AsyncSession, user: User, request: Request) -> No
         await db.commit()
         return
 
-    active_count = await db.scalar(
-        select(func.count()).select_from(UserDevice).where(
-            UserDevice.user_id == user.id,
-            UserDevice.blocked_at.is_(None),
+    active_count = (
+        await db.scalar(
+            select(func.count())
+            .select_from(UserDevice)
+            .where(
+                UserDevice.user_id == user.id,
+                UserDevice.blocked_at.is_(None),
+            )
         )
-    ) or 0
+        or 0
+    )
     if active_count >= _DEVICE_LIMIT:
         raise HTTPException(status_code=403, detail="device_limit_exceeded")
 
-    db.add(UserDevice(
-        user_id=user.id,
-        fingerprint_hash=fp,
-        user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
-    ))
+    db.add(
+        UserDevice(
+            user_id=user.id,
+            fingerprint_hash=fp,
+            user_agent=request.headers.get("user-agent"),
+            ip_address=request.client.host if request.client else None,
+        )
+    )
     await log_audit_event(
         db,
         action="device_added",

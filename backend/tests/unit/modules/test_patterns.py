@@ -47,9 +47,7 @@ def test_kd_signal() -> None:
     closes = [float(100 - i) for i in range(15)] + [float(85 + i * 2) for i in range(15)]
     highs = [c + 2 for c in closes]
     lows = [c - 2 for c in closes]
-    result = PatternIndicator().calculate(
-        closes, pattern_type="kd_signal", highs=highs, lows=lows
-    )
+    result = PatternIndicator().calculate(closes, pattern_type="kd_signal", highs=highs, lows=lows)
     vals = result.values["kd_signal"]
     # Should have some non-None values
     assert any(v is not None for v in vals)

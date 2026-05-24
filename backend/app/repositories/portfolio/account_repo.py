@@ -4,6 +4,7 @@ Structural user isolation: every method takes `user_id` and applies it
 as a WHERE clause. Cross-user reads / writes are impossible by
 construction (Phase 1 anti-coupling rule §11 R3 + §5.3).
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -45,9 +46,7 @@ class PortfolioAccountRepo:
         await self.db.refresh(account)
         return account
 
-    async def get_by_id(
-        self, account_id: int, user_id: int
-    ) -> PortfolioAccount | None:
+    async def get_by_id(self, account_id: int, user_id: int) -> PortfolioAccount | None:
         """Fetch one row only if it belongs to `user_id`."""
         result = await self.db.execute(
             select(PortfolioAccount).where(
@@ -66,9 +65,7 @@ class PortfolioAccountRepo:
         )
         return list(result.scalars().all())
 
-    async def update(
-        self, account_id: int, user_id: int, **fields: Any
-    ) -> PortfolioAccount | None:
+    async def update(self, account_id: int, user_id: int, **fields: Any) -> PortfolioAccount | None:
         """Patch `fields` on the row iff it belongs to `user_id`.
 
         Returns the updated row, or None if it was not found / not owned.
@@ -113,8 +110,6 @@ class PortfolioAccountRepo:
         """Number of accounts owned by `user_id` — for tier quota checks
         (which live in service / billing layer)."""
         result = await self.db.execute(
-            select(func.count(PortfolioAccount.id)).where(
-                PortfolioAccount.user_id == user_id
-            )
+            select(func.count(PortfolioAccount.id)).where(PortfolioAccount.user_id == user_id)
         )
         return int(result.scalar() or 0)

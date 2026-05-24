@@ -8,7 +8,10 @@ logger = structlog.get_logger()
 
 # --- Standard error response helper ---
 
-def _error_response(status_code: int, error: str, message: str, detail: str | None = None) -> JSONResponse:
+
+def _error_response(
+    status_code: int, error: str, message: str, detail: str | None = None
+) -> JSONResponse:
     """Build a standardised JSON error response."""
     body: dict[str, str] = {"error": error, "message": message}
     if detail is not None:
@@ -18,9 +21,17 @@ def _error_response(status_code: int, error: str, message: str, detail: str | No
 
 # --- Application error hierarchy ---
 
+
 class AppError(Exception):
     """Base application error."""
-    def __init__(self, message: str, status_code: int = 400, error_code: str = "APP_ERROR", detail: str | None = None) -> None:
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int = 400,
+        error_code: str = "APP_ERROR",
+        detail: str | None = None,
+    ) -> None:
         self.message = message
         self.status_code = status_code
         self.error_code = error_code
@@ -71,7 +82,9 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         logger.warning(
             "validation_error",
             errors=exc.errors(),

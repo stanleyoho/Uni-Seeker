@@ -3,6 +3,7 @@
 All metric objects are module-level singletons so call sites can simply
 import and `.inc()` / `.set()` without managing registry state.
 """
+
 from __future__ import annotations
 
 from prometheus_client import Counter, Gauge

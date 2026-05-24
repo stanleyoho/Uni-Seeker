@@ -32,6 +32,7 @@ Out of scope for the Phase 2 execute endpoint (Stanley 2026-05-24):
   - Broker API integration. This endpoint records "what the user did";
     actually placing the order at a broker is a separate concern.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

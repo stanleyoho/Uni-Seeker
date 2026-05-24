@@ -31,6 +31,7 @@ fires.
 
 EdgarClient is dep-overridden to `_MockEdgarClient`.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -81,9 +82,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 def _client_app(client: AsyncClient):
@@ -166,9 +165,7 @@ class _MockEdgarClient:
         self.calls_list_filings: list[str] = []
         self.calls_fetch_xml: list[str] = []
 
-    def set_filings_response(
-        self, cik: str, filings: list[FilingMetadata]
-    ) -> None:
+    def set_filings_response(self, cik: str, filings: list[FilingMetadata]) -> None:
         self._filings_responses[cik] = list(filings)
 
     def set_xml_response(self, url: str, xml: str) -> None:
@@ -177,9 +174,7 @@ class _MockEdgarClient:
     def set_search_response(self, hits: list[FilerMetadata]) -> None:
         self._search_response = list(hits)
 
-    async def search_filers_by_name(
-        self, name_query: str, limit: int = 20
-    ) -> list[FilerMetadata]:
+    async def search_filers_by_name(self, name_query: str, limit: int = 20) -> list[FilerMetadata]:
         self.calls_search.append(name_query)
         return list(self._search_response)[:limit]
 
@@ -233,9 +228,7 @@ async def test_subscribe_filer_201_creates_subscription(
     assert body["notify_on_new_filing"] is True
 
     # subscription row exists
-    count = await F13UserSubscriptionRepo(db_session).count_by_user(
-        user.id
-    )
+    count = await F13UserSubscriptionRepo(db_session).count_by_user(user.id)
     assert count == 1
 
 
@@ -256,12 +249,8 @@ async def test_subscribe_filer_free_tier_2nd_blocked(
     # Flip monetisation on for both the dep-layer guard AND the service
     # second line so the 2nd subscribe actually trips the limit.
     with (
-        patch(
-            "app.modules.billing.tier_limits.settings"
-        ) as guard_settings,
-        patch(
-            "app.services.institutional.subscription_service.settings"
-        ) as svc_settings,
+        patch("app.modules.billing.tier_limits.settings") as guard_settings,
+        patch("app.services.institutional.subscription_service.settings") as svc_settings,
     ):
         guard_settings.enable_monetization = True
         svc_settings.enable_monetization = True
@@ -287,9 +276,7 @@ async def test_subscribe_filer_basic_tier_5th_passes(
         )
         assert resp.status_code == 201, resp.text
 
-    count = await F13UserSubscriptionRepo(db_session).count_by_user(
-        user.id
-    )
+    count = await F13UserSubscriptionRepo(db_session).count_by_user(user.id)
     assert count == 5
 
 
@@ -299,12 +286,8 @@ async def test_subscribe_filer_pro_tier_unlimited(
     """PRO.max_tracked_filers=null → 10 subscribes ok."""
     user = await _mk_user(db_session, "sub04@x.com", tier=UserTier.PRO)
     with (
-        patch(
-            "app.modules.billing.tier_limits.settings"
-        ) as guard_settings,
-        patch(
-            "app.services.institutional.subscription_service.settings"
-        ) as svc_settings,
+        patch("app.modules.billing.tier_limits.settings") as guard_settings,
+        patch("app.services.institutional.subscription_service.settings") as svc_settings,
     ):
         guard_settings.enable_monetization = True
         svc_settings.enable_monetization = True
@@ -349,23 +332,17 @@ async def test_list_subscriptions_returns_user_subscribed(
         json={"cik": "0005000001", "name": "User A Filer"},
     )
 
-    resp_a = await client.get(
-        "/api/v1/institutional/filers", headers=_auth(user_a)
-    )
+    resp_a = await client.get("/api/v1/institutional/filers", headers=_auth(user_a))
     assert resp_a.status_code == 200
     assert len(resp_a.json()) == 1
     assert resp_a.json()[0]["cik"] == "0005000001"
 
-    resp_b = await client.get(
-        "/api/v1/institutional/filers", headers=_auth(user_b)
-    )
+    resp_b = await client.get("/api/v1/institutional/filers", headers=_auth(user_b))
     assert resp_b.status_code == 200
     assert resp_b.json() == []
 
 
-async def test_unsubscribe_204(
-    client: AsyncClient, db_session: AsyncSession, mock_edgar
-) -> None:
+async def test_unsubscribe_204(client: AsyncClient, db_session: AsyncSession, mock_edgar) -> None:
     """DELETE /institutional/filers/{id} → 204 + removes row."""
     user = await _mk_user(db_session, "uns01@x.com", tier=UserTier.PRO)
     create_resp = await client.post(
@@ -381,9 +358,7 @@ async def test_unsubscribe_204(
     )
     assert resp.status_code == 204
 
-    count = await F13UserSubscriptionRepo(db_session).count_by_user(
-        user.id
-    )
+    count = await F13UserSubscriptionRepo(db_session).count_by_user(user.id)
     assert count == 0
 
 
@@ -405,9 +380,7 @@ async def test_search_filers_local_only(
 ) -> None:
     """POST /institutional/filers/search returns local hits."""
     user = await _mk_user(db_session, "srch01@x.com", tier=UserTier.PRO)
-    await F13FilerRepo(db_session).create(
-        cik="0007000001", name="Berkshire Hathaway"
-    )
+    await F13FilerRepo(db_session).create(cik="0007000001", name="Berkshire Hathaway")
     await db_session.commit()
 
     resp = await client.post(
@@ -426,17 +399,17 @@ async def test_search_filers_merges_edgar(
 ) -> None:
     """Local hit + EDGAR augmentation via the dep-overridden mock."""
     user = await _mk_user(db_session, "srch02@x.com", tier=UserTier.PRO)
-    await F13FilerRepo(db_session).create(
-        cik="0007000002", name="Renaissance Tech"
-    )
+    await F13FilerRepo(db_session).create(cik="0007000002", name="Renaissance Tech")
     await db_session.commit()
-    mock_edgar.set_search_response([
-        FilerMetadata(
-            cik="0007000999",
-            name="Renaissance Partners",
-            legal_name="RENAISSANCE PARTNERS LLC",
-        ),
-    ])
+    mock_edgar.set_search_response(
+        [
+            FilerMetadata(
+                cik="0007000999",
+                name="Renaissance Partners",
+                legal_name="RENAISSANCE PARTNERS LLC",
+            ),
+        ]
+    )
 
     resp = await client.post(
         "/api/v1/institutional/filers/search?q=renaissance",
@@ -467,14 +440,13 @@ async def test_refresh_filer_happy_path_200(
         "0008000001",
         [
             _mk_filing_meta(
-                "acc-q4", date(2025, 12, 31),
+                "acc-q4",
+                date(2025, 12, 31),
                 url="https://example.com/q4.xml",
             ),
         ],
     )
-    mock_edgar.set_xml_response(
-        "https://example.com/q4.xml", _MINIMAL_INFOTABLE_XML
-    )
+    mock_edgar.set_xml_response("https://example.com/q4.xml", _MINIMAL_INFOTABLE_XML)
 
     resp = await client.post(
         f"/api/v1/institutional/filers/{filer_id}/refresh",
@@ -561,16 +533,18 @@ async def _seed_filer_with_filings(
         )
         await holding_repo.bulk_insert(
             filing_id=filing.id,
-            holdings=[{
-                "cusip": "037833100",
-                "name_of_issuer": "APPLE INC",
-                "value_usd": Decimal("1000000"),
-                "shares": shares,
-                "investment_discretion": "SOLE",
-                "voting_authority_sole": shares,
-                "voting_authority_shared": Decimal("0"),
-                "voting_authority_none": Decimal("0"),
-            }],
+            holdings=[
+                {
+                    "cusip": "037833100",
+                    "name_of_issuer": "APPLE INC",
+                    "value_usd": Decimal("1000000"),
+                    "shares": shares,
+                    "investment_discretion": "SOLE",
+                    "voting_authority_sole": shares,
+                    "voting_authority_shared": Decimal("0"),
+                    "voting_authority_none": Decimal("0"),
+                }
+            ],
         )
         filing_ids.append(filing.id)
     await db.commit()
@@ -675,9 +649,7 @@ async def _seed_cross_stock(
     db: AsyncSession, symbol: str = "AAPL", cusip: str = "037833100"
 ) -> int:
     """Seed a stock + two filers + holdings on this stock. Returns stock_id."""
-    stock = Stock(
-        symbol=symbol, name="Test Stock", market=Market.US_NASDAQ
-    )
+    stock = Stock(symbol=symbol, name="Test Stock", market=Market.US_NASDAQ)
     db.add(stock)
     await db.commit()
     await db.refresh(stock)
@@ -693,26 +665,31 @@ async def _seed_cross_stock(
         (filer_b, "x-b-q4", Decimal("50")),
     ]:
         filing = await filing_repo.create(
-            filer_id=filer.id, accession_number=accession,
-            form_type="13F-HR", report_period_end=date(2025, 12, 31),
+            filer_id=filer.id,
+            accession_number=accession,
+            form_type="13F-HR",
+            report_period_end=date(2025, 12, 31),
             filed_at=datetime(2026, 2, 14, tzinfo=UTC),
             total_value_usd=Decimal("1000"),
             options_notional_usd=Decimal("0"),
-            total_positions=1, raw_xml_url="x",
+            total_positions=1,
+            raw_xml_url="x",
         )
         await holding_repo.bulk_insert(
             filing_id=filing.id,
-            holdings=[{
-                "cusip": cusip,
-                "name_of_issuer": "Test Stock",
-                "value_usd": Decimal("1000"),
-                "shares": shares,
-                "investment_discretion": "SOLE",
-                "voting_authority_sole": shares,
-                "voting_authority_shared": Decimal("0"),
-                "voting_authority_none": Decimal("0"),
-                "stock_id": stock.id,
-            }],
+            holdings=[
+                {
+                    "cusip": cusip,
+                    "name_of_issuer": "Test Stock",
+                    "value_usd": Decimal("1000"),
+                    "shares": shares,
+                    "investment_discretion": "SOLE",
+                    "voting_authority_sole": shares,
+                    "voting_authority_shared": Decimal("0"),
+                    "voting_authority_none": Decimal("0"),
+                    "stock_id": stock.id,
+                }
+            ],
         )
     await db.commit()
     return stock.id
@@ -744,19 +721,14 @@ async def test_institutional_for_stock_free_tier_403_feature(
     user = await _mk_user(db_session, "cs02@x.com", tier=UserTier.FREE)
     await _seed_cross_stock(db_session, symbol="AAPL2", cusip="111111111")
 
-    with patch(
-        "app.services.institutional.cross_stock_service.settings"
-    ) as svc_settings:
+    with patch("app.services.institutional.cross_stock_service.settings") as svc_settings:
         svc_settings.enable_monetization = True
         resp = await client.get(
             "/api/v1/institutional/stocks/AAPL2/institutional",
             headers=_auth(user),
         )
     assert resp.status_code == 403
-    assert (
-        "feature_unavailable:institutional_ownership_panel"
-        in resp.json()["message"]
-    )
+    assert "feature_unavailable:institutional_ownership_panel" in resp.json()["message"]
 
 
 async def test_institutional_for_stock_unknown_symbol_empty(
@@ -785,9 +757,7 @@ async def test_decimal_as_string_serialization(
 ) -> None:
     """Numeric fields render as JSON strings (CLAUDE.md Decimal-as-string)."""
     user = await _mk_user(db_session, "dec01@x.com", tier=UserTier.PRO)
-    filer_id, _ = await _seed_filer_with_filings(
-        db_session, user, cik="0012000001"
-    )
+    filer_id, _ = await _seed_filer_with_filings(db_session, user, cik="0012000001")
 
     resp = await client.get(
         f"/api/v1/institutional/filers/{filer_id}/holdings?period=latest",

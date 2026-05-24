@@ -22,6 +22,7 @@ the overridden test session in tests because `app.dependency_overrides[
 get_db]` is set BEFORE we call `get_db()` — we route through the
 helper `_open_session_via_overrides_or_default` that respects it.
 """
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -101,9 +102,7 @@ async def trade_count_provider(*, user: User) -> int:
 
     async def _q() -> int:
         async with _session_scope() as session:
-            return await PortfolioTradeRepo(
-                session
-            ).count_by_user_this_month(user.id)
+            return await PortfolioTradeRepo(session).count_by_user_this_month(user.id)
 
     return await _safe_count(_q)
 
@@ -113,9 +112,7 @@ async def position_count_provider(*, user: User) -> int:
 
     async def _q() -> int:
         async with _session_scope() as session:
-            return await PortfolioPositionRepo(session).count_by_user(
-                user.id
-            )
+            return await PortfolioPositionRepo(session).count_by_user(user.id)
 
     return await _safe_count(_q)
 

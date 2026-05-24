@@ -19,5 +19,7 @@ class SignalScanRecord(Base):
     scan_date: Mapped[date] = mapped_column(Date, index=True)
     signals_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )

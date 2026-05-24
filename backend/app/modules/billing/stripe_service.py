@@ -38,9 +38,7 @@ class StripeService:
         """建立 Stripe Checkout Session，返回 checkout URL。"""
         price_id = self._price_ids.get(tier)
         if not price_id:
-            raise ValueError(
-                f"Invalid tier '{tier}'. Must be one of: {list(self._price_ids)}"
-            )
+            raise ValueError(f"Invalid tier '{tier}'. Must be one of: {list(self._price_ids)}")
 
         session = stripe.checkout.Session.create(
             mode="subscription",
@@ -54,9 +52,7 @@ class StripeService:
     def handle_webhook(self, payload: bytes, signature: str) -> WebhookResult:
         """處理 Stripe webhook 事件，驗證簽名並解析關鍵欄位。"""
         try:
-            event = stripe.Webhook.construct_event(
-                payload, signature, self._webhook_secret
-            )
+            event = stripe.Webhook.construct_event(payload, signature, self._webhook_secret)
         except stripe.error.SignatureVerificationError as exc:
             raise ValueError("Invalid webhook signature") from exc
 

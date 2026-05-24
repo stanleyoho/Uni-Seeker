@@ -25,6 +25,7 @@ Phase 5 wash-sale detection (Round 11). Coverage:
   Boundary helper
     W17 date_within_window_inclusive_bounds
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -349,9 +350,7 @@ def _project_csv(match: TaxLotMatch) -> dict[str, str]:
     booting FastAPI / DB.
     """
     code = "W" if match.is_wash_sale else ""
-    adjustment = (
-        str(match.wash_sale_disallowed_loss) if match.is_wash_sale else ""
-    )
+    adjustment = str(match.wash_sale_disallowed_loss) if match.is_wash_sale else ""
     return {
         "Code": code,
         "Adjustment": adjustment,

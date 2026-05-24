@@ -12,6 +12,7 @@ Mirrors the `app.services.portfolio.exceptions` module's shape: one
 base exception, then a tree of typed subclasses with stable
 attribute names that the API layer can read in its exception handlers.
 """
+
 from __future__ import annotations
 
 
@@ -49,9 +50,7 @@ class F13SubscriptionExists(F13ServiceError):
 
     def __init__(self, filer_id: int) -> None:
         self.filer_id = filer_id
-        super().__init__(
-            f"already subscribed to filer_id={filer_id}"
-        )
+        super().__init__(f"already subscribed to filer_id={filer_id}")
 
 
 class F13RefreshInFlight(F13ServiceError):
@@ -77,9 +76,7 @@ class F13EdgarError(F13ServiceError):
     when the failure was a transport-level timeout).
     """
 
-    def __init__(
-        self, message: str, edgar_status: int | None = None
-    ) -> None:
+    def __init__(self, message: str, edgar_status: int | None = None) -> None:
         self.edgar_status = edgar_status
         super().__init__(message)
 
@@ -110,9 +107,7 @@ class F13TierLimitExceeded(F13ServiceError):
         self.limit_key = limit_key
         self.current = current
         self.limit = limit
-        super().__init__(
-            f"tier limit '{limit_key}' exceeded: {current} >= {limit}"
-        )
+        super().__init__(f"tier limit '{limit_key}' exceeded: {current} >= {limit}")
 
 
 __all__ = [

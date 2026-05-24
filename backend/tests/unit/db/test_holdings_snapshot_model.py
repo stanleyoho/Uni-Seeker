@@ -8,6 +8,7 @@ Covers `holdings_snapshots`:
   S05 ON DELETE CASCADE — deleting user cascades to all their snapshots
   S06 CHECK constraints: total_value >= 0, position_count >= 0
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -37,6 +38,7 @@ def _enable_sqlite_fk():
             cur.close()
         except Exception:
             pass
+
     yield
     event.remove(Engine, "connect", _set_fk)
 
@@ -51,7 +53,9 @@ async def _mk_user(db, email: str = "s@x.tw", username: str = "su") -> User:
 
 
 async def _mk_account(
-    db, user_id: int, name: str = "SnapMain",
+    db,
+    user_id: int,
+    name: str = "SnapMain",
     market: Market = Market.TW_TWSE,
 ) -> PortfolioAccount:
     acc = PortfolioAccount(user_id=user_id, name=name, market=market)
@@ -116,9 +120,7 @@ async def test_S03_user_wide_row_coexists_with_per_account(db_session):
     db_session.add(HoldingsSnapshot(**_snap_kwargs(u.id, account_id=acc.id)))
     db_session.add(HoldingsSnapshot(**_snap_kwargs(u.id, account_id=None)))
     await db_session.commit()
-    cnt = await db_session.scalar(
-        select(func.count()).select_from(HoldingsSnapshot)
-    )
+    cnt = await db_session.scalar(select(func.count()).select_from(HoldingsSnapshot))
     assert cnt == 2
 
 
@@ -129,21 +131,21 @@ async def test_S04_cascade_delete_account_removes_snapshots(db_session):
     acc = await _mk_account(db_session, u.id)
     for i in range(3):
         db_session.add(
-            HoldingsSnapshot(**_snap_kwargs(
-                u.id, account_id=acc.id, snapshot_date=date(2026, 5, 10 + i),
-            ))
+            HoldingsSnapshot(
+                **_snap_kwargs(
+                    u.id,
+                    account_id=acc.id,
+                    snapshot_date=date(2026, 5, 10 + i),
+                )
+            )
         )
     await db_session.commit()
-    pre = await db_session.scalar(
-        select(func.count()).select_from(HoldingsSnapshot)
-    )
+    pre = await db_session.scalar(select(func.count()).select_from(HoldingsSnapshot))
     assert pre == 3
     await db_session.delete(acc)
     await db_session.commit()
     db_session.expire_all()
-    post = await db_session.scalar(
-        select(func.count()).select_from(HoldingsSnapshot)
-    )
+    post = await db_session.scalar(select(func.count()).select_from(HoldingsSnapshot))
     assert post == 0
 
 
@@ -153,16 +155,12 @@ async def test_S05_cascade_delete_user_removes_user_wide_snapshots(db_session):
     u = await _mk_user(db_session, "s5@x.tw", "s5")
     db_session.add(HoldingsSnapshot(**_snap_kwargs(u.id, account_id=None)))
     await db_session.commit()
-    pre = await db_session.scalar(
-        select(func.count()).select_from(HoldingsSnapshot)
-    )
+    pre = await db_session.scalar(select(func.count()).select_from(HoldingsSnapshot))
     assert pre == 1
     await db_session.delete(u)
     await db_session.commit()
     db_session.expire_all()
-    post = await db_session.scalar(
-        select(func.count()).select_from(HoldingsSnapshot)
-    )
+    post = await db_session.scalar(select(func.count()).select_from(HoldingsSnapshot))
     assert post == 0
 
 
@@ -170,9 +168,13 @@ async def test_S05_cascade_delete_user_removes_user_wide_snapshots(db_session):
 @pytest.mark.asyncio
 async def test_S06_check_total_value_nonneg(db_session):
     u = await _mk_user(db_session, "s6a@x.tw", "s6a")
-    bad = HoldingsSnapshot(**_snap_kwargs(
-        u.id, account_id=None, total_value=Decimal("-1"),
-    ))
+    bad = HoldingsSnapshot(
+        **_snap_kwargs(
+            u.id,
+            account_id=None,
+            total_value=Decimal("-1"),
+        )
+    )
     db_session.add(bad)
     with pytest.raises(IntegrityError):
         await db_session.commit()
@@ -182,9 +184,13 @@ async def test_S06_check_total_value_nonneg(db_session):
 @pytest.mark.asyncio
 async def test_S07_check_position_count_nonneg(db_session):
     u = await _mk_user(db_session, "s6b@x.tw", "s6b")
-    bad = HoldingsSnapshot(**_snap_kwargs(
-        u.id, account_id=None, position_count=-1,
-    ))
+    bad = HoldingsSnapshot(
+        **_snap_kwargs(
+            u.id,
+            account_id=None,
+            position_count=-1,
+        )
+    )
     db_session.add(bad)
     with pytest.raises(IntegrityError):
         await db_session.commit()

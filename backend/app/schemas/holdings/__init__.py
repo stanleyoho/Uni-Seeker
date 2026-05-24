@@ -24,6 +24,7 @@ field-serializer form is strongly typed and IDE-friendly.
 `None` Decimal values stay `None` (rendered as JSON null) — matches the
 "missing quote = null" contract in spec §12 R8.
 """
+
 from app.schemas.holdings.account import (
     AccountCreateRequest,
     AccountResponse,

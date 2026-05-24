@@ -35,8 +35,11 @@ router = APIRouter(
 _registry = create_default_registry()
 
 _CHIP_STRATEGIES = {
-    "institutional_follow", "margin_divergence", "foreign_trust_sync",
-    "ownership_concentration", "margin_overleverage",
+    "institutional_follow",
+    "margin_divergence",
+    "foreign_trust_sync",
+    "ownership_concentration",
+    "margin_overleverage",
 }
 
 
@@ -52,7 +55,9 @@ async def _fetch_chip_data(symbol: str, start_date: str, end_date: str) -> dict[
     # Margin data from FinMind
     margin = await client.fetch(
         dataset="TaiwanStockMarginPurchaseShortSale",
-        data_id=data_id, start_date=start_date, end_date=end_date,
+        data_id=data_id,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     return {"institutional": inst, "margin": margin, "shareholding": shld}
@@ -65,6 +70,7 @@ async def _fetch_prices(
     end_date: str | None = None,
 ) -> list[StockPrice]:
     from datetime import date as _date
+
     stock = await get_stock_or_404(db, symbol)
     q = select(StockPrice).where(StockPrice.stock_id == stock.id)
     if start_date:
@@ -118,7 +124,9 @@ async def run_backtest(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BacktestResponse:
     try:
-        strategy = _registry.get(req.strategy, **{k: v for k, v in req.params.items() if v is not None})
+        strategy = _registry.get(
+            req.strategy, **{k: v for k, v in req.params.items() if v is not None}
+        )
     except KeyError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -162,9 +170,14 @@ async def run_composite_backtest(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BacktestResponse:
     if len(req.strategies) < 2:
-        raise HTTPException(status_code=400, detail="Composite strategy requires at least 2 sub-strategies")
+        raise HTTPException(
+            status_code=400, detail="Composite strategy requires at least 2 sub-strategies"
+        )
     if req.mode not in ("all", "any", "majority"):
-        raise HTTPException(status_code=400, detail=f"Invalid mode '{req.mode}'. Must be 'all', 'any', or 'majority'")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid mode '{req.mode}'. Must be 'all', 'any', or 'majority'",
+        )
 
     sub_strategies = []
     for key in req.strategies:
@@ -231,7 +244,8 @@ async def run_auto_discovery(
     try:
         result = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
-                None, lambda: engine.run(config, prices, req.symbol),
+                None,
+                lambda: engine.run(config, prices, req.symbol),
             ),
             timeout=_AUTO_DISCOVERY_TIMEOUT,
         )

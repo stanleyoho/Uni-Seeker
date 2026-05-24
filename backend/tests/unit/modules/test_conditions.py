@@ -32,19 +32,25 @@ def test_missing_indicator_returns_false() -> None:
 
 
 def test_condition_group_and() -> None:
-    group = ConditionGroup(operator="AND", rules=[
-        Condition(indicator="RSI", params={}, op="<", value=30),
-        Condition(indicator="KD_K", params={}, op="<", value=20),
-    ])
+    group = ConditionGroup(
+        operator="AND",
+        rules=[
+            Condition(indicator="RSI", params={}, op="<", value=30),
+            Condition(indicator="KD_K", params={}, op="<", value=20),
+        ],
+    )
     assert group.evaluate({"RSI": 25.0, "KD_K": 15.0}) is True
     assert group.evaluate({"RSI": 25.0, "KD_K": 25.0}) is False
 
 
 def test_condition_group_or() -> None:
-    group = ConditionGroup(operator="OR", rules=[
-        Condition(indicator="RSI", params={}, op="<", value=30),
-        Condition(indicator="KD_K", params={}, op="<", value=20),
-    ])
+    group = ConditionGroup(
+        operator="OR",
+        rules=[
+            Condition(indicator="RSI", params={}, op="<", value=30),
+            Condition(indicator="KD_K", params={}, op="<", value=20),
+        ],
+    )
     assert group.evaluate({"RSI": 25.0, "KD_K": 50.0}) is True
     assert group.evaluate({"RSI": 50.0, "KD_K": 50.0}) is False
 

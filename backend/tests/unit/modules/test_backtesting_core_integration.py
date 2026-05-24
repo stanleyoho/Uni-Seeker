@@ -1,4 +1,5 @@
 """Integration test: verify backtesting_core is importable and usable inside Uni-Seeker."""
+
 from __future__ import annotations
 
 from datetime import date

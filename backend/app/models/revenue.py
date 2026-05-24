@@ -19,9 +19,7 @@ from app.models.base import Base
 class MonthlyRevenue(Base):
     __tablename__ = "monthly_revenues"
     __table_args__ = (
-        UniqueConstraint(
-            "stock_id", "period", name="uq_monthly_revenues_stock_id_period"
-        ),
+        UniqueConstraint("stock_id", "period", name="uq_monthly_revenues_stock_id_period"),
         Index("ix_monthly_revenues_stock_id_period", "stock_id", "period"),
     )
 

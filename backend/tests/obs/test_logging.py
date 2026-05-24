@@ -1,4 +1,5 @@
 """Plan 8 T1 — structlog config tests (Uni-Seeker)."""
+
 import io
 import json
 import logging
@@ -12,6 +13,7 @@ def test_logging_emits_iso_timestamp(monkeypatch):
     """ISO8601 UTC timestamp must be in every log record."""
     monkeypatch.setenv("ENV", "prod")  # JSON renderer
     from app.obs.logging import configure_logging, get_logger
+
     configure_logging(service="uni-seeker-backend")
     log = get_logger("test_component")
     buf = io.StringIO()
@@ -28,6 +30,7 @@ def test_logging_emits_iso_timestamp(monkeypatch):
 def test_logging_emits_service_field(monkeypatch):
     monkeypatch.setenv("ENV", "prod")
     from app.obs.logging import configure_logging, get_logger
+
     configure_logging(service="uni-seeker-backend")
     log = get_logger("c")
     buf = io.StringIO()
@@ -41,6 +44,7 @@ def test_logging_dev_uses_console_renderer(monkeypatch):
     """dev / test ENV must produce non-JSON output (console renderer)."""
     monkeypatch.setenv("ENV", "dev")
     from app.obs.logging import configure_logging, get_logger
+
     configure_logging(service="uni-seeker-backend")
     log = get_logger("c")
     buf = io.StringIO()
@@ -55,6 +59,7 @@ def test_logging_dev_uses_console_renderer(monkeypatch):
 def test_logging_prod_outputs_required_fields(monkeypatch):
     monkeypatch.setenv("ENV", "prod")
     from app.obs.logging import configure_logging, get_logger
+
     configure_logging(service="uni-seeker-backend", version="1.0.0+abc")
     log = get_logger("billing_webhook")
     buf = io.StringIO()

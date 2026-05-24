@@ -1,4 +1,5 @@
 """Unit tests for rebalance alert calculator — T21–T28."""
+
 from __future__ import annotations
 
 from decimal import Decimal

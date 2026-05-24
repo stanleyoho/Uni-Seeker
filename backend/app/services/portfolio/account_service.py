@@ -5,6 +5,7 @@ update / delete, enforces tier quota AND feature flag at the service
 layer (second line of defense per spec §9 双保险), and writes audit
 log rows for every mutation.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -61,9 +62,7 @@ class PortfolioAccountService:
             return  # PRO / unlimited
         current = await self._repo.count_by_user(self._user.id)
         if current >= limit:
-            raise TierLimitExceeded(
-                limit_key="max_accounts", current=current, limit=limit
-            )
+            raise TierLimitExceeded(limit_key="max_accounts", current=current, limit=limit)
 
     async def _assert_multi_account_feature(self) -> None:
         """For non-first accounts the user must have the
@@ -137,14 +136,10 @@ class PortfolioAccountService:
         """Fetch one owned account or raise `PortfolioAccountNotFound`."""
         account = await self._repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
         return account
 
-    async def update_account(
-        self, account_id: int, **fields: Any
-    ) -> PortfolioAccount:
+    async def update_account(self, account_id: int, **fields: Any) -> PortfolioAccount:
         """Patch allowed fields on an owned account.
 
         Raises:
@@ -159,14 +154,10 @@ class PortfolioAccountService:
             "description": existing.description,
             "currency": existing.currency,
         }
-        updated = await self._repo.update(
-            account_id, user_id=self._user.id, **fields
-        )
+        updated = await self._repo.update(account_id, user_id=self._user.id, **fields)
         if updated is None:
             # Race: deleted between fetch and update.
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_account_updated",
@@ -194,9 +185,7 @@ class PortfolioAccountService:
         await self.get_account(account_id)
         deleted = await self._repo.delete(account_id, user_id=self._user.id)
         if not deleted:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_account_deleted",

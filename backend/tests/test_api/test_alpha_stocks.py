@@ -1,4 +1,5 @@
 """Plan 5 T8 — /api/v1/alpha/stocks/edge/{stock_id} (Pro tier only)."""
+
 from datetime import date
 from unittest.mock import patch
 
@@ -46,9 +47,7 @@ MOCK_EDGE = EdgeSignal(
 
 
 @pytest.mark.asyncio
-async def test_pro_user_gets_edge_signal(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_pro_user_gets_edge_signal(client: AsyncClient, db_session: AsyncSession):
     user = await _make_user(db_session, UserTier.PRO, uid=10)
     token = create_access_token(user.id, user.email)
     with patch(
@@ -86,9 +85,7 @@ async def test_unauthenticated_gets_4xx(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_response_schema_complete(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_response_schema_complete(client: AsyncClient, db_session: AsyncSession):
     user = await _make_user(db_session, UserTier.PRO, uid=12)
     token = create_access_token(user.id, user.email)
     with patch(
@@ -101,16 +98,19 @@ async def test_response_schema_complete(
         )
     body = resp.json()
     required_fields = {
-        "stock_id", "date", "direction", "confidence",
-        "divergence_detected", "reason", "tier",
+        "stock_id",
+        "date",
+        "direction",
+        "confidence",
+        "divergence_detected",
+        "reason",
+        "tier",
     }
     assert required_fields.issubset(body.keys())
 
 
 @pytest.mark.asyncio
-async def test_direction_values_constrained(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_direction_values_constrained(client: AsyncClient, db_session: AsyncSession):
     user = await _make_user(db_session, UserTier.PRO, uid=13)
     token = create_access_token(user.id, user.email)
     with patch(

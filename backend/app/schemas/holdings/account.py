@@ -5,6 +5,7 @@ here (no Decimal columns on accounts) but we follow the
 `from_attributes=True` convention so the service can hand us a
 SQLAlchemy `PortfolioAccount` directly.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

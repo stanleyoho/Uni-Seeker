@@ -5,6 +5,7 @@ enforced via `@field_serializer(..., when_used='json')` on the response
 model (see package docstring on `app.schemas.holdings`). The legacy
 `json_encoders` knob is deprecated in Pydantic 2.x and removed in v3.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

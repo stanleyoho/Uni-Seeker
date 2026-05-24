@@ -18,6 +18,7 @@ Why repository terms rather than reusing the model field names
     column reference internal — callers pass ``event_types: list[str]``
     and we map them onto ``AuditLog.action`` here.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -97,11 +98,7 @@ class AuditLogRepo:
         ``list_by_user`` — used to drive the ``has_more`` /
         ``total_count`` fields in the API response.
         """
-        stmt = (
-            select(func.count())
-            .select_from(AuditLog)
-            .where(AuditLog.user_id == user_id)
-        )
+        stmt = select(func.count()).select_from(AuditLog).where(AuditLog.user_id == user_id)
         if event_types:
             stmt = stmt.where(AuditLog.action.in_(event_types))
         if since is not None:

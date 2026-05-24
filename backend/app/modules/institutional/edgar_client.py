@@ -17,6 +17,7 @@ Design highlights:
 
 Anti-coupling: NO imports from ``app.db.*``, ``fastapi``, ``smart_money``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -186,9 +187,7 @@ class EdgarClient:
         if not user_agent or "@" not in user_agent:
             # SEC explicitly requires a contact email. Refuse to silently
             # send a broken UA — would just get 403'd at runtime.
-            raise ValueError(
-                "user_agent must include a contact email per SEC policy"
-            )
+            raise ValueError("user_agent must include a contact email per SEC policy")
         self._user_agent = user_agent
         self._timeout = timeout_seconds
         self._limiter = rate_limiter or EdgarRateLimiter()
@@ -215,9 +214,7 @@ class EdgarClient:
 
     # ── public API ──
 
-    async def search_filers_by_name(
-        self, name_query: str, limit: int = 20
-    ) -> list[FilerMetadata]:
+    async def search_filers_by_name(self, name_query: str, limit: int = 20) -> list[FilerMetadata]:
         """Search EDGAR full-text index for filers with 13F-HR history.
 
         Hits ``efts.sec.gov/LATEST/search-index`` and de-duplicates by
@@ -328,9 +325,7 @@ class EdgarClient:
                 )
                 items = []
             infotable_name = _resolve_infotable_filename(items)
-            infotable_url = (
-                f"{base}/{infotable_name}" if infotable_name else None
-            )
+            infotable_url = f"{base}/{infotable_name}" if infotable_name else None
 
             period_str = period_of_report[i] if i < len(period_of_report) else ""
             filed_str = filing_dates[i] if i < len(filing_dates) else ""
@@ -371,18 +366,13 @@ class EdgarClient:
         field is uninformative for 13F-HR (always ``text.gif``), so
         callers must rely on the filename to identify the infotable XML.
         """
-        url = (
-            f"{self.BASE_URL}/Archives/edgar/data/{cik_int}/"
-            f"{accession_no_dashes}/index.json"
-        )
+        url = f"{self.BASE_URL}/Archives/edgar/data/{cik_int}/{accession_no_dashes}/index.json"
         data = await self._get_json(url)
         return ((data.get("directory") or {}).get("item")) or []
 
     # ── internal HTTP plumbing ──
 
-    async def _get_json(
-        self, url: str, params: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def _get_json(self, url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         response = await self._request_with_retry("GET", url, params=params)
         # SEC sometimes responds JSON with text/plain content-type — call .json() directly.
         return response.json()
@@ -407,7 +397,7 @@ class EdgarClient:
                 response = await self._client.request(method, url, params=params)
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last_exc = exc
-                wait_seconds = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                wait_seconds = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "edgar_request_transport_error",
                     url=url,
@@ -426,9 +416,9 @@ class EdgarClient:
                     try:
                         wait_seconds = float(retry_after)
                     except ValueError:
-                        wait_seconds = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                        wait_seconds = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 else:
-                    wait_seconds = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                    wait_seconds = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "edgar_rate_limited",
                     url=url,
@@ -445,16 +435,14 @@ class EdgarClient:
                 continue
 
             if 500 <= response.status_code < 600:
-                wait_seconds = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                wait_seconds = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "edgar_server_error",
                     url=url,
                     status=response.status_code,
                     attempt=attempt + 1,
                 )
-                last_exc = EdgarTransientError(
-                    f"EDGAR returned {response.status_code} after retry"
-                )
+                last_exc = EdgarTransientError(f"EDGAR returned {response.status_code} after retry")
                 if attempt >= self._MAX_RETRIES:
                     break
                 await asyncio.sleep(wait_seconds)

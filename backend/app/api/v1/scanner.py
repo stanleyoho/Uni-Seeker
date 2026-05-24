@@ -117,7 +117,7 @@ async def scan_stocks(
             raise HTTPException(
                 status_code=400,
                 detail=f"Unknown strategy keys: {', '.join(sorted(invalid))}. "
-                       f"Available: {', '.join(available_keys)}",
+                f"Available: {', '.join(available_keys)}",
             )
 
     results = scanner.scan_many(stocks_data, strategy_keys=req.strategy_keys)
@@ -162,7 +162,7 @@ async def get_stock_signals(
             raise HTTPException(
                 status_code=400,
                 detail=f"Unknown strategy keys: {', '.join(sorted(invalid))}. "
-                       f"Available: {', '.join(available_keys)}",
+                f"Available: {', '.join(available_keys)}",
             )
 
     scanner = SignalScanner(registry)

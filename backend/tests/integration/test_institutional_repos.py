@@ -11,6 +11,7 @@ Each test seeds its own users + filers to verify isolation: a second
 user must not see/mutate the first user's subscription rows, even
 though `f13_filers` is a shared resource (Q2 decision).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -101,9 +102,7 @@ async def test_filer_repo_create_and_get_by_cik(
 ) -> None:
     """Create returns a row with assigned id; get_by_cik echoes it back."""
     repo = F13FilerRepo(db_session)
-    f = await repo.create(
-        cik="0001234567", name="Acme Capital", legal_name="ACME CAPITAL LP"
-    )
+    f = await repo.create(cik="0001234567", name="Acme Capital", legal_name="ACME CAPITAL LP")
     await db_session.commit()
 
     assert f.id is not None
@@ -143,9 +142,7 @@ async def test_filer_repo_get_or_create_idempotent(
 ) -> None:
     """First call creates; second call returns same row, was_created=False."""
     repo = F13FilerRepo(db_session)
-    first, created1 = await repo.get_or_create_by_cik(
-        cik="0001111111", name="Fund A"
-    )
+    first, created1 = await repo.get_or_create_by_cik(cik="0001111111", name="Fund A")
     await db_session.commit()
     assert created1 is True
     assert first.cik == "0001111111"
@@ -289,9 +286,7 @@ async def test_subscription_repo_count_by_user(
     assert await repo.count_by_user(user.id) == 0
 
     for n in range(3):
-        f = await _mk_filer(
-            db_session, cik=f"000100007{n}", name=f"F{n}"
-        )
+        f = await _mk_filer(db_session, cik=f"000100007{n}", name=f"F{n}")
         await repo.subscribe(user_id=user.id, filer_id=f.id)
     await db_session.commit()
     assert await repo.count_by_user(user.id) == 3
@@ -396,9 +391,7 @@ async def test_filing_repo_list_by_filer_orders_desc(
     db_session: AsyncSession,
 ) -> None:
     filer = await _mk_filer(db_session, cik="0002000003")
-    for i, p in enumerate(
-        [date(2024, 12, 31), date(2025, 3, 31), date(2025, 12, 31)]
-    ):
+    for i, p in enumerate([date(2024, 12, 31), date(2025, 3, 31), date(2025, 12, 31)]):
         await _mk_filing(
             db_session,
             filer.id,
@@ -419,12 +412,8 @@ async def test_filing_repo_get_latest_and_at_period(
     db_session: AsyncSession,
 ) -> None:
     filer = await _mk_filer(db_session, cik="0002000004")
-    await _mk_filing(
-        db_session, filer.id, accession="a1", period=date(2024, 12, 31)
-    )
-    await _mk_filing(
-        db_session, filer.id, accession="a2", period=date(2025, 12, 31)
-    )
+    await _mk_filing(db_session, filer.id, accession="a1", period=date(2024, 12, 31))
+    await _mk_filing(db_session, filer.id, accession="a2", period=date(2025, 12, 31))
 
     repo = F13FilingRepo(db_session)
     latest = await repo.get_latest_for_filer(filer.id)
@@ -446,7 +435,9 @@ async def test_filing_repo_exists_idempotency(
     filer = await _mk_filer(db_session, cik="0002000005")
     repo = F13FilingRepo(db_session)
     await _mk_filing(
-        db_session, filer.id, accession="exists-acc",
+        db_session,
+        filer.id,
+        accession="exists-acc",
     )
 
     assert await repo.exists(filer.id, "exists-acc") is True
@@ -498,9 +489,7 @@ async def test_holding_repo_bulk_insert_and_list(
     assert len(rows) == 2
     assert {r.cusip for r in rows} == {"037833100", "67066G104"}
     # Empty list does not raise and returns 0.
-    assert (
-        await repo.bulk_insert(filing_id=filing.id, holdings=[]) == 0
-    )
+    assert await repo.bulk_insert(filing_id=filing.id, holdings=[]) == 0
 
 
 async def test_holding_repo_list_by_filer_at_period_picks_amendment(
@@ -540,29 +529,33 @@ async def test_holding_repo_list_by_filer_at_period_picks_amendment(
     holding_repo = F13HoldingRepo(db_session)
     await holding_repo.bulk_insert(
         filing_id=original.id,
-        holdings=[{
-            "cusip": "111111111",
-            "name_of_issuer": "OLD ROW",
-            "value_usd": Decimal("100"),
-            "shares": Decimal("1"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("1"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-        }],
+        holdings=[
+            {
+                "cusip": "111111111",
+                "name_of_issuer": "OLD ROW",
+                "value_usd": Decimal("100"),
+                "shares": Decimal("1"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("1"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+            }
+        ],
     )
     await holding_repo.bulk_insert(
         filing_id=amendment.id,
-        holdings=[{
-            "cusip": "222222222",
-            "name_of_issuer": "AMEND ROW",
-            "value_usd": Decimal("200"),
-            "shares": Decimal("2"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("2"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-        }],
+        holdings=[
+            {
+                "cusip": "222222222",
+                "name_of_issuer": "AMEND ROW",
+                "value_usd": Decimal("200"),
+                "shares": Decimal("2"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("2"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+            }
+        ],
     )
     await db_session.commit()
 
@@ -583,41 +576,41 @@ async def test_holding_repo_list_by_stock_returns_join_triples(
     await db_session.commit()
     await db_session.refresh(stock)
 
-    filing1 = await _mk_filing(
-        db_session, f1.id, accession="s-a-1", period=date(2025, 9, 30)
-    )
-    filing2 = await _mk_filing(
-        db_session, f2.id, accession="s-b-1", period=date(2025, 12, 31)
-    )
+    filing1 = await _mk_filing(db_session, f1.id, accession="s-a-1", period=date(2025, 9, 30))
+    filing2 = await _mk_filing(db_session, f2.id, accession="s-b-1", period=date(2025, 12, 31))
 
     repo = F13HoldingRepo(db_session)
     await repo.bulk_insert(
         filing_id=filing1.id,
-        holdings=[{
-            "cusip": "037833100",
-            "name_of_issuer": "APPLE INC",
-            "value_usd": Decimal("1000"),
-            "shares": Decimal("10"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("10"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-            "stock_id": stock.id,
-        }],
+        holdings=[
+            {
+                "cusip": "037833100",
+                "name_of_issuer": "APPLE INC",
+                "value_usd": Decimal("1000"),
+                "shares": Decimal("10"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("10"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+                "stock_id": stock.id,
+            }
+        ],
     )
     await repo.bulk_insert(
         filing_id=filing2.id,
-        holdings=[{
-            "cusip": "037833100",
-            "name_of_issuer": "APPLE INC",
-            "value_usd": Decimal("2000"),
-            "shares": Decimal("20"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("20"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-            "stock_id": stock.id,
-        }],
+        holdings=[
+            {
+                "cusip": "037833100",
+                "name_of_issuer": "APPLE INC",
+                "value_usd": Decimal("2000"),
+                "shares": Decimal("20"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("20"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+                "stock_id": stock.id,
+            }
+        ],
     )
     await db_session.commit()
 
@@ -635,23 +628,23 @@ async def test_holding_repo_list_by_cusip_works_without_stock(
 ) -> None:
     """list_by_cusip fallback path when CUSIP is not yet mapped to a stock."""
     filer = await _mk_filer(db_session, cik="0003000005")
-    filing = await _mk_filing(
-        db_session, filer.id, accession="cusip-1"
-    )
+    filing = await _mk_filing(db_session, filer.id, accession="cusip-1")
     repo = F13HoldingRepo(db_session)
     await repo.bulk_insert(
         filing_id=filing.id,
-        holdings=[{
-            "cusip": "999999999",
-            "name_of_issuer": "UNMAPPED CO",
-            "value_usd": Decimal("500"),
-            "shares": Decimal("5"),
-            "investment_discretion": "SOLE",
-            "voting_authority_sole": Decimal("5"),
-            "voting_authority_shared": Decimal("0"),
-            "voting_authority_none": Decimal("0"),
-            # stock_id intentionally omitted — Phase 1 lazy mapping
-        }],
+        holdings=[
+            {
+                "cusip": "999999999",
+                "name_of_issuer": "UNMAPPED CO",
+                "value_usd": Decimal("500"),
+                "shares": Decimal("5"),
+                "investment_discretion": "SOLE",
+                "voting_authority_sole": Decimal("5"),
+                "voting_authority_shared": Decimal("0"),
+                "voting_authority_none": Decimal("0"),
+                # stock_id intentionally omitted — Phase 1 lazy mapping
+            }
+        ],
     )
     await db_session.commit()
 

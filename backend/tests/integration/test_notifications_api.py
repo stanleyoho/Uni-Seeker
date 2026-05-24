@@ -32,12 +32,15 @@ async def test_create_and_list_rules(app_with_notifications) -> None:
     transport = ASGITransport(app=app_with_notifications)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Create
-        resp = await client.post("/api/v1/notifications/rules", json={
-            "name": "RSI Alert",
-            "rule_type": "indicator_alert",
-            "symbol": "2330.TW",
-            "conditions": [{"indicator": "RSI", "operator": "<", "value": 30}],
-        })
+        resp = await client.post(
+            "/api/v1/notifications/rules",
+            json={
+                "name": "RSI Alert",
+                "rule_type": "indicator_alert",
+                "symbol": "2330.TW",
+                "conditions": [{"indicator": "RSI", "operator": "<", "value": 30}],
+            },
+        )
         assert resp.status_code == 201
         rule_id = resp.json()["id"]
 
@@ -52,9 +55,14 @@ async def test_delete_rule(app_with_notifications) -> None:
     transport = ASGITransport(app=app_with_notifications)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Create
-        resp = await client.post("/api/v1/notifications/rules", json={
-            "name": "Test", "rule_type": "price_alert", "symbol": "AAPL",
-        })
+        resp = await client.post(
+            "/api/v1/notifications/rules",
+            json={
+                "name": "Test",
+                "rule_type": "price_alert",
+                "symbol": "AAPL",
+            },
+        )
         rule_id = resp.json()["id"]
 
         # Delete (soft)

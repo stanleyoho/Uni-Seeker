@@ -97,6 +97,4 @@ class AutoSyncScheduler:
             results = await self._sync.run_all(db, batch_size=100)
             total = sum(r.records_synced for r in results)
             if total > 0:
-                await self._sync._notify(
-                    f"\U0001f504 補同步完成: {total} 筆資料"
-                )
+                await self._sync._notify(f"\U0001f504 補同步完成: {total} 筆資料")

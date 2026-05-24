@@ -22,6 +22,7 @@ Schema shape:
         failed:    [FailedTrade{symbol, market, error_code, message}]
         total_executed_value: Decimal
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -101,9 +102,7 @@ class SuggestedTradeResponse(BaseModel):
     estimated_value: Decimal
     rationale: str
 
-    @field_serializer(
-        "qty", "estimated_price", "estimated_value", when_used="json"
-    )
+    @field_serializer("qty", "estimated_price", "estimated_value", when_used="json")
     def _serialize_decimal(self, value: Decimal) -> str:
         return str(value)
 
@@ -127,9 +126,7 @@ class RebalanceResponse(BaseModel):
     skipped_trades: list[dict[str, Any]]
     cash_residual: Decimal
 
-    @field_serializer(
-        "total_portfolio_value", "cash_residual", when_used="json"
-    )
+    @field_serializer("total_portfolio_value", "cash_residual", when_used="json")
     def _serialize_decimal(self, value: Decimal) -> str:
         return str(value)
 

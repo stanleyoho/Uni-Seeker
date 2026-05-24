@@ -4,6 +4,7 @@ Service layer returns `PositionWithPnL` (dataclass with `UnrealizedPnL`
 / `DailyChange` nested). The endpoint flattens those into the wire
 shape spec §5.4 promised the frontend.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

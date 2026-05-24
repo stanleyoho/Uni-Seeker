@@ -51,9 +51,7 @@ async def test_billing_status_unauthenticated(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_billing_status_authenticated(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_billing_status_authenticated(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _create_user(db_session, email="status@example.com", tier=UserTier.BASIC)
     token = create_access_token(user.id, user.email)
 

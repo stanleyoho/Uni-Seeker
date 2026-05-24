@@ -32,9 +32,7 @@ async def get_metrics(
     result = await db.execute(stmt)
     records = list(result.scalars().all())
     if not records:
-        raise HTTPException(
-            status_code=404, detail=f"No financial metrics for '{symbol}'"
-        )
+        raise HTTPException(status_code=404, detail=f"No financial metrics for '{symbol}'")
 
     return [
         {

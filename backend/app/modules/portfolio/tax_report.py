@@ -38,6 +38,7 @@ for a replacement buy of the same security, which is out of scope for
 this PR. The column is always False today, kept on the dataclass so
 downstream CSV consumers see the canonical Form 8949 column layout.
 """
+
 from __future__ import annotations
 
 from collections import deque
@@ -74,12 +75,12 @@ class TaxLotMatch:
     quantity: Decimal
     acquisition_date: date
     sale_date: date
-    cost_basis: Decimal          # original BUY price * matched_qty + allocated fee
-    proceeds: Decimal            # SELL price * matched_qty - allocated fee/tax
-    gain_loss: Decimal           # proceeds - cost_basis
+    cost_basis: Decimal  # original BUY price * matched_qty + allocated fee
+    proceeds: Decimal  # SELL price * matched_qty - allocated fee/tax
+    gain_loss: Decimal  # proceeds - cost_basis
     holding_period_days: int
-    term: str                    # "SHORT" or "LONG"
-    is_wash_sale: bool           # True iff wash_sale_detector flagged the row
+    term: str  # "SHORT" or "LONG"
+    is_wash_sale: bool  # True iff wash_sale_detector flagged the row
     # Magnitude (positive Decimal) of loss disallowed under IRS §1091.
     # `compute_matched_pairs` always emits 0 here; the wash-sale post-pass
     # in `wash_sale_detector.apply_wash_sale_adjustments` populates real
@@ -103,9 +104,7 @@ class TaxYearSummary:
     total_matches: int
 
 
-def classify_holding_period(
-    acquisition_date: date, sale_date: date
-) -> tuple[str, int]:
+def classify_holding_period(acquisition_date: date, sale_date: date) -> tuple[str, int]:
     """Return (term, days) where term is "SHORT" or "LONG".
 
     `days = (sale_date - acquisition_date).days`. Same-day sale → 0.
@@ -136,14 +135,10 @@ def _to_decimal(v: Any) -> Decimal:
         return Decimal(v)
     if v is None:
         return Decimal("0")
-    raise TypeError(
-        f"tax_report expects Decimal/int/str numerics, got {type(v).__name__}"
-    )
+    raise TypeError(f"tax_report expects Decimal/int/str numerics, got {type(v).__name__}")
 
 
-def _allocate(
-    total_amount: Decimal, matched_qty: Decimal, base_qty: Decimal
-) -> Decimal:
+def _allocate(total_amount: Decimal, matched_qty: Decimal, base_qty: Decimal) -> Decimal:
     """Allocate `total_amount` proportionally to `matched_qty / base_qty`.
 
     Returns 0 when `base_qty` is 0 (defensive — should never happen
@@ -267,18 +262,12 @@ def compute_matched_pairs(
             )
 
             # Cost basis: gross price portion + allocated fraction of BUY fee.
-            cost_basis = (
-                head["cost_per_unit"] * consume
-                + _allocate(head["total_fee"], consume, head["original_qty"])
+            cost_basis = head["cost_per_unit"] * consume + _allocate(
+                head["total_fee"], consume, head["original_qty"]
             )
             # Proceeds: gross sell portion - allocated fraction of SELL fee+tax.
-            proceeds = (
-                sell_price * consume
-                - _allocate(sell_total_costs, consume, sell_total_qty)
-            )
-            term, days = classify_holding_period(
-                head["acquisition_date"], sale_date
-            )
+            proceeds = sell_price * consume - _allocate(sell_total_costs, consume, sell_total_qty)
+            term, days = classify_holding_period(head["acquisition_date"], sale_date)
             matches.append(
                 TaxLotMatch(
                     symbol=symbol,

@@ -22,6 +22,7 @@ File constraints:
     * Body size: < 1 MiB. Beyond that we 413 — the spec's monthly trade
       cap is 500 and a 1 MiB file is already ~6k rows.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -87,9 +88,7 @@ async def list_brokers(
     process-stable; the frontend caches it on modal open.
     """
     service = CsvImportService(db, user)  # type: ignore[arg-type]
-    return BrokerListResponse(
-        brokers=[BrokerInfo(**b) for b in service.list_brokers()]
-    )
+    return BrokerListResponse(brokers=[BrokerInfo(**b) for b in service.list_brokers()])
 
 
 @router.post(

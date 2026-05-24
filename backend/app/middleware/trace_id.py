@@ -5,6 +5,7 @@ a fresh trace via ``new_trace_id()``. Binds it through ``trace_context``
 so structlog automatically merges it into every log line of the request.
 Outbound: echoes the trace_id back as ``X-Request-Id``.
 """
+
 from __future__ import annotations
 
 from starlette.middleware.base import BaseHTTPMiddleware

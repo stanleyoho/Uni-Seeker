@@ -152,10 +152,7 @@ def compute_composite_scores(
 
     Returns a list of (score, item) tuples sorted descending by score.
     """
-    valid = [
-        it for it in items
-        if it.total_trades >= min_trades and it.win_rate >= min_win_rate
-    ]
+    valid = [it for it in items if it.total_trades >= min_trades and it.win_rate >= min_win_rate]
     if not valid:
         return []
 
@@ -278,9 +275,7 @@ class GridSearchEngine:
         # Buy-and-hold return
         first_close = float(prices[0].close)
         last_close = float(prices[-1].close)
-        buy_hold = (
-            (last_close / first_close - 1) * 100 if first_close > 0 else 0.0
-        )
+        buy_hold = (last_close / first_close - 1) * 100 if first_close > 0 else 0.0
 
         return GridSearchResult(
             total_combos=total,
@@ -326,9 +321,7 @@ class GridSearchEngine:
             try:
                 sub_strategies.append(self._registry.get(key, **kwargs))
             except (KeyError, TypeError) as exc:
-                logger.warning(
-                    "Skipping strategy %s with params %s: %s", key, kwargs, exc
-                )
+                logger.warning("Skipping strategy %s with params %s: %s", key, kwargs, exc)
                 return None
 
         # Wrap in CompositeStrategy (or use single strategy directly)
@@ -413,4 +406,3 @@ class GridSearchEngine:
         param_part = ",".join(param_strs) if param_strs else "default"
 
         return f"{strat_part}({param_part}) [{mode}]"
-

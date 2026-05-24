@@ -16,6 +16,7 @@ Real-format caveat: Fidelity's "View Transactions → Download" form
 varies slightly across account types. Stanley should validate the
 exact header spellings (with vs. without "$" in column names).
 """
+
 from __future__ import annotations
 
 import csv
@@ -62,9 +63,7 @@ class FidelityParser:
             out.append(self._parse_row(idx, raw, header))
         return out
 
-    def _parse_row(
-        self, row_index: int, raw: list[str], header: list[str]
-    ) -> ParsedRow:
+    def _parse_row(self, row_index: int, raw: list[str], header: list[str]) -> ParsedRow:
         def col(name: str) -> str:
             # Fidelity sometimes ships with or without the "($)" suffix.
             for candidate in (name, f"{name} ($)", f"{name}($)"):

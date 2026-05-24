@@ -25,9 +25,7 @@ class KDIndicator:
             if window_high == window_low:
                 raw_k[i] = 50.0
             else:
-                raw_k[i] = round(
-                    (closes[i] - window_low) / (window_high - window_low) * 100, 4
-                )
+                raw_k[i] = round((closes[i] - window_low) / (window_high - window_low) * 100, 4)
 
         valid_raw = [(i, v) for i, v in enumerate(raw_k) if v is not None]
         for j in range(k_smooth - 1, len(valid_raw)):

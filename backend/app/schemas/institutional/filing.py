@@ -4,6 +4,7 @@ Spec §5 + §7.2 (diff contract). Decimal-as-string serialisation per
 CLAUDE.md is wired via `field_serializer(..., when_used="json")` on
 every numeric field that can carry value.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

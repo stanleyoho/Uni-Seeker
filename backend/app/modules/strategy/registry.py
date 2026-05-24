@@ -27,10 +27,12 @@ class StrategyRegistry:
         for key, cls in self._strategies.items():
             instance = cls(**self._defaults[key])
             config: StrategyConfig = instance.config
-            result.append({
-                "key": key,
-                "name": config.name,
-                "description": config.description,
-                "params": config.params,
-            })
+            result.append(
+                {
+                    "key": key,
+                    "name": config.name,
+                    "description": config.description,
+                    "params": config.params,
+                }
+            )
         return result

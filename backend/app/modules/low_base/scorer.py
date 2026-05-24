@@ -13,6 +13,7 @@ from app.modules.low_base.indicators import (
 @dataclass
 class LowBaseScore:
     """Composite low-base score for a stock."""
+
     symbol: str
     name: str
     total_score: float  # 0-100
@@ -117,9 +118,14 @@ def calculate_low_base_score(
     # === Disqualification checks ===
     if eps is not None and eps <= 0:
         return LowBaseScore(
-            symbol=symbol, name=name, total_score=0,
-            valuation_score=0, price_position_score=0, quality_score=0,
-            disqualified=True, disqualify_reason="Negative EPS (虧損股排除)",
+            symbol=symbol,
+            name=name,
+            total_score=0,
+            valuation_score=0,
+            price_position_score=0,
+            quality_score=0,
+            disqualified=True,
+            disqualify_reason="Negative EPS (虧損股排除)",
         )
 
     # === 1. Valuation Score (40%) ===
@@ -191,7 +197,9 @@ def calculate_low_base_score(
             price_components.append(_score_linear(drop_pct, -25.0, 0.0))
         details["drop_from_high_240d"] = round(drop_pct, 2)
 
-    price_position_score = sum(price_components) / len(price_components) if price_components else 50.0
+    price_position_score = (
+        sum(price_components) / len(price_components) if price_components else 50.0
+    )
 
     # === 3. Quality Score (30%) ===
     quality_components: list[float] = []
@@ -224,12 +232,13 @@ def calculate_low_base_score(
             quality_components.append(_score_linear(peg.peg, 0.5, 2.0))
             details["peg"] = peg.peg
 
-    quality_score = sum(quality_components) / len(quality_components) if quality_components else 50.0
+    quality_score = (
+        sum(quality_components) / len(quality_components) if quality_components else 50.0
+    )
 
     # === 4. Institutional + Technical Score (optional, 15% in enhanced mode) ===
     has_institutional = any(
-        v is not None
-        for v in (foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d)
+        v is not None for v in (foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d)
     )
     enhanced = has_institutional or technical_score is not None
 
@@ -238,7 +247,9 @@ def calculate_low_base_score(
         # Institutional flow component
         if has_institutional:
             flow_score = _calculate_institutional_flow_score(
-                foreign_net_buy_5d, trust_net_buy_5d, dealer_net_buy_5d,
+                foreign_net_buy_5d,
+                trust_net_buy_5d,
+                dealer_net_buy_5d,
             )
             details["institutional_flow_score"] = flow_score
             details["foreign_net_buy_5d"] = foreign_net_buy_5d

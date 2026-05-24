@@ -23,6 +23,7 @@ Public surface:
                               integration. Start on enter / shutdown on
                               exit / replaces existing jobs on each enter.
 """
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

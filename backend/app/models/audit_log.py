@@ -1,4 +1,5 @@
 """AuditLog ORM model (skeleton; Plan 7 will extend the call-site internals)."""
+
 from __future__ import annotations
 
 import uuid

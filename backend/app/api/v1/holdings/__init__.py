@@ -16,6 +16,7 @@ exceptions from `app.services.portfolio.*` into HTTP status codes
 defined in `app.api.v1.holdings._detail` (single source of truth for
 the `detail=` strings the frontend asserts on).
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.holdings.accounts import router as accounts_router

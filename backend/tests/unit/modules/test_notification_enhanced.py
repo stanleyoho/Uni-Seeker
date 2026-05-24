@@ -16,9 +16,7 @@ def test_notification_condition_schema() -> None:
 def test_notification_condition_with_params() -> None:
     from app.schemas.notification import NotificationCondition
 
-    c = NotificationCondition(
-        indicator="RSI", operator="<", value=30, params={"period": 14}
-    )
+    c = NotificationCondition(indicator="RSI", operator="<", value=30, params={"period": 14})
     assert c.params == {"period": 14}
 
 

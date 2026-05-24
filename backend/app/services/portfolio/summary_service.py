@@ -13,6 +13,7 @@ Phase 4+ — multi-currency:
   the service when more than one currency is present so API callers don't
   need to pre-flight check.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -76,13 +77,9 @@ class PortfolioSummaryService:
 
     async def get_account_summary(self, account_id: int) -> PortfolioSummary:
         """KPI row for one account. Verifies ownership."""
-        account = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
         positions = await self._position_repo.list_by_account(account_id)
         return await self._summarize(positions)
 
@@ -117,9 +114,7 @@ class PortfolioSummaryService:
         if not positions:
             return self._empty_multi(base)
 
-        open_positions = [
-            p for p in positions if (p.quantity or _ZERO) > _ZERO
-        ]
+        open_positions = [p for p in positions if (p.quantity or _ZERO) > _ZERO]
         if not open_positions:
             return self._empty_multi(base)
 
@@ -151,9 +146,7 @@ class PortfolioSummaryService:
 
         # Multi-currency path — need FX.
         if self._fx is None:
-            raise RuntimeError(
-                "FxService is required for multi-currency summary"
-            )
+            raise RuntimeError("FxService is required for multi-currency summary")
 
         # Per-bucket native summary.
         native: dict[str, PortfolioSummary] = {}
@@ -185,9 +178,7 @@ class PortfolioSummaryService:
             total_daily += daily_b
 
         gain_simple = total_value - total_cost
-        gain_simple_pct = (
-            gain_simple / total_cost if total_cost != _ZERO else _ZERO
-        )
+        gain_simple_pct = gain_simple / total_cost if total_cost != _ZERO else _ZERO
         merged = PortfolioSummary(
             total_cost=total_cost,
             total_value=total_value,
@@ -217,9 +208,7 @@ class PortfolioSummaryService:
             rates_used={},
         )
 
-    async def _summarize(
-        self, positions: list[PortfolioPosition]
-    ) -> PortfolioSummary:
+    async def _summarize(self, positions: list[PortfolioPosition]) -> PortfolioSummary:
         """Project (qty, avg_cost, last_price, prev_close) per position
         and delegate to the domain summarize().
 
@@ -237,9 +226,7 @@ class PortfolioSummaryService:
         # Filter open before fetching to avoid wasting a quote on closed
         # rows. We do not drop the symbol entirely (other open positions
         # may share it across accounts).
-        open_positions = [
-            p for p in positions if (p.quantity or Decimal("0")) > Decimal("0")
-        ]
+        open_positions = [p for p in positions if (p.quantity or Decimal("0")) > Decimal("0")]
         if not open_positions:
             return summarize([])
 

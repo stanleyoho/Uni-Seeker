@@ -24,6 +24,7 @@ Design notes
   re-raised (callers must decide; we don't silently drop because that
   would skew aggregate KPIs).
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta

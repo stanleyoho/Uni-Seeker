@@ -1,4 +1,5 @@
 """Plan 5 T7 — /api/v1/alpha/nba/predictions/today (Pro tier only)."""
+
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -90,9 +91,7 @@ async def test_unauthenticated_gets_4xx(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_response_schema_has_required_fields(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_response_schema_has_required_fields(client: AsyncClient, db_session: AsyncSession):
     user = await _make_user(db_session, UserTier.PRO, uid=3)
     token = create_access_token(user.id, user.email)
     with patch(

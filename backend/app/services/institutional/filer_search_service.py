@@ -15,6 +15,7 @@ contributions are not persisted yet — we don't want to leak a half-
 filled `F13Filer` row to the caller. Subscribing later will create the
 row idempotently via `F13SubscriptionService.subscribe(cik=...)`.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -59,9 +60,7 @@ class F13FilerSearchService:
         self._filer_repo = F13FilerRepo(db)
         self._edgar = edgar_client
 
-    async def search_filers(
-        self, query: str, limit: int = 20
-    ) -> list[dict]:
+    async def search_filers(self, query: str, limit: int = 20) -> list[dict]:
         """Returns a list of `{cik, name, legal_name, is_locally_known}`.
 
         Args:
@@ -98,9 +97,7 @@ class F13FilerSearchService:
 
         # --- EDGAR augmentation (best-effort) ---------------------------
         try:
-            edgar_hits = await self._edgar.search_filers_by_name(
-                query, limit=limit
-            )
+            edgar_hits = await self._edgar.search_filers_by_name(query, limit=limit)
         except EdgarTransientError as exc:
             logger.warning(
                 "f13_filer_search_edgar_unavailable",

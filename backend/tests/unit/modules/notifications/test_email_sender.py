@@ -4,6 +4,7 @@ Boundary contract — given a stubbed ``smtplib.SMTP`` we verify the
 function returns the right boolean, builds the right MIME message,
 and never raises into the caller. No real SMTP connection is made.
 """
+
 from __future__ import annotations
 
 import smtplib
@@ -32,9 +33,7 @@ def _mk_settings(**overrides) -> Settings:
 @pytest.fixture
 def mock_smtp_class():
     """Patch the SMTP class so each test sees a fresh MagicMock."""
-    with patch(
-        "app.modules.notifications.email_sender.smtplib.SMTP"
-    ) as mock_cls:
+    with patch("app.modules.notifications.email_sender.smtplib.SMTP") as mock_cls:
         instance = MagicMock()
         # Context manager protocol: __enter__ returns the same mock so
         # ``with smtplib.SMTP(...) as smtp: smtp.send_message(...)``
@@ -125,9 +124,7 @@ async def test_send_email_html_alternative_added(mock_smtp_class) -> None:
 async def test_send_email_disabled_when_no_host() -> None:
     """Missing uni_smtp_host → False, no SMTP class instantiated."""
     cfg = _mk_settings(uni_smtp_host=None)
-    with patch(
-        "app.modules.notifications.email_sender.smtplib.SMTP"
-    ) as mock_cls:
+    with patch("app.modules.notifications.email_sender.smtplib.SMTP") as mock_cls:
         ok = await send_email(
             to="user@example.com",
             subject="s",
@@ -141,9 +138,7 @@ async def test_send_email_disabled_when_no_host() -> None:
 async def test_send_email_disabled_when_no_from_addr() -> None:
     """Missing uni_smtp_from_addr → False, no SMTP class instantiated."""
     cfg = _mk_settings(uni_smtp_from_addr=None)
-    with patch(
-        "app.modules.notifications.email_sender.smtplib.SMTP"
-    ) as mock_cls:
+    with patch("app.modules.notifications.email_sender.smtplib.SMTP") as mock_cls:
         ok = await send_email(
             to="user@example.com",
             subject="s",

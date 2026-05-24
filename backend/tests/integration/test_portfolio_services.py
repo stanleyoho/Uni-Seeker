@@ -17,6 +17,7 @@ dict of `{symbol: (last, prev)}`, it returns matching `PriceQuote` objects
 and omits unknown symbols (matches `DailyCloseLivePriceFetcher`'s
 contract for missing data per spec §8 / §12 R8).
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
@@ -74,15 +75,11 @@ class MockLivePriceFetcher:
     do NOT raise, they just don't appear in the result dict).
     """
 
-    def __init__(
-        self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None
-    ) -> None:
+    def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None) -> None:
         self._quotes = quotes or {}
         self.calls: list[list[str]] = []  # observability for assertions
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         self.calls.append(list(stock_ids))
         result: dict[str, PriceQuote] = {}
         for sid in stock_ids:
@@ -102,9 +99,7 @@ class MockLivePriceFetcher:
 _proto_check: LivePriceFetcher = MockLivePriceFetcher()  # type: ignore[assignment]
 
 
-async def _count_audit(
-    db_session: AsyncSession, action: str, user_id: int
-) -> int:
+async def _count_audit(db_session: AsyncSession, action: str, user_id: int) -> int:
     from sqlalchemy import func, select
 
     result = await db_session.execute(
@@ -126,17 +121,12 @@ async def test_account_service_create_writes_audit(
     """create_account inserts a row and emits portfolio_account_created."""
     user = await _mk_user(db_session, "as1@x.com", "as1")
     svc = PortfolioAccountService(db_session, user)
-    acc = await svc.create_account(
-        name="Yuanta", market=Market.TW_TWSE, broker="Yuanta"
-    )
+    acc = await svc.create_account(name="Yuanta", market=Market.TW_TWSE, broker="Yuanta")
     await db_session.commit()
 
     assert acc.id is not None
     assert acc.user_id == user.id
-    assert (
-        await _count_audit(db_session, "portfolio_account_created", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "portfolio_account_created", user.id) == 1
 
 
 async def test_account_service_free_quota_enforced(
@@ -149,9 +139,7 @@ async def test_account_service_free_quota_enforced(
     via TierFeatureUnavailable *before* the numeric quota path runs.
     The dedicated feature-flag test covers that case separately.
     """
-    user = await _mk_user(
-        db_session, "as2@x.com", "as2", tier=UserTier.BASIC
-    )
+    user = await _mk_user(db_session, "as2@x.com", "as2", tier=UserTier.BASIC)
     svc = PortfolioAccountService(db_session, user)
 
     with patch("app.services.portfolio.account_service.settings") as s:
@@ -173,13 +161,12 @@ async def test_account_service_multi_account_feature_gates_free(
     """FREE has multi_account=false → 2nd create blocked by feature flag
     BEFORE we reach the numeric quota. We patch the quota to look
     'unlimited' for FREE to isolate the feature-flag path."""
-    user = await _mk_user(
-        db_session, "as3@x.com", "as3", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "as3@x.com", "as3", tier=UserTier.FREE)
     svc = PortfolioAccountService(db_session, user)
 
-    with patch("app.services.portfolio.account_service.settings") as s, patch(
-        "app.services.portfolio.account_service.get_limit", return_value=None
+    with (
+        patch("app.services.portfolio.account_service.settings") as s,
+        patch("app.services.portfolio.account_service.get_limit", return_value=None),
     ):
         s.enable_monetization = True
         await svc.create_account(name="first", market=Market.TW_TWSE)
@@ -236,10 +223,7 @@ async def test_account_service_delete_cascades_trades_and_positions(
     with pytest.raises(PortfolioAccountNotFound):
         await acc_svc.get_account(acc.id)
     # Audit log carries the delete event.
-    assert (
-        await _count_audit(db_session, "portfolio_account_deleted", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "portfolio_account_deleted", user.id) == 1
 
 
 async def test_account_service_update_persists_and_audits(
@@ -250,16 +234,11 @@ async def test_account_service_update_persists_and_audits(
     acc = await svc.create_account(name="old", market=Market.TW_TWSE)
     await db_session.commit()
 
-    updated = await svc.update_account(
-        acc.id, name="new", broker="Fubon"
-    )
+    updated = await svc.update_account(acc.id, name="new", broker="Fubon")
     await db_session.commit()
     assert updated.name == "new"
     assert updated.broker == "Fubon"
-    assert (
-        await _count_audit(db_session, "portfolio_account_updated", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "portfolio_account_updated", user.id) == 1
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -267,9 +246,7 @@ async def test_account_service_update_persists_and_audits(
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-async def _seed_account(
-    db_session: AsyncSession, user: User, name: str = "acc"
-) -> int:
+async def _seed_account(db_session: AsyncSession, user: User, name: str = "acc") -> int:
     svc = PortfolioAccountService(db_session, user)
     acc = await svc.create_account(name=name, market=Market.TW_TWSE)
     await db_session.commit()
@@ -299,9 +276,7 @@ async def test_trade_service_buy_creates_lot_and_position(
 
     assert trade is not None
 
-    pos = await svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos is not None
     assert pos.quantity == Decimal("100")
     # avg_cost = (500 * 100 + 28) / 100 = 500.28
@@ -347,9 +322,7 @@ async def test_trade_service_sell_consumes_fifo_oldest_first(
     )
     await db_session.commit()
 
-    pos = await svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     # Sold 80 from the 500-cost lot → realized = (700-500)*80 = 16000
     assert pos.realized_pnl == Decimal("16000")
     # qty left: 20 (lot[0]) + 50 (lot[1]) = 70
@@ -401,19 +374,31 @@ async def test_trade_service_sell_crosses_multiple_lots(
     svc = PortfolioTradeService(db_session, user)
 
     await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("200"), trade_date=date(2026, 5, 2),
+        account_id=acc_id,
+        action="BUY",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("200"),
+        trade_date=date(2026, 5, 2),
     )
     await svc.record_trade(
-        account_id=acc_id, action="SELL", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("15"),
-        price=Decimal("300"), trade_date=date(2026, 5, 3),
+        account_id=acc_id,
+        action="SELL",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("15"),
+        price=Decimal("300"),
+        trade_date=date(2026, 5, 3),
     )
     await db_session.commit()
 
@@ -426,17 +411,16 @@ async def test_trade_service_monthly_trade_quota_enforced(
     db_session: AsyncSession,
 ) -> None:
     """FREE tier: max_trades_per_month=30 → 31st trade raises."""
-    user = await _mk_user(
-        db_session, "ts5@x.com", "ts5", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "ts5@x.com", "ts5", tier=UserTier.FREE)
     acc_id = await _seed_account(db_session, user)
     svc = PortfolioTradeService(db_session, user)
 
     today = datetime.now(UTC).date()
 
     # Patch monetization on AND patch the counter to fake "30 already used".
-    with patch("app.services.portfolio.trade_service.settings") as s, patch.object(
-        svc._trade_repo, "count_by_user_this_month", return_value=30
+    with (
+        patch("app.services.portfolio.trade_service.settings") as s,
+        patch.object(svc._trade_repo, "count_by_user_this_month", return_value=30),
     ):
         s.enable_monetization = True
         with pytest.raises(TierLimitExceeded) as exc:
@@ -461,25 +445,24 @@ async def test_trade_service_patch_rebuilds_position(
     svc = PortfolioTradeService(db_session, user)
 
     t = await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("100"),
-        price=Decimal("500"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("100"),
+        price=Decimal("500"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
     await svc.update_trade(t.id, price=Decimal("600"))
     await db_session.commit()
 
-    pos = await svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos = await svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     # No fee → avg_cost should match new price exactly.
     assert pos.avg_cost_fifo == Decimal("600")
     assert pos.quantity == Decimal("100")
-    assert (
-        await _count_audit(db_session, "portfolio_trade_updated", user.id)
-        == 1
-    )
+    assert await _count_audit(db_session, "portfolio_trade_updated", user.id) == 1
 
 
 async def test_trade_service_delete_rebuilds(
@@ -492,25 +475,35 @@ async def test_trade_service_delete_rebuilds(
     svc = PortfolioTradeService(db_session, user)
 
     b1 = await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     b2 = await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("200"), trade_date=date(2026, 5, 2),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("200"),
+        trade_date=date(2026, 5, 2),
     )
     await svc.record_trade(
-        account_id=acc_id, action="SELL", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("5"),
-        price=Decimal("300"), trade_date=date(2026, 5, 3),
+        account_id=acc_id,
+        action="SELL",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("5"),
+        price=Decimal("300"),
+        trade_date=date(2026, 5, 3),
     )
     await db_session.commit()
     # Sanity: pre-delete realized = (300-100)*5 = 1000 (FIFO consumes b1 only)
-    pos_before = await svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos_before = await svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos_before.realized_pnl == Decimal("1000")
 
     # Now delete b1 (the 100-cost BUY). The SELL must re-FIFO against b2:
@@ -518,9 +511,7 @@ async def test_trade_service_delete_rebuilds(
     await svc.delete_trade(b1.id)
     await db_session.commit()
 
-    pos_after = await svc._position_repo.get(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    pos_after = await svc._position_repo.get(acc_id, "2330", market=Market.TW_TWSE)
     assert pos_after.realized_pnl == Decimal("500")
     # Remaining qty: only b2 contributed; 10 - 5 sold = 5.
     assert pos_after.quantity == Decimal("5")
@@ -533,21 +524,27 @@ async def test_trade_service_realized_pnl_computed_for_free_tier(
     """Per task brief: even FREE tier (which has realized_pnl=false in
     features) must have realized_pnl COMPUTED at the service layer.
     Hiding the field is the API layer's job, not the service's."""
-    user = await _mk_user(
-        db_session, "ts8@x.com", "ts8", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "ts8@x.com", "ts8", tier=UserTier.FREE)
     acc_id = await _seed_account(db_session, user)
     svc = PortfolioTradeService(db_session, user)
 
     await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await svc.record_trade(
-        account_id=acc_id, action="SELL", symbol="X",
-        market=Market.TW_TWSE, qty=Decimal("5"),
-        price=Decimal("150"), trade_date=date(2026, 5, 2),
+        account_id=acc_id,
+        action="SELL",
+        symbol="X",
+        market=Market.TW_TWSE,
+        qty=Decimal("5"),
+        price=Decimal("150"),
+        trade_date=date(2026, 5, 2),
     )
     await db_session.commit()
     pos = await svc._position_repo.get(acc_id, "X", market=Market.TW_TWSE)
@@ -565,18 +562,26 @@ async def test_trade_service_cross_user_trade_rejected(
     svc_b = PortfolioTradeService(db_session, b)
 
     t = await svc_a.record_trade(
-        account_id=acc_a, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_a,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
     # B cannot record trade on A's account.
     with pytest.raises(PortfolioAccountNotFound):
         await svc_b.record_trade(
-            account_id=acc_a, action="BUY", symbol="X",
-            market=Market.TW_TWSE, qty=Decimal("1"),
-            price=Decimal("1"), trade_date=date(2026, 5, 2),
+            account_id=acc_a,
+            action="BUY",
+            symbol="X",
+            market=Market.TW_TWSE,
+            qty=Decimal("1"),
+            price=Decimal("1"),
+            trade_date=date(2026, 5, 2),
         )
     # B cannot patch / delete A's trade.
     with pytest.raises(PortfolioTradeNotFound):
@@ -593,9 +598,13 @@ async def test_trade_service_audit_log_written(
     svc = PortfolioTradeService(db_session, user)
 
     t = await svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await svc.update_trade(t.id, price=Decimal("110"))
     await svc.delete_trade(t.id)
@@ -619,15 +628,17 @@ async def test_position_service_list_enriches_with_live_price(
     trade_svc = PortfolioTradeService(db_session, user)
 
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("100"),
-        price=Decimal("500"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("100"),
+        price=Decimal("500"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher(
-        {"2330": (Decimal("550"), Decimal("530"))}
-    )
+    fetcher = MockLivePriceFetcher({"2330": (Decimal("550"), Decimal("530"))})
     pos_svc = PortfolioPositionService(db_session, user, fetcher)
     rows = await pos_svc.list_positions()
 
@@ -654,19 +665,19 @@ async def test_position_service_get_single_position(
     acc_id = await _seed_account(db_session, user)
     trade_svc = PortfolioTradeService(db_session, user)
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher(
-        {"2330": (Decimal("120"), Decimal("110"))}
-    )
+    fetcher = MockLivePriceFetcher({"2330": (Decimal("120"), Decimal("110"))})
     pos_svc = PortfolioPositionService(db_session, user, fetcher)
-    row = await pos_svc.get_position(
-        acc_id, "2330", market=Market.TW_TWSE
-    )
+    row = await pos_svc.get_position(acc_id, "2330", market=Market.TW_TWSE)
     assert row.quantity == Decimal("10")
     assert row.last_price == Decimal("120")
 
@@ -692,9 +703,13 @@ async def test_position_service_missing_quote_yields_null_last_price(
     acc_id = await _seed_account(db_session, user)
     trade_svc = PortfolioTradeService(db_session, user)
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="UNKNOWN",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="UNKNOWN",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
@@ -722,21 +737,31 @@ async def test_summary_service_user_summary_aggregates_across_accounts(
     acc2 = await _seed_account(db_session, user, name="a2")
 
     await trade_svc.record_trade(
-        account_id=acc1, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("500"), trade_date=date(2026, 5, 1),
+        account_id=acc1,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("500"),
+        trade_date=date(2026, 5, 1),
     )
     await trade_svc.record_trade(
-        account_id=acc2, action="BUY", symbol="2454",
-        market=Market.TW_TWSE, qty=Decimal("5"),
-        price=Decimal("1000"), trade_date=date(2026, 5, 1),
+        account_id=acc2,
+        action="BUY",
+        symbol="2454",
+        market=Market.TW_TWSE,
+        qty=Decimal("5"),
+        price=Decimal("1000"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher({
-        "2330": (Decimal("600"), Decimal("550")),
-        "2454": (Decimal("1100"), Decimal("1050")),
-    })
+    fetcher = MockLivePriceFetcher(
+        {
+            "2330": (Decimal("600"), Decimal("550")),
+            "2454": (Decimal("1100"), Decimal("1050")),
+        }
+    )
     svc = PortfolioSummaryService(db_session, user, fetcher)
     summary = await svc.get_user_summary()
 
@@ -757,21 +782,31 @@ async def test_summary_service_account_summary_scopes_correctly(
     acc2 = await _seed_account(db_session, user, name="a2")
 
     await trade_svc.record_trade(
-        account_id=acc1, action="BUY", symbol="A",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("100"), trade_date=date(2026, 5, 1),
+        account_id=acc1,
+        action="BUY",
+        symbol="A",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("100"),
+        trade_date=date(2026, 5, 1),
     )
     await trade_svc.record_trade(
-        account_id=acc2, action="BUY", symbol="B",
-        market=Market.TW_TWSE, qty=Decimal("10"),
-        price=Decimal("200"), trade_date=date(2026, 5, 1),
+        account_id=acc2,
+        action="BUY",
+        symbol="B",
+        market=Market.TW_TWSE,
+        qty=Decimal("10"),
+        price=Decimal("200"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher({
-        "A": (Decimal("110"), Decimal("105")),
-        "B": (Decimal("220"), Decimal("210")),
-    })
+    fetcher = MockLivePriceFetcher(
+        {
+            "A": (Decimal("110"), Decimal("105")),
+            "B": (Decimal("220"), Decimal("210")),
+        }
+    )
     svc = PortfolioSummaryService(db_session, user, fetcher)
     s1 = await svc.get_account_summary(acc1)
     s2 = await svc.get_account_summary(acc2)
@@ -801,15 +836,17 @@ async def test_summary_service_single_position_daily_change(
     trade_svc = PortfolioTradeService(db_session, user)
     acc_id = await _seed_account(db_session, user)
     await trade_svc.record_trade(
-        account_id=acc_id, action="BUY", symbol="2330",
-        market=Market.TW_TWSE, qty=Decimal("100"),
-        price=Decimal("500"), trade_date=date(2026, 5, 1),
+        account_id=acc_id,
+        action="BUY",
+        symbol="2330",
+        market=Market.TW_TWSE,
+        qty=Decimal("100"),
+        price=Decimal("500"),
+        trade_date=date(2026, 5, 1),
     )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher(
-        {"2330": (Decimal("520"), Decimal("510"))}
-    )
+    fetcher = MockLivePriceFetcher({"2330": (Decimal("520"), Decimal("510"))})
     svc = PortfolioSummaryService(db_session, user, fetcher)
     summary = await svc.get_user_summary()
     # daily change = (520 - 510) * 100 = 1000
@@ -827,23 +864,25 @@ async def test_summary_service_five_positions_mixed_gain_loss(
     acc_id = await _seed_account(db_session, user)
 
     seed = [
-        ("S1", Decimal("10"), Decimal("100"), Decimal("120")),   # +200
-        ("S2", Decimal("10"), Decimal("100"), Decimal("90")),    # -100
-        ("S3", Decimal("5"),  Decimal("200"), Decimal("250")),   # +250
-        ("S4", Decimal("20"), Decimal("50"),  Decimal("40")),    # -200
-        ("S5", Decimal("1"),  Decimal("1000"), Decimal("1500")), # +500
+        ("S1", Decimal("10"), Decimal("100"), Decimal("120")),  # +200
+        ("S2", Decimal("10"), Decimal("100"), Decimal("90")),  # -100
+        ("S3", Decimal("5"), Decimal("200"), Decimal("250")),  # +250
+        ("S4", Decimal("20"), Decimal("50"), Decimal("40")),  # -200
+        ("S5", Decimal("1"), Decimal("1000"), Decimal("1500")),  # +500
     ]
     for sym, qty, buy_price, _ in seed:
         await trade_svc.record_trade(
-            account_id=acc_id, action="BUY", symbol=sym,
-            market=Market.TW_TWSE, qty=qty,
-            price=buy_price, trade_date=date(2026, 5, 1),
+            account_id=acc_id,
+            action="BUY",
+            symbol=sym,
+            market=Market.TW_TWSE,
+            qty=qty,
+            price=buy_price,
+            trade_date=date(2026, 5, 1),
         )
     await db_session.commit()
 
-    fetcher = MockLivePriceFetcher({
-        sym: (last, last - Decimal("1")) for sym, _, _, last in seed
-    })
+    fetcher = MockLivePriceFetcher({sym: (last, last - Decimal("1")) for sym, _, _, last in seed})
     svc = PortfolioSummaryService(db_session, user, fetcher)
     summary = await svc.get_user_summary()
 

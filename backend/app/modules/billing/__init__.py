@@ -4,6 +4,7 @@ Re-exports the public surface of `tier_limits` so callers can do:
 
     from app.modules.billing import tier_guard, has_feature
 """
+
 from app.modules.billing.tier_limits import (
     TIER_LIMIT_BLOCK_TOTAL,
     AllTierLimits,

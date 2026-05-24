@@ -7,6 +7,7 @@ Re-exports the public symbols (``TRACE_ID`` / ``new_trace_id`` /
 Since 2026-05-24 Stage 2 migration the actual implementation lives in
 ``observability_core.trace``.
 """
+
 from __future__ import annotations
 
 from observability_core.trace import (

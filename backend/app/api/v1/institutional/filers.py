@@ -10,6 +10,7 @@ spec §9:
   1. Dependency-layer `tier_guard(...)` — declarative, fails fast.
   2. Service-layer assertions raise domain exceptions caught here.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -231,13 +232,9 @@ async def bulk_subscribe_filers(
         await db.refresh(filer)
 
     return F13BulkSubscribeResponse(
-        subscribed=[
-            F13FilerResponse.model_validate(f) for f in result["subscribed"]
-        ],
+        subscribed=[F13FilerResponse.model_validate(f) for f in result["subscribed"]],
         skipped_duplicates=list(result["skipped_duplicates"]),
-        errors=[
-            F13BulkSubscribeError(**e) for e in result["errors"]
-        ],
+        errors=[F13BulkSubscribeError(**e) for e in result["errors"]],
     )
 
 
@@ -388,9 +385,7 @@ async def refresh_filer(
     """
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
-        result = await svc.refresh_filer(
-            filer_id=filer_id, max_quarters=max_quarters
-        )
+        result = await svc.refresh_filer(filer_id=filer_id, max_quarters=max_quarters)
     except F13FilerNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -406,9 +401,7 @@ async def refresh_filer(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=detail.F13_EDGAR_ERROR,
             headers=(
-                {"X-Edgar-Status": str(exc.edgar_status)}
-                if exc.edgar_status is not None
-                else None
+                {"X-Edgar-Status": str(exc.edgar_status)} if exc.edgar_status is not None else None
             ),
         ) from exc
     await db.commit()

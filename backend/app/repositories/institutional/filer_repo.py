@@ -11,6 +11,7 @@ accidentally accepted a `user_id` would be a category error.
 
 CRUD only — no business logic, no tier checks (spec §11 R3).
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -57,20 +58,14 @@ class F13FilerRepo:
         return filer
 
     async def get_by_id(self, filer_id: int) -> F13Filer | None:
-        result = await self.db.execute(
-            select(F13Filer).where(F13Filer.id == filer_id)
-        )
+        result = await self.db.execute(select(F13Filer).where(F13Filer.id == filer_id))
         return result.scalar_one_or_none()
 
     async def get_by_cik(self, cik: str) -> F13Filer | None:
-        result = await self.db.execute(
-            select(F13Filer).where(F13Filer.cik == cik)
-        )
+        result = await self.db.execute(select(F13Filer).where(F13Filer.cik == cik))
         return result.scalar_one_or_none()
 
-    async def search_by_name(
-        self, q: str, limit: int = 20
-    ) -> list[F13Filer]:
+    async def search_by_name(self, q: str, limit: int = 20) -> list[F13Filer]:
         """Case-insensitive prefix-and-substring match on `name`.
 
         Phase 1 uses a vanilla `ILIKE %q%` — fast enough at our seed

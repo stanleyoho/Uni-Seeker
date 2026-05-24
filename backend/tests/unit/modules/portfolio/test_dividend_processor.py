@@ -20,6 +20,7 @@ Coverage:
     D11 empty lots returns empty result
     D12 odd-ratio decimal precision (no float coercion)
 """
+
 from __future__ import annotations
 
 from decimal import Decimal, getcontext
@@ -157,9 +158,7 @@ def _lot(
 # D06 — happy path: 1 lot, ratio 0.1
 def test_stock_dividend_happy_path():
     lots = [_lot(1, "100", "100", "50")]
-    res = process_stock_dividend(
-        StockDividendInputs(ratio=Decimal("0.1"), open_lots=lots)
-    )
+    res = process_stock_dividend(StockDividendInputs(ratio=Decimal("0.1"), open_lots=lots))
     assert len(res.updated_lots) == 1
     new_lot = res.updated_lots[0]
     assert new_lot.lot_id == 1
@@ -180,13 +179,9 @@ def test_stock_dividend_happy_path():
         ("1", "200", "75"),  # 1:1 配股
     ],
 )
-def test_stock_dividend_preserves_total_cost_invariant(
-    ratio_str, qty_str, cost_str
-):
+def test_stock_dividend_preserves_total_cost_invariant(ratio_str, qty_str, cost_str):
     lots = [_lot(1, qty_str, qty_str, cost_str)]
-    res = process_stock_dividend(
-        StockDividendInputs(ratio=Decimal(ratio_str), open_lots=lots)
-    )
+    res = process_stock_dividend(StockDividendInputs(ratio=Decimal(ratio_str), open_lots=lots))
     new_lot = res.updated_lots[0]
     old_total = Decimal(qty_str) * Decimal(cost_str)
     new_total = new_lot.remaining_qty * new_lot.cost_per_unit
@@ -201,9 +196,7 @@ def test_stock_dividend_multiple_lots():
         _lot(3, "50", "30", "70"),  # partially consumed
     ]
     ratio = Decimal("0.2")
-    res = process_stock_dividend(
-        StockDividendInputs(ratio=ratio, open_lots=lots)
-    )
+    res = process_stock_dividend(StockDividendInputs(ratio=ratio, open_lots=lots))
     assert len(res.updated_lots) == 3
     # Lot 1
     assert res.updated_lots[0].remaining_qty == Decimal("120.0")
@@ -224,9 +217,7 @@ def test_stock_dividend_ratio_zero_noop():
         _lot(1, "100", "100", "50"),
         _lot(2, "200", "150", "60"),
     ]
-    res = process_stock_dividend(
-        StockDividendInputs(ratio=Decimal("0"), open_lots=lots)
-    )
+    res = process_stock_dividend(StockDividendInputs(ratio=Decimal("0"), open_lots=lots))
     assert len(res.updated_lots) == 2
     for orig, updated in zip(lots, res.updated_lots, strict=True):
         assert updated.lot_id == orig.lot_id
@@ -244,16 +235,12 @@ def test_stock_dividend_ratio_zero_noop():
 def test_stock_dividend_negative_ratio_raises(ratio):
     lots = [_lot(1, "100", "100", "50")]
     with pytest.raises(ValueError, match="non-negative"):
-        process_stock_dividend(
-            StockDividendInputs(ratio=ratio, open_lots=lots)
-        )
+        process_stock_dividend(StockDividendInputs(ratio=ratio, open_lots=lots))
 
 
 # D11 — empty lots returns empty result
 def test_stock_dividend_empty_lots_returns_empty():
-    res = process_stock_dividend(
-        StockDividendInputs(ratio=Decimal("0.1"), open_lots=[])
-    )
+    res = process_stock_dividend(StockDividendInputs(ratio=Decimal("0.1"), open_lots=[]))
     assert res.updated_lots == []
     assert res.total_new_qty_added == Decimal("0")
 
@@ -267,9 +254,7 @@ def test_stock_dividend_decimal_precision_preserved():
         getcontext().prec = 50
         lots = [_lot(1, "300", "300", "99.99")]
         ratio = Decimal("0.0333333333333333333333333333333")
-        res = process_stock_dividend(
-            StockDividendInputs(ratio=ratio, open_lots=lots)
-        )
+        res = process_stock_dividend(StockDividendInputs(ratio=ratio, open_lots=lots))
         new_lot = res.updated_lots[0]
 
         # Invariant: total cost preserved exactly

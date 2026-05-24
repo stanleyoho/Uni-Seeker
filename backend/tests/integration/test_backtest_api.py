@@ -55,11 +55,17 @@ async def app_with_prices():
                 c = 100.0 - i * 0.5
             else:
                 c = 85.0 + (i - 30) * 1.0
-            session.add(StockPrice(
-                stock_id=stock.id, date=d,
-                open=Decimal(str(c - 1)), high=Decimal(str(c + 2)),
-                low=Decimal(str(c - 2)), close=Decimal(str(c)), volume=10_000_000,
-            ))
+            session.add(
+                StockPrice(
+                    stock_id=stock.id,
+                    date=d,
+                    open=Decimal(str(c - 1)),
+                    high=Decimal(str(c + 2)),
+                    low=Decimal(str(c - 2)),
+                    close=Decimal(str(c)),
+                    volume=10_000_000,
+                )
+            )
         await session.commit()
     yield app, headers
     async with engine.begin() as conn:
@@ -84,12 +90,16 @@ async def test_run_backtest(app_with_prices) -> None:
     app, headers = app_with_prices
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/backtest/run", json={
-            "symbol": "TEST.TW",
-            "strategy": "rsi_oversold",
-            "initial_capital": 1000000,
-            "position_size": 0.3,
-        }, headers=headers)
+        resp = await client.post(
+            "/api/v1/backtest/run",
+            json={
+                "symbol": "TEST.TW",
+                "strategy": "rsi_oversold",
+                "initial_capital": 1000000,
+                "position_size": 0.3,
+            },
+            headers=headers,
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["symbol"] == "TEST.TW"
@@ -102,9 +112,14 @@ async def test_unknown_strategy(app_with_prices) -> None:
     app, headers = app_with_prices
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/backtest/run", json={
-            "symbol": "TEST.TW", "strategy": "nonexistent",
-        }, headers=headers)
+        resp = await client.post(
+            "/api/v1/backtest/run",
+            json={
+                "symbol": "TEST.TW",
+                "strategy": "nonexistent",
+            },
+            headers=headers,
+        )
         assert resp.status_code == 400
 
 
@@ -112,8 +127,13 @@ async def test_insufficient_data(app_with_prices) -> None:
     app, headers = app_with_prices
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/backtest/run", json={
-            "symbol": "NODATA.TW", "strategy": "rsi_oversold",
-        }, headers=headers)
+        resp = await client.post(
+            "/api/v1/backtest/run",
+            json={
+                "symbol": "NODATA.TW",
+                "strategy": "rsi_oversold",
+            },
+            headers=headers,
+        )
         # If stock not found, returns 404
         assert resp.status_code == 404

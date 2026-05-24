@@ -8,6 +8,7 @@ All Decimal-typed response fields are serialized as JSON strings via
 Decimal-as-string contract — the frontend coerces with `Number()` on
 read but never receives float-rounded values.
 """
+
 from app.schemas.institutional.cross_stock import (
     F13InstitutionalHolderForStock,
     F13InstitutionalStockResponse,

@@ -8,6 +8,7 @@ device identity).
 T8 adds ``block_device(...)`` — soft-blocks a UserDevice row and writes
 a ``device_blocked`` audit entry.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -24,6 +25,7 @@ from app.services.audit import log_audit_event
 
 class _RequestLike(Protocol):
     """Minimal protocol so unit tests can pass SimpleNamespace."""
+
     headers: dict[str, str] | object  # FastAPI uses Headers (case-insensitive Mapping)
     client: object
 

@@ -39,6 +39,7 @@ but with a different multiplier shape — see distinction in module header below
 imports. `Lot` is re-exported from `cost_basis`, keeping the split processor
 purely within the domain layer.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -151,13 +152,9 @@ def compute_split_multiplier(
             helper directly with bad ratios fails fast here as well.
     """
     if ratio_from <= _ZERO:
-        raise ValueError(
-            f"ratio_from must be positive, got {ratio_from}"
-        )
+        raise ValueError(f"ratio_from must be positive, got {ratio_from}")
     if ratio_to <= _ZERO:
-        raise ValueError(
-            f"ratio_to must be positive, got {ratio_to}"
-        )
+        raise ValueError(f"ratio_to must be positive, got {ratio_to}")
     return ratio_to / ratio_from
 
 
@@ -175,13 +172,9 @@ def validate_split_inputs(inputs: StockSplitInputs) -> None:
          either direction — it's a degenerate but harmless input.
     """
     if inputs.ratio_from <= _ZERO:
-        raise ValueError(
-            f"ratio_from must be positive, got {inputs.ratio_from}"
-        )
+        raise ValueError(f"ratio_from must be positive, got {inputs.ratio_from}")
     if inputs.ratio_to <= _ZERO:
-        raise ValueError(
-            f"ratio_to must be positive, got {inputs.ratio_to}"
-        )
+        raise ValueError(f"ratio_to must be positive, got {inputs.ratio_to}")
 
     if inputs.fractional_policy not in _VALID_FRACTIONAL_POLICIES:
         raise ValueError(
@@ -198,23 +191,16 @@ def validate_split_inputs(inputs: StockSplitInputs) -> None:
             )
         if inputs.current_market_price < _ZERO:
             raise ValueError(
-                f"current_market_price must be non-negative, got "
-                f"{inputs.current_market_price}"
+                f"current_market_price must be non-negative, got {inputs.current_market_price}"
             )
 
     # Direction cross-check
-    if (
-        inputs.split_type == SplitType.FORWARD
-        and inputs.ratio_to < inputs.ratio_from
-    ):
+    if inputs.split_type == SplitType.FORWARD and inputs.ratio_to < inputs.ratio_from:
         raise ValueError(
             f"FORWARD split requires ratio_to >= ratio_from, got "
             f"{inputs.ratio_to}:{inputs.ratio_from}"
         )
-    if (
-        inputs.split_type == SplitType.REVERSE
-        and inputs.ratio_to > inputs.ratio_from
-    ):
+    if inputs.split_type == SplitType.REVERSE and inputs.ratio_to > inputs.ratio_from:
         raise ValueError(
             f"REVERSE split requires ratio_to <= ratio_from, got "
             f"{inputs.ratio_to}:{inputs.ratio_from}"
@@ -336,9 +322,7 @@ def process_stock_split(inputs: StockSplitInputs) -> StockSplitResult:
     """
     validate_split_inputs(inputs)
 
-    multiplier = compute_split_multiplier(
-        inputs.split_type, inputs.ratio_from, inputs.ratio_to
-    )
+    multiplier = compute_split_multiplier(inputs.split_type, inputs.ratio_from, inputs.ratio_to)
 
     total_old_qty = _ZERO
     total_new_qty = _ZERO

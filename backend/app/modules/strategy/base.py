@@ -5,6 +5,7 @@ from typing import Protocol, runtime_checkable
 @dataclass(frozen=True)
 class Signal:
     """Trading signal."""
+
     action: str  # "BUY", "SELL", "HOLD"
     symbol: str
     reason: str

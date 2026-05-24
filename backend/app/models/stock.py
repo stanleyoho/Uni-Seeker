@@ -26,7 +26,9 @@ class Stock(Base):
     # all listings have a CUSIP (TW listings, some ETF share classes).
     # Lazy-populated by the 13F ingester and stock-master sync jobs.
     cusip: Mapped[str | None] = mapped_column(
-        String(9), default=None, index=True,
+        String(9),
+        default=None,
+        index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()

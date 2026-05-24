@@ -1,4 +1,5 @@
 """SQLAlchemy models for the Trade Journal module."""
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -30,7 +31,7 @@ class TradeAccount(Base):
     # non-default fields first (required by MappedAsDataclass)
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    market: Mapped[str] = mapped_column(String(10), nullable=False)   # TW / US / CRYPTO
+    market: Mapped[str] = mapped_column(String(10), nullable=False)  # TW / US / CRYPTO
     currency: Mapped[str] = mapped_column(String(10), nullable=False)  # TWD / USD / USDT
     # optional / defaulted fields after
     broker: Mapped[str | None] = mapped_column(String(50), default=None)
@@ -70,9 +71,7 @@ class AccountGroupMember(Base):
 
 class Trade(Base):
     __tablename__ = "trades"
-    __table_args__ = (
-        Index("ix_trades_account_symbol", "account_id", "symbol", "market", "date"),
-    )
+    __table_args__ = (Index("ix_trades_account_symbol", "account_id", "symbol", "market", "date"),)
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     account_id: Mapped[int] = mapped_column(
@@ -100,7 +99,11 @@ class TradeLot(Base):
     __table_args__ = (
         Index(
             "ix_trade_lots_fifo",
-            "account_id", "symbol", "market", "is_exhausted", "trade_id",
+            "account_id",
+            "symbol",
+            "market",
+            "is_exhausted",
+            "trade_id",
         ),
     )
 

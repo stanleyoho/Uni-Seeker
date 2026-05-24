@@ -55,7 +55,8 @@ class CompositeStrategy:
             reasons = [s.reason for s in buys]
             avg_strength = sum(s.strength for s in buys) / total
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"[ALL] {' | '.join(reasons)}",
                 strength=avg_strength,
             )
@@ -63,7 +64,8 @@ class CompositeStrategy:
             reasons = [s.reason for s in sells]
             avg_strength = sum(s.strength for s in sells) / total
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"[ALL] {' | '.join(reasons)}",
                 strength=avg_strength,
             )
@@ -80,14 +82,16 @@ class CompositeStrategy:
         if buys:
             strongest = max(buys, key=lambda s: s.strength)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"[ANY] {strongest.reason}",
                 strength=strongest.strength,
             )
         if sells:
             strongest = max(sells, key=lambda s: s.strength)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"[ANY] {strongest.reason}",
                 strength=strongest.strength,
             )
@@ -105,7 +109,8 @@ class CompositeStrategy:
             reasons = [s.reason for s in buys]
             avg_strength = sum(s.strength for s in buys) / len(buys)
             return Signal(
-                action="BUY", symbol="",
+                action="BUY",
+                symbol="",
                 reason=f"[MAJORITY {len(buys)}/{total}] {' | '.join(reasons)}",
                 strength=avg_strength,
             )
@@ -113,7 +118,8 @@ class CompositeStrategy:
             reasons = [s.reason for s in sells]
             avg_strength = sum(s.strength for s in sells) / len(sells)
             return Signal(
-                action="SELL", symbol="",
+                action="SELL",
+                symbol="",
                 reason=f"[MAJORITY {len(sells)}/{total}] {' | '.join(reasons)}",
                 strength=avg_strength,
             )

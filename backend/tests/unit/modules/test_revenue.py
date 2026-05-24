@@ -7,10 +7,14 @@ def _make_records(revenues: list[float], start_year: int = 2024) -> list[Revenue
     for i, rev in enumerate(revenues):
         q = (i % 4) + 1
         y = start_year + i // 4
-        records.append(RevenueRecord(
-            symbol="TEST", period=f"{y}-Q{q}",
-            period_type="quarterly", revenue=rev,
-        ))
+        records.append(
+            RevenueRecord(
+                symbol="TEST",
+                period=f"{y}-Q{q}",
+                period_type="quarterly",
+                revenue=rev,
+            )
+        )
     return records
 
 
@@ -53,4 +57,5 @@ def test_consecutive_growth() -> None:
 
 def test_revenue_provider_protocol() -> None:
     from app.modules.revenue.yfinance_revenue import YFinanceRevenueProvider
+
     assert isinstance(YFinanceRevenueProvider(), RevenueProvider)

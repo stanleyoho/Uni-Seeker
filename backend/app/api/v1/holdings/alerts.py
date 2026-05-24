@@ -9,6 +9,7 @@ Tier enforcement (双保险, mirrors /accounts):
   2. Service-layer re-check in ``AlertService.create_rule`` — final
      authority even if a future programmer forgets the dependency.
 """
+
 from __future__ import annotations
 
 from typing import Annotated

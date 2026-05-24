@@ -6,6 +6,7 @@ network calls are made; we substitute a transport-level mock so the
 full ``httpx.AsyncClient`` codepath (URL formation, JSON payload,
 status parsing) is exercised end-to-end.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -55,9 +56,7 @@ async def test_send_message_returns_false_on_429_rate_limit() -> None:
         )
 
     async with httpx.AsyncClient(transport=_mock_transport(handler)) as client:
-        ok = await send_telegram_message(
-            "tok", "chat", "hi", client=client
-        )
+        ok = await send_telegram_message("tok", "chat", "hi", client=client)
     assert ok is False
 
 
@@ -70,9 +69,7 @@ async def test_send_message_returns_false_on_invalid_token_401() -> None:
         )
 
     async with httpx.AsyncClient(transport=_mock_transport(handler)) as client:
-        ok = await send_telegram_message(
-            "bad-token", "chat", "hi", client=client
-        )
+        ok = await send_telegram_message("bad-token", "chat", "hi", client=client)
     assert ok is False
 
 
@@ -87,9 +84,7 @@ async def test_send_message_passes_html_parse_mode_by_default() -> None:
         return httpx.Response(200, json={"ok": True})
 
     async with httpx.AsyncClient(transport=_mock_transport(handler)) as client:
-        await send_telegram_message(
-            "tok", "chat", "<b>x</b>", client=client
-        )
+        await send_telegram_message("tok", "chat", "<b>x</b>", client=client)
     assert seen.get("parse_mode") == "HTML"
     assert seen.get("disable_notification") is False
     assert seen.get("chat_id") == "chat"

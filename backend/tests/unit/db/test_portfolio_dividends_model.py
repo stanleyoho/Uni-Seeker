@@ -15,6 +15,7 @@ Mirrors the Phase 1 test pattern (`tests/unit/db/test_portfolio_models.py`):
 shared SQLite-in-memory fixture from `tests/conftest.py`; PRAGMA
 foreign_keys=ON enabled per-test for CHECK / CASCADE honoring.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -41,6 +42,7 @@ def _enable_sqlite_fk():
             cur.close()
         except Exception:
             pass
+
     yield
     event.remove(Engine, "connect", _set_fk)
 
@@ -55,7 +57,10 @@ async def _mk_user(db, email: str = "d@x.tw", username: str = "d") -> User:
 
 
 async def _mk_account(
-    db, user_id: int, name: str = "DivMain", market: Market = Market.TW_TWSE,
+    db,
+    user_id: int,
+    name: str = "DivMain",
+    market: Market = Market.TW_TWSE,
 ) -> PortfolioAccount:
     acc = PortfolioAccount(user_id=user_id, name=name, market=market)
     db.add(acc)
@@ -188,25 +193,22 @@ async def test_cascade_delete_account_removes_dividends(db_session):
         db_session.add(
             PortfolioDividend(
                 **_div_kwargs(
-                    acc.id, ex_dividend_date=date(2026, 6, i + 1),
+                    acc.id,
+                    ex_dividend_date=date(2026, 6, i + 1),
                 ),
             )
         )
     await db_session.commit()
 
     # Sanity: 3 rows exist
-    cnt = await db_session.scalar(
-        select(func.count()).select_from(PortfolioDividend)
-    )
+    cnt = await db_session.scalar(select(func.count()).select_from(PortfolioDividend))
     assert cnt == 3
 
     await db_session.delete(acc)
     await db_session.commit()
     db_session.expire_all()
 
-    cnt = await db_session.scalar(
-        select(func.count()).select_from(PortfolioDividend)
-    )
+    cnt = await db_session.scalar(select(func.count()).select_from(PortfolioDividend))
     assert cnt == 0
 
 

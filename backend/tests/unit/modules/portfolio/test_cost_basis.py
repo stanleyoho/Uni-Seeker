@@ -12,6 +12,7 @@ Coverage:
   C07 average_cost — weighted average across lots
   C08 average_cost — empty / all-exhausted → 0
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

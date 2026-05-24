@@ -17,6 +17,7 @@ Coverage:
     NOT reported in skipped_duplicates (because it wasn't there before
     the call).
 """
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
@@ -68,9 +69,7 @@ def _enable_monetization(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_bulk_add_three_new_symbols(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_bulk_add_three_new_symbols(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "bulk1@x.tw", "bulk1")
     await _make_stock(db_session, "2330.TW", "TSMC")
     await _make_stock(db_session, "2454.TW", "MediaTek")
@@ -111,9 +110,7 @@ async def test_bulk_add_three_new_symbols(
 async def test_bulk_add_hits_free_tier_limit_returns_403(
     _enable_monetization, client: AsyncClient, db_session: AsyncSession
 ):
-    u = await _make_user(
-        db_session, "bulkcap@x.tw", "bulkcap", tier=UserTier.FREE
-    )
+    u = await _make_user(db_session, "bulkcap@x.tw", "bulkcap", tier=UserTier.FREE)
     # Seed 8 existing items → 8 + 3 new = 11 > 10 cap
     for i in range(8):
         s = await _make_stock(db_session, f"EX{i:02d}.TW", f"ex{i}")
@@ -133,9 +130,7 @@ async def test_bulk_add_hits_free_tier_limit_returns_403(
 
     # Quota block is atomic — nothing inserted.
     count = await db_session.scalar(
-        select(func.count())
-        .select_from(WatchlistItem)
-        .where(WatchlistItem.user_id == u.id)
+        select(func.count()).select_from(WatchlistItem).where(WatchlistItem.user_id == u.id)
     )
     assert count == 8
 
@@ -144,16 +139,12 @@ async def test_bulk_add_hits_free_tier_limit_returns_403(
 async def test_pro_tier_no_limit_on_bulk(
     _enable_monetization, client: AsyncClient, db_session: AsyncSession
 ):
-    u = await _make_user(
-        db_session, "bulkpro@x.tw", "bulkpro", tier=UserTier.PRO
-    )
+    u = await _make_user(db_session, "bulkpro@x.tw", "bulkpro", tier=UserTier.PRO)
     syms = [f"PRO{i:02d}.TW" for i in range(15)]
     for s in syms:
         await _make_stock(db_session, s, s)
 
-    r = await client.post(
-        "/api/v1/watchlist/bulk", json={"symbols": syms}, headers=_auth(u)
-    )
+    r = await client.post("/api/v1/watchlist/bulk", json={"symbols": syms}, headers=_auth(u))
     assert r.status_code == 201, r.text
     assert len(r.json()["added"]) == 15
 
@@ -187,9 +178,7 @@ async def test_bulk_add_with_existing_duplicates_reports_skipped(
 
 
 @pytest.mark.asyncio
-async def test_bulk_add_request_level_dedupe(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_bulk_add_request_level_dedupe(client: AsyncClient, db_session: AsyncSession):
     """Same symbol twice in one request: insert once, no `skipped_duplicates`."""
     u = await _make_user(db_session, "rdup@x.tw", "rdup")
     await _make_stock(db_session, "2330.TW", "TSMC")
@@ -228,31 +217,21 @@ async def test_bulk_add_unknown_symbol_reports_per_row_error(
     body = r.json()
     assert len(body["added"]) == 1
     assert body["added"][0]["symbol"] == "2330.TW"
-    assert body["errors"] == [
-        {"symbol": "GHOST.NA", "reason": "stock_not_found"}
-    ]
+    assert body["errors"] == [{"symbol": "GHOST.NA", "reason": "stock_not_found"}]
 
 
 @pytest.mark.asyncio
-async def test_bulk_add_empty_list_returns_422(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_bulk_add_empty_list_returns_422(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "empty@x.tw", "empty")
-    r = await client.post(
-        "/api/v1/watchlist/bulk", json={"symbols": []}, headers=_auth(u)
-    )
+    r = await client.post("/api/v1/watchlist/bulk", json={"symbols": []}, headers=_auth(u))
     assert r.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_bulk_add_over_20_returns_422(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_bulk_add_over_20_returns_422(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "big@x.tw", "big")
     syms = [f"BIG{i:02d}.TW" for i in range(21)]
-    r = await client.post(
-        "/api/v1/watchlist/bulk", json={"symbols": syms}, headers=_auth(u)
-    )
+    r = await client.post("/api/v1/watchlist/bulk", json={"symbols": syms}, headers=_auth(u))
     assert r.status_code == 422
 
 
@@ -285,9 +264,7 @@ async def test_list_watchlist_returns_stock_name_on_join(
 
 
 @pytest.mark.asyncio
-async def test_bulk_add_cross_user_isolation(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_bulk_add_cross_user_isolation(client: AsyncClient, db_session: AsyncSession):
     """u2 bulk-adding a symbol u1 already owns should still succeed for u2."""
     u1 = await _make_user(db_session, "iso1@x.tw", "iso1")
     u2 = await _make_user(db_session, "iso2@x.tw", "iso2")

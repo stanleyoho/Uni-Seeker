@@ -16,6 +16,7 @@ but keeps them in the DB for completeness.
 `stock_id → stocks.id ON DELETE SET NULL` — soft-unlinking a stock must
 not destroy historical 13F records.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -72,16 +73,20 @@ class F13Holding(Base):
     shares: Mapped[Decimal | None] = mapped_column(Numeric(24, 0), default=None)
     put_call: Mapped[str | None] = mapped_column(String(10), default=None)
     investment_discretion: Mapped[str | None] = mapped_column(
-        String(20), default=None,
+        String(20),
+        default=None,
     )
     voting_authority_sole: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 0), default=None,
+        Numeric(24, 0),
+        default=None,
     )
     voting_authority_shared: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 0), default=None,
+        Numeric(24, 0),
+        default=None,
     )
     voting_authority_none: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 0), default=None,
+        Numeric(24, 0),
+        default=None,
     )
     stock_id: Mapped[int | None] = mapped_column(
         BigInteger,
@@ -89,11 +94,14 @@ class F13Holding(Base):
         default=None,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )
 
     filing: Mapped[F13Filing] = relationship(
-        back_populates="holdings", init=False,
+        back_populates="holdings",
+        init=False,
     )
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic

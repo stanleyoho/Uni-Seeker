@@ -15,6 +15,7 @@ transactions page uses the form above, while "Realized Gain/Loss"
 exports look different. Stanley should confirm against the latest
 brokerage download.
 """
+
 from __future__ import annotations
 
 import csv
@@ -72,9 +73,7 @@ class SchwabParser:
             out.append(self._parse_row(idx, raw, header))
         return out
 
-    def _parse_row(
-        self, row_index: int, raw: list[str], header: list[str]
-    ) -> ParsedRow:
+    def _parse_row(self, row_index: int, raw: list[str], header: list[str]) -> ParsedRow:
         def col(name: str) -> str:
             try:
                 i = header.index(name)

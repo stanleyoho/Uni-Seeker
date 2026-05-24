@@ -11,6 +11,7 @@ the whole batch with 403 when over cap) but reports per-symbol issues
 (unknown symbol, etc.) inside the 201 envelope so the caller can show
 them in one pass instead of N round-trips.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

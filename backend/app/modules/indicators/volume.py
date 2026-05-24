@@ -13,9 +13,7 @@ class VolumeIndicator:
             return self._calculate_obv(closes, volumes)
         return self._calculate_vma(volumes, period)
 
-    def _calculate_obv(
-        self, closes: list[float], volumes: list[int]
-    ) -> IndicatorResult:
+    def _calculate_obv(self, closes: list[float], volumes: list[int]) -> IndicatorResult:
         n = len(closes)
         obv: list[int | None] = [None] * n
         if n == 0 or len(volumes) != n:

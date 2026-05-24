@@ -3,6 +3,7 @@
 Spec: docs/superpowers/plans/2026-05-20-portfolio-tracker-design.md §11
       (FX support).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

@@ -23,6 +23,7 @@ EdgarClient is dep-overridden to a no-op stub via the `mock_edgar`
 fixture — this endpoint does not call EDGAR, but the API layer still
 constructs the service with one.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -67,9 +68,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 def _client_app(client: AsyncClient):
@@ -96,9 +95,7 @@ async def _seed_filer(
     """Create a filer + (optionally) subscribe the user. Returns filer_id."""
     filer = await F13FilerRepo(db).create(cik=cik, name=f"Filer {cik[-3:]}")
     if subscribe:
-        await F13UserSubscriptionRepo(db).subscribe(
-            user_id=user.id, filer_id=filer.id
-        )
+        await F13UserSubscriptionRepo(db).subscribe(user_id=user.id, filer_id=filer.id)
     await db.commit()
     return filer.id
 
@@ -125,9 +122,7 @@ async def _insert_filing(
         raw_xml_url="https://example.com/x.xml",
     )
     if holdings:
-        await F13HoldingRepo(db).bulk_insert(
-            filing_id=filing.id, holdings=holdings
-        )
+        await F13HoldingRepo(db).bulk_insert(filing_id=filing.id, holdings=holdings)
     return filing.id
 
 
@@ -431,9 +426,7 @@ async def test_history_cross_user_not_subscribed_404(
     await db_session.commit()
 
     # Flip monetization on so the Pro bypass actually checks the flag.
-    with patch(
-        "app.services.institutional.filing_service.settings"
-    ) as svc_settings:
+    with patch("app.services.institutional.filing_service.settings") as svc_settings:
         svc_settings.enable_monetization = True
         resp = await client.get(
             f"/api/v1/institutional/filers/{filer_id}/holdings/037833100/history",
@@ -459,9 +452,7 @@ async def test_history_pro_user_bypass_subscription(
     )
     await db_session.commit()
 
-    with patch(
-        "app.services.institutional.filing_service.settings"
-    ) as svc_settings:
+    with patch("app.services.institutional.filing_service.settings") as svc_settings:
         svc_settings.enable_monetization = True
         resp = await client.get(
             f"/api/v1/institutional/filers/{filer_id}/holdings/037833100/history",

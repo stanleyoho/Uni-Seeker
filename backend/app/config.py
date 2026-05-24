@@ -42,10 +42,10 @@ class Settings(BaseSettings):
     enable_monetization: bool = False  # UNI_ENABLE_MONETIZATION
 
     # Stripe configuration
-    stripe_secret_key: str = ""        # UNI_STRIPE_SECRET_KEY
-    stripe_webhook_secret: str = ""    # UNI_STRIPE_WEBHOOK_SECRET
-    stripe_price_id_basic: str = ""    # UNI_STRIPE_PRICE_ID_BASIC
-    stripe_price_id_pro: str = ""      # UNI_STRIPE_PRICE_ID_PRO
+    stripe_secret_key: str = ""  # UNI_STRIPE_SECRET_KEY
+    stripe_webhook_secret: str = ""  # UNI_STRIPE_WEBHOOK_SECRET
+    stripe_price_id_basic: str = ""  # UNI_STRIPE_PRICE_ID_BASIC
+    stripe_price_id_pro: str = ""  # UNI_STRIPE_PRICE_ID_PRO
 
     # OpenFIGI — CUSIP → ticker resolution for 13F backfill (Phase 3).
     # None / empty → free tier (25 req/min, 10 mappings/call). Auth → 250
@@ -65,12 +65,12 @@ class Settings(BaseSettings):
     # for a single send path is overkill. SMTP is universal, well
     # understood, and the failure surface (transport + auth + 5xx) is
     # the same shape we already log for Telegram.
-    uni_smtp_host: str | None = None         # e.g. smtp.gmail.com
-    uni_smtp_port: int = 587                 # 587 STARTTLS, 465 SSL, 25 plain
-    uni_smtp_user: str | None = None         # SMTP AUTH username
-    uni_smtp_password: str | None = None     # SMTP AUTH password / app pwd
-    uni_smtp_from_addr: str | None = None    # MAIL FROM (must be set)
-    uni_smtp_use_tls: bool = True            # STARTTLS on submission port
+    uni_smtp_host: str | None = None  # e.g. smtp.gmail.com
+    uni_smtp_port: int = 587  # 587 STARTTLS, 465 SSL, 25 plain
+    uni_smtp_user: str | None = None  # SMTP AUTH username
+    uni_smtp_password: str | None = None  # SMTP AUTH password / app pwd
+    uni_smtp_from_addr: str | None = None  # MAIL FROM (must be set)
+    uni_smtp_use_tls: bool = True  # STARTTLS on submission port
 
     model_config = {"env_prefix": "UNI_", "env_file": ".env"}
 

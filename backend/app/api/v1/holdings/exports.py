@@ -15,6 +15,7 @@ matches the dividend endpoint pattern when only the service-level
 guard fires; saves us the small bit of duplication of also putting the
 declarative guard on every route.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -50,11 +51,7 @@ def _today_iso() -> str:
 def _disposition(prefix: str) -> dict[str, str]:
     """Build the ``Content-Disposition`` header so the browser triggers
     a download with a recognisable filename."""
-    return {
-        "Content-Disposition": (
-            f'attachment; filename="{prefix}-{_today_iso()}.csv"'
-        )
-    }
+    return {"Content-Disposition": (f'attachment; filename="{prefix}-{_today_iso()}.csv"')}
 
 
 def _translate_tier(exc: TierFeatureUnavailable) -> HTTPException:

@@ -64,9 +64,7 @@ class BacktestJobQueue:
     async def update_progress(self, db: AsyncSession, job_id: int, pct: int) -> None:
         """Update the progress percentage for a running job."""
         stmt = (
-            update(BacktestJob)
-            .where(BacktestJob.id == job_id)
-            .values(progress_pct=min(pct, 100))
+            update(BacktestJob).where(BacktestJob.id == job_id).values(progress_pct=min(pct, 100))
         )
         await db.execute(stmt)
         await db.flush()
@@ -126,7 +124,9 @@ class BacktestJobQueue:
         return cancelled
 
     async def get_queue_status(
-        self, db: AsyncSession, user_id: int | None = None,
+        self,
+        db: AsyncSession,
+        user_id: int | None = None,
     ) -> list[BacktestJob]:
         """Return pending and running jobs, optionally filtered by user."""
         stmt = (

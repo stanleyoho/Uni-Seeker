@@ -31,6 +31,7 @@ Output contract
   via ``PriceLookupRepo.latest_two_closes_batch`` and falls back to
   ``avg_cost`` when the symbol has no daily history.
 """
+
 from __future__ import annotations
 
 import csv
@@ -112,9 +113,7 @@ class CsvExportService:
         return str(value)
 
     @staticmethod
-    def _write_rows(
-        header: list[str], rows: list[list[str]]
-    ) -> bytes:
+    def _write_rows(header: list[str], rows: list[list[str]]) -> bytes:
         """Common writer: BOM + header + body, UTF-8 encoded.
 
         Always uses ``csv.writer`` so fields with commas, quotes, or
@@ -201,9 +200,7 @@ class CsvExportService:
             )
         return self._write_rows(_TRADE_HEADER, rows)
 
-    async def export_positions(
-        self, account_id: int | None = None
-    ) -> bytes:
+    async def export_positions(self, account_id: int | None = None) -> bytes:
         """CSV of every position roll-up.
 
         Columns: ``account_name, symbol, market, quantity, avg_cost,
@@ -229,9 +226,9 @@ class CsvExportService:
 
         # Batch the price lookup so we don't issue one query per symbol.
         symbols = sorted({p.symbol for p in positions})
-        price_map = await self._price_lookup_repo.latest_two_closes_batch(
-            symbols
-        ) if symbols else {}
+        price_map = (
+            await self._price_lookup_repo.latest_two_closes_batch(symbols) if symbols else {}
+        )
 
         # Stable ordering for diff-friendly exports.
         positions.sort(key=lambda p: (p.account_id, p.symbol))
@@ -242,9 +239,7 @@ class CsvExportService:
             avg = p.avg_cost_fifo
             total_cost = p.total_cost
             latest_rows = price_map.get(p.symbol, [])
-            last_price = (
-                latest_rows[0].close if latest_rows else None
-            )
+            last_price = latest_rows[0].close if latest_rows else None
             if last_price is not None and qty > Decimal("0"):
                 market_value = last_price * qty
                 avg_for_calc = avg if avg is not None else Decimal("0")
@@ -295,18 +290,12 @@ class CsvExportService:
         else:
             dividends = []
             for aid in name_map:
-                dividends.extend(
-                    await self._collect_dividends_for_account(aid)
-                )
+                dividends.extend(await self._collect_dividends_for_account(aid))
 
         if date_from is not None:
-            dividends = [
-                d for d in dividends if d.ex_dividend_date >= date_from
-            ]
+            dividends = [d for d in dividends if d.ex_dividend_date >= date_from]
         if date_to is not None:
-            dividends = [
-                d for d in dividends if d.ex_dividend_date <= date_to
-            ]
+            dividends = [d for d in dividends if d.ex_dividend_date <= date_to]
         dividends.sort(key=lambda d: (d.ex_dividend_date, d.id))
 
         rows: list[list[str]] = []
@@ -353,15 +342,10 @@ class CsvExportService:
         self._assert_tax_export_feature()
 
         positions = await self._position_repo.list_by_user(self._user.id)
-        open_positions = [
-            p for p in positions
-            if (p.quantity or Decimal("0")) > Decimal("0")
-        ]
+        open_positions = [p for p in positions if (p.quantity or Decimal("0")) > Decimal("0")]
         symbols = sorted({p.symbol for p in open_positions})
         price_map = (
-            await self._price_lookup_repo.latest_two_closes_batch(symbols)
-            if symbols
-            else {}
+            await self._price_lookup_repo.latest_two_closes_batch(symbols) if symbols else {}
         )
 
         rows_for_summarize: list[tuple[Decimal, Decimal, Decimal, Decimal]] = []
@@ -371,9 +355,7 @@ class CsvExportService:
             latest_rows = price_map.get(p.symbol, [])
             if latest_rows:
                 last_price = latest_rows[0].close
-                prev_close = (
-                    latest_rows[1].close if len(latest_rows) > 1 else last_price
-                )
+                prev_close = latest_rows[1].close if len(latest_rows) > 1 else last_price
             else:
                 # No price history — degrade gracefully so the summary
                 # still reflects cost basis without NaN.
@@ -382,17 +364,10 @@ class CsvExportService:
             rows_for_summarize.append((qty, avg, last_price, prev_close))
 
         summary = summarize(rows_for_summarize)
-        position_count = await self._position_repo.count_by_user(
-            self._user.id
-        )
+        position_count = await self._position_repo.count_by_user(self._user.id)
         account_count = await self._account_repo.count_by_user(self._user.id)
 
-        exported_at = (
-            datetime.now(UTC)
-            .replace(tzinfo=None)
-            .isoformat(timespec="seconds")
-            + "Z"
-        )
+        exported_at = datetime.now(UTC).replace(tzinfo=None).isoformat(timespec="seconds") + "Z"
         rows = [
             [
                 self._dec(summary.total_cost),

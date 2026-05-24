@@ -14,6 +14,7 @@ Real-format caveat: Fubon offers multiple export variants (新銀世代 vs.
 e01 vs. legacy ID). Stanley should sample-check a real export — see
 report. We accept the most common 4-col 委託類別 form.
 """
+
 from __future__ import annotations
 
 import csv
@@ -70,9 +71,7 @@ class FubonParser:
             out.append(self._parse_row(idx, raw, header))
         return out
 
-    def _parse_row(
-        self, row_index: int, raw: list[str], header: list[str]
-    ) -> ParsedRow:
+    def _parse_row(self, row_index: int, raw: list[str], header: list[str]) -> ParsedRow:
         def col(name: str) -> str:
             try:
                 i = header.index(name)

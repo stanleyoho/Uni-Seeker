@@ -1,4 +1,5 @@
 """Plan 4.5 T9 — CompliancePurifier response middleware."""
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient

@@ -9,6 +9,7 @@ many users subscribe. The user → filer relationship lives in
 ingestion service after a successful 13F parse. They let the dashboard
 render filer cards without joining `f13_filings` on every render.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -51,17 +52,22 @@ class F13Filer(Base):
     # defaulted / nullable fields after
     legal_name: Mapped[str | None] = mapped_column(String(500), default=None)
     latest_total_value_usd: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 2), default=None,
+        Numeric(24, 2),
+        default=None,
     )
     latest_options_notional_usd: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 2), default=None,
+        Numeric(24, 2),
+        default=None,
     )
     latest_filing_date: Mapped[date | None] = mapped_column(Date, default=None)
     latest_position_count: Mapped[int | None] = mapped_column(
-        Integer, default=None,
+        Integer,
+        default=None,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -83,6 +89,4 @@ class F13Filer(Base):
     )
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
-        return (
-            f"<F13Filer id={self.id} cik={self.cik!r} name={self.name!r}>"
-        )
+        return f"<F13Filer id={self.id} cik={self.cik!r} name={self.name!r}>"

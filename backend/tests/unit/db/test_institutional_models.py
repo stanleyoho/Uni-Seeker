@@ -20,6 +20,7 @@ Uses the shared SQLite-in-memory `db_session` fixture from
 `PRAGMA foreign_keys=ON` — enabled here via the same pattern as the
 portfolio model tests.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime, timezone, UTC
@@ -52,6 +53,7 @@ def _enable_sqlite_fk():
             cur.close()
         except Exception:
             pass
+
     yield
     event.remove(Engine, "connect", _set_fk)
 
@@ -66,7 +68,9 @@ async def _mk_user(db, email: str = "i@x.tw", username: str = "iu") -> User:
 
 
 async def _mk_filer(
-    db, cik: str = "0001067983", name: str = "Berkshire Hathaway",
+    db,
+    cik: str = "0001067983",
+    name: str = "Berkshire Hathaway",
 ) -> F13Filer:
     f = F13Filer(cik=cik, name=name)
     db.add(f)
@@ -122,9 +126,7 @@ async def test_f13_filer_instantiation_no_user_id(db_session):
     # Q2 decision: filer is shared — no user_id column on the table.
     mapper = inspect(F13Filer)
     column_names = {c.key for c in mapper.columns}
-    assert "user_id" not in column_names, (
-        "F13Filer must NOT have user_id — filers are shared (Q2)"
-    )
+    assert "user_id" not in column_names, "F13Filer must NOT have user_id — filers are shared (Q2)"
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -164,21 +166,15 @@ async def test_f13_user_subscription_cascade_delete_user(db_session):
     f = await _mk_filer(db_session)
     db_session.add(F13UserSubscription(user_id=u.id, filer_id=f.id))
     await db_session.commit()
-    pre = await db_session.scalar(
-        select(func.count()).select_from(F13UserSubscription)
-    )
+    pre = await db_session.scalar(select(func.count()).select_from(F13UserSubscription))
     assert pre == 1
     await db_session.delete(u)
     await db_session.commit()
     db_session.expire_all()
-    post = await db_session.scalar(
-        select(func.count()).select_from(F13UserSubscription)
-    )
+    post = await db_session.scalar(select(func.count()).select_from(F13UserSubscription))
     assert post == 0
     # Filer must survive — subscriptions cascade does not touch filers.
-    survived = await db_session.scalar(
-        select(func.count()).select_from(F13Filer)
-    )
+    survived = await db_session.scalar(select(func.count()).select_from(F13Filer))
     assert survived == 1
 
 
@@ -241,20 +237,21 @@ async def test_f13_holding_cascade_delete_filing(db_session):
     f = await _mk_filer(db_session)
     fl = await _mk_filing(db_session, f.id)
     for i in range(3):
-        db_session.add(F13Holding(**_holding_kwargs(
-            fl.id, cusip=f"03783310{i}",
-        )))
+        db_session.add(
+            F13Holding(
+                **_holding_kwargs(
+                    fl.id,
+                    cusip=f"03783310{i}",
+                )
+            )
+        )
     await db_session.commit()
-    pre = await db_session.scalar(
-        select(func.count()).select_from(F13Holding)
-    )
+    pre = await db_session.scalar(select(func.count()).select_from(F13Holding))
     assert pre == 3
     await db_session.delete(fl)
     await db_session.commit()
     db_session.expire_all()
-    post = await db_session.scalar(
-        select(func.count()).select_from(F13Holding)
-    )
+    post = await db_session.scalar(select(func.count()).select_from(F13Holding))
     assert post == 0
 
 
@@ -269,18 +266,34 @@ async def test_f13_holding_put_call_check_constraint(db_session):
     # NULL is OK
     db_session.add(F13Holding(**_holding_kwargs(fl.id, put_call=None)))
     # PUT and CALL are OK
-    db_session.add(F13Holding(**_holding_kwargs(
-        fl.id, cusip="037833101", put_call="PUT",
-    )))
-    db_session.add(F13Holding(**_holding_kwargs(
-        fl.id, cusip="037833102", put_call="CALL",
-    )))
+    db_session.add(
+        F13Holding(
+            **_holding_kwargs(
+                fl.id,
+                cusip="037833101",
+                put_call="PUT",
+            )
+        )
+    )
+    db_session.add(
+        F13Holding(
+            **_holding_kwargs(
+                fl.id,
+                cusip="037833102",
+                put_call="CALL",
+            )
+        )
+    )
     await db_session.commit()
 
     # Anything else is rejected
-    bad = F13Holding(**_holding_kwargs(
-        fl.id, cusip="037833103", put_call="STRADDLE",
-    ))
+    bad = F13Holding(
+        **_holding_kwargs(
+            fl.id,
+            cusip="037833103",
+            put_call="STRADDLE",
+        )
+    )
     db_session.add(bad)
     with pytest.raises(IntegrityError):
         await db_session.commit()
@@ -309,6 +322,7 @@ async def test_f13_holding_unmapped_stock_id_nullable(db_session):
 @pytest.mark.asyncio
 async def test_stocks_cusip_column_added(db_session):
     from app.models.enums import Market
+
     s = Stock(symbol="AAPL", name="Apple Inc.", market=Market.US_NASDAQ)
     s.cusip = "037833100"
     db_session.add(s)
@@ -331,7 +345,9 @@ async def test_relationship_filer_filings(db_session):
     f = await _mk_filer(db_session)
     fl1 = await _mk_filing(db_session, f.id, "0001067983-25-000001")
     fl2 = await _mk_filing(
-        db_session, f.id, "0001067983-25-000002",
+        db_session,
+        f.id,
+        "0001067983-25-000002",
         report_period_end=date(2025, 12, 31),
     )
     await db_session.refresh(f, attribute_names=["filings"])

@@ -26,7 +26,16 @@ logger = structlog.get_logger()
 
 # Execution order: stock_info first (so stocks table is up to date),
 # then the per-stock datasets, and finally industry-level aggregates.
-_TASK_ORDER: list[str] = ["stock_info", "prices", "margin", "per_pbr", "revenue", "financials", "valuation", "industry_aggregates"]
+_TASK_ORDER: list[str] = [
+    "stock_info",
+    "prices",
+    "margin",
+    "per_pbr",
+    "revenue",
+    "financials",
+    "valuation",
+    "industry_aggregates",
+]
 
 
 class SyncScheduler:
@@ -83,9 +92,7 @@ class SyncScheduler:
             result = await task.run(db, self._rate_limiter, batch_size)
         except Exception as exc:
             logger.error("sync_task_exception", task=task_name, error=str(exc))
-            await self._set_global_status(
-                db, task_name, "error", error_message=str(exc)[:500]
-            )
+            await self._set_global_status(db, task_name, "error", error_message=str(exc)[:500])
             return SyncResult(
                 dataset=task_name,
                 stopped_reason="error",
@@ -189,9 +196,7 @@ class SyncScheduler:
 
     async def get_status(self, db: AsyncSession) -> list[dict]:
         """Return the current sync state for every dataset."""
-        q = await db.execute(
-            select(SyncState).where(SyncState.stock_id.is_(None))
-        )
+        q = await db.execute(select(SyncState).where(SyncState.stock_id.is_(None)))
         states = q.scalars().all()
 
         rows: list[dict] = []
@@ -205,9 +210,7 @@ class SyncScheduler:
                     "last_synced_date": (
                         s.last_synced_date.isoformat() if s and s.last_synced_date else None
                     ),
-                    "last_run_at": (
-                        s.last_run_at.isoformat() if s and s.last_run_at else None
-                    ),
+                    "last_run_at": (s.last_run_at.isoformat() if s and s.last_run_at else None),
                     "records_synced": s.records_synced if s else 0,
                     "error_message": s.error_message if s else None,
                 }
@@ -240,11 +243,13 @@ class SyncScheduler:
             row.last_run_at = now
             row.error_message = error_message
         else:
-            db.add(SyncState(
-                dataset=dataset,
-                stock_id=None,
-                status=status,
-                last_run_at=now,
-                error_message=error_message,
-            ))
+            db.add(
+                SyncState(
+                    dataset=dataset,
+                    stock_id=None,
+                    status=status,
+                    last_run_at=now,
+                    error_message=error_message,
+                )
+            )
         await db.commit()

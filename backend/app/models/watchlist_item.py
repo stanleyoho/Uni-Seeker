@@ -3,6 +3,7 @@
 Each row is one (user, stock) watchlist entry. The (user_id, stock_id)
 unique constraint prevents duplicates. Both FKs cascade on parent delete.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,16 +21,10 @@ if TYPE_CHECKING:
 
 class WatchlistItem(Base):
     __tablename__ = "watchlist_items"
-    __table_args__ = (
-        UniqueConstraint("user_id", "stock_id", name="uq_watchlist_user_stock"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "stock_id", name="uq_watchlist_user_stock"),)
 
-    user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE")
-    )
-    stock_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("stocks.id", ondelete="CASCADE")
-    )
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
+    stock_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("stocks.id", ondelete="CASCADE"))
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()

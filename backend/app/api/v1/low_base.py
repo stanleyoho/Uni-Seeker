@@ -151,7 +151,9 @@ async def scan_low_base(
             try:
                 if len(closes) >= 2:
                     signal_result = scanner.scan_stock(
-                        symbol=symbol, name=display_name, closes=closes,
+                        symbol=symbol,
+                        name=display_name,
+                        closes=closes,
                     )
                     extra_kwargs["technical_score"] = _scanner_score_to_100(
                         signal_result.score,
@@ -173,19 +175,21 @@ async def scan_low_base(
         )
 
         if not score.disqualified:
-            scores.append(LowBaseScoreResponse(
-                symbol=score.symbol,
-                name=score.name,
-                total_score=score.total_score,
-                valuation_score=score.valuation_score,
-                price_position_score=score.price_position_score,
-                quality_score=score.quality_score,
-                institutional_technical_score=score.institutional_technical_score,
-                pe_percentile=score.details.get("pe_percentile"),
-                ma240_deviation=score.details.get("ma240_deviation"),
-                peg=score.details.get("peg"),
-                details=score.details,
-            ))
+            scores.append(
+                LowBaseScoreResponse(
+                    symbol=score.symbol,
+                    name=score.name,
+                    total_score=score.total_score,
+                    valuation_score=score.valuation_score,
+                    price_position_score=score.price_position_score,
+                    quality_score=score.quality_score,
+                    institutional_technical_score=score.institutional_technical_score,
+                    pe_percentile=score.details.get("pe_percentile"),
+                    ma240_deviation=score.details.get("ma240_deviation"),
+                    peg=score.details.get("peg"),
+                    details=score.details,
+                )
+            )
 
     # Sort by total_score descending
     scores.sort(key=lambda s: s.total_score, reverse=True)
@@ -211,9 +215,7 @@ async def get_stock_low_base_score(
     stock = await get_stock_or_404(db, symbol)
 
     price_query = (
-        select(StockPrice)
-        .where(StockPrice.stock_id == stock.id)
-        .order_by(StockPrice.date.asc())
+        select(StockPrice).where(StockPrice.stock_id == stock.id).order_by(StockPrice.date.asc())
     )
     result = await db.execute(price_query)
     prices = list(result.scalars().all())
@@ -254,7 +256,9 @@ async def get_stock_low_base_score(
                 extra_kwargs["dealer_net_buy_5d"] = nets["dealer_net"]
         except Exception:
             logger.warning(
-                "Failed to fetch institutional data for %s", symbol, exc_info=True,
+                "Failed to fetch institutional data for %s",
+                symbol,
+                exc_info=True,
             )
 
         # --- Technical signal score ---
@@ -262,22 +266,31 @@ async def get_stock_low_base_score(
             if len(closes) >= 2:
                 scanner = SignalScanner(create_strategy_registry())
                 signal_result = scanner.scan_stock(
-                    symbol=symbol, name=name, closes=closes,
+                    symbol=symbol,
+                    name=name,
+                    closes=closes,
                 )
                 extra_kwargs["technical_score"] = _scanner_score_to_100(
                     signal_result.score,
                 )
         except Exception:
             logger.warning(
-                "Failed to run signal scanner for %s", symbol, exc_info=True,
+                "Failed to run signal scanner for %s",
+                symbol,
+                exc_info=True,
             )
 
     score = calculate_low_base_score(
-        symbol=symbol, name=name, closes=closes, rsi=current_rsi, **extra_kwargs,
+        symbol=symbol,
+        name=name,
+        closes=closes,
+        rsi=current_rsi,
+        **extra_kwargs,
     )
 
     return LowBaseScoreResponse(
-        symbol=score.symbol, name=score.name,
+        symbol=score.symbol,
+        name=score.name,
         total_score=score.total_score,
         valuation_score=score.valuation_score,
         price_position_score=score.price_position_score,

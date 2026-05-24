@@ -82,10 +82,10 @@ _CASHFLOW_CONCEPTS: list[tuple[str, str]] = [
 ]
 
 # Quarterly frame patterns
-_Q_FLOW_RE = re.compile(r"^CY\d{4}Q[1-4]$")       # income / CF quarterly
-_Q_INST_RE = re.compile(r"^CY\d{4}Q[1-4]I$")       # balance sheet quarterly
-_Y_FLOW_RE = re.compile(r"^CY\d{4}$")              # income / CF annual
-_Y_INST_RE = re.compile(r"^CY\d{4}I$")             # balance sheet annual
+_Q_FLOW_RE = re.compile(r"^CY\d{4}Q[1-4]$")  # income / CF quarterly
+_Q_INST_RE = re.compile(r"^CY\d{4}Q[1-4]I$")  # balance sheet quarterly
+_Y_FLOW_RE = re.compile(r"^CY\d{4}$")  # income / CF annual
+_Y_INST_RE = re.compile(r"^CY\d{4}I$")  # balance sheet annual
 
 
 class SECEdgarFinancialProvider:
@@ -211,10 +211,12 @@ class SECEdgarFinancialProvider:
         for date in sorted_dates:
             if not period_data[date]:
                 continue
-            statements.append(FinancialStatement(
-                period=date,
-                period_type=period_type_map.get(date, "quarterly"),
-                data=period_data[date],
-            ))
+            statements.append(
+                FinancialStatement(
+                    period=date,
+                    period_type=period_type_map.get(date, "quarterly"),
+                    data=period_data[date],
+                )
+            )
 
         return statements

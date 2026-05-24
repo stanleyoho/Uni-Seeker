@@ -1,4 +1,5 @@
 """Integration tests for /api/v1/holdings/alerts/* (UNI-ALERT-001)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -19,9 +20,7 @@ class _MockFetcher:
     def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None) -> None:
         self._quotes = quotes or {}
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid in self._quotes:
@@ -35,9 +34,7 @@ class _MockFetcher:
         return out
 
 
-async def _mk_user(
-    db: AsyncSession, email: str, tier: UserTier = UserTier.PRO
-) -> User:
+async def _mk_user(db: AsyncSession, email: str, tier: UserTier = UserTier.PRO) -> User:
     u = User(
         email=email,
         hashed_password="x" * 60,
@@ -51,9 +48,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 def _client_app(client: AsyncClient):
@@ -219,9 +214,7 @@ async def test_delete_alert(
         headers=_auth(user),
     )
     rule_id = create.json()["id"]
-    r = await client.delete(
-        f"/api/v1/holdings/alerts/{rule_id}", headers=_auth(user)
-    )
+    r = await client.delete(f"/api/v1/holdings/alerts/{rule_id}", headers=_auth(user))
     assert r.status_code == 200
     assert r.json() == {"ok": True}
     # Subsequent GET should not list it.
@@ -245,9 +238,7 @@ async def test_evaluate_now_returns_result(
         headers=_auth(user),
     )
     rule_id = create.json()["id"]
-    r = await client.post(
-        f"/api/v1/holdings/alerts/{rule_id}/evaluate", headers=_auth(user)
-    )
+    r = await client.post(f"/api/v1/holdings/alerts/{rule_id}/evaluate", headers=_auth(user))
     assert r.status_code == 200, r.text
     body = r.json()
     # Empty portfolio → value 0 <= 1e9 → triggered.
@@ -259,8 +250,6 @@ async def test_evaluate_unknown_rule_returns_404(
     client: AsyncClient, db_session: AsyncSession, _mock_fetcher: None
 ) -> None:
     user = await _mk_user(db_session, "api8@x.tw")
-    r = await client.post(
-        "/api/v1/holdings/alerts/99999/evaluate", headers=_auth(user)
-    )
+    r = await client.post("/api/v1/holdings/alerts/99999/evaluate", headers=_auth(user))
     assert r.status_code == 404
     assert r.json()["message"] == "alert_rule_not_found"

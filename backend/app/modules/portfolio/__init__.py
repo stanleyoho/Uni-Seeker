@@ -6,6 +6,7 @@ Spec: docs/superpowers/plans/2026-05-20-portfolio-tracker-design.md §5.1.
 no FastAPI imports. The single DB touchpoint is `DailyCloseLivePriceFetcher`,
 hidden behind the `LivePriceFetcher` Protocol.
 """
+
 from __future__ import annotations
 
 from app.modules.portfolio.cost_basis import (

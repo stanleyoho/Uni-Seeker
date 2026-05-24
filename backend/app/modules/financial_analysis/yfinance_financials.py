@@ -49,7 +49,11 @@ class YFinanceFinancialProvider:
                 if pd.notna(val):
                     data[str(idx)] = float(val)
             if data:
-                statements.append(FinancialStatement(
-                    period=period_label, period_type=period_type, data=data,
-                ))
+                statements.append(
+                    FinancialStatement(
+                        period=period_label,
+                        period_type=period_type,
+                        data=data,
+                    )
+                )
         return statements

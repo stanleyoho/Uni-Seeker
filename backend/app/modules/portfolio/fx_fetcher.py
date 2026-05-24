@@ -20,6 +20,7 @@ Symbol contract: callers pass ISO 4217 codes (`"USD"`, `"TWD"`, `"JPY"`,
 `"HKD"`). Anything outside `SUPPORTED` is still attempted (we just construct
 the yfinance pair string) but emits a warning so ops can spot typos.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -127,9 +128,7 @@ class _FxTTLCache:
             return None
         return entry
 
-    def set(
-        self, base: str, quote: str, as_of: date | None, rate: Decimal, dt: datetime
-    ) -> None:
+    def set(self, base: str, quote: str, as_of: date | None, rate: Decimal, dt: datetime) -> None:
         self._cache[self._key(base, quote, as_of)] = _CachedRate(
             rate=rate,
             as_of=dt,
@@ -169,9 +168,7 @@ class YFinanceFxFetcher(FxFetcher):
 
     # ── public API ────────────────────────────────────────────────────────
 
-    async def fetch_rate(
-        self, base: str, quote: str, as_of: date | None = None
-    ) -> Decimal:
+    async def fetch_rate(self, base: str, quote: str, as_of: date | None = None) -> Decimal:
         """Return rate such that `quote_amount = base_amount * rate`.
 
         Raises `FxFetchError` only if both direct and inverse pairs fail.
@@ -187,17 +184,13 @@ class YFinanceFxFetcher(FxFetcher):
             return cached.rate
 
         # Try direct pair.
-        rate, dt = await asyncio.to_thread(
-            self._fetch_one_sync, base, quote, as_of
-        )
+        rate, dt = await asyncio.to_thread(self._fetch_one_sync, base, quote, as_of)
         if rate is not None and dt is not None:
             self._cache.set(base, quote, as_of, rate, dt)
             return rate
 
         # Inverse fallback.
-        inv_rate, inv_dt = await asyncio.to_thread(
-            self._fetch_one_sync, quote, base, as_of
-        )
+        inv_rate, inv_dt = await asyncio.to_thread(self._fetch_one_sync, quote, base, as_of)
         if inv_rate is not None and inv_dt is not None and inv_rate != Decimal("0"):
             reciprocal = Decimal("1") / inv_rate
             self._cache.set(base, quote, as_of, reciprocal, inv_dt)
@@ -210,9 +203,7 @@ class YFinanceFxFetcher(FxFetcher):
             )
             return reciprocal
 
-        raise FxFetchError(
-            f"could not fetch FX rate {base}/{quote} (direct or inverse)"
-        )
+        raise FxFetchError(f"could not fetch FX rate {base}/{quote} (direct or inverse)")
 
     async def fetch_rates_batch(
         self, pairs: list[tuple[str, str]]

@@ -18,6 +18,7 @@ Round 6 changes:
     pre-checked against the *unique post-dedupe* count so callers can't
     sneak past the cap by spamming duplicates.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -52,13 +53,9 @@ BULK_MAX_PER_CALL = 20
 
 
 async def _get_stock_by_symbol(db: AsyncSession, symbol: str) -> Stock:
-    stock = (
-        await db.execute(select(Stock).where(Stock.symbol == symbol))
-    ).scalar_one_or_none()
+    stock = (await db.execute(select(Stock).where(Stock.symbol == symbol))).scalar_one_or_none()
     if stock is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="stock_not_found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="stock_not_found")
     return stock
 
 
@@ -248,10 +245,10 @@ async def bulk_add_to_watchlist(
     stock_map: dict[str, Stock] = {}
     if to_insert_symbols:
         stock_rows = (
-            await db.execute(
-                select(Stock).where(Stock.symbol.in_(to_insert_symbols))
-            )
-        ).scalars().all()
+            (await db.execute(select(Stock).where(Stock.symbol.in_(to_insert_symbols))))
+            .scalars()
+            .all()
+        )
         stock_map = {s.symbol: s for s in stock_rows}
 
     # Symbols requested but not found in stocks table → errors.
@@ -260,9 +257,7 @@ async def bulk_add_to_watchlist(
         if sym in stock_map:
             truly_insertable_symbols.append(sym)
         else:
-            errors.append(
-                WatchlistBulkAddError(symbol=sym, reason="stock_not_found")
-            )
+            errors.append(WatchlistBulkAddError(symbol=sym, reason="stock_not_found"))
 
     # ── Step 5: tier quota pre-check on the BATCH ──────────────────────
     if (
@@ -270,11 +265,14 @@ async def bulk_add_to_watchlist(
         and current_user.tier == UserTier.FREE
         and truly_insertable_symbols
     ):
-        existing = await db.scalar(
-            select(func.count())
-            .select_from(WatchlistItem)
-            .where(WatchlistItem.user_id == current_user.id)
-        ) or 0
+        existing = (
+            await db.scalar(
+                select(func.count())
+                .select_from(WatchlistItem)
+                .where(WatchlistItem.user_id == current_user.id)
+            )
+            or 0
+        )
         projected = existing + len(truly_insertable_symbols)
         if projected > FREE_TIER_LIMIT:
             logger.warning(

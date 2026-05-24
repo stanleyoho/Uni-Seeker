@@ -6,6 +6,7 @@ from app.modules.financial_analysis.base import FinancialData
 @dataclass
 class FinancialRatios:
     """Calculated financial ratios for a stock."""
+
     symbol: str
     period: str
     # Profitability
@@ -54,16 +55,17 @@ def calculate_ratios(data: FinancialData) -> list[FinancialRatios]:
             or bd.get("StockholdersEquity")
             or bd.get("Total Equity Gross Minority Interest")
         )
-        total_liabilities = (
-            bd.get("Total Liabilities Net Minority Interest")
-            or bd.get("TotalLiabilitiesNetMinorityInterest")
+        total_liabilities = bd.get("Total Liabilities Net Minority Interest") or bd.get(
+            "TotalLiabilitiesNetMinorityInterest"
         )
         current_assets = bd.get("Current Assets") or bd.get("CurrentAssets")
         current_liabilities = bd.get("Current Liabilities") or bd.get("CurrentLiabilities")
         inventory = bd.get("Inventory")
         receivables = bd.get("Net Receivables") or bd.get("Receivables")
 
-        gross_profit = (total_revenue - cost_of_revenue) if total_revenue and cost_of_revenue else None
+        gross_profit = (
+            (total_revenue - cost_of_revenue) if total_revenue and cost_of_revenue else None
+        )
 
         ratios = FinancialRatios(
             symbol=data.symbol,

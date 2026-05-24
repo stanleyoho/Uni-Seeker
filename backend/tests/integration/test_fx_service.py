@@ -5,6 +5,7 @@ Spec: docs/superpowers/plans/2026-05-20-portfolio-tracker-design.md §11.
 The mock fetcher records call counts so we can assert that DB cache hits
 short-circuit before reaching it.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -97,9 +98,7 @@ async def test_fx_service_cache_miss_calls_fetcher_and_upserts(
     # Verify row was UPSERT'd.
     from sqlalchemy import select
 
-    stmt = select(FXRate).where(
-        FXRate.from_currency == "USD", FXRate.to_currency == "TWD"
-    )
+    stmt = select(FXRate).where(FXRate.from_currency == "USD", FXRate.to_currency == "TWD")
     rows = (await db_session.execute(stmt)).scalars().all()
     assert len(rows) == 1
     assert rows[0].rate == Decimal("31.0")
@@ -141,9 +140,7 @@ async def test_fx_service_get_rates_for_currencies_batch(
         }
     )
     svc = FxService(db_session, fetcher)
-    rates = await svc.get_rates_for_currencies(
-        currencies={"USD", "JPY", "TWD"}, base="TWD"
-    )
+    rates = await svc.get_rates_for_currencies(currencies={"USD", "JPY", "TWD"}, base="TWD")
     assert rates == {
         "USD": Decimal("31"),
         "JPY": Decimal("0.21"),

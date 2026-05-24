@@ -15,6 +15,7 @@ Tests in this file (Phase 2 additions):
          no trade written
     RA05 missing account_id → 422 account_id_required_for_execute
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -54,25 +55,17 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": (
-            f"Bearer {create_access_token(user.id, user.email)}"
-        )
-    }
+    return {"Authorization": (f"Bearer {create_access_token(user.id, user.email)}")}
 
 
 class _MockLivePriceFetcher:
     """Same in-memory fetcher as test_holdings_api.py — duplicated so this
     file stays standalone (Phase 1 conventions: no test cross-imports)."""
 
-    def __init__(
-        self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None
-    ) -> None:
+    def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None) -> None:
         self._quotes = quotes or {}
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid not in self._quotes:
@@ -100,17 +93,13 @@ def mock_fetcher_factory(client: AsyncClient):
     app = _client_app(client)
 
     def _setup(quotes: dict[str, tuple[Decimal, Decimal]]) -> None:
-        app.dependency_overrides[get_live_price_fetcher] = (
-            lambda: _MockLivePriceFetcher(quotes)
-        )
+        app.dependency_overrides[get_live_price_fetcher] = lambda: _MockLivePriceFetcher(quotes)
 
     yield _setup
     app.dependency_overrides.pop(get_live_price_fetcher, None)
 
 
-async def _create_account(
-    client: AsyncClient, user: User, name: str = "broker"
-) -> int:
+async def _create_account(client: AsyncClient, user: User, name: str = "broker") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": name, "market": "TW_TWSE"},
@@ -223,11 +212,10 @@ async def test_RA02_execute_free_tier_returns_403(
     # No need to seed positions — tier_guard short-circuits.
     mock_fetcher_factory({})
 
-    with patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg, patch(
-        "app.services.portfolio.rebalancing_service.settings"
-    ) as s_svc:
+    with (
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+        patch("app.services.portfolio.rebalancing_service.settings") as s_svc,
+    ):
         s_tg.enable_monetization = True
         s_svc.enable_monetization = True
         r = await client.post(
@@ -268,9 +256,7 @@ async def test_RA03_execute_cross_user_account_returns_404(
     r = await client.post(
         "/api/v1/holdings/rebalance/execute",
         json={
-            "targets": [
-                {"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}
-            ],
+            "targets": [{"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}],
             "account_id": aid_a,
         },
         headers=_auth(b),
@@ -354,16 +340,12 @@ async def test_RA05_execute_without_account_id_returns_422(
     user = await _mk_user(db_session, "rba5@x.tw")
     aid = await _create_account(client, user)
     await _buy(client, user, aid, "2330", qty="100", price="500")
-    mock_fetcher_factory(
-        {"2330": (Decimal("500"), Decimal("500"))}
-    )
+    mock_fetcher_factory({"2330": (Decimal("500"), Decimal("500"))})
 
     r = await client.post(
         "/api/v1/holdings/rebalance/execute",
         json={
-            "targets": [
-                {"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}
-            ],
+            "targets": [{"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}],
             # account_id deliberately omitted
         },
         headers=_auth(user),

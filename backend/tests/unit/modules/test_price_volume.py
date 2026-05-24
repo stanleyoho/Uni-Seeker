@@ -43,9 +43,7 @@ def test_amplitude() -> None:
 
 def test_new_high_low() -> None:
     closes = [float(100 + i) for i in range(25)]  # steadily rising
-    result = PriceVolumeIndicator().calculate(
-        closes, indicator_type="new_high_low", period=20
-    )
+    result = PriceVolumeIndicator().calculate(closes, indicator_type="new_high_low", period=20)
     signals = result.values["new_high_low"]
     # Should be new highs since price is always rising
     assert signals[20] == 1
@@ -53,18 +51,14 @@ def test_new_high_low() -> None:
 
 def test_new_low() -> None:
     closes = [float(100 - i) for i in range(25)]  # steadily falling
-    result = PriceVolumeIndicator().calculate(
-        closes, indicator_type="new_high_low", period=20
-    )
+    result = PriceVolumeIndicator().calculate(closes, indicator_type="new_high_low", period=20)
     signals = result.values["new_high_low"]
     assert signals[20] == -1
 
 
 def test_multi_period_change() -> None:
     closes = [float(100 + i) for i in range(250)]
-    result = PriceVolumeIndicator().calculate(
-        closes, indicator_type="price_change"
-    )
+    result = PriceVolumeIndicator().calculate(closes, indicator_type="price_change")
     assert "change_5d" in result.values
     assert "change_20d" in result.values
     assert "change_60d" in result.values

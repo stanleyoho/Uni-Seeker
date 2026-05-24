@@ -3,6 +3,7 @@
 A user's brokerage account holding a set of trades. One user may own
 many accounts. Cascade deletes everything below it when removed.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -31,9 +32,7 @@ if TYPE_CHECKING:
 
 class PortfolioAccount(Base):
     __tablename__ = "portfolio_accounts"
-    __table_args__ = (
-        Index("ix_portfolio_accounts_user_id", "user_id"),
-    )
+    __table_args__ = (Index("ix_portfolio_accounts_user_id", "user_id"),)
 
     # non-default fields first (MappedAsDataclass)
     id: Mapped[int] = mapped_column(init=False, primary_key=True)

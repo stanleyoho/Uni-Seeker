@@ -81,6 +81,7 @@ class FinMindTWFinancialProvider:
     async def fetch_financials(self, symbol: str) -> FinancialData:
         # Fetch all three statement types concurrently
         import asyncio
+
         income_raw, balance_raw, cashflow_raw = await asyncio.gather(
             self._provider.fetch_income_statement(symbol, _START_DATE),
             self._provider.fetch_balance_sheet(symbol, _START_DATE),
@@ -148,10 +149,12 @@ class FinMindTWFinancialProvider:
         for date in sorted_dates:
             if not period_data[date]:
                 continue
-            statements.append(FinancialStatement(
-                period=date,
-                period_type="quarterly",
-                data=period_data[date],
-            ))
+            statements.append(
+                FinancialStatement(
+                    period=date,
+                    period_type="quarterly",
+                    data=period_data[date],
+                )
+            )
 
         return statements

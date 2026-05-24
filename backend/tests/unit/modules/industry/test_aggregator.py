@@ -19,12 +19,8 @@ async def test_aggregate_industry(db_session: AsyncSession):
     db_session.add(industry)
     await db_session.flush()
 
-    stock1 = Stock(
-        symbol="2330", name="TSMC", market="TWSE", industry_id=industry.id
-    )
-    stock2 = Stock(
-        symbol="2454", name="MediaTek", market="TWSE", industry_id=industry.id
-    )
+    stock1 = Stock(symbol="2330", name="TSMC", market="TWSE", industry_id=industry.id)
+    stock2 = Stock(symbol="2454", name="MediaTek", market="TWSE", industry_id=industry.id)
     db_session.add_all([stock1, stock2])
     await db_session.flush()
 
@@ -97,9 +93,7 @@ async def test_aggregate_industry_updates_existing(db_session: AsyncSession):
     await db_session.flush()
 
     # Pre-existing metric
-    existing = IndustryMetrics(
-        industry_id=industry.id, period="2024-Q1", median_pe=10.0
-    )
+    existing = IndustryMetrics(industry_id=industry.id, period="2024-Q1", median_pe=10.0)
     db_session.add(existing)
     await db_session.flush()
 

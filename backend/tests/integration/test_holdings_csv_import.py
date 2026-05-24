@@ -10,6 +10,7 @@ in `test_holdings_api.py`:
 * Decimal-as-string is enforced on the wire; numeric comparisons go
   through Decimal.
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -53,9 +54,7 @@ def _csv_headers(user: User) -> dict[str, str]:
     return {**_auth(user), "Content-Type": "text/csv"}
 
 
-async def _create_account_via_api(
-    client: AsyncClient, user: User, name: str = "Yuanta"
-) -> int:
+async def _create_account_via_api(client: AsyncClient, user: User, name: str = "Yuanta") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": name, "market": "TW_TWSE", "broker": "Yuanta"},
@@ -77,15 +76,18 @@ async def _trade_count(db: AsyncSession, user_id: int) -> int:
     Trades carry only `account_id`; ownership lives on the parent
     `portfolio_accounts.user_id`, so we JOIN to filter.
     """
-    return await db.scalar(
-        select(func.count())
-        .select_from(PortfolioTrade)
-        .join(
-            PortfolioAccount,
-            PortfolioAccount.id == PortfolioTrade.account_id,
+    return (
+        await db.scalar(
+            select(func.count())
+            .select_from(PortfolioTrade)
+            .join(
+                PortfolioAccount,
+                PortfolioAccount.id == PortfolioTrade.account_id,
+            )
+            .where(PortfolioAccount.user_id == user_id)
         )
-        .where(PortfolioAccount.user_id == user_id)
-    ) or 0
+        or 0
+    )
 
 
 # ── 1. dry_run parses without DB write ─────────────────────────────────────
@@ -125,9 +127,7 @@ async def test_dry_run_parses_without_db_write(
 
 
 @pytest.mark.asyncio
-async def test_commit_writes_all_rows(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_commit_writes_all_rows(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "csv2@x.tw")
     uid = user.id
     aid = await _create_account_via_api(client, user)
@@ -206,9 +206,7 @@ async def test_invalid_quantity_zero_reported(
 
 
 @pytest.mark.asyncio
-async def test_missing_header_returns_422(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_missing_header_returns_422(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "csv5@x.tw")
     aid = await _create_account_via_api(client, user)
     # Wrong header (missing trailing columns) — file is otherwise valid
@@ -227,9 +225,7 @@ async def test_missing_header_returns_422(
 
 
 @pytest.mark.asyncio
-async def test_csv_too_large_returns_413(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_csv_too_large_returns_413(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "csv6@x.tw")
     aid = await _create_account_via_api(client, user)
     header = b"trade_date,action,symbol,market,quantity,price,fee,tax,note\n"
@@ -249,9 +245,7 @@ async def test_csv_too_large_returns_413(
 
 
 @pytest.mark.asyncio
-async def test_account_not_owned_returns_404(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_account_not_owned_returns_404(client: AsyncClient, db_session: AsyncSession) -> None:
     a = await _mk_user(db_session, "csv7a@x.tw")
     b = await _mk_user(db_session, "csv7b@x.tw")
     aid_a = await _create_account_via_api(client, a)
@@ -288,15 +282,14 @@ async def test_tier_quota_exceeded_returns_403(
             "2026-05-03,BUY,2330,TW_TWSE,1,100,0,0,",
         ]
     )
-    with patch(
-        "app.services.portfolio.import_service.settings"
-    ) as s_imp, patch(
-        "app.services.portfolio.trade_service.settings"
-    ) as s_svc, patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg, patch(
-        "app.repositories.portfolio.trade_repo.PortfolioTradeRepo.count_by_user_this_month",
-        return_value=29,
+    with (
+        patch("app.services.portfolio.import_service.settings") as s_imp,
+        patch("app.services.portfolio.trade_service.settings") as s_svc,
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+        patch(
+            "app.repositories.portfolio.trade_repo.PortfolioTradeRepo.count_by_user_this_month",
+            return_value=29,
+        ),
     ):
         s_imp.enable_monetization = True
         s_svc.enable_monetization = True
@@ -352,18 +345,13 @@ async def test_dry_run_does_not_consume_quota(
     user = await _mk_user(db_session, "csv10@x.tw", tier=UserTier.FREE)
     uid = user.id
     aid = await _create_account_via_api(client, user)
-    rows = [
-        f"2026-05-{(i % 28) + 1:02d},BUY,2330,TW_TWSE,1,100,0,0,"
-        for i in range(30)
-    ]
+    rows = [f"2026-05-{(i % 28) + 1:02d},BUY,2330,TW_TWSE,1,100,0,0," for i in range(30)]
     body = _csv(rows)
-    with patch(
-        "app.services.portfolio.import_service.settings"
-    ) as s_imp, patch(
-        "app.services.portfolio.trade_service.settings"
-    ) as s_svc, patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg:
+    with (
+        patch("app.services.portfolio.import_service.settings") as s_imp,
+        patch("app.services.portfolio.trade_service.settings") as s_svc,
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+    ):
         s_imp.enable_monetization = True
         s_svc.enable_monetization = True
         s_tg.enable_monetization = True

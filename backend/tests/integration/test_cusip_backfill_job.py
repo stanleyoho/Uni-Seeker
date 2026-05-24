@@ -10,6 +10,7 @@ Phase 2 / UNI-F13-002. Covers:
       F13Holding mappings
   C06 skip already-mapped F13Holding rows (stock_id IS NULL filter)
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -112,12 +113,8 @@ async def test_C01_backfill_for_filer_happy_path(
     db_session: AsyncSession,
 ) -> None:
     # AAPL gets EXACT, MSFT gets NAME_LIKE, UNK gets NONE.
-    await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100"
-    )
-    await _mk_stock(
-        db_session, symbol="MSFT", name="Microsoft Corp", cusip=None
-    )
+    await _mk_stock(db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100")
+    await _mk_stock(db_session, symbol="MSFT", name="Microsoft Corp", cusip=None)
 
     filer = await _mk_filer(db_session, cik="0009990001")
     filing = await _mk_filing(db_session, filer.id, accession="c01")
@@ -147,9 +144,7 @@ async def test_C01_backfill_for_filer_happy_path(
 
 @pytest.mark.asyncio
 async def test_C02_idempotent_rerun(db_session: AsyncSession) -> None:
-    await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100"
-    )
+    await _mk_stock(db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100")
     filer = await _mk_filer(db_session, cik="0009990002")
     filing = await _mk_filing(db_session, filer.id, accession="c02")
     await F13HoldingRepo(db_session).bulk_insert(
@@ -201,10 +196,10 @@ async def test_C03_still_unmapped_when_no_candidate(
 
     # Holdings retain stock_id = NULL.
     rows = (
-        await db_session.execute(
-            select(F13Holding).where(F13Holding.filing_id == filing.id)
-        )
-    ).scalars().all()
+        (await db_session.execute(select(F13Holding).where(F13Holding.filing_id == filing.id)))
+        .scalars()
+        .all()
+    )
     assert all(r.stock_id is None for r in rows)
 
 
@@ -222,7 +217,10 @@ async def test_C04_exact_supersedes_namelike_after_backfill(
     # CUSIP. After populating stocks.cusip, the upgrade path should
     # repoint the holding to the CUSIP-confirmed stock.
     apple_namelike = await _mk_stock(
-        db_session, symbol="AAPL.OLD", name="Apple Inc.", cusip=None,
+        db_session,
+        symbol="AAPL.OLD",
+        name="Apple Inc.",
+        cusip=None,
     )
     filer = await _mk_filer(db_session, cik="0009990004")
     filing = await _mk_filing(db_session, filer.id, accession="c04")
@@ -237,9 +235,7 @@ async def test_C04_exact_supersedes_namelike_after_backfill(
     assert r1["fuzzy_matches"] == 1
 
     holding = (
-        await db_session.execute(
-            select(F13Holding).where(F13Holding.filing_id == filing.id)
-        )
+        await db_session.execute(select(F13Holding).where(F13Holding.filing_id == filing.id))
     ).scalar_one()
     assert holding.stock_id == apple_namelike.id
 
@@ -247,7 +243,9 @@ async def test_C04_exact_supersedes_namelike_after_backfill(
     # imported by a master sync). The next backfill should swap the
     # holding's stock_id to the CUSIP-confirmed one.
     apple_real = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc. (NASDAQ)",
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc. (NASDAQ)",
         cusip="037833100",
     )
     r2 = await backfill_cusips_for_filer(db_session, filer.id)
@@ -270,7 +268,10 @@ async def test_C05_backfill_stocks_from_filings_populates_cusip(
     # AAPL stock has NO cusip; holding fuzzy-matches it. After backfill,
     # backfill_stocks_from_filings copies the holding's CUSIP onto AAPL.
     aapl = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip=None,
+        db_session,
+        symbol="AAPL",
+        name="Apple Inc.",
+        cusip=None,
     )
     filer = await _mk_filer(db_session, cik="0009990005")
     filing = await _mk_filing(db_session, filer.id, accession="c05")
@@ -300,15 +301,14 @@ async def test_C05_backfill_stocks_from_filings_populates_cusip(
 async def test_C06_skip_already_mapped(db_session: AsyncSession) -> None:
     # Pre-mapped holding (set stock_id at insert) → backfill must not
     # double-process.
-    aapl = await _mk_stock(
-        db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100"
-    )
+    aapl = await _mk_stock(db_session, symbol="AAPL", name="Apple Inc.", cusip="037833100")
     filer = await _mk_filer(db_session, cik="0009990006")
     filing = await _mk_filing(db_session, filer.id, accession="c06")
     payload = _holding_payload("037833100", "APPLE INC")
     payload["stock_id"] = aapl.id  # already mapped at insert time
     await F13HoldingRepo(db_session).bulk_insert(
-        filing_id=filing.id, holdings=[payload],
+        filing_id=filing.id,
+        holdings=[payload],
     )
     # Also insert an unmapped row that backfill *should* process.
     await F13HoldingRepo(db_session).bulk_insert(

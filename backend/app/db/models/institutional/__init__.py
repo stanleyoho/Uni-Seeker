@@ -10,6 +10,7 @@ Importing this package registers all 4 tables on `Base.metadata` so
 Alembic autogenerate / `create_all` discover them. The umbrella
 `app/models/__init__.py` re-imports this package for the same reason.
 """
+
 from app.db.models.institutional.filer import F13Filer
 from app.db.models.institutional.filing import F13Filing
 from app.db.models.institutional.holding import F13Holding

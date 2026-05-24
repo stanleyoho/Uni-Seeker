@@ -52,9 +52,7 @@ async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict:
     stored = 0
     for rec in records:
         # Look up stock_id from symbol
-        stock_result = await db.execute(
-            select(Stock).where(Stock.symbol == rec.symbol)
-        )
+        stock_result = await db.execute(select(Stock).where(Stock.symbol == rec.symbol))
         stock = stock_result.scalar_one_or_none()
         if not stock:
             continue  # Skip if stock not in stocks table

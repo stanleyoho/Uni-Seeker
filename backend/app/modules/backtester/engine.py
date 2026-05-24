@@ -9,18 +9,18 @@ from app.modules.strategy.base import Strategy
 
 MIN_DATA_POINTS = 20
 DEFAULT_INITIAL_CAPITAL = 1_000_000
-DEFAULT_FEE_RATE = 0.001425       # Taiwan stock broker fee (0.1425%)
-DEFAULT_TAX_RATE = 0.003          # Taiwan stock transaction tax, sell side (0.3%)
-DEFAULT_POSITION_SIZE = 0.1       # Fraction of cash per trade (10%)
+DEFAULT_FEE_RATE = 0.001425  # Taiwan stock broker fee (0.1425%)
+DEFAULT_TAX_RATE = 0.003  # Taiwan stock transaction tax, sell side (0.3%)
+DEFAULT_POSITION_SIZE = 0.1  # Fraction of cash per trade (10%)
 
 
 @dataclass
 class BacktestConfig:
     initial_capital: float = DEFAULT_INITIAL_CAPITAL
-    fee_rate: float = DEFAULT_FEE_RATE       # 台股手續費 0.1425%
-    tax_rate: float = DEFAULT_TAX_RATE       # 台股交易稅 0.3% (賣出)
+    fee_rate: float = DEFAULT_FEE_RATE  # 台股手續費 0.1425%
+    tax_rate: float = DEFAULT_TAX_RATE  # 台股交易稅 0.3% (賣出)
     position_size: float = DEFAULT_POSITION_SIZE  # 每次投入資金比例 (10%)
-    stop_loss: float | None = None    # percentage, e.g. 10.0 = sell if -10%
+    stop_loss: float | None = None  # percentage, e.g. 10.0 = sell if -10%
     take_profit: float | None = None  # percentage, e.g. 30.0 = sell if +30%
 
 
@@ -76,29 +76,26 @@ class BacktestEngine:
             forced_sell = False
             if symbol in portfolio.positions and buy_price > 0:
                 pnl_pct = (close - buy_price) / buy_price * 100
-                if (
-                    self._config.stop_loss is not None
-                    and pnl_pct <= -abs(self._config.stop_loss)
-                ):
+                if self._config.stop_loss is not None and pnl_pct <= -abs(self._config.stop_loss):
                     forced_sell = True
                     sell_reason = (
-                        f"STOP_LOSS ({pnl_pct:.1f}% <= "
-                        f"-{abs(self._config.stop_loss):.1f}%)"
+                        f"STOP_LOSS ({pnl_pct:.1f}% <= -{abs(self._config.stop_loss):.1f}%)"
                     )
-                elif (
-                    self._config.take_profit is not None
-                    and pnl_pct >= abs(self._config.take_profit)
+                elif self._config.take_profit is not None and pnl_pct >= abs(
+                    self._config.take_profit
                 ):
                     forced_sell = True
                     sell_reason = (
-                        f"TAKE_PROFIT ({pnl_pct:.1f}% >= "
-                        f"+{abs(self._config.take_profit):.1f}%)"
+                        f"TAKE_PROFIT ({pnl_pct:.1f}% >= +{abs(self._config.take_profit):.1f}%)"
                     )
 
             if forced_sell:
                 shares = portfolio.positions[symbol]
                 portfolio.sell(
-                    symbol, close, shares, date_str,
+                    symbol,
+                    close,
+                    shares,
+                    date_str,
                     fee_rate=self._config.fee_rate,
                     tax_rate=self._config.tax_rate,
                     reason=sell_reason,
@@ -124,7 +121,10 @@ class BacktestEngine:
                 shares = int(invest_amount / close)
                 if shares > 0:
                     portfolio.buy(
-                        symbol, close, shares, date_str,
+                        symbol,
+                        close,
+                        shares,
+                        date_str,
                         fee_rate=self._config.fee_rate,
                         reason=signal.reason,
                     )
@@ -133,7 +133,10 @@ class BacktestEngine:
             elif signal.action == "SELL" and symbol in portfolio.positions:
                 shares = portfolio.positions[symbol]
                 portfolio.sell(
-                    symbol, close, shares, date_str,
+                    symbol,
+                    close,
+                    shares,
+                    date_str,
                     fee_rate=self._config.fee_rate,
                     tax_rate=self._config.tax_rate,
                     reason=signal.reason,
@@ -148,8 +151,13 @@ class BacktestEngine:
             portfolio=portfolio,
             equity_curve=portfolio.equity_curve,
             trade_log=[
-                {"action": t.action, "date": t.date, "price": t.price,
-                 "shares": t.shares, "reason": t.reason}
+                {
+                    "action": t.action,
+                    "date": t.date,
+                    "price": t.price,
+                    "shares": t.shares,
+                    "reason": t.reason,
+                }
                 for t in portfolio.trades
             ],
         )

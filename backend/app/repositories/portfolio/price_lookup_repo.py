@@ -11,6 +11,7 @@ Symbol resolution: `stock_prices.stock_id` is an INTEGER FK to
 internally so callers can pass symbols directly — they should not
 need to know about the integer id surface.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -49,9 +50,7 @@ class PriceLookupRepo:
         )
         return list(result.scalars().all())
 
-    async def latest_two_closes_batch(
-        self, symbols: list[str]
-    ) -> dict[str, list[StockPrice]]:
+    async def latest_two_closes_batch(self, symbols: list[str]) -> dict[str, list[StockPrice]]:
         """Same as `latest_two_closes` but for many symbols at once —
         used by the portfolio summary endpoint to avoid N+1 queries.
 

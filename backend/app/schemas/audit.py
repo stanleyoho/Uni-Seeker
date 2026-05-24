@@ -8,6 +8,7 @@ Naming reconciliation:
     ``AuditLogEntry.from_orm_row`` so the only place that knows about
     the legacy column names is this file.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

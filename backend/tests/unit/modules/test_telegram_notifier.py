@@ -16,7 +16,9 @@ async def test_send_message() -> None:
         notifier = TelegramNotifier(bot_token="fake", chat_id="123")
         await notifier.send("Hello World")
         mock_bot.send_message.assert_awaited_once_with(
-            chat_id="123", text="Hello World", parse_mode="HTML",
+            chat_id="123",
+            text="Hello World",
+            parse_mode="HTML",
         )
 
 
@@ -27,5 +29,7 @@ async def test_send_with_custom_parse_mode() -> None:
         notifier = TelegramNotifier(bot_token="fake", chat_id="123")
         await notifier.send("**bold**", parse_mode="Markdown")
         mock_bot.send_message.assert_awaited_once_with(
-            chat_id="123", text="**bold**", parse_mode="Markdown",
+            chat_id="123",
+            text="**bold**",
+            parse_mode="Markdown",
         )

@@ -70,8 +70,10 @@ async def test_log_audit_event_flush_not_commit(db_session):
 async def test_audit_emits_sentry_breadcrumb(db_session, monkeypatch):
     """log_audit_event() should add a Sentry breadcrumb after DB flush."""
     from unittest.mock import patch
+
     with patch("app.services.audit.sentry_sdk.add_breadcrumb") as mock_bc:
         from app.services.audit import log_audit_event
+
         await log_audit_event(
             db_session,
             action="tier_upgrade",
@@ -107,11 +109,13 @@ async def test_audit_breadcrumb_failure_does_not_break_audit(db_session, monkeyp
     from sqlalchemy import func, select
 
     from app.models.audit_log import AuditLog
+
     with patch(
         "app.services.audit.sentry_sdk.add_breadcrumb",
         side_effect=RuntimeError("sentry down"),
     ):
         from app.services.audit import log_audit_event
+
         # Must NOT raise
         log = await log_audit_event(
             db_session,

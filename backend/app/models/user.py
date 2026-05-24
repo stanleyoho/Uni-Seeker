@@ -20,9 +20,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(100), unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    tier: Mapped[UserTier] = mapped_column(
-        UserTierType, default=UserTier.FREE
-    )
+    tier: Mapped[UserTier] = mapped_column(UserTierType, default=UserTier.FREE)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
     )
@@ -32,18 +30,14 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    stripe_customer_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
-    )
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )
     subscription_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
-    risk_tolerance: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, default=None
-    )
+    risk_tolerance: Mapped[str | None] = mapped_column(String(20), nullable=True, default=None)
     kyc_completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
@@ -53,16 +47,12 @@ class User(Base):
     terms_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
-    telegram_chat_id: Mapped[str | None] = mapped_column(
-        String(64), nullable=True, default=None
-    )
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
     # Round 14: Email notification channel opt-in (UNI_USER_003).
     # When True, the dispatcher fans out 13F + alert-rule notifications
     # to ``users.email`` in addition to (or instead of) Telegram. Default
     # False so the migration does not opt existing users in passively.
-    notify_via_email: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false"
-    )
+    notify_via_email: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     devices: Mapped[list["UserDevice"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",

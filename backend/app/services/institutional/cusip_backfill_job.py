@@ -29,6 +29,7 @@ Or programmatically::
 
 Returns a dict with counters; caller commits the outer transaction.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -185,11 +186,7 @@ async def backfill_stocks_from_filings(
 
     updated = 0
     for sid, cusip in seen.items():
-        upd = (
-            update(Stock)
-            .where(Stock.id == sid, Stock.cusip.is_(None))
-            .values(cusip=cusip)
-        )
+        upd = update(Stock).where(Stock.id == sid, Stock.cusip.is_(None)).values(cusip=cusip)
         res = await db.execute(upd)
         if res.rowcount:
             updated += 1
@@ -242,7 +239,10 @@ async def backfill_cusips_for_filer_with_figi(
     )
     rows = (await db.execute(stmt)).all()
     return await _resolve_and_apply_with_figi(
-        db, rows, scope=f"filer_id={filer_id}", figi_client=figi_client,
+        db,
+        rows,
+        scope=f"filer_id={filer_id}",
+        figi_client=figi_client,
     )
 
 
@@ -263,7 +263,10 @@ async def backfill_cusips_global_with_figi(
     )
     rows = (await db.execute(stmt)).all()
     return await _resolve_and_apply_with_figi(
-        db, rows, scope="global", figi_client=figi_client,
+        db,
+        rows,
+        scope="global",
+        figi_client=figi_client,
     )
 
 
@@ -288,9 +291,7 @@ async def _resolve_and_apply(
     (independently of the unmapped scan) so historical NAME_LIKE
     matches get promoted once ``stocks.cusip`` is populated.
     """
-    pairs: list[tuple[str, str | None]] = [
-        (r.cusip, r.name_of_issuer) for r in rows
-    ]
+    pairs: list[tuple[str, str | None]] = [(r.cusip, r.name_of_issuer) for r in rows]
     matches: list[CusipMatch] = await batch_resolve_cusips(db, pairs)
 
     exact_matches = 0
@@ -351,11 +352,11 @@ async def _resolve_and_apply_with_figi(
     confirms an EXACT link") apply regardless of which layer first
     populated ``f13_holdings.stock_id``.
     """
-    pairs: list[tuple[str, str | None]] = [
-        (r.cusip, r.name_of_issuer) for r in rows
-    ]
+    pairs: list[tuple[str, str | None]] = [(r.cusip, r.name_of_issuer) for r in rows]
     matches: list[CusipMatchFigi] = await batch_resolve_cusips_with_figi(
-        db, pairs, figi_client=figi_client,
+        db,
+        pairs,
+        figi_client=figi_client,
     )
 
     exact_matches = 0

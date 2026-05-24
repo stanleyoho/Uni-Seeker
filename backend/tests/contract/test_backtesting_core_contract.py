@@ -23,6 +23,7 @@ NOT pinned here. Each downstream repo pins only what it consumes.
 If upstream drifts (rename a kwarg, reorder a positional, drop a field), this
 test fails fast at CI time rather than at runtime inside the integration test.
 """
+
 from __future__ import annotations
 
 import dataclasses
