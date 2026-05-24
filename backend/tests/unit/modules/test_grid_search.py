@@ -1,10 +1,8 @@
 from app.modules.backtester.grid_search import (
     GridSearchConfig,
-    GridSearchEngine,
     GridSearchResultItem,
     compute_composite_scores,
 )
-from app.modules.strategy import create_default_registry
 
 
 def test_config_total_combinations():

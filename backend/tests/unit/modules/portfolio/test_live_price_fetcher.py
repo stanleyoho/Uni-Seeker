@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
-import pytest
 
 from app.modules.portfolio.live_price_fetcher import (
     DailyCloseLivePriceFetcher,

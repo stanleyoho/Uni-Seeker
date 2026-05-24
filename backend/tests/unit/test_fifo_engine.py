@@ -8,7 +8,6 @@ import pytest
 
 from app.modules.trade_journal.fifo_engine import (
     FIFOEngine,
-    FIFOResult,
     InsufficientSharesError,
     Lot,
 )

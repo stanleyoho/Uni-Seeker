@@ -30,7 +30,6 @@ import pytest
 from app.modules.portfolio.live_price_fetcher import (
     CachedDailyCloseLivePriceFetcher,
     CompositeLivePriceFetcher,
-    DailyCloseLivePriceFetcher,
     PriceQuote,
     TTLCacheMixin,
     YFinanceLivePriceFetcher,

@@ -1,7 +1,6 @@
 from datetime import date
 from decimal import Decimal
 
-from app.models.enums import Market
 from app.models.price import StockPrice
 from app.modules.indicators import create_default_registry
 from app.modules.screener.conditions import Condition, ConditionGroup

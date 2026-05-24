@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from app.models.enums import Market
 from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine
 from app.modules.strategy.builtin import RSIOversoldStrategy

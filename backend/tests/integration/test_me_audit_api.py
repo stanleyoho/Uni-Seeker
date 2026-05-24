@@ -18,7 +18,7 @@ without depending on insert-time clock resolution.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from app.auth import create_access_token

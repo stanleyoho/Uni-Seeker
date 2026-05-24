@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy import func, select
 
 from app.models.audit_log import AuditLog
 

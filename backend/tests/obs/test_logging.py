@@ -2,8 +2,6 @@
 
 import io
 import json
-import logging
-import os
 from contextlib import redirect_stdout
 
 import pytest

@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any
 
 import pytest
 
@@ -14,7 +13,6 @@ from app.modules.backtester.portfolio_backtest import (
     PortfolioBacktestConfig,
     PortfolioBacktestEngine,
     PortfolioBacktestResult,
-    PortfolioTradeRecord,
     RebalanceConfig,
 )
 from app.modules.strategy.base import Signal, StrategyConfig
