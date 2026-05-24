@@ -2,8 +2,8 @@ from datetime import date
 from decimal import Decimal
 
 from app.models.enums import Market
-from app.models.stock import Stock
 from app.models.price import StockPrice
+from app.models.stock import Stock
 
 
 def test_market_enum_values() -> None:

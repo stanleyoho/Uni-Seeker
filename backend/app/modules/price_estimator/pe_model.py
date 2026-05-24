@@ -1,10 +1,11 @@
 from decimal import Decimal
+
+import numpy as np
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import numpy as np
 
-from app.models.valuation import StockValuation
 from app.models.financial_metrics import FinancialMetrics
+from app.models.valuation import StockValuation
 from app.modules.price_estimator.base import EstimateResult
 from app.modules.price_estimator.utils import ValuationUtils
 

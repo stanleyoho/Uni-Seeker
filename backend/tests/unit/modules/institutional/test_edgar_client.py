@@ -24,7 +24,6 @@ from app.modules.institutional.edgar_client import (
     EdgarTransientError,
 )
 
-
 # ───────────────────────── fixtures / helpers ─────────────────────────
 
 

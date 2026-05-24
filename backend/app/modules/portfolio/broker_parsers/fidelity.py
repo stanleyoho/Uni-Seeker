@@ -30,7 +30,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ParsedRow,
 )
 
-
 _FIDELITY_MARKERS = ("Run Date,Action", "YOU BOUGHT", "YOU SOLD")
 
 

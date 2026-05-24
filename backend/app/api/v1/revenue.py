@@ -1,8 +1,7 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-import httpx
 
 from app.api.deps import get_db, get_stock_or_404
 from app.models.revenue import MonthlyRevenue

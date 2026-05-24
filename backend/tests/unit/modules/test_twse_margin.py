@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.modules.margin.twse_margin import TWSEMarginProvider, _parse_int
 
-
 SAMPLE = [
     {
         "股票代號": "2330", "股票名稱": "台積電",

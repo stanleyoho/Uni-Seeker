@@ -1,7 +1,9 @@
-from decimal import Decimal
 from datetime import date
-from app.modules.valuation.base import ValuationData
+from decimal import Decimal
+
 from app.modules.screener.industry import IndustryScreener
+from app.modules.valuation.base import ValuationData
+
 
 def _make_valuations() -> list[ValuationData]:
     return [

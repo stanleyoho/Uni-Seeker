@@ -1,6 +1,6 @@
 from app.modules.low_base.indicators import (
-    calculate_pe_percentile,
     calculate_ma_deviation,
+    calculate_pe_percentile,
     calculate_peg,
 )
 

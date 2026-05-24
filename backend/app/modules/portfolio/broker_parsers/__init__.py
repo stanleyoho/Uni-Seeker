@@ -34,7 +34,6 @@ from app.modules.portfolio.broker_parsers.interactive_brokers import (
 from app.modules.portfolio.broker_parsers.schwab import SchwabParser
 from app.modules.portfolio.broker_parsers.yuanta import YuantaParser
 
-
 # Auto-detect order. The first parser whose `can_handle()` returns True
 # wins. Broker-specific adapters come first so a real broker export is
 # never silently misread as generic. `generic` is always last so it

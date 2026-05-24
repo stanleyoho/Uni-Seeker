@@ -1,12 +1,14 @@
-import pytest
 from datetime import date
 from decimal import Decimal
+
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.stock import Stock
-from app.models.price_estimate import PriceEstimate
 from app.models.enums import Market
+from app.models.price_estimate import PriceEstimate
+from app.models.stock import Stock
+
 
 @pytest.mark.asyncio
 async def test_get_valuation_estimates_success(

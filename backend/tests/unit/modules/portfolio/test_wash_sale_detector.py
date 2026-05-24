@@ -40,7 +40,6 @@ from app.modules.portfolio.wash_sale_detector import (
     detect_wash_sales,
 )
 
-
 # ── builders (mirror test_tax_report._buy / _sell + trade-log row) ────
 
 

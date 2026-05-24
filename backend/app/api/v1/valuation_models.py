@@ -8,7 +8,7 @@ from app.api.deps import get_db, get_stock_or_404
 from app.middleware.tier_guard import require_tier
 from app.models.enums import UserTier
 from app.models.price_estimate import PriceEstimate
-from app.schemas.valuation import ValuationEstimatesResponse, PriceEstimateBase
+from app.schemas.valuation import PriceEstimateBase, ValuationEstimatesResponse
 
 router = APIRouter(
     prefix="/valuation",

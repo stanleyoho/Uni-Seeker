@@ -4,8 +4,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 from app.modules.trade_journal.rebalance import (
-    AllocationRuleData,
     AlertData,
+    AllocationRuleData,
     PositionData,
     compute_account_alerts,
 )

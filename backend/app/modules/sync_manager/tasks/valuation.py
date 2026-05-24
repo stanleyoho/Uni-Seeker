@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.stock import Stock
 from app.modules.price_estimator.composite import CompositeEstimator
-from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 from app.modules.sync_manager.rate_limiter import RateLimiter
+from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 
 logger = structlog.get_logger()
 

@@ -1,5 +1,5 @@
-from app.modules.revenue.base import RevenueRecord, RevenueProvider
 from app.modules.revenue.analyzer import analyze_revenue
+from app.modules.revenue.base import RevenueProvider, RevenueRecord
 
 
 def _make_records(revenues: list[float], start_year: int = 2024) -> list[RevenueRecord]:

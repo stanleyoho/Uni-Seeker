@@ -24,7 +24,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
 
-
 # Mirror the migration CHECK strings so the ORM-side validation stays
 # in lockstep with the DB. Keep them as plain tuples — the service /
 # repo layers import them for input validation.

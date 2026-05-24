@@ -7,12 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.modules.financial_analysis.sec_edgar_provider import SECEdgarFinancialProvider
-from app.modules.financial_analysis.finmind_tw_provider import FinMindTWFinancialProvider
-from app.modules.financial_analysis.tw_db_reader import read_tw_financials
 from app.modules.financial_analysis.earnings_calendar import EarningsCalendarService
+from app.modules.financial_analysis.finmind_tw_provider import FinMindTWFinancialProvider
 from app.modules.financial_analysis.ratios import calculate_ratios
 from app.modules.financial_analysis.scorer import calculate_health_score
+from app.modules.financial_analysis.sec_edgar_provider import SECEdgarFinancialProvider
+from app.modules.financial_analysis.tw_db_reader import read_tw_financials
 from app.schemas.financial import (
     FinancialDataResponse,
     FinancialRatiosResponse,

@@ -103,7 +103,9 @@ async def test_audit_emits_sentry_breadcrumb(db_session, monkeypatch):
 async def test_audit_breadcrumb_failure_does_not_break_audit(db_session, monkeypatch):
     """If add_breadcrumb raises, log_audit_event() must still complete + return."""
     from unittest.mock import patch
-    from sqlalchemy import select, func
+
+    from sqlalchemy import func, select
+
     from app.models.audit_log import AuditLog
     with patch(
         "app.services.audit.sentry_sdk.add_breadcrumb",

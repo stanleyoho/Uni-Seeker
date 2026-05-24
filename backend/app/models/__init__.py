@@ -1,7 +1,30 @@
+# User-defined Alert Rules (UNI-ALERT-001) — same registration pattern.
+from app.db.models.alerts import AlertRule  # noqa: E402, F401
+
+# 13F Holdings Tracker (UNI-F13-001) — ORM lives under
+# app/db/models/institutional/ per design doc §6.5. Same registration
+# pattern as portfolio above.
+from app.db.models.institutional import (  # noqa: E402, F401
+    F13Filer,
+    F13Filing,
+    F13Holding,
+    F13UserSubscription,
+)
+
+# Portfolio Tracker (UNI-PORT-001) — ORM lives under app/db/models/portfolio/
+# per design doc §5.5. Import here so the tables register on Base.metadata
+# and Alembic autogenerate / create_all see them.
+from app.db.models.portfolio import (  # noqa: E402, F401
+    PortfolioAccount,
+    PortfolioDividend,
+    PortfolioLot,
+    PortfolioPosition,
+    PortfolioTrade,
+)
 from app.models.audit_log import AuditLog
-from app.models.base import Base
 from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
+from app.models.base import Base
 from app.models.enums import Market, NotificationStatus, UserTier
 from app.models.financial_metrics import FinancialMetrics
 from app.models.financial_statement import FinancialStatement
@@ -32,30 +55,6 @@ from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.valuation import StockValuation
 from app.models.watchlist_item import WatchlistItem
-
-# Portfolio Tracker (UNI-PORT-001) — ORM lives under app/db/models/portfolio/
-# per design doc §5.5. Import here so the tables register on Base.metadata
-# and Alembic autogenerate / create_all see them.
-from app.db.models.portfolio import (  # noqa: E402, F401
-    PortfolioAccount,
-    PortfolioDividend,
-    PortfolioLot,
-    PortfolioPosition,
-    PortfolioTrade,
-)
-
-# 13F Holdings Tracker (UNI-F13-001) — ORM lives under
-# app/db/models/institutional/ per design doc §6.5. Same registration
-# pattern as portfolio above.
-from app.db.models.institutional import (  # noqa: E402, F401
-    F13Filer,
-    F13Filing,
-    F13Holding,
-    F13UserSubscription,
-)
-
-# User-defined Alert Rules (UNI-ALERT-001) — same registration pattern.
-from app.db.models.alerts import AlertRule  # noqa: E402, F401
 
 __all__ = [
     "AccountGroup",

@@ -16,7 +16,6 @@ from app.modules.portfolio.fx_converter import (
     convert_to_base,
 )
 
-
 # ── convert() ─────────────────────────────────────────────────────────────
 
 

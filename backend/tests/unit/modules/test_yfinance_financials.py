@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, patch
-import pytest
+
 import pandas as pd
+import pytest
+
 from app.modules.financial_analysis.base import FinancialProvider
 from app.modules.financial_analysis.yfinance_financials import YFinanceFinancialProvider
 

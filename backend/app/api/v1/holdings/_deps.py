@@ -43,7 +43,6 @@ from app.modules.portfolio.live_price_fetcher import (
 )
 from app.services.portfolio.fx_service import FxService
 
-
 # Process-singleton fetcher so cache survives across requests.
 _FX_FETCHER: YFinanceFxFetcher | None = None
 

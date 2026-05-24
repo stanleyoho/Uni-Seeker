@@ -42,7 +42,7 @@ purely within the domain layer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from enum import Enum
 
 from app.modules.portfolio.cost_basis import Lot

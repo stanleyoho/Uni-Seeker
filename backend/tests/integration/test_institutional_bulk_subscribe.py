@@ -41,7 +41,6 @@ from app.models.user import User
 from app.modules.institutional.edgar_client import FilerMetadata
 from app.repositories.institutional import F13UserSubscriptionRepo
 
-
 # ── Helpers (mirror test_institutional_api.py) ──────────────────────────
 
 

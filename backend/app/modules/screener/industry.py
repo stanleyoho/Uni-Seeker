@@ -1,6 +1,7 @@
 import statistics
 from dataclasses import dataclass
 from decimal import Decimal
+
 from app.modules.valuation.base import ValuationData
 
 

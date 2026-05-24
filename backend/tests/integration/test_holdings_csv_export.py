@@ -37,7 +37,6 @@ from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.models.user import User
 
-
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 

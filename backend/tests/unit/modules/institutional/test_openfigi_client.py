@@ -22,7 +22,6 @@ from app.modules.institutional.openfigi_client import (
     OpenFigiRateLimiter,
 )
 
-
 # ───────────────────────── fixtures / helpers ─────────────────────────
 
 

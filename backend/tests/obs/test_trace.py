@@ -39,6 +39,7 @@ async def test_fastapi_middleware_propagates_x_request_id(monkeypatch):
     monkeypatch.setenv("ENV", "test")
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient
+
     from app.middleware.trace_id import TraceIdMiddleware
     from app.obs.trace import TRACE_ID
 
@@ -62,6 +63,7 @@ async def test_fastapi_middleware_generates_when_missing(monkeypatch):
     monkeypatch.setenv("ENV", "test")
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient
+
     from app.middleware.trace_id import TraceIdMiddleware
     from app.obs.trace import TRACE_ID
 

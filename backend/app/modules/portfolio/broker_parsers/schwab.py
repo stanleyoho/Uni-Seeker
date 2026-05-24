@@ -29,7 +29,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ParsedRow,
 )
 
-
 _SCHWAB_MARKERS = ("Date,Action,Symbol", "Fees & Comm")
 
 

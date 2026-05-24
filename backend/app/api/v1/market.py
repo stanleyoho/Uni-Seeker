@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func, case, desc
+from sqlalchemy import case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db

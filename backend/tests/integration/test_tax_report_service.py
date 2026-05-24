@@ -26,7 +26,6 @@ from app.auth import create_access_token
 from app.models.enums import UserTier
 from app.models.user import User
 
-
 # ── Helpers ────────────────────────────────────────────────────────────
 
 

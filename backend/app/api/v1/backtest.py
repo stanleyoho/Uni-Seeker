@@ -12,7 +12,7 @@ from app.middleware.tier_guard import require_tier
 from app.models.enums import UserTier
 from app.models.price import StockPrice
 from app.modules.backtester.auto_discovery import AutoDiscoveryConfig, AutoDiscoveryEngine
-from app.modules.backtester.engine import BacktestConfig, BacktestEngine, MIN_DATA_POINTS
+from app.modules.backtester.engine import MIN_DATA_POINTS, BacktestConfig, BacktestEngine
 from app.modules.finmind.client import FinMindClient
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
 from app.modules.strategy import create_default_registry

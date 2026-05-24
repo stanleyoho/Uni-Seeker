@@ -11,9 +11,9 @@ from typing import Any
 import structlog
 
 from app.config import settings
+from app.modules.financial_analysis.base import FinancialData, FinancialStatement
 from app.modules.finmind.client import FinMindClient
 from app.modules.finmind.fundamental_provider import FinMindFundamentalProvider
-from app.modules.financial_analysis.base import FinancialData, FinancialStatement
 
 logger = structlog.get_logger()
 

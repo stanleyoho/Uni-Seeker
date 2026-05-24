@@ -29,7 +29,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ParsedRow,
 )
 
-
 # Canonical column order. Must match the Y2 template — frontend tooltip
 # and the existing `test_holdings_csv_import` integration suite both
 # assert on this exact list.
