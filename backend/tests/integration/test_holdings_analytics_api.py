@@ -27,8 +27,6 @@ from app.db.models.portfolio import HoldingsSnapshot, PortfolioAccount
 from app.models.enums import Market, UserTier
 from app.models.user import User
 
-if TYPE_CHECKING:
-    pass
 
 
 def _auth(user: User) -> dict[str, str]:

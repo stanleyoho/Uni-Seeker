@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Protocol
 
 from sqlalchemy import select
@@ -93,7 +93,7 @@ async def block_device(
     if row is None:
         return None
 
-    row.blocked_at = datetime.now(timezone.utc)
+    row.blocked_at = datetime.now(UTC)
     await log_audit_event(
         db,
         action="device_blocked",

@@ -42,12 +42,12 @@ from datetime import date
 from decimal import Decimal, getcontext
 
 __all__ = [
+    "AnalyticsResult",
     "CashFlow",
     "NavSnapshot",
-    "AnalyticsResult",
-    "compute_twr",
-    "compute_sharpe",
     "compute_max_drawdown",
+    "compute_sharpe",
+    "compute_twr",
     "daily_returns_from_navs",
 ]
 

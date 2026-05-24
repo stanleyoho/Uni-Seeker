@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -104,7 +104,7 @@ class StockInfoSyncTask(SyncTask):
         result.stocks_processed = result.records_synced
 
         # -- update sync state (global row, stock_id IS NULL) ---------------
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         existing = await db.execute(
             select(SyncState).where(
                 SyncState.dataset == self.dataset_name,

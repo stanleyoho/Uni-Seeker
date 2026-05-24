@@ -40,8 +40,8 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 __all__ = [
-    "FxService",
     "FxRateUnavailable",
+    "FxService",
 ]
 
 logger = get_logger("services.portfolio.fx")

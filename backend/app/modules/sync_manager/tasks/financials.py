@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone, UTC
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -183,7 +183,7 @@ class FinancialsSyncTask(SyncTask):
                 break
 
             # -- update sync state ----------------------------------------
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             sync_stmt = pg_insert(SyncState).values(
                 dataset=self.dataset_name,
                 stock_id=stock.id,

@@ -14,7 +14,7 @@ can return one user's row to another user.
 # `app.models.base`. Without this, a fresh import that enters via the
 # repositories path races with `app.models/__init__.py`'s own portfolio
 # re-export and explodes with a circular ImportError.
-from app import models as _app_models  # noqa: F401
+from app import models as _app_models
 from app.repositories.portfolio.account_repo import PortfolioAccountRepo
 from app.repositories.portfolio.dividend_repo import PortfolioDividendRepo
 from app.repositories.portfolio.lot_repo import PortfolioLotRepo
@@ -24,11 +24,11 @@ from app.repositories.portfolio.snapshot_repo import HoldingsSnapshotRepo
 from app.repositories.portfolio.trade_repo import PortfolioTradeRepo
 
 __all__ = [
+    "HoldingsSnapshotRepo",
     "PortfolioAccountRepo",
     "PortfolioDividendRepo",
     "PortfolioLotRepo",
     "PortfolioPositionRepo",
     "PortfolioTradeRepo",
     "PriceLookupRepo",
-    "HoldingsSnapshotRepo",
 ]

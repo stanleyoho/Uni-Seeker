@@ -42,11 +42,11 @@ def test_top_level_exports_PredictionStore(pe):
 
 
 def test_submodule_store_has_PredictionStore():
-    from prediction_engine.store import PredictionStore  # noqa: F401
+    from prediction_engine.store import PredictionStore
 
 
 def test_submodule_models_has_Base_and_PredictionRecord():
-    from prediction_engine.models import Base, PredictionRecord  # noqa: F401
+    from prediction_engine.models import Base, PredictionRecord
 
 
 # ── signature pinning: PredictionStore methods Uni-Seeker calls ─────────────

@@ -28,13 +28,13 @@ from typing import Protocol
 import structlog
 
 __all__ = [
-    "PriceQuote",
-    "LivePriceFetcher",
-    "DailyCloseLivePriceFetcher",
-    "TTLCacheMixin",
-    "YFinanceLivePriceFetcher",
     "CachedDailyCloseLivePriceFetcher",
     "CompositeLivePriceFetcher",
+    "DailyCloseLivePriceFetcher",
+    "LivePriceFetcher",
+    "PriceQuote",
+    "TTLCacheMixin",
+    "YFinanceLivePriceFetcher",
 ]
 
 logger = structlog.get_logger()
@@ -302,7 +302,7 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
                 prev_close=prev_close,
                 as_of=as_of,
             )
-        except Exception as exc:  # noqa: BLE001 — yfinance raises broad types
+        except Exception as exc:
             logger.warning(
                 "yfinance_fetch_failed",
                 symbol=symbol,
@@ -323,7 +323,7 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
                 value = to_pydt()
                 if isinstance(value, datetime):
                     return value
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         year = getattr(idx, "year", None)
         month = getattr(idx, "month", None)
@@ -422,7 +422,7 @@ class CompositeLivePriceFetcher:
         # 1) Primary attempt — tolerated to raise *or* return partial.
         try:
             primary_result = await self._primary.fetch_quotes(stock_ids)
-        except Exception as exc:  # noqa: BLE001 — keep batch resilient
+        except Exception as exc:
             logger.warning(
                 "composite_primary_failed",
                 error=str(exc),
@@ -447,7 +447,7 @@ class CompositeLivePriceFetcher:
 
         try:
             secondary_result = await self._secondary.fetch_quotes(missing)
-        except Exception as exc:  # noqa: BLE001 — total failure is allowed
+        except Exception as exc:
             logger.warning(
                 "composite_secondary_failed",
                 error=str(exc),

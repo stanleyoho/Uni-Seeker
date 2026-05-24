@@ -42,11 +42,11 @@ if TYPE_CHECKING:
 __all__ = [
     "CusipMatch",
     "CusipMatchFigi",
-    "resolve_cusip",
-    "resolve_cusip_with_figi",
+    "_normalize_issuer_name",
     "batch_resolve_cusips",
     "batch_resolve_cusips_with_figi",
-    "_normalize_issuer_name",
+    "resolve_cusip",
+    "resolve_cusip_with_figi",
 ]
 
 
@@ -352,7 +352,7 @@ async def resolve_cusip_with_figi(
     if figi_client is not None:
         try:
             mappings = await figi_client.map_cusips([cusip_clean])
-        except Exception as exc:  # noqa: BLE001 — degrade, never abort batch
+        except Exception as exc:
             _logger.warning(
                 "cusip_mapper_figi_lookup_failed",
                 cusip=cusip_clean,
@@ -489,7 +489,7 @@ async def batch_resolve_cusips_with_figi(
     if figi_client is not None and miss_cusips:
         try:
             mappings = await figi_client.map_cusips(miss_cusips)
-        except Exception as exc:  # noqa: BLE001 — degrade, never abort batch
+        except Exception as exc:
             _logger.warning(
                 "cusip_mapper_figi_batch_failed",
                 cusip_count=len(miss_cusips),

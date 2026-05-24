@@ -95,7 +95,7 @@ def _install_fake_yf(
 
     class _FakeYF:
         @staticmethod
-        def Ticker(symbol: str) -> _FakeTicker:  # noqa: N802
+        def Ticker(symbol: str) -> _FakeTicker:
             calls[symbol] = calls.get(symbol, 0) + 1
             return _FakeTicker(frames, symbol, raise_on)
 

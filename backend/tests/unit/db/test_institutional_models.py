@@ -22,7 +22,7 @@ portfolio model tests.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, UTC
 from decimal import Decimal
 
 import pytest
@@ -87,7 +87,7 @@ async def _mk_filing(
         accession_number=accession_number,
         form_type=form_type,
         report_period_end=report_period_end,
-        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc),
+        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=UTC),
     )
     db.add(f)
     await db.commit()
@@ -194,7 +194,7 @@ async def test_f13_filing_unique_filer_accession(db_session):
         accession_number="0001067983-25-000001",
         form_type="13F-HR",
         report_period_end=date(2026, 3, 31),
-        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc),
+        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=UTC),
     )
     db_session.add(dup)
     with pytest.raises(IntegrityError):
@@ -214,7 +214,7 @@ async def test_f13_filing_form_type_check_constraint(db_session):
         accession_number="0001067983-25-000999",
         form_type="13F-NT",  # not in {13F-HR, 13F-HR/A}
         report_period_end=date(2026, 3, 31),
-        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc),
+        filed_at=datetime(2026, 5, 15, 12, 0, tzinfo=UTC),
     )
     db_session.add(bad)
     with pytest.raises(IntegrityError):
@@ -227,7 +227,7 @@ async def test_f13_filing_form_type_check_constraint(db_session):
         accession_number="0001067983-25-000777",
         form_type="13F-HR/A",
         report_period_end=date(2026, 3, 31),
-        filed_at=datetime(2026, 5, 16, 12, 0, tzinfo=timezone.utc),
+        filed_at=datetime(2026, 5, 16, 12, 0, tzinfo=UTC),
     )
     db_session.add(ok)
     await db_session.commit()

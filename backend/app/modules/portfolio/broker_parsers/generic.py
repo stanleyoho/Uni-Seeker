@@ -176,4 +176,4 @@ class GenericCsvParser:
         )
 
 
-__all__ = ["GenericCsvParser", "REQUIRED_HEADER"]
+__all__ = ["REQUIRED_HEADER", "GenericCsvParser"]

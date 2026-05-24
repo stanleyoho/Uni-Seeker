@@ -64,10 +64,10 @@ class InsufficientShares(PortfolioServiceError):
 
 
 __all__ = [
-    "PortfolioServiceError",
-    "PortfolioAccountNotFound",
-    "PortfolioTradeNotFound",
-    "TierLimitExceeded",
-    "TierFeatureUnavailable",
     "InsufficientShares",
+    "PortfolioAccountNotFound",
+    "PortfolioServiceError",
+    "PortfolioTradeNotFound",
+    "TierFeatureUnavailable",
+    "TierLimitExceeded",
 ]

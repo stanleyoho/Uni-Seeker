@@ -129,13 +129,13 @@ async def list_trades(
     # Verify ownership FIRST so we return 404 for cross-user / unknown
     # account ids instead of a misleading empty list.
     try:
-        await service._require_owned_account(account_id)  # noqa: SLF001
+        await service._require_owned_account(account_id)
     except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
         ) from exc
-    rows = await service._trade_repo.list_by_account(  # noqa: SLF001
+    rows = await service._trade_repo.list_by_account(
         account_id=account_id,
         user_id=user.id,  # type: ignore[attr-defined]
         limit=limit,
@@ -156,7 +156,7 @@ async def get_trade(
     """Fetch one trade; 404 when missing / not owned."""
     service = PortfolioTradeService(db, user)  # type: ignore[arg-type]
     try:
-        row = await service._require_owned_trade(trade_id)  # noqa: SLF001
+        row = await service._require_owned_trade(trade_id)
     except PortfolioTradeNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

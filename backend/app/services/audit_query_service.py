@@ -16,7 +16,7 @@ auth dependency.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from typing import TYPE_CHECKING
 
 from app.repositories.audit import AuditLogRepo
@@ -50,7 +50,7 @@ class AuditQueryService:
         viewer is allowed to show. Computed at call time so test-time
         freezegun fixtures work without monkey-patching the service.
         """
-        return datetime.now(timezone.utc) - timedelta(
+        return datetime.now(UTC) - timedelta(
             days=USER_VISIBLE_RETENTION_DAYS
         )
 

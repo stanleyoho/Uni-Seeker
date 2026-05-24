@@ -260,7 +260,7 @@ class CsvImportService:
         limit = get_limit(self._user.tier, "max_trades_per_month")
         if limit is None:
             return
-        current = await self._trade_service._trade_repo.count_by_user_this_month(  # noqa: SLF001
+        current = await self._trade_service._trade_repo.count_by_user_this_month(
             self._user.id
         )
         if current + batch_size > limit:

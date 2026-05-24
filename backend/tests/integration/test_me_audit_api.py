@@ -17,7 +17,7 @@ without depending on insert-time clock resolution.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from typing import TYPE_CHECKING
 
 from app.auth import create_access_token
@@ -100,7 +100,7 @@ async def test_list_my_audit_logs_returns_newest_first(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_order@x.com")
-    base = datetime.now(timezone.utc) - timedelta(hours=1)
+    base = datetime.now(UTC) - timedelta(hours=1)
     # Insert in non-monotonic order to prove the ORDER BY actually sorts.
     await _seed_event(
         db_session, user, action="watchlist_added", created_at=base + timedelta(seconds=2)
@@ -137,7 +137,7 @@ async def test_list_my_audit_logs_paginates(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "audit_page@x.com")
-    base = datetime.now(timezone.utc) - timedelta(hours=1)
+    base = datetime.now(UTC) - timedelta(hours=1)
     for i in range(5):
         await _seed_event(
             db_session,

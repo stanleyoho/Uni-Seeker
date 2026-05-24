@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -147,7 +147,7 @@ async def _register_device(db: AsyncSession, user: User, request: Request) -> No
     if row is not None:
         if row.blocked_at is not None:
             raise HTTPException(status_code=403, detail="device_blocked")
-        row.last_seen_at = datetime.now(timezone.utc)
+        row.last_seen_at = datetime.now(UTC)
         await db.commit()
         return
 

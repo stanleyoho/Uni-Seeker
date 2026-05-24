@@ -1,5 +1,5 @@
 """Plan 4.5 T7 — login device fingerprint registry + 3-device limit."""
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import pytest
 from httpx import AsyncClient
@@ -134,7 +134,7 @@ async def test_blocked_device_with_same_fingerprint_rejected(
     d = (await db_session.scalars(
         select(UserDevice).where(UserDevice.user_id == u.id)
     )).one()
-    d.blocked_at = datetime.now(timezone.utc)
+    d.blocked_at = datetime.now(UTC)
     await db_session.commit()
 
     # Retry login from same TestClient — fingerprint matches blocked row
@@ -162,7 +162,7 @@ async def test_three_blocked_devices_do_not_count_against_active_limit(
     await db_session.commit()
     # Mark all 3 as blocked
     for d in (await db_session.scalars(select(UserDevice).where(UserDevice.user_id == u.id))).all():
-        d.blocked_at = datetime.now(timezone.utc)
+        d.blocked_at = datetime.now(UTC)
     await db_session.commit()
 
     # Login from TestClient produces a different fingerprint than fp_x/y/z → should succeed

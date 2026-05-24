@@ -154,10 +154,10 @@ class DividendResponse(BaseModel):
 
 
 __all__ = [
-    "DividendType",
     "DividendCreateRequest",
-    "DividendUpdateRequest",
     "DividendResponse",
+    "DividendType",
+    "DividendUpdateRequest",
 ]
 
 

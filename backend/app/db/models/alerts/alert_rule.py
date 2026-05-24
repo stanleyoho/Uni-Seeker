@@ -114,8 +114,8 @@ class AlertRule(Base):
 
 
 __all__ = [
-    "AlertRule",
     "ALERT_RULE_TYPES",
     "ALERT_STATUSES",
     "ALERT_THRESHOLD_TYPES",
+    "AlertRule",
 ]

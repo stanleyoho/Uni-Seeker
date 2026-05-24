@@ -636,6 +636,6 @@ class PortfolioDividendService:
 
 
 __all__ = [
-    "PortfolioDividendService",
     "PortfolioDividendNotFound",
+    "PortfolioDividendService",
 ]
