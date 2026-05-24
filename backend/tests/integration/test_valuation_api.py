@@ -47,14 +47,14 @@ async def test_get_valuation_estimates_success(
         "/api/v1/valuation/2330.TW/estimates",
         headers=pro_user_token,
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["symbol"] == "2330.TW"
     # estimates list filters out composite
     assert len(data["estimates"]) == 2
     assert data["latest_composite"]["model_type"] == "composite"
-    
+
     # Verify DecimalStr serialization
     assert float(data["latest_composite"]["fair_price"]) == 1000.0
     assert float(data["latest_composite"]["confidence"]) == 0.7

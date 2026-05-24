@@ -30,7 +30,7 @@ class CompositeEstimator:
         price_stmt = select(StockPrice.close).where(StockPrice.stock_id == stock_id).order_by(StockPrice.date.desc()).limit(1)
         price_res = await self.session.execute(price_stmt)
         current_price = price_res.scalar_one_or_none()
-        
+
         results: list[EstimateResult] = []
         for estimator in self.estimators:
             try:
@@ -93,11 +93,11 @@ class CompositeEstimator:
         comp_fair = sum(r.fair_price * r.confidence for r in valid_results) / total_conf
         comp_cheap = sum((r.cheap_price or r.fair_price) * r.confidence for r in valid_results) / total_conf
         comp_expensive = sum((r.expensive_price or r.fair_price) * r.confidence for r in valid_results) / total_conf
-        
+
         # 2.3 Market Context Validation
         # If the gap between composite and current market price is insane, drop confidence
         final_confidence = (total_conf / len(self.estimators)) * Decimal(str(round(convergence_penalty, 2)))
-        
+
         if current_price:
             diff_ratio = abs(float(comp_fair) - float(current_price)) / float(current_price)
             if diff_ratio > 1.5:  # 150% difference

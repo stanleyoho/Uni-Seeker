@@ -35,12 +35,12 @@ class DCFEstimator:
         )
         shares_result = await self.session.execute(shares_query)
         latest_bs = shares_result.scalar_one_or_none()
-        
+
         capital = 0
         if latest_bs:
             # TW SE precise keys
             capital = latest_bs.get("股本", latest_bs.get("普通股股本", latest_bs.get("權益總額", 0)))
-        
+
         shares_outstanding = (capital / 10) if capital > 0 else 0
 
         if current_fcf <= 0 or shares_outstanding <= 0:

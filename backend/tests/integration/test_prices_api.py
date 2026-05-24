@@ -36,7 +36,7 @@ async def test_get_prices_success(client: AsyncClient, db_session: AsyncSession)
 
     # 3. Test the API
     response = await client.get("/api/v1/prices/2330.TW?limit=10")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "data" in data

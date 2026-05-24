@@ -17,7 +17,7 @@ class ValuationUtils:
         """Calculate Compound Annual Growth Rate."""
         if not values or len(values) < 2 or values[0] <= 0 or values[-1] <= 0:
             return 0.05  # Default conservative growth
-        
+
         # values are expected to be in chronological order (oldest first)
         n = len(values) / 4.0  # Assuming quarterly data
         try:
@@ -39,7 +39,7 @@ class ValuationUtils:
         )
         result = await session.execute(stmt)
         eps_history = [float(row[0]) for row in result.all()]
-        
+
         return ValuationUtils.calculate_cagr(eps_history)
 
     @staticmethod
@@ -59,19 +59,19 @@ class ValuationUtils:
         )
         result = await session.execute(stmt)
         prices = [float(row[0]) for row in result.all()]
-        
+
         if len(prices) < 20:
             return 0.08  # Default 8% for stable TW stocks
-            
+
         returns = np.diff(np.log(prices))
         volatility = np.std(returns) * np.sqrt(250)
-        
+
         # Proxy Beta: more volatile stocks get higher discount rates
         # 0.04 (RF) + Beta * 0.06 (Premium)
         # We assume 15% vol is Beta=1.0
         beta = max(0.8, min(2.0, volatility / 0.15))
         wacc = 0.03 + beta * 0.05
-        
+
         return float(round(wacc, 3))
 
     @staticmethod

@@ -18,7 +18,7 @@ async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSes
     assert response.status_code == 201 # Defined as 201 in API
     data = response.json()
     assert "access_token" in data
-    
+
     # Verify user exists in DB
     result = await db_session.execute(select(User).where(User.email == "test@example.com"))
     user = result.scalar_one_or_none()
@@ -66,7 +66,7 @@ async def test_register_duplicate_email(client: AsyncClient, db_session: AsyncSe
     }
     response = await client.post("/api/v1/auth/register", json=register_data)
     assert response.status_code == 400
-    
+
     data = response.json()
     # The application uses a custom error handler that returns 'message'
     assert "message" in data
