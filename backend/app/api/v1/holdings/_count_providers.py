@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 
 @asynccontextmanager
-async def _session_scope() -> AsyncIterator["AsyncSession"]:
+async def _session_scope() -> AsyncIterator[AsyncSession]:
     """Open an AsyncSession honouring `app.dependency_overrides` when
     set, otherwise fall back to the production `get_db` generator.
 
@@ -84,7 +84,7 @@ async def _safe_count(coro_factory) -> int:
         return 0
 
 
-async def account_count_provider(*, user: "User") -> int:
+async def account_count_provider(*, user: User) -> int:
     """Number of portfolio accounts owned by `user` — for
     `max_accounts` quota."""
 
@@ -95,7 +95,7 @@ async def account_count_provider(*, user: "User") -> int:
     return await _safe_count(_q)
 
 
-async def trade_count_provider(*, user: "User") -> int:
+async def trade_count_provider(*, user: User) -> int:
     """Trades created by `user` this calendar month — for
     `max_trades_per_month` quota."""
 
@@ -108,7 +108,7 @@ async def trade_count_provider(*, user: "User") -> int:
     return await _safe_count(_q)
 
 
-async def position_count_provider(*, user: "User") -> int:
+async def position_count_provider(*, user: User) -> int:
     """Active position rows owned by `user` — for `max_positions` quota."""
 
     async def _q() -> int:
@@ -120,7 +120,7 @@ async def position_count_provider(*, user: "User") -> int:
     return await _safe_count(_q)
 
 
-async def alert_rule_count_provider(*, user: "User") -> int:
+async def alert_rule_count_provider(*, user: User) -> int:
     """Alert rule rows owned by ``user`` — for ``max_alert_rules`` quota."""
     # Lazy import — alerts repo is in a separate package and we want to
     # keep the holdings count-providers module from forcing import-time

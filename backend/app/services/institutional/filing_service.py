@@ -544,7 +544,7 @@ class F13FilingService:
 
     async def _ingest_one(
         self, filer_id: int, meta: FilingMetadata
-    ) -> tuple["F13Filing", int]:
+    ) -> tuple[F13Filing, int]:
         """Fetch + parse + persist one new filing.
 
         Returns ``(filing_row, holdings_count)`` so the caller can both

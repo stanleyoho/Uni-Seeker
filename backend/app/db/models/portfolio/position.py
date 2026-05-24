@@ -75,7 +75,7 @@ class PortfolioPosition(Base):
         onupdate=func.now(),
     )
 
-    account: Mapped["PortfolioAccount"] = relationship(
+    account: Mapped[PortfolioAccount] = relationship(
         back_populates="positions", init=False
     )
 

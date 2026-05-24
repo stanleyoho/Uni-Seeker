@@ -35,7 +35,7 @@ def init_sentry(
     release: str | None = None,
     traces_sample_rate: float = 0.1,
     profiles_sample_rate: float = 0.0,
-    extra_integrations: "list[Integration] | None" = None,
+    extra_integrations: list[Integration] | None = None,
 ) -> bool:
     """Initialise Sentry SDK for Uni-Seeker; fail-soft when DSN is missing.
 

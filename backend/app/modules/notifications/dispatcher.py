@@ -42,7 +42,7 @@ logger = get_logger(component="notification_dispatcher")
 
 
 async def dispatch_notification(
-    user: "User",
+    user: User,
     *,
     title: str,
     body_text: str,

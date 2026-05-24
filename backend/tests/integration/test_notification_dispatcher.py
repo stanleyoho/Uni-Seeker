@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 async def _mk_user(
-    db: "AsyncSession",
+    db: AsyncSession,
     *,
     email: str,
     username: str,
@@ -55,7 +55,7 @@ async def _mk_user(
 
 
 async def test_dispatch_both_channels_both_succeed(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """User opted into TG + Email; both senders succeed."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -94,7 +94,7 @@ async def test_dispatch_both_channels_both_succeed(
 
 
 async def test_dispatch_only_telegram_when_email_opted_out(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """notify_via_email=False → only TG channel is attempted."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -126,7 +126,7 @@ async def test_dispatch_only_telegram_when_email_opted_out(
 
 
 async def test_dispatch_only_email_when_no_tg_chat_id(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """telegram_chat_id NULL → only Email channel attempted."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -160,7 +160,7 @@ async def test_dispatch_only_email_when_no_tg_chat_id(
 
 
 async def test_dispatch_none_when_both_disabled(
-    db_session: "AsyncSession",
+    db_session: AsyncSession,
 ) -> None:
     """No chat_id AND notify_via_email=False → zero channels."""
     user = await _mk_user(
@@ -193,7 +193,7 @@ async def test_dispatch_none_when_both_disabled(
 
 
 async def test_dispatch_partial_success_tg_ok_email_fail(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """TG succeeds, Email fails — TG counted, email error visible."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -223,7 +223,7 @@ async def test_dispatch_partial_success_tg_ok_email_fail(
 
 
 async def test_dispatch_tracks_attempt_count_correctly(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """attempted increments per channel actually fired."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -254,7 +254,7 @@ async def test_dispatch_tracks_attempt_count_correctly(
 
 
 async def test_dispatch_uses_pre_rendered_tg_text(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """When caller passes ``tg_text`` we forward it verbatim to TG."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
@@ -287,7 +287,7 @@ async def test_dispatch_uses_pre_rendered_tg_text(
 
 
 async def test_dispatch_email_appends_deep_link_to_text(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """Email plain-text body gains ``查看詳情: <url>`` footer."""
     monkeypatch.setattr(settings, "uni_smtp_host", "smtp.x")
@@ -326,7 +326,7 @@ async def test_dispatch_email_appends_deep_link_to_text(
 
 
 async def test_dispatch_no_tg_when_token_empty(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """Empty bot token → TG channel skipped even if chat_id present."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "")

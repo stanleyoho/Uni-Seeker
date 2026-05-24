@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 
 async def _mk_user(
-    db: "AsyncSession",
+    db: AsyncSession,
     *,
     email: str,
     username: str,
@@ -61,7 +61,7 @@ async def _mk_user(
     return u
 
 
-async def _mk_filer(db: "AsyncSession", *, cik: str, name: str) -> F13Filer:
+async def _mk_filer(db: AsyncSession, *, cik: str, name: str) -> F13Filer:
     f = F13Filer(cik=cik, name=name)
     db.add(f)
     await db.commit()
@@ -70,7 +70,7 @@ async def _mk_filer(db: "AsyncSession", *, cik: str, name: str) -> F13Filer:
 
 
 async def _mk_subscription(
-    db: "AsyncSession",
+    db: AsyncSession,
     *,
     user_id: int,
     filer_id: int,
@@ -85,7 +85,7 @@ async def _mk_subscription(
 
 
 async def _mk_filing(
-    db: "AsyncSession",
+    db: AsyncSession,
     *,
     filer_id: int,
     accession: str,
@@ -110,7 +110,7 @@ async def _mk_filing(
 
 
 async def test_notify_new_filings_sends_to_subscribed_users(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake-token")
 
@@ -158,7 +158,7 @@ async def test_notify_new_filings_sends_to_subscribed_users(
 
 
 async def test_notify_skips_users_without_telegram_chat_id(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
@@ -190,7 +190,7 @@ async def test_notify_skips_users_without_telegram_chat_id(
 
 
 async def test_notify_respects_notify_on_new_filing_false(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
@@ -224,7 +224,7 @@ async def test_notify_respects_notify_on_new_filing_false(
 
 
 async def test_notify_handles_partial_send_failures(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
@@ -261,7 +261,7 @@ async def test_notify_handles_partial_send_failures(
 
 
 async def test_notify_cross_user_isolation(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """User subscribed to filer X must NOT receive alerts for filer Y."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
@@ -302,7 +302,7 @@ async def test_notify_cross_user_isolation(
 
 
 async def test_notify_handles_empty_new_filings_is_noop(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
@@ -335,7 +335,7 @@ async def test_notify_handles_empty_new_filings_is_noop(
 
 
 async def test_notify_message_format_contains_filer_and_filing_fields(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
     monkeypatch.setattr(settings, "app_url", "https://example.test")
@@ -376,7 +376,7 @@ async def test_notify_message_format_contains_filer_and_filing_fields(
 
 
 async def test_notify_audit_log_written(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """A single audit row records the fan-out summary."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
@@ -413,7 +413,7 @@ async def test_notify_audit_log_written(
 
 
 async def test_notify_disabled_when_token_empty(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     """uni_telegram_bot_token empty → globally disabled audit row, no sends."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "")
@@ -457,7 +457,7 @@ async def test_notify_disabled_when_token_empty(
 
 
 async def test_notify_skips_inactive_users(
-    db_session: "AsyncSession", monkeypatch
+    db_session: AsyncSession, monkeypatch
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 

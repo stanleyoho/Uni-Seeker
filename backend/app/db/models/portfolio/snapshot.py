@@ -115,7 +115,7 @@ class HoldingsSnapshot(Base):
         server_default=func.now(),
     )
 
-    account: Mapped["PortfolioAccount | None"] = relationship(
+    account: Mapped[PortfolioAccount | None] = relationship(
         "PortfolioAccount",
         init=False,
         # No back_populates: PortfolioAccount intentionally does not list

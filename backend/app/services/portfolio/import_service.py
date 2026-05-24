@@ -83,8 +83,8 @@ class CsvImportService:
 
     def __init__(
         self,
-        db: "AsyncSession",
-        user: "User",
+        db: AsyncSession,
+        user: User,
         parsers: dict[str, BrokerParser] | None = None,
     ) -> None:
         self._db = db

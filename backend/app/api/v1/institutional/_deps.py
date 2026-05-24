@@ -68,7 +68,7 @@ async def get_edgar_client() -> AsyncIterator[EdgarClient]:
 
 
 @asynccontextmanager
-async def _session_scope() -> AsyncIterator["AsyncSession"]:
+async def _session_scope() -> AsyncIterator[AsyncSession]:
     """Open an AsyncSession honouring `app.dependency_overrides` when
     set, otherwise fall back to the production `get_db` generator.
 
@@ -112,7 +112,7 @@ async def _safe_count(coro_factory) -> int:
         return 0
 
 
-async def tracked_filers_count_provider(*, user: "User") -> int:
+async def tracked_filers_count_provider(*, user: User) -> int:
     """Number of `f13_user_subscriptions` owned by `user` — feeds
     `tier_guard(limit_key="max_tracked_filers", ...)`.
 

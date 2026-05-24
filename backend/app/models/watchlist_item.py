@@ -35,5 +35,5 @@ class WatchlistItem(Base):
         DateTime(timezone=True), init=False, server_default=func.now()
     )
 
-    user: Mapped["User"] = relationship(init=False)
-    stock: Mapped["Stock"] = relationship(init=False)
+    user: Mapped[User] = relationship(init=False)
+    stock: Mapped[Stock] = relationship(init=False)

@@ -69,10 +69,10 @@ class PortfolioLot(Base):
         Boolean, default=False, index=True
     )
 
-    account: Mapped["PortfolioAccount"] = relationship(
+    account: Mapped[PortfolioAccount] = relationship(
         back_populates="lots", init=False
     )
-    trade: Mapped["PortfolioTrade"] = relationship(
+    trade: Mapped[PortfolioTrade] = relationship(
         back_populates="lots", init=False
     )
 

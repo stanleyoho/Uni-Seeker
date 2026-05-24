@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 async def _mk_user(
-    db: "AsyncSession",
+    db: AsyncSession,
     email: str,
     *,
     chat_id: str | None = None,
@@ -57,7 +57,7 @@ def _auth(user: User) -> dict[str, str]:
 
 
 async def test_get_me_notifications_returns_current_state(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "me1@x.com", chat_id="chat-init")
     resp = await client.get(
@@ -71,7 +71,7 @@ async def test_get_me_notifications_returns_current_state(
 
 
 async def test_patch_me_notifications_sets_telegram_chat_id(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "me2@x.com", chat_id=None)
     resp = await client.patch(
@@ -92,7 +92,7 @@ async def test_patch_me_notifications_sets_telegram_chat_id(
 
 
 async def test_patch_me_notifications_clears_telegram_chat_id_with_null(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "me3@x.com", chat_id="to-clear")
     resp = await client.patch(
@@ -113,7 +113,7 @@ async def test_patch_me_notifications_clears_telegram_chat_id_with_null(
 
 
 async def test_patch_me_notifications_toggles_notify_via_email(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     """Round 14: PATCH the email opt-in independently of TG chat id."""
     user = await _mk_user(db_session, "em1@x.com", chat_id="keep-me")
@@ -137,7 +137,7 @@ async def test_patch_me_notifications_toggles_notify_via_email(
 
 
 async def test_patch_me_notifications_401_when_unauthenticated(
-    client: "AsyncClient",
+    client: AsyncClient,
 ) -> None:
     resp = await client.patch(
         "/api/v1/me/notifications",
@@ -150,7 +150,7 @@ async def test_patch_me_notifications_401_when_unauthenticated(
 
 
 async def _seed_subscription(
-    db: "AsyncSession", user: User, cik: str = "0099000001"
+    db: AsyncSession, user: User, cik: str = "0099000001"
 ) -> F13UserSubscription:
     filer = F13Filer(cik=cik, name="PrefCo")
     db.add(filer)
@@ -166,7 +166,7 @@ async def _seed_subscription(
 
 
 async def test_patch_filer_preferences_toggles_notify_flag(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "pref1@x.com")
     sub = await _seed_subscription(db_session, user)
@@ -188,7 +188,7 @@ async def test_patch_filer_preferences_toggles_notify_flag(
 
 
 async def test_patch_filer_preferences_404_for_non_subscribed_filer(
-    client: "AsyncClient", db_session: "AsyncSession"
+    client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "pref2@x.com")
     # Create a filer but DO NOT subscribe.
@@ -206,7 +206,7 @@ async def test_patch_filer_preferences_404_for_non_subscribed_filer(
 
 
 async def test_patch_filer_preferences_401_when_unauthenticated(
-    client: "AsyncClient",
+    client: AsyncClient,
 ) -> None:
     resp = await client.patch(
         "/api/v1/institutional/filers/1/preferences",

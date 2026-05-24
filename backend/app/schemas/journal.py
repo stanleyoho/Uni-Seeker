@@ -47,7 +47,7 @@ class TradeCreate(BaseModel):
     split_ratio: Decimal | None = None  # For SPLIT: new_shares / old_shares (e.g. 2.0 for 2:1)
 
     @model_validator(mode="after")
-    def validate_action_fields(self) -> "TradeCreate":
+    def validate_action_fields(self) -> TradeCreate:
         if self.action in ("BUY", "SELL"):
             if self.price is None:
                 raise ValueError(f"price is required for {self.action}")

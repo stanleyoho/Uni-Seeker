@@ -78,10 +78,10 @@ class PortfolioTrade(Base):
         onupdate=func.now(),
     )
 
-    account: Mapped["PortfolioAccount"] = relationship(
+    account: Mapped[PortfolioAccount] = relationship(
         back_populates="trades", init=False
     )
-    lots: Mapped[list["PortfolioLot"]] = relationship(
+    lots: Mapped[list[PortfolioLot]] = relationship(
         back_populates="trade",
         cascade="all, delete-orphan",
         init=False,
