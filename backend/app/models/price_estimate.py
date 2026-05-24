@@ -34,17 +34,17 @@ class PriceEstimate(Base):
         ForeignKey("stocks.id", ondelete="CASCADE"),
     )
     date: Mapped[date] = mapped_column(Date)
-    
+
     # Model type: 'dcf', 'ddm', 'pe_band', 'pb_band', 'composite'
     model_type: Mapped[str] = mapped_column(String(30))
-    
+
     cheap_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), default=None)
     fair_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), default=None)
     expensive_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), default=None)
-    
+
     # Confidence score: 0.0 to 1.0
     confidence: Mapped[Decimal] = mapped_column(Numeric(4, 2), default=0.5)
-    
+
     # Model-specific parameters and metadata
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default='{}', default_factory=dict)
 

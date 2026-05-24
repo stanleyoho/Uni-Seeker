@@ -27,13 +27,13 @@ class DDMEstimator:
             .order_by(StockValuation.date.desc())
             .limit(1)
         )
-        
+
         price_result = await self.session.execute(price_query)
         yield_result = await self.session.execute(yield_query)
-        
+
         current_price = price_result.scalar_one_or_none()
         div_yield = yield_result.scalar_one_or_none()
-        
+
         if not current_price or not div_yield or div_yield <= 0:
             return EstimateResult(
                 model_type="ddm",
@@ -43,7 +43,7 @@ class DDMEstimator:
                 confidence=Decimal("0.0"),
                 details={"reason": "No dividend history or yield data"}
             )
-            
+
         # DPS = Yield * Price / 100 (assuming yield is in percentage points like 4.5)
         dps = float(current_price * div_yield / Decimal("100.0"))
 

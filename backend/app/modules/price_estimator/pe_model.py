@@ -26,7 +26,7 @@ class PEBandEstimator:
         )
         result = await self.session.execute(pe_query)
         raw_pe = [float(row[0]) for row in result.all()]
-        
+
         # 2. Clean outliers
         pe_list = ValuationUtils.clean_outliers(raw_pe)
 
@@ -55,7 +55,7 @@ class PEBandEstimator:
         pe_25 = np.percentile(pe_list, 25)
         pe_50 = np.percentile(pe_list, 50)
         pe_75 = np.percentile(pe_list, 75)
-        
+
         # Calculate stability (std dev / mean)
         pe_std = np.std(pe_list)
         pe_mean = np.mean(pe_list)

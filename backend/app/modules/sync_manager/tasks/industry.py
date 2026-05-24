@@ -47,7 +47,7 @@ class IndustryAggregatesSyncTask(SyncTask):
         try:
             aggregator = IndustryAggregator(db)
             await aggregator.aggregate_all_industries(period)
-            
+
             logger.info("finish_industry_aggregates_sync", period=period)
             return SyncResult(
                 dataset=self.dataset_name,
