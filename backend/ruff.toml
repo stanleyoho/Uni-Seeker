@@ -29,7 +29,14 @@ select = [
 # SQLAlchemy 2.0 Mapped[X] need runtime-visible types. Moving them into
 # TYPE_CHECKING blocks breaks DI resolution and ORM reflection across the
 # codebase (verified empirically — 2026-05-24 attempt broke 164 tests).
-ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003"]
+# DTZ011 (call-date-today) disabled: `date.today()` returns the user's local
+# calendar date which is the semantically correct "today" for analytics /
+# snapshots / trade date defaults. Forcing `datetime.now(tz=UTC).date()`
+# silently shifts the calendar date when local TZ ≠ UTC (verified empirically
+# — 2026-05-24 attempt broke 4 analytics tests in TW=UTC+8 timezone). DTZ002
+# (datetime.today) and DTZ007 (strptime sans %z) remain enabled — those are
+# broker-parser locality issues that need per-broker semantic decisions.
+ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003", "DTZ011"]
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
