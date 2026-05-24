@@ -1,6 +1,6 @@
 """Plan 4.5 T7 — login device fingerprint registry + 3-device limit."""
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime, timezone
 
 import pytest
 from httpx import AsyncClient
