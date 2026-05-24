@@ -24,13 +24,17 @@
 
 import { useMemo, useState } from "react";
 import { ClippedButton } from "@/components/stratos/primitives";
-import { usePreviewRebalance } from "@/hooks/use-holdings";
+import {
+  useExecuteRebalance,
+  usePreviewRebalance,
+} from "@/hooks/use-holdings";
 import { useI18n } from "@/i18n/context";
 import {
   ApiError,
   type HoldingAccount,
   type HoldingMarket,
   type HoldingPosition,
+  type RebalanceExecuteResponse,
   type RebalanceResponse,
   type RebalanceTarget,
   type SuggestedTrade,
@@ -79,6 +83,27 @@ function mapPreviewError(
   if (status === 404) return t("error_account_not_found");
   if (status === 422) return t("error_invalid");
   return message || t("error_generic");
+}
+
+/**
+ * Map execute-specific errors. Reuses the preview mapper for the shared
+ * 403/404 cases but distinguishes the two 422 strings the execute
+ * endpoint can emit: `account_id_required_for_execute` vs the generic
+ * `invalid_rebalance_input`. The backend's FastAPI `detail` lands in
+ * `ApiError.message` (apiFetch falls back to `body.detail`), so we
+ * sniff both `code` and `message` for the canonical string.
+ */
+function mapExecuteError(
+  err: unknown,
+  t: (key: string) => string,
+): string {
+  if (err instanceof ApiError && err.status === 422) {
+    const tag = err.code ?? err.message;
+    if (tag === "account_id_required_for_execute") {
+      return t("error_account_required");
+    }
+  }
+  return mapPreviewError(err, t);
 }
 
 // ── row model for the editable right-hand table ──────────────────────────
@@ -142,9 +167,16 @@ export function RebalanceModal({
   const [minTradeValue, setMinTradeValue] = useState<string>("100");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RebalanceResponse | null>(null);
+  // Execute flow: confirmation gate + result. We keep the preview `result`
+  // visible alongside the execute summary so the user can compare planned
+  // vs actual; `executeResult` is the per-trade outcome from the server.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [executeResult, setExecuteResult] =
+    useState<RebalanceExecuteResponse | null>(null);
 
   const previewMutation = usePreviewRebalance();
-  const isPending = previewMutation.isPending;
+  const executeMutation = useExecuteRebalance();
+  const isPending = previewMutation.isPending || executeMutation.isPending;
 
   // ── derived ──────────────────────────────────────────────────────────
 
@@ -179,6 +211,7 @@ export function RebalanceModal({
   async function handlePreview() {
     setError(null);
     setResult(null);
+    setExecuteResult(null);
     if (!sumValid) {
       setError(tr("error_sum"));
       return;
@@ -199,6 +232,46 @@ export function RebalanceModal({
       setError(mapPreviewError(e, tr));
     }
   }
+
+  /**
+   * Build the request payload using the same `targets` shape that produced
+   * the visible preview. We re-serialize from current state (not the
+   * preview response) so the server's re-compute uses identical input —
+   * mirroring exactly what the user saw.
+   */
+  function buildRequest() {
+    return {
+      targets: targets.map((r) => ({
+        symbol: r.symbol,
+        market: r.market,
+        target_pct: r.target_pct || "0",
+      })) as RebalanceTarget[],
+      account_id: accountId ?? undefined,
+      min_trade_value: minTradeValue || "100",
+    };
+  }
+
+  async function handleExecute() {
+    setError(null);
+    setConfirmOpen(false);
+    try {
+      const res = await executeMutation.mutateAsync(buildRequest());
+      setExecuteResult(res);
+    } catch (e) {
+      setError(mapExecuteError(e, tr));
+    }
+  }
+
+  const selectedAccount = useMemo(
+    () => accounts.find((a) => a.id === accountId) ?? null,
+    [accounts, accountId],
+  );
+  const tradesToExecute = result?.suggested_trades ?? [];
+  // Execute button visibility: per backend contract, account_id is REQUIRED
+  // for /execute (preview supports aggregate mode but execute does not),
+  // and we must have at least one trade — otherwise the button is a no-op.
+  const canExecute =
+    accountId != null && tradesToExecute.length > 0 && !executeResult;
 
   // ── render helpers ───────────────────────────────────────────────────
 
@@ -460,6 +533,99 @@ export function RebalanceModal({
     );
   }
 
+  function renderExecuteSummary(res: RebalanceExecuteResponse) {
+    return (
+      <div
+        style={{
+          marginTop: 12,
+          border: "1px solid var(--border-subtle)",
+          padding: 12,
+          background: "var(--card-hover)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8,
+          }}
+        >
+          {tr("execute_result")}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            fontSize: 12,
+            fontFamily: "monospace",
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ color: "var(--stock-up)" }}>
+            {tr("executed_count")}: <strong>{res.executed.length}</strong>
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            {tr("skipped_count")}: <strong>{res.skipped.length}</strong>
+          </span>
+          <span
+            style={{
+              color:
+                res.failed.length > 0
+                  ? "var(--accent-primary)"
+                  : "var(--text-muted)",
+            }}
+          >
+            {tr("failed_count")}: <strong>{res.failed.length}</strong>
+          </span>
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "var(--text-muted)",
+            marginBottom: res.failed.length > 0 ? 8 : 0,
+          }}
+        >
+          {tr("total_executed_value")}:{" "}
+          <span style={{ color: "var(--foreground)", fontFamily: "monospace" }}>
+            {Number(res.total_executed_value).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        </div>
+        {res.failed.length > 0 && (
+          <div
+            style={{
+              borderTop: "1px solid var(--border-subtle)",
+              paddingTop: 8,
+              fontSize: 11,
+            }}
+          >
+            <strong
+              style={{
+                color: "var(--accent-primary)",
+                display: "block",
+                marginBottom: 4,
+              }}
+            >
+              {tr("failed_trades")}:
+            </strong>
+            <ul style={{ margin: 0, paddingLeft: 16, color: "var(--text-muted)" }}>
+              {res.failed.map((f, i) => (
+                <li key={`${f.symbol}|${f.action}|${i}`}>
+                  {f.symbol} ({f.action}) — {f.error_code}
+                  {f.message ? `: ${f.message}` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function renderFinalAlloc(result: RebalanceResponse) {
     const entries = Object.entries(result.final_allocation_pct).sort(
       ([, a], [, b]) => Number(b) - Number(a),
@@ -709,9 +875,166 @@ export function RebalanceModal({
             {renderSuggestedTrades(result.suggested_trades)}
             {renderSkipped(result.skipped_trades)}
             {renderFinalAlloc(result)}
+            {/* Execute button — visible only when we have suggestions AND
+                an account_id (backend 422 without one). Hidden once the
+                execute call returned (the summary takes its place). */}
+            {canExecute && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginTop: 12,
+                  justifyContent: "flex-end",
+                }}
+              >
+                <ClippedButton
+                  variant="cyan-ghost"
+                  size="md"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={isPending}
+                >
+                  {tr("execute_btn")}
+                </ClippedButton>
+              </div>
+            )}
+            {/* Hint when execute is unavailable because no account selected. */}
+            {tradesToExecute.length > 0 &&
+              accountId == null &&
+              !executeResult && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "8px 12px",
+                    background: "var(--card-hover)",
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    border: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  {tr("execute_requires_account")}
+                </div>
+              )}
+            {executeResult && renderExecuteSummary(executeResult)}
           </div>
         )}
       </div>
+
+      {/* Confirmation modal — blocks accidental click on execute. */}
+      {confirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)",
+            zIndex: 1100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={(e) =>
+            e.target === e.currentTarget &&
+            !executeMutation.isPending &&
+            setConfirmOpen(false)
+          }
+        >
+          <div
+            style={{
+              background: "var(--glass-bg)",
+              border: "1px solid var(--border-color)",
+              width: "100%",
+              maxWidth: 440,
+              padding: 24,
+              boxShadow: "var(--glass-shadow)",
+              backgroundImage: "var(--glass-gradient)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "var(--foreground)",
+                letterSpacing: "-0.04em",
+                textTransform: "uppercase",
+                marginBottom: 12,
+              }}
+            >
+              {tr("confirm_title")}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--text-muted)",
+                marginBottom: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              {tr("confirm_message")
+                .replace("{count}", String(tradesToExecute.length))
+                .replace(
+                  "{account}",
+                  selectedAccount?.name ?? String(accountId ?? ""),
+                )}
+            </div>
+            {result && (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  marginBottom: 16,
+                  padding: "8px 12px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-subtle)",
+                  fontFamily: "monospace",
+                }}
+              >
+                {tr("confirm_total_value")}:{" "}
+                <span style={{ color: "var(--foreground)" }}>
+                  {tradesToExecute
+                    .reduce(
+                      (sum, t) =>
+                        sum +
+                        (Number.isFinite(Number(t.estimated_value))
+                          ? Number(t.estimated_value)
+                          : 0),
+                      0,
+                    )
+                    .toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+              }}
+            >
+              <ClippedButton
+                variant="white-solid"
+                size="md"
+                onClick={() => setConfirmOpen(false)}
+                disabled={executeMutation.isPending}
+              >
+                {tr("cancel_btn")}
+              </ClippedButton>
+              <ClippedButton
+                variant="cyan-ghost"
+                size="md"
+                onClick={handleExecute}
+                disabled={executeMutation.isPending}
+              >
+                {executeMutation.isPending
+                  ? tr("executing")
+                  : tr("confirm_btn")}
+              </ClippedButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

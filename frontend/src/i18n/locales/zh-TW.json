@@ -84,7 +84,21 @@
       "sell_label": "賣出",
       "skip_reason_below_min": "金額低於門檻",
       "skip_reason_missing_price": "無報價可用",
-      "skip_reason_exit_below_min": "持倉太小，不退出"
+      "skip_reason_exit_below_min": "持倉太小，不退出",
+      "execute_btn": "執行再平衡",
+      "execute_requires_account": "請於上方選擇單一帳戶後再執行（彙總模式僅支援預覽）",
+      "executing": "執行中...",
+      "confirm_title": "確認執行",
+      "confirm_message": "將寫入 {count} 筆交易到 {account}，確定？",
+      "confirm_total_value": "預期總金額",
+      "confirm_btn": "確認執行",
+      "execute_result": "執行結果",
+      "executed_count": "已執行",
+      "skipped_count": "略過",
+      "failed_count": "失敗",
+      "total_executed_value": "實際成交總額",
+      "failed_trades": "失敗交易",
+      "error_account_required": "執行再平衡需指定單一帳戶，請於上方選擇"
     }
   },
   "search": {

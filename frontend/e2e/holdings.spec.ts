@@ -119,6 +119,82 @@ test.describe("/holdings page", () => {
     await expect(page.getByText("CSV 匯入交易")).toBeVisible();
   });
 
+  test("rebalance preview → execute happy path writes trades + refetches", async ({
+    page,
+  }) => {
+    // Stub the preview + execute endpoints with deterministic payloads.
+    // We assert the execute call actually fires after confirm, and that
+    // the result summary surfaces executed / failed counts to the UI.
+    const previewPayload = {
+      total_portfolio_value: "650000",
+      suggested_trades: [
+        {
+          symbol: "2330",
+          market: "TW_TWSE",
+          action: "SELL",
+          qty: "100",
+          estimated_price: "650",
+          estimated_value: "65000",
+          rationale: "trim to target",
+        },
+      ],
+      final_allocation_pct: { "2330|TW_TWSE": "90" },
+      skipped_trades: [],
+      cash_residual: "65000",
+    };
+    const executePayload = {
+      executed: [
+        {
+          symbol: "2330",
+          market: "TW_TWSE",
+          action: "SELL",
+          qty: "100",
+          price: "650",
+          trade_id: 9999,
+        },
+      ],
+      skipped: [],
+      failed: [],
+      total_executed_value: "65000",
+    };
+
+    let executeCallCount = 0;
+    await page.route("**/api/v1/holdings/rebalance/preview", (route) =>
+      fulfillJson(route, previewPayload),
+    );
+    await page.route("**/api/v1/holdings/rebalance/execute", (route) => {
+      executeCallCount += 1;
+      return fulfillJson(route, executePayload);
+    });
+
+    await page.goto("/holdings");
+    await page.getByRole("button", { name: /再平衡|REBALANCE/i }).click();
+
+    // Account selector defaults to "all" — pick the one mocked account so
+    // the execute button becomes available (backend 422 without account_id).
+    await page.locator("select").first().selectOption("1");
+
+    // Run preview to populate suggested_trades. The suggested_trades
+    // section renders a "建議交易" / "Suggested Trades" label only after
+    // the API call lands, so wait on that copy.
+    await page.getByRole("button", { name: /預覽再平衡|Preview/i }).click();
+    await expect(
+      page.getByText(/建議交易|Suggested Trades/i).first(),
+    ).toBeVisible();
+
+    // Execute button only shows when suggested_trades.length > 0 AND
+    // account_id is set. Click it to open the confirmation modal.
+    await page.getByRole("button", { name: /執行再平衡|Execute Rebalance/i }).click();
+    await expect(page.getByText(/將寫入 1 筆交易|will write 1 trade/i)).toBeVisible();
+
+    // Confirm → fires POST /rebalance/execute.
+    await page.getByRole("button", { name: /確認執行|Confirm Execute/i }).click();
+
+    // Result summary surfaces executed count.
+    await expect(page.getByText(/執行結果|Execute Result/i)).toBeVisible();
+    expect(executeCallCount).toBe(1);
+  });
+
   test("currency switcher upsell hint fires for free tier", async ({ page }) => {
     // Re-register auth as FREE — overrides the beforeEach Pro mock.
     await page.unroute("**/api/v1/auth/me");

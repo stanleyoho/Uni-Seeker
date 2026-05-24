@@ -84,7 +84,21 @@
       "sell_label": "SELL",
       "skip_reason_below_min": "Below min trade value",
       "skip_reason_missing_price": "No quote available",
-      "skip_reason_exit_below_min": "Position too small to exit"
+      "skip_reason_exit_below_min": "Position too small to exit",
+      "execute_btn": "Execute Rebalance",
+      "execute_requires_account": "Select a single account above to execute. Aggregate mode is preview-only.",
+      "executing": "Executing...",
+      "confirm_title": "Confirm Execute",
+      "confirm_message": "This will write {count} trade(s) to {account}. Continue?",
+      "confirm_total_value": "Total expected value",
+      "confirm_btn": "Confirm Execute",
+      "execute_result": "Execute Result",
+      "executed_count": "Executed",
+      "skipped_count": "Skipped",
+      "failed_count": "Failed",
+      "total_executed_value": "Total executed value",
+      "failed_trades": "Failed Trades",
+      "error_account_required": "Execute requires a single account; please pick one above."
     }
   },
   "search": {
