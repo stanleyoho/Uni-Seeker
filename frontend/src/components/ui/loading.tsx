@@ -1,17 +1,19 @@
+import React from "react";
+
 interface LoadingSpinnerProps {
   text?: string;
   size?: "sm" | "md" | "lg";
   fullPage?: boolean;
 }
 
-const sizeMap = {
+const SIZE_MAP = {
   sm: { box: "w-5 h-5", ring: 18, stroke: 2 },
   md: { box: "w-8 h-8", ring: 30, stroke: 2.5 },
   lg: { box: "w-12 h-12", ring: 46, stroke: 3 },
-};
+} as const;
 
-export function LoadingSpinner({ text, size = "md", fullPage = false }: LoadingSpinnerProps) {
-  const s = sizeMap[size];
+export const LoadingSpinner = React.memo(function LoadingSpinner({ text, size = "md", fullPage = false }: LoadingSpinnerProps) {
+  const s = SIZE_MAP[size];
   const r = s.ring / 2 - s.stroke;
   const circumference = 2 * Math.PI * r;
 
@@ -59,4 +61,4 @@ export function LoadingSpinner({ text, size = "md", fullPage = false }: LoadingS
       {content}
     </div>
   );
-}
+});

@@ -9,10 +9,10 @@ from app.modules.screener.engine import ScreenerEngine
 
 
 def _make_prices(symbol: str, closes: list[float]) -> list[StockPrice]:
+    # Use a dummy stock_id for unit tests
     return [
         StockPrice(
-            symbol=symbol,
-            market=Market.TW_TWSE,
+            stock_id=1,
             date=date(2026, 4, i + 1),
             open=Decimal(str(c - 1)),
             high=Decimal(str(c + 2)),

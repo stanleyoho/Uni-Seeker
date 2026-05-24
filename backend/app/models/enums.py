@@ -33,10 +33,14 @@ UserTierType = PgEnum(
     UserTier,
     name="user_tier_enum",
     create_type=False,
+    # Python enum NAME (e.g. "FREE") differs from VALUE ("free") — PG enum
+    # was created with the lowercase values, so we must serialize value, not name.
+    values_callable=lambda obj: [e.value for e in obj],
 )
 
 NotificationStatusType = PgEnum(
     NotificationStatus,
     name="notification_status_enum",
     create_type=False,
+    values_callable=lambda obj: [e.value for e in obj],
 )

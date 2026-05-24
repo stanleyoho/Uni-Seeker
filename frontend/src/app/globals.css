@@ -1,36 +1,87 @@
 @import "tailwindcss";
 
 :root {
-  /* Glint-style terminal dark theme */
-  --background: #08090d;
-  --bg-secondary: #0e1018;
-  --foreground: #e2e8f0;
-  --card-bg: #12141e;
-  --card-hover: #181b28;
-  --card-active: #1e2235;
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.03);
+  --background: #000000;
+  --bg-secondary: #0a0a0a;
+  --foreground: #FFFFFF;
+  --card-bg: rgba(255,255,255,0.03);
+  --card-hover: rgba(255,255,255,0.06);
+  --card-active: rgba(255,255,255,0.09);
+  --border-color: rgba(255,255,255,0.12);
+  --border-subtle: rgba(255,255,255,0.06);
+  --accent-primary: #EE3F2C;
+  --accent-primary-hover: #d63526;
+  --accent-cyan: #00E5FF;
   --accent-blue: #3b82f6;
   --accent-blue-hover: #2563eb;
   --accent-blue-glow: rgba(59, 130, 246, 0.2);
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --stock-up: #ef4444;
-  --stock-up-bg: rgba(239, 68, 68, 0.1);
-  --stock-down: #22c55e;
-  --stock-down-bg: rgba(34, 197, 94, 0.1);
-  --stock-flat: #94a3b8;
-  --score-excellent: #22c55e;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --stock-up: #EE3F2C;
+  --stock-up-bg: rgba(238,63,44,0.1);
+  --stock-down: #10B981;
+  --stock-down-bg: rgba(16,185,129,0.1);
+  --stock-flat: #9CA3AF;
+  --score-excellent: #10B981;
   --score-good: #eab308;
-  --score-poor: #ef4444;
+  --score-poor: #EE3F2C;
   --amber: #f59e0b;
+  --glass-bg: rgba(255,255,255,0.03);
+  --glass-blur: blur(40px) saturate(180%);
+  --glass-gradient: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+  --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4);
+  --glass-radius: 0;
+  --font-xs: 0.6875rem;
+  --font-sm: 0.75rem;
+  --font-base: 0.875rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.5rem;
+  --font-2xl: 2rem;
+  --page-padding: 1rem;
+  --page-padding-md: 1.5rem;
+  --page-max-width: 90rem;
+  --header-height: 64px;
+  --ticker-height: 40px;
+}
+
+[data-theme="light"] {
+  --background: #FAFAFA;
+  --bg-secondary: #F0F0F0;
+  --foreground: #1A1A1A;
+  --card-bg: #FFFFFF;
+  --card-hover: #F5F5F5;
+  --card-active: #EEEEEE;
+  --border-color: rgba(0,0,0,0.10);
+  --border-subtle: rgba(0,0,0,0.05);
+  --accent-primary: #D42B1E;
+  --accent-primary-hover: #B71C1C;
+  --accent-cyan: #0288D1;
+  --accent-blue: #2563eb;
+  --accent-blue-hover: #1d4ed8;
+  --accent-blue-glow: rgba(37, 99, 235, 0.2);
+  --text-secondary: #4A4A4A;
+  --text-muted: #7A7A7A;
+  --stock-up: #D42B1E;
+  --stock-up-bg: rgba(212,43,30,0.08);
+  --stock-down: #1B8A4E;
+  --stock-down-bg: rgba(27,138,78,0.08);
+  --stock-flat: #7A7A7A;
+  --score-excellent: #1B8A4E;
+  --score-good: #ca8a04;
+  --score-poor: #D42B1E;
+  --amber: #d97706;
+  --glass-bg: #FFFFFF;
+  --glass-blur: none;
+  --glass-gradient: none;
+  --glass-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --glass-radius: 2px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-rubik);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 html {
@@ -40,7 +91,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Rubik', sans-serif;
 }
 
 /* Custom scrollbar */
@@ -62,10 +113,22 @@ body {
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* Custom focus ring */
-*:focus-visible {
+/* Ensure focus-visible is consistent across all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline for mouse clicks */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* =========================================
@@ -171,9 +234,18 @@ body {
    Utility classes
    ========================================= */
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Monospaced numbers for financial data */
 .mono-nums {
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -201,9 +273,29 @@ body {
   -webkit-backdrop-filter: blur(16px);
 }
 
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
 /* Gradient border bottom for nav */
 .nav-border-gradient {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .nav-border-gradient {
+  border-bottom: 2px solid var(--accent-primary);
 }
 
 /* =========================================
@@ -236,7 +328,7 @@ body {
   min-width: 20px;
   height: 20px;
   padding: 0 4px;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 11px;
   color: var(--text-muted);
   background: rgba(255, 255, 255, 0.06);

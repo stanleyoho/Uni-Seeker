@@ -12,11 +12,83 @@
     "compare": "比較",
     "heatmap": "熱力圖",
     "lowBase": "低基期",
-    "institutional": "三大法人",
-    "language": "語言"
+    "institutional": "機構持倉",
+    "scanner": "訊號掃描",
+    "portfolio": "投資組合",
+    "analysis": "分析",
+    "trading": "回測",
+    "marketGroup": "市場",
+    "language": "語言",
+    "markets": "市場",
+    "research": "研究",
+    "alerts": "通知",
+    "marketOpen": "盤中",
+    "marketClosed": "休市",
+    "quickSearch": "搜尋",
+    "backtestHistory": "歷史",
+    "journal": "交易日誌",
+    "holdings": "持倉"
+  },
+  "holdings": {
+    "title": "持倉對賬",
+    "kpi": {
+      "total_value": "總市值",
+      "total_cost": "總成本",
+      "unrealized_pnl": "未實現損益",
+      "daily_change": "今日漲跌",
+      "position_count": "持股檔數",
+      "by_currency": "幣別分布"
+    },
+    "actions": {
+      "add_account": "新增帳戶",
+      "add_trade": "記錄交易",
+      "add_dividend": "記錄配息",
+      "rebalance": "再平衡"
+    },
+    "currency": {
+      "title": "基準幣別",
+      "upgrade_hint": "升級 Pro 解鎖多幣別 portfolio"
+    },
+    "empty": {
+      "title": "無持倉",
+      "cta": "記錄交易開始"
+    },
+    "rebalance": {
+      "title": "Portfolio 再平衡",
+      "subtitle": "輸入目標配置百分比，系統會計算需要的交易",
+      "current_holdings": "目前持倉",
+      "target_allocation": "目標配置",
+      "symbol": "標的",
+      "qty": "數量",
+      "value": "市值",
+      "current_pct": "目前 %",
+      "target_pct": "目標 %",
+      "sum_total": "目標合計",
+      "min_trade_value": "最小交易金額",
+      "preview_btn": "預覽再平衡",
+      "computing": "計算中...",
+      "suggested_trades": "建議交易",
+      "skipped_trades": "略過交易",
+      "final_allocation": "再平衡後配置",
+      "cash_residual": "未配置現金",
+      "no_trades_needed": "無需交易，配置已達標",
+      "apply_btn": "套用此再平衡",
+      "cancel_btn": "取消",
+      "close_btn": "關閉",
+      "error_sum": "目標配置百分比合計需為 100%",
+      "error_invalid": "目標配置有誤，請檢查輸入",
+      "error_upgrade": "升級 Pro 解鎖 Portfolio Rebalancing",
+      "error_account_not_found": "帳戶不存在",
+      "error_generic": "預覽失敗，請稍後再試",
+      "buy_label": "買入",
+      "sell_label": "賣出",
+      "skip_reason_below_min": "金額低於門檻",
+      "skip_reason_missing_price": "無報價可用",
+      "skip_reason_exit_below_min": "持倉太小，不退出"
+    }
   },
   "search": {
-    "placeholder": "輸入代號或名稱 (例: 2330、台積電、AAPL)",
+    "placeholder": "輸入代號或名稱",
     "button": "搜尋",
     "listed": "上市",
     "otc": "上櫃",
@@ -51,7 +123,15 @@
     "latestRevenue": "最新營收",
     "trend": "趨勢",
     "revenueHigh": "營收新高",
-    "revenueLow": "營收新低"
+    "revenueLow": "營收新低",
+    "indicators": "技術指標"
+  },
+  "indicators": {
+    "title": "技術指標",
+    "showParams": "參數",
+    "hideParams": "隱藏參數",
+    "paramToggle": "切換參數控制",
+    "selectIndicators": "選擇指標"
   },
   "financial": {
     "healthScore": "健康度評分",
@@ -197,6 +277,54 @@
     "noData": "無資料，請先更新股價",
     "viewDetail": "查看個股"
   },
+  "institutional_13f": {
+    "title": "機構持倉追蹤 (13F)",
+    "subtitle": "SEC 13F-HR 季度持倉與異動",
+    "actions": {
+      "subscribe": "+ 訂閱機構/基金",
+      "unsubscribe": "取消訂閱",
+      "refresh": "重新整理",
+      "search": "搜尋 filer"
+    },
+    "empty": {
+      "no_filers": "尚未訂閱任何機構 / 基金",
+      "search_hint": "從 SEC EDGAR 搜尋 13F 申報人"
+    },
+    "diff": {
+      "title": "季度異動",
+      "changes": {
+        "new": "新增",
+        "increased": "加碼",
+        "decreased": "減碼",
+        "exited": "清倉",
+        "unchanged": "持平"
+      }
+    },
+    "errors": {
+      "limit_exceeded": "已達追蹤上限，升級到 Pro",
+      "already_subscribed": "已在追蹤清單",
+      "refresh_in_flight": "另一個 refresh 進行中，請稍候"
+    },
+    "views": {
+      "holdings": "持倉快照",
+      "holdings_timeline": "持倉時間軸",
+      "multi_filer_compare": "多 Filer 比較",
+      "top_movers": "Top Movers"
+    },
+    "compare": {
+      "select_filers": "選擇 Filer (最多 5)",
+      "common_holdings": "只顯示共同持倉 (≥2 filer)",
+      "sort_by": "排序",
+      "sort_by_value": "總價值 (USD)",
+      "sort_by_filer_count": "持有 filer 數"
+    },
+    "movers": {
+      "top_buys": "TOP BUYS · 新增 / 加碼",
+      "top_sells": "TOP SELLS · 減碼 / 清倉",
+      "empty_buys": "本期無新增 / 加碼",
+      "empty_sells": "本期無減碼 / 清倉"
+    }
+  },
   "institutional": {
     "title": "三大法人買賣超",
     "subtitle": "外資、投信、自營商每日買賣超統計",
@@ -238,6 +366,208 @@
     "shares": "股數",
     "reason": "原因",
     "noResults": "尚無回測結果",
-    "insufficientData": "資料不足，請先回補歷史股價"
+    "insufficientData": "資料不足，請先回補歷史股價",
+    "builderTab": "策略建構",
+    "queueTab": "回測佇列",
+    "resultsTab": "回測結果",
+    "historyTab": "歷史紀錄",
+    "singleMode": "單一策略",
+    "compositeMode": "複合策略",
+    "gridSearchOn": "Grid Search ON",
+    "gridSearchOff": "Grid Search OFF",
+    "stopLoss": "停損",
+    "takeProfit": "停利",
+    "addToQueue": "加入佇列",
+    "runNow": "立即執行",
+    "paramSettings": "參數設定",
+    "riskControl": "風險控制",
+    "capitalConfig": "資金配置"
+  },
+  "portfolio": {
+    "title": "組合回測",
+    "addStock": "新增標的",
+    "equalWeight": "均分權重",
+    "weight": "權重",
+    "strategy": "策略",
+    "rebalanceMode": "再平衡模式",
+    "noRebalance": "不再平衡",
+    "periodic": "定期",
+    "threshold": "偏離",
+    "periodDays": "再平衡週期 (天)",
+    "thresholdPct": "偏離閾值 (%)",
+    "runPortfolio": "執行組合回測",
+    "noResults": "尚無回測結果"
+  },
+  "scanner": {
+    "title": "訊號掃描",
+    "subtitle": "掃描全市場股票的技術指標訊號",
+    "selectStrategy": "策略選擇",
+    "selectAll": "不勾選則使用全部",
+    "startScan": "開始掃描",
+    "noScan": "尚未執行掃描",
+    "noScanHint": "選擇策略後點擊「開始掃描」，分析全市場技術指標訊號",
+    "totalScanned": "掃描股票數",
+    "strongBuy": "強力買進",
+    "buy": "買進",
+    "hold": "持有",
+    "sell": "賣出",
+    "strongSell": "強力賣出",
+    "backtest": "回測"
+  },
+  "settings": {
+    "title": "設定",
+    "notifications": {
+      "title": "通知設定",
+      "subtitle": "管理你的通知通道與每檔 13F 機構的提醒開關",
+      "telegram": {
+        "title": "Telegram 通知",
+        "chat_id_label": "Chat ID",
+        "chat_id_placeholder": "例如：123456789 或 @my_channel",
+        "current_label": "目前綁定",
+        "not_set": "未設定",
+        "help": "從 @userinfobot 取得你的 Telegram chat ID",
+        "save": "儲存",
+        "clear": "清除綁定",
+        "test": "傳送測試訊息",
+        "test_coming_soon": "測試發送功能即將推出",
+        "save_success": "已更新 Telegram 通知設定",
+        "save_error": "更新失敗，請稍後再試"
+      },
+      "f13": {
+        "title": "13F 機構通知",
+        "subtitle": "新填報送達時推送 Telegram 提醒",
+        "no_subscribed": "你還沒訂閱任何機構",
+        "enable_all": "啟用全部",
+        "disable_all": "停用全部",
+        "column_filer": "機構",
+        "column_notify": "新填報通知",
+        "toggle_aria": "切換通知"
+      },
+      "channels": {
+        "title": "其他通知通道",
+        "coming_soon": "LINE / Webhook 即將推出"
+      },
+      "email": {
+        "title": "Email 通知",
+        "help": "啟用後，新 13F filing 與警示規則觸發會寄送到你的電子郵件",
+        "destination_label": "收件地址",
+        "status_enabled": "已啟用 Email 通知",
+        "status_disabled": "尚未啟用 Email 通知",
+        "toggle_aria": "切換 Email 通知",
+        "save_success": "已更新 Email 通知設定",
+        "save_error": "更新失敗，請稍後再試"
+      }
+    },
+    "audit": {
+      "title": "操作紀錄",
+      "subtitle": "檢視最近 10 天的帳號操作審計紀錄",
+      "filter_label": "事件類型篩選",
+      "clear_filters": "清除篩選",
+      "refresh": "重新整理",
+      "refreshing": "更新中…",
+      "column_timestamp": "時間",
+      "column_event_type": "事件類型",
+      "column_resource": "目標物件",
+      "column_details": "詳情",
+      "expand": "展開",
+      "collapse": "收合",
+      "after_state": "更新後狀態",
+      "metadata": "metadata",
+      "no_data": "（無資料）",
+      "empty": "目前沒有可顯示的審計紀錄",
+      "error": "讀取失敗，請稍後再試",
+      "prev": "上一頁",
+      "next": "下一頁",
+      "pagination_summary": "顯示 {from}–{to}，共 {total} 筆",
+      "retention_note": "僅顯示最近 10 天的紀錄；超過 10 天的事件仍保存於後端供合規查詢。"
+    },
+    "alerts": {
+      "title": "我的提醒規則",
+      "subtitle": "設定價格、損益或投組總值條件，觸發時透過 Telegram 通知。",
+      "create": "新增規則",
+      "refresh": "重新整理",
+      "refreshing": "更新中…",
+      "no_rules": "尚未建立任何規則。",
+      "loading": "讀取中…",
+      "error": "讀取失敗，請稍後再試",
+      "column_name": "名稱",
+      "column_rule_type": "類型",
+      "column_target": "目標",
+      "column_threshold": "閾值",
+      "column_status": "狀態",
+      "column_last_check": "最近檢查",
+      "column_actions": "操作",
+      "status_active": "啟用中",
+      "status_paused": "已暫停",
+      "status_triggered": "已觸發",
+      "action_pause": "暫停",
+      "action_resume": "啟用",
+      "action_evaluate": "立即檢查",
+      "action_delete": "刪除",
+      "form_name": "規則名稱",
+      "form_name_placeholder": "例：NVDA 跌 10% 提醒",
+      "form_rule_type": "類型",
+      "form_symbol": "標的代號",
+      "form_symbol_placeholder": "例：NVDA / 2330",
+      "form_market": "市場",
+      "form_threshold_value": "閾值",
+      "form_threshold_type": "閾值單位",
+      "form_threshold_pct": "百分比 (%)",
+      "form_threshold_abs": "絕對值",
+      "form_save": "儲存",
+      "form_cancel": "取消",
+      "form_saving": "儲存中…",
+      "delete_confirm": "確定要刪除這條規則嗎？",
+      "rule_position_price_drop": "持股價格下跌",
+      "rule_position_price_rise": "持股價格上漲",
+      "rule_portfolio_value_above": "投組總值高於",
+      "rule_portfolio_value_below": "投組總值低於",
+      "rule_position_pnl_pct_above": "持股損益 % 高於",
+      "rule_position_pnl_pct_below": "持股損益 % 低於",
+      "evaluate_triggered": "規則已觸發：{message}",
+      "evaluate_not_triggered": "尚未觸發：{message}",
+      "limit_exceeded": "已達該方案的規則上限，請升級或刪除舊規則。",
+      "create_error": "建立失敗，請檢查輸入內容。"
+    }
+  },
+  "onboarding": {
+    "skip": "略過",
+    "next": "下一步",
+    "start": "開始使用",
+    "got_it": "完成",
+    "welcome": {
+      "close": "關閉",
+      "step1_title": "歡迎來到 Uni-Seeker",
+      "step1_subtitle": "一站式追蹤台美股持倉、機構動向，與你關心的個股。",
+      "step2_title": "核心功能",
+      "step2_subtitle": "三個你最常用的工作流，讓投資決策更有依據。",
+      "feature_holdings_title": "Holdings 對賬",
+      "feature_holdings_desc": "多帳戶 / 多幣別追蹤持股、未實現損益、配息紀錄。",
+      "feature_institutional_title": "13F 機構追蹤",
+      "feature_institutional_desc": "追蹤大型機構持倉變化，分析買賣動向與時序。",
+      "feature_watchlist_title": "自選股研究",
+      "feature_watchlist_desc": "建立關注清單，搭配技術 / 籌碼指標做深度研究。",
+      "step3_title": "設定通知",
+      "step3_subtitle": "選擇透過 Telegram、Email 或 Web Push 接收價格與持倉提醒。",
+      "step3_cta": "前往通知設定",
+      "step4_title": "下一步",
+      "step4_subtitle": "從建立你的第一個券商帳戶開始，體驗持倉對賬。"
+    },
+    "tour": {
+      "holdings": {
+        "step1_title": "建立你的第一個券商帳戶",
+        "step1_content": "Uni-Seeker 支援多帳戶管理，先建立一個帳戶來存放你的持股。",
+        "step2_title": "新增交易來追蹤持股",
+        "step2_content": "記錄買進 / 賣出資料，系統自動計算成本、損益與部位。",
+        "step3_title": "Portfolio Summary",
+        "step3_content": "這裡顯示你的總市值、總成本、未實現損益與今日漲跌。",
+        "step4_title": "持股清單",
+        "step4_content": "依股票列出單檔持股、平均成本、現價與未實現損益。",
+        "step5_title": "多幣別 Portfolio",
+        "step5_content": "Pro 方案解鎖多幣別檢視 — 自動換算成你選擇的基準幣別。",
+        "step6_title": "完成！",
+        "step6_content": "你已掌握 Holdings 的核心功能。隨時可以從設定重新打開導覽。"
+      }
+    }
   }
 }

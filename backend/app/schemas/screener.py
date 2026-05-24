@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ConditionSchema(BaseModel):
@@ -16,7 +16,7 @@ class ScreenRequest(BaseModel):
     operator: str = "AND"
     sort_by: str | None = None
     sort_order: str = "asc"
-    limit: int = 50
+    limit: int = Field(default=50, le=500, ge=1)
 
 
 class ScreenResultItem(BaseModel):

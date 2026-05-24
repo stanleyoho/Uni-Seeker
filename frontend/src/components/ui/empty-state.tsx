@@ -7,11 +7,19 @@ interface EmptyStateProps {
   action?: ReactNode;
 }
 
+const DefaultIcon = (
+  <svg className="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3v18h18" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16l4-6 3 4 2-3 4 5" />
+    <circle cx="18" cy="7" r="2" strokeWidth={1.5} />
+  </svg>
+);
+
 export function EmptyState({ icon, title, message, action }: EmptyStateProps) {
   return (
     <div className="text-center py-16">
-      {icon && <div className="text-[var(--text-muted)] mb-3 flex justify-center">{icon}</div>}
-      {title && <h3 className="text-white font-semibold mb-1">{title}</h3>}
+      <div className="text-[var(--text-muted)] mb-3 flex justify-center">{icon ?? DefaultIcon}</div>
+      {title && <h3 className="text-[var(--foreground)] font-semibold mb-1">{title}</h3>}
       <p className="text-[var(--text-muted)] text-sm">{message}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -31,7 +39,7 @@ export function ErrorState({ message, onRetry, retryLabel = "Retry" }: ErrorStat
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-white hover:bg-[var(--card-hover)] transition-all duration-200"
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--foreground)] hover:bg-[var(--card-hover)] transition-all duration-200"
         >
           {retryLabel}
         </button>

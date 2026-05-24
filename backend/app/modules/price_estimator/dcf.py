@@ -1,64 +1,97 @@
-from app.modules.price_estimator.base import ValuationEstimate
+from decimal import Decimal
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.financial_metrics import FinancialMetrics
+from app.models.financial_statement import FinancialStatement
+from app.modules.price_estimator.base import EstimateResult
+from app.modules.price_estimator.utils import ValuationUtils
 
 
-def estimate_by_dcf(
-    free_cash_flow: float,
-    growth_rate: float = 0.05,
-    terminal_growth: float = 0.02,
-    discount_rate: float = 0.10,
-    shares_outstanding: float = 1.0,
-    projection_years: int = 5,
-) -> ValuationEstimate:
-    """Simplified DCF: project FCF, discount back, add terminal value."""
-    if free_cash_flow <= 0 or shares_outstanding <= 0:
-        return ValuationEstimate(
-            model_name="DCF", cheap_price=0, fair_price=0, expensive_price=0,
-            confidence=0.0, details={},
+class DCFEstimator:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def estimate(self, stock_id: int) -> EstimateResult:
+        # 1. Fetch latest annual FCF
+        fcf_query = (
+            select(FinancialMetrics.fcf)
+            .where(FinancialMetrics.stock_id == stock_id)
+            .where(FinancialMetrics.fcf != None)
+            .order_by(FinancialMetrics.period.desc())
+            .limit(4)
         )
+        fcf_result = await self.session.execute(fcf_query)
+        current_fcf = sum([float(row[0]) for row in fcf_result.all()])
 
-    if discount_rate <= terminal_growth:
-        return ValuationEstimate(
-            model_name="DCF", cheap_price=0, fair_price=0, expensive_price=0,
-            confidence=0.0, details={},
+        # 2. Fetch shares outstanding (precise heuristic)
+        shares_query = (
+            select(FinancialStatement.data)
+            .where(FinancialStatement.stock_id == stock_id)
+            .where(FinancialStatement.statement_type == "balance")
+            .order_by(FinancialStatement.period.desc())
+            .limit(1)
         )
+        shares_result = await self.session.execute(shares_query)
+        latest_bs = shares_result.scalar_one_or_none()
+        
+        capital = 0
+        if latest_bs:
+            # TW SE precise keys
+            capital = latest_bs.get("股本", latest_bs.get("普通股股本", latest_bs.get("權益總額", 0)))
+        
+        shares_outstanding = (capital / 10) if capital > 0 else 0
 
-    # Project FCF
-    projected_fcf: list[float] = []
-    fcf = free_cash_flow
-    for _ in range(projection_years):
-        fcf *= (1 + growth_rate)
-        projected_fcf.append(fcf)
+        if current_fcf <= 0 or shares_outstanding <= 0:
+            return EstimateResult(
+                model_type="dcf",
+                cheap_price=None,
+                fair_price=None,
+                expensive_price=None,
+                confidence=Decimal("0.0"),
+                details={"reason": "Negative FCF or invalid share count"}
+            )
 
-    # Discount projected FCF
-    pv_fcf = sum(
-        fcf_i / (1 + discount_rate) ** (i + 1)
-        for i, fcf_i in enumerate(projected_fcf)
-    )
+        # 3. Dynamic Parameters
+        growth_rate = await ValuationUtils.get_dynamic_growth_rate(self.session, stock_id)
+        discount_rate = await ValuationUtils.estimate_wacc(self.session, stock_id)
+        terminal_growth = 0.02
+        projection_years = 5
 
-    # Terminal value
-    terminal_fcf = projected_fcf[-1] * (1 + terminal_growth)
-    terminal_value = terminal_fcf / (discount_rate - terminal_growth)
-    pv_terminal = terminal_value / (1 + discount_rate) ** projection_years
+        # 4. Two-Stage DCF Calculation
+        pv_fcf = 0
+        fcf_projection = current_fcf
+        for t in range(1, projection_years + 1):
+            fcf_projection *= (1 + growth_rate)
+            pv_fcf += fcf_projection / ((1 + discount_rate) ** t)
 
-    total_value = pv_fcf + pv_terminal
-    fair_per_share = total_value / shares_outstanding
+        terminal_value = (fcf_projection * (1 + terminal_growth)) / (discount_rate - terminal_growth)
+        pv_terminal = terminal_value / ((1 + discount_rate) ** projection_years)
 
-    # Cheap/expensive with margin of safety
-    cheap = round(fair_per_share * 0.7, 2)
-    fair = round(fair_per_share, 2)
-    expensive = round(fair_per_share * 1.3, 2)
+        total_value = pv_fcf + pv_terminal
+        fair_price_num = total_value / shares_outstanding
 
-    confidence = 0.5  # DCF has many assumptions
+        # 5. Sanity Check (Validation)
+        # If fair price is 10x current price, something is wrong with inputs
+        # But we handle this in composite.
 
-    return ValuationEstimate(
-        model_name="DCF",
-        cheap_price=cheap,
-        fair_price=fair,
-        expensive_price=expensive,
-        confidence=confidence,
-        details={
-            "fcf": free_cash_flow, "growth_rate": growth_rate,
-            "terminal_growth": terminal_growth, "discount_rate": discount_rate,
-            "pv_fcf": round(pv_fcf, 2), "pv_terminal": round(pv_terminal, 2),
-        },
-    )
+        fair_price = Decimal(str(round(fair_price_num, 2)))
+        cheap_price = Decimal(str(round(fair_price_num * 0.7, 2)))
+        expensive_price = Decimal(str(round(fair_price_num * 1.3, 2)))
+
+        return EstimateResult(
+            model_type="dcf",
+            cheap_price=cheap_price,
+            fair_price=fair_price,
+            expensive_price=expensive_price,
+            confidence=Decimal("0.60"),
+            details={
+                "current_fcf": round(current_fcf, 2),
+                "growth_rate": round(growth_rate, 4),
+                "discount_rate": round(discount_rate, 4),
+                "terminal_growth": terminal_growth,
+                "pv_fcf": round(pv_fcf, 2),
+                "pv_terminal": round(pv_terminal, 2),
+                "shares_outstanding": int(shares_outstanding)
+            }
+        )

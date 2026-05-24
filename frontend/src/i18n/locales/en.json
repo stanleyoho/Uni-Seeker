@@ -12,11 +12,83 @@
     "compare": "Compare",
     "heatmap": "Heatmap",
     "lowBase": "Low Base",
-    "institutional": "Institutional",
-    "language": "Language"
+    "institutional": "13F",
+    "portfolio": "Portfolio",
+    "scanner": "Signal Scanner",
+    "analysis": "Analysis",
+    "trading": "Trading",
+    "marketGroup": "Market",
+    "language": "Language",
+    "markets": "Markets",
+    "research": "Research",
+    "alerts": "Alerts",
+    "marketOpen": "MARKET OPEN",
+    "marketClosed": "CLOSED",
+    "quickSearch": "Search",
+    "backtestHistory": "History",
+    "journal": "Journal",
+    "holdings": "Holdings"
+  },
+  "holdings": {
+    "title": "Holdings",
+    "kpi": {
+      "total_value": "Total Value",
+      "total_cost": "Total Cost",
+      "unrealized_pnl": "Unrealized P&L",
+      "daily_change": "Daily Change",
+      "position_count": "Positions",
+      "by_currency": "Currency Mix"
+    },
+    "actions": {
+      "add_account": "New Account",
+      "add_trade": "Log Trade",
+      "add_dividend": "Log Dividend",
+      "rebalance": "Rebalance"
+    },
+    "currency": {
+      "title": "Base Currency",
+      "upgrade_hint": "Upgrade to Pro for multi-currency portfolio"
+    },
+    "empty": {
+      "title": "No Holdings",
+      "cta": "Log a trade to begin"
+    },
+    "rebalance": {
+      "title": "Portfolio Rebalance",
+      "subtitle": "Enter target allocation; we compute the trades to get there",
+      "current_holdings": "Current Holdings",
+      "target_allocation": "Target Allocation",
+      "symbol": "Symbol",
+      "qty": "Qty",
+      "value": "Value",
+      "current_pct": "Current %",
+      "target_pct": "Target %",
+      "sum_total": "Total",
+      "min_trade_value": "Min Trade Value",
+      "preview_btn": "Preview Rebalance",
+      "computing": "Computing...",
+      "suggested_trades": "Suggested Trades",
+      "skipped_trades": "Skipped",
+      "final_allocation": "Final Allocation",
+      "cash_residual": "Unallocated Cash",
+      "no_trades_needed": "No trades needed; portfolio is on target",
+      "apply_btn": "Apply Rebalance",
+      "cancel_btn": "Cancel",
+      "close_btn": "Close",
+      "error_sum": "Target percentages must sum to 100%",
+      "error_invalid": "Target allocation is invalid; please review",
+      "error_upgrade": "Upgrade to Pro to unlock Portfolio Rebalancing",
+      "error_account_not_found": "Account not found",
+      "error_generic": "Preview failed, please try again",
+      "buy_label": "BUY",
+      "sell_label": "SELL",
+      "skip_reason_below_min": "Below min trade value",
+      "skip_reason_missing_price": "No quote available",
+      "skip_reason_exit_below_min": "Position too small to exit"
+    }
   },
   "search": {
-    "placeholder": "Enter symbol or name (e.g., 2330, TSMC, AAPL)",
+    "placeholder": "Enter symbol or name",
     "button": "Search",
     "listed": "Listed",
     "otc": "OTC",
@@ -51,7 +123,15 @@
     "latestRevenue": "Latest Revenue",
     "trend": "Trend",
     "revenueHigh": "Revenue High",
-    "revenueLow": "Revenue Low"
+    "revenueLow": "Revenue Low",
+    "indicators": "Indicators"
+  },
+  "indicators": {
+    "title": "Technical Indicators",
+    "showParams": "Params",
+    "hideParams": "Hide Params",
+    "paramToggle": "Toggle parameter controls",
+    "selectIndicators": "Select indicators"
   },
   "financial": {
     "healthScore": "Health Score",
@@ -197,6 +277,54 @@
     "noData": "No data. Please update stock prices first.",
     "viewDetail": "View Stock"
   },
+  "institutional_13f": {
+    "title": "Institutional 13F Tracker",
+    "subtitle": "SEC 13F-HR quarterly holdings & QoQ moves",
+    "actions": {
+      "subscribe": "+ Subscribe Filer",
+      "unsubscribe": "Unsubscribe",
+      "refresh": "Refresh",
+      "search": "Search filers"
+    },
+    "empty": {
+      "no_filers": "No filers tracked yet",
+      "search_hint": "Search SEC EDGAR for 13F filers"
+    },
+    "diff": {
+      "title": "Quarter-over-Quarter Moves",
+      "changes": {
+        "new": "New",
+        "increased": "Increased",
+        "decreased": "Decreased",
+        "exited": "Exited",
+        "unchanged": "Unchanged"
+      }
+    },
+    "errors": {
+      "limit_exceeded": "Tracking limit reached — upgrade to Pro",
+      "already_subscribed": "Already subscribed",
+      "refresh_in_flight": "Another refresh is in flight, please wait"
+    },
+    "views": {
+      "holdings": "Holdings",
+      "holdings_timeline": "Timeline",
+      "multi_filer_compare": "Compare Filers",
+      "top_movers": "Top Movers"
+    },
+    "compare": {
+      "select_filers": "Select Filers (up to 5)",
+      "common_holdings": "Only common holdings (≥2 filers)",
+      "sort_by": "Sort by",
+      "sort_by_value": "Total value (USD)",
+      "sort_by_filer_count": "# of filers holding"
+    },
+    "movers": {
+      "top_buys": "TOP BUYS · New / Increased",
+      "top_sells": "TOP SELLS · Decreased / Exited",
+      "empty_buys": "No new / increased positions this period",
+      "empty_sells": "No decreased / exited positions this period"
+    }
+  },
   "institutional": {
     "title": "Institutional Investors",
     "subtitle": "Daily buy/sell data for foreign investors, investment trust, and dealers",
@@ -238,6 +366,208 @@
     "shares": "Shares",
     "reason": "Reason",
     "noResults": "No backtest results yet",
-    "insufficientData": "Insufficient data. Please backfill historical prices first."
+    "insufficientData": "Insufficient data. Please backfill historical prices first.",
+    "builderTab": "Strategy Builder",
+    "queueTab": "Backtest Queue",
+    "resultsTab": "Results",
+    "historyTab": "History",
+    "singleMode": "Single Strategy",
+    "compositeMode": "Composite Strategy",
+    "gridSearchOn": "Grid Search ON",
+    "gridSearchOff": "Grid Search OFF",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "addToQueue": "Add to Queue",
+    "runNow": "Run Now",
+    "paramSettings": "Parameters",
+    "riskControl": "Risk Control",
+    "capitalConfig": "Capital Allocation"
+  },
+  "portfolio": {
+    "title": "Portfolio Backtest",
+    "addStock": "Add Stock",
+    "equalWeight": "Equal Weight",
+    "weight": "Weight",
+    "strategy": "Strategy",
+    "rebalanceMode": "Rebalance Mode",
+    "noRebalance": "No Rebalance",
+    "periodic": "Periodic",
+    "threshold": "Threshold",
+    "periodDays": "Rebalance Period (days)",
+    "thresholdPct": "Deviation Threshold (%)",
+    "runPortfolio": "Run Portfolio Backtest",
+    "noResults": "No backtest results yet"
+  },
+  "scanner": {
+    "title": "Signal Scanner",
+    "subtitle": "Scan all market stocks for technical indicator signals",
+    "selectStrategy": "Select Strategy",
+    "selectAll": "Leave unchecked to use all",
+    "startScan": "Start Scan",
+    "noScan": "No scan performed yet",
+    "noScanHint": "Select strategies and click \"Start Scan\" to analyze technical signals across the market",
+    "totalScanned": "Stocks Scanned",
+    "strongBuy": "Strong Buy",
+    "buy": "Buy",
+    "hold": "Hold",
+    "sell": "Sell",
+    "strongSell": "Strong Sell",
+    "backtest": "Backtest"
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": {
+      "title": "Notification Settings",
+      "subtitle": "Manage your transports and per-filer 13F notification toggles",
+      "telegram": {
+        "title": "Telegram Notifications",
+        "chat_id_label": "Chat ID",
+        "chat_id_placeholder": "e.g. 123456789 or @my_channel",
+        "current_label": "Currently linked",
+        "not_set": "Not set",
+        "help": "Get your Telegram chat ID from @userinfobot",
+        "save": "Save",
+        "clear": "Clear",
+        "test": "Send test message",
+        "test_coming_soon": "Test send is coming soon",
+        "save_success": "Telegram preferences updated",
+        "save_error": "Failed to update preferences"
+      },
+      "f13": {
+        "title": "13F Filing Notifications",
+        "subtitle": "Push a Telegram alert when a new filing arrives",
+        "no_subscribed": "You haven't subscribed to any filers yet",
+        "enable_all": "Enable all",
+        "disable_all": "Disable all",
+        "column_filer": "Filer",
+        "column_notify": "Notify on new filing",
+        "toggle_aria": "Toggle notifications"
+      },
+      "channels": {
+        "title": "Other Channels",
+        "coming_soon": "LINE / Webhook coming soon"
+      },
+      "email": {
+        "title": "Email notifications",
+        "help": "When enabled, new 13F filings and triggered alert rules are sent to your primary email.",
+        "destination_label": "Destination",
+        "status_enabled": "Email notifications enabled",
+        "status_disabled": "Email notifications disabled",
+        "toggle_aria": "Toggle email notifications",
+        "save_success": "Email preferences updated",
+        "save_error": "Update failed, please retry"
+      }
+    },
+    "audit": {
+      "title": "Audit Log",
+      "subtitle": "Review your account activity from the last 10 days",
+      "filter_label": "Event type filters",
+      "clear_filters": "Clear filters",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "column_timestamp": "Timestamp",
+      "column_event_type": "Event type",
+      "column_resource": "Resource",
+      "column_details": "Details",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "after_state": "After state",
+      "metadata": "Metadata",
+      "no_data": "(no data)",
+      "empty": "No audit entries to display.",
+      "error": "Failed to load — please try again.",
+      "prev": "Previous",
+      "next": "Next",
+      "pagination_summary": "Showing {from}–{to} of {total}",
+      "retention_note": "Showing the last 10 days only; older events remain in compliance storage."
+    },
+    "alerts": {
+      "title": "My Alert Rules",
+      "subtitle": "Set price, P&L, or portfolio-value conditions; we notify you on Telegram when triggered.",
+      "create": "New rule",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "no_rules": "No rules yet.",
+      "loading": "Loading…",
+      "error": "Failed to load — please try again.",
+      "column_name": "Name",
+      "column_rule_type": "Type",
+      "column_target": "Target",
+      "column_threshold": "Threshold",
+      "column_status": "Status",
+      "column_last_check": "Last check",
+      "column_actions": "Actions",
+      "status_active": "Active",
+      "status_paused": "Paused",
+      "status_triggered": "Triggered",
+      "action_pause": "Pause",
+      "action_resume": "Resume",
+      "action_evaluate": "Evaluate now",
+      "action_delete": "Delete",
+      "form_name": "Rule name",
+      "form_name_placeholder": "e.g. NVDA drop 10%",
+      "form_rule_type": "Type",
+      "form_symbol": "Symbol",
+      "form_symbol_placeholder": "e.g. NVDA / 2330",
+      "form_market": "Market",
+      "form_threshold_value": "Threshold",
+      "form_threshold_type": "Threshold unit",
+      "form_threshold_pct": "Percent (%)",
+      "form_threshold_abs": "Absolute",
+      "form_save": "Save",
+      "form_cancel": "Cancel",
+      "form_saving": "Saving…",
+      "delete_confirm": "Delete this rule?",
+      "rule_position_price_drop": "Position price drop",
+      "rule_position_price_rise": "Position price rise",
+      "rule_portfolio_value_above": "Portfolio value above",
+      "rule_portfolio_value_below": "Portfolio value below",
+      "rule_position_pnl_pct_above": "Position P&L % above",
+      "rule_position_pnl_pct_below": "Position P&L % below",
+      "evaluate_triggered": "Triggered: {message}",
+      "evaluate_not_triggered": "Not triggered: {message}",
+      "limit_exceeded": "Alert-rule quota reached — upgrade your plan or delete old rules.",
+      "create_error": "Could not create rule — please check the inputs."
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Get Started",
+    "got_it": "Got it!",
+    "welcome": {
+      "close": "Close",
+      "step1_title": "Welcome to Uni-Seeker",
+      "step1_subtitle": "One place to track TW + US holdings, institutional flows, and the stocks you care about.",
+      "step2_title": "Core Features",
+      "step2_subtitle": "Three workflows you'll use most — for sharper investment decisions.",
+      "feature_holdings_title": "Holdings Reconciliation",
+      "feature_holdings_desc": "Multi-account, multi-currency tracking of positions, P&L, and dividends.",
+      "feature_institutional_title": "13F Institutional Tracking",
+      "feature_institutional_desc": "Follow large-cap institutional positions and analyze buy/sell flows over time.",
+      "feature_watchlist_title": "Watchlist Research",
+      "feature_watchlist_desc": "Build watchlists with technical + flow indicators for deep research.",
+      "step3_title": "Set Up Notifications",
+      "step3_subtitle": "Choose how you receive price and position alerts — Telegram, Email, or Web Push.",
+      "step3_cta": "Open Notification Settings",
+      "step4_title": "Next Up",
+      "step4_subtitle": "Start by creating your first brokerage account to try out Holdings."
+    },
+    "tour": {
+      "holdings": {
+        "step1_title": "Create your first brokerage account",
+        "step1_content": "Uni-Seeker supports multi-account portfolios — start by creating one account to hold your positions.",
+        "step2_title": "Log trades to track positions",
+        "step2_content": "Record buys/sells and the system computes cost basis, P&L, and position size automatically.",
+        "step3_title": "Portfolio Summary",
+        "step3_content": "Total value, total cost, unrealized P&L, and today's change — all here.",
+        "step4_title": "Positions Table",
+        "step4_content": "Per-symbol holdings with avg cost, current price, and unrealized P&L.",
+        "step5_title": "Multi-Currency Portfolio",
+        "step5_content": "Pro unlocks multi-currency view — auto-converts to your chosen base currency.",
+        "step6_title": "All set!",
+        "step6_content": "You've covered the Holdings essentials. Re-open the tour anytime from Settings."
+      }
+    }
   }
 }

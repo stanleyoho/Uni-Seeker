@@ -15,14 +15,19 @@ export function ResultsTable({ results, total }: ResultsTableProps) {
 
   if (results.length === 0) {
     return (
-      <EmptyState
-        icon={
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="w-16 h-16 mb-4 text-[var(--text-muted)] opacity-20">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-        }
-        message="No results. Try adjusting your conditions."
-      />
+        </div>
+        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-widest">
+          No matches found
+        </p>
+        <p className="text-xs text-[var(--text-muted)] mt-1">
+          Try adjusting your technical filters or logic flow.
+        </p>
+      </div>
     );
   }
 
@@ -31,41 +36,43 @@ export function ResultsTable({ results, total }: ResultsTableProps) {
   );
 
   return (
-    <div>
-      <p className="text-sm text-[var(--text-muted)] mb-3">{total} results found</p>
-      <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
-        <table className="w-full text-sm text-left">
-          <thead className="text-[var(--text-muted)] text-xs uppercase tracking-wider bg-[var(--bg-secondary)]">
-            <tr>
-              <th className="py-3 px-4 font-medium">Symbol</th>
+    <div className="animate-fade-in">
+      <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+              <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.15em]">Symbol</th>
               {indicatorKeys.map((key) => (
-                <th key={key} className="py-3 px-4 font-medium">{key}</th>
+                <th key={key} className="py-3 px-4 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.15em] text-right">{key}</th>
               ))}
+              <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.15em] text-right">Action</th>
             </tr>
           </thead>
           <tbody>
-            {results.map((r, i) => (
+            {results.map((r) => (
               <tr
                 key={r.symbol}
                 onClick={() => router.push(`/stocks/${encodeURIComponent(r.symbol)}`)}
-                className={`border-t border-[var(--border-color)] cursor-pointer transition-all duration-150 hover:bg-[var(--card-hover)] ${
-                  i % 2 === 0 ? "bg-[var(--card-bg)]" : "bg-[var(--bg-secondary)]/50"
-                }`}
+                className="border-b border-[var(--border-subtle)] cursor-pointer transition-all hover:bg-[var(--card-hover)] group"
               >
                 <td className="py-3 px-4">
-                  <Link
-                    href={`/stocks/${encodeURIComponent(r.symbol)}`}
-                    className="text-[var(--accent-blue)] hover:text-blue-300 font-mono font-semibold transition-colors duration-200"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {r.symbol}
-                  </Link>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-[var(--foreground)] group-hover:text-[var(--accent-cyan)] transition-colors">
+                      {r.symbol}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium">MARKET DATA</span>
+                  </div>
                 </td>
                 {indicatorKeys.map((key) => (
-                  <td key={key} className="py-3 px-4 font-mono text-[var(--text-secondary)]">
+                  <td key={key} className="py-3 px-4 font-bold text-right tabular-nums text-[var(--text-secondary)]">
                     {r.indicator_values[key] != null ? Number(r.indicator_values[key]).toFixed(2) : "-"}
                   </td>
                 ))}
+                <td className="py-3 px-4 text-right">
+                  <span className="text-[10px] font-bold text-[var(--accent-cyan)] opacity-0 group-hover:opacity-100 transition-opacity">
+                    VIEW DETAILS →
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

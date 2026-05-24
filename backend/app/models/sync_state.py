@@ -11,7 +11,9 @@ class SyncState(Base):
 
     __tablename__ = "sync_states"
     __table_args__ = (
-        UniqueConstraint("dataset", "stock_id", name="uq_sync_state"),
+        # Partial unique indexes (created via migration, not SA UniqueConstraint)
+        # uq_sync_state_with_stock: UNIQUE(dataset, stock_id) WHERE stock_id IS NOT NULL
+        # uq_sync_state_global: UNIQUE(dataset) WHERE stock_id IS NULL
     )
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)

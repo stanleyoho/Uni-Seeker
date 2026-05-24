@@ -10,6 +10,7 @@ from app.main import create_app
 from app.models.base import Base
 from app.models.enums import Market
 from app.models.price import StockPrice
+from app.models.stock import Stock
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -30,10 +31,13 @@ async def app_with_prices():
     app.dependency_overrides[get_db] = override_get_db
 
     async with session_factory() as session:
+        stock = Stock(symbol="2330.TW", name="TSMC", market=Market.TW_TWSE)
+        session.add(stock)
+        await session.flush()
+
         for i in range(20):
             price = StockPrice(
-                symbol="2330.TW",
-                market=Market.TW_TWSE,
+                stock_id=stock.id,
                 date=date(2026, 4, i + 1),
                 open=Decimal(str(885 + i)),
                 high=Decimal(str(892 + i)),

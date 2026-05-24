@@ -1,13 +1,53 @@
+# syntax=docker/dockerfile:1.4
+# Production image — must be built from monorepo root context.
+# See backend/Dockerfile for layout rationale (Plan 1 T8.5).
+#
+# Stage 2 observability-core migration (2026-05-24): observability-core
+# is a PRIVATE git+ssh dep, so this image now requires BuildKit SSH
+# forwarding at build time:
+#
+#     eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519
+#     docker build --ssh default -t uni-seeker-backend:prod \
+#         -f Uni-Seeker/backend/Dockerfile.prod .
+#
+# The SSH agent is only forwarded into the `--mount=type=ssh` RUN —
+# no key material lands in any image layer.
 FROM python:3.12-slim AS builder
-WORKDIR /app
+
+# git + openssh-client are required to resolve `git+ssh://` deps via uv.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Trust github.com host key so the BuildKit SSH mount doesn't prompt.
+RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+WORKDIR /workspace
 RUN pip install --no-cache-dir uv
-COPY pyproject.toml .
-RUN uv pip install --system -e "."
+
+# Sibling shared packages — both are declared as path deps under
+# [tool.uv.sources] in Uni-Seeker/backend/pyproject.toml. Missing
+# prediction_engine here previously caused production builds to fail to
+# resolve the dep (DOCKER-MONO follow-up to commit eae18d2, which only
+# fixed the dev Dockerfile).
+COPY adaptive-alpha-engine/packages/backtesting_core /workspace/adaptive-alpha-engine/packages/backtesting_core
+COPY adaptive-alpha-engine/packages/prediction_engine /workspace/adaptive-alpha-engine/packages/prediction_engine
+COPY Uni-Seeker/backend/pyproject.toml /workspace/Uni-Seeker/backend/
+COPY Uni-Seeker/backend/uv.lock /workspace/Uni-Seeker/backend/
+
+WORKDIR /workspace/Uni-Seeker/backend
+# Production install — no editable, no dev extras.
+# --mount=type=ssh forwards the host SSH agent into this single RUN so
+# `uv pip install` can resolve the observability-core git+ssh dep
+# without leaving the key in the image.
+RUN --mount=type=ssh uv pip install --system "."
+
 
 FROM python:3.12-slim
 WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY . .
+COPY Uni-Seeker/backend /app
+
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

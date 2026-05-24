@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -10,6 +11,7 @@ from app.main import create_app
 from app.models.base import Base
 from app.models.enums import Market
 from app.models.price import StockPrice
+from app.models.stock import Stock
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -30,14 +32,24 @@ async def app_with_screener_data():
 
     # Seed: rising stock and falling stock
     async with session_factory() as session:
+        stock_rise = Stock(symbol="RISE.TW", name="Rise Stock", market=Market.TW_TWSE)
+        stock_fall = Stock(symbol="FALL.TW", name="Fall Stock", market=Market.TW_TWSE)
+        session.add_all([stock_rise, stock_fall])
+        await session.flush()
+
+        # Anchor on today so seed data always falls within the screener's
+        # 30-day recent-data cutoff (otherwise rows get filtered out).
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
+        start = today - timedelta(days=19)
         for i in range(20):
+            d = start + timedelta(days=i)
             session.add(StockPrice(
-                symbol="RISE.TW", market=Market.TW_TWSE, date=date(2026, 4, i + 1),
+                stock_id=stock_rise.id, date=d,
                 open=Decimal(str(100 + i)), high=Decimal(str(102 + i)),
                 low=Decimal(str(98 + i)), close=Decimal(str(101 + i)), volume=10_000_000,
             ))
             session.add(StockPrice(
-                symbol="FALL.TW", market=Market.TW_TWSE, date=date(2026, 4, i + 1),
+                stock_id=stock_fall.id, date=d,
                 open=Decimal(str(100 - i)), high=Decimal(str(102 - i)),
                 low=Decimal(str(98 - i)), close=Decimal(str(99 - i)), volume=10_000_000,
             ))

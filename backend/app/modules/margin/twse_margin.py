@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 import structlog
@@ -27,7 +28,7 @@ class TWSEMarginProvider:
         raw: list[dict[str, str]] = response.json()
 
         results: list[MarginData] = []
-        today = date.today()
+        today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
 
         for item in raw:
             code = item.get("股票代號", "").strip()
