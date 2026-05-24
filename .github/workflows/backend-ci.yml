@@ -48,6 +48,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Phase 8 V.2: AAE is PRIVATE — load deploy key into ssh-agent so
+      # uv pip install can clone git+ssh://...adaptive-alpha-engine subdirectories.
+      # observability-core is PUBLIC, fetched via git+https (no auth needed).
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
+
       - name: Install dependencies
         working-directory: backend
         run: |
