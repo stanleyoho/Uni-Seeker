@@ -478,7 +478,7 @@ async def _amain() -> None:
         out = await backfill_cusips_global(db)
         stocks_out = await backfill_stocks_from_filings(db)
         await db.commit()
-        print({**out, **stocks_out})
+        logger.info("cusip_backfill_script_done", **{**out, **stocks_out})
 
 
 if __name__ == "__main__":  # pragma: no cover - module-as-script
