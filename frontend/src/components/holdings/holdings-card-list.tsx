@@ -30,7 +30,8 @@
  * `holdings-table-responsive.tsx` (CSS-only `hidden md:block` switch).
  */
 
-import React, { useMemo, type ReactNode } from "react";
+import React, { useMemo, useState, useCallback, useRef, type ReactNode } from "react";
+import { useSwipeable } from "react-swipeable";
 import { GlassPanel } from "@/components/stratos/primitives";
 import { MarketBadge } from "@/components/ui/badge";
 import {
@@ -52,6 +53,23 @@ export interface HoldingsCardListProps {
   selectedSymbols?: string[];
   onSelectionChange?: (symbols: string[]) => void;
   emptyState?: ReactNode;
+  /**
+   * Phase 8 R.1 — mobile swipe-left action.
+   *
+   * When provided, each card supports a swipe-left gesture that reveals
+   * a red "Remove" affordance flush to the right edge. Tapping the
+   * revealed button invokes this callback with the row's `symbol`.
+   *
+   * The card itself remains tappable (fires `onRowClick`); a small
+   * deadzone (~40 px of horizontal travel) prevents accidental drills
+   * during the gesture. When `undefined`, swipe wiring is skipped
+   * entirely — no regression for callers that haven't adopted yet.
+   *
+   * Mobile-only is handled by the responsive wrapper
+   * (`holdings-table-responsive.tsx`); this component itself doesn't
+   * gate by viewport so it stays unit-testable in isolation.
+   */
+  onSwipeRemove?: (symbol: string) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -183,8 +201,194 @@ function Stat({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                     */
+/*  Swipe-to-remove row wrapper — Phase 8 R.1                          */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Pixel threshold at which the swipe-left gesture "commits" — the row
+ * snaps open to reveal the full action affordance. Anything shorter
+ * springs back to closed. Tuned for ~80 px action width + a comfortable
+ * margin so a hesitant flick is forgiving.
+ */
+const SWIPE_OPEN_THRESHOLD = 60;
+
+/** Pixel width of the revealed "Remove" action. */
+const ACTION_WIDTH = 88;
+
+/**
+ * Travel below which we still treat a release as a tap, not a drag.
+ * Without this, the smallest pointer jitter would swallow the click.
+ */
+const TAP_DEADZONE = 6;
+
+interface SwipeableCardRowProps {
+  symbol: string;
+  selected: boolean;
+  onRemove: (symbol: string) => void;
+  onTap?: () => void;
+  children: ReactNode;
+}
+
+function SwipeableCardRow({
+  symbol,
+  selected,
+  onRemove,
+  onTap,
+  children,
+}: SwipeableCardRowProps) {
+  // `offset` is the live drag-translate during the gesture; `open`
+  // latches the row at -ACTION_WIDTH once the user commits.
+  const [offset, setOffset] = useState(0);
+  const [open, setOpen] = useState(false);
+  // Tracks whether the last pointer interaction was a drag (vs a tap).
+  // Updated synchronously by `onSwiping` so that the trailing `click`
+  // event fired by the browser can be suppressed before it reaches
+  // `onTap`. A ref (not state) so the value is read in the same tick
+  // the click fires.
+  const draggedRef = useRef(false);
+
+  const handleSwiping = useCallback(
+    (e: { deltaX: number; absX: number; absY: number }) => {
+      // Ignore mostly-vertical gestures so users can still scroll the
+      // page through the card. Tunable: absY > absX * 0.8 = scroll intent.
+      if (e.absY > e.absX * 0.8) return;
+      draggedRef.current = true;
+      // Drag follows the finger leftwards, clamped to action width.
+      // Open → starts from -ACTION_WIDTH so a swipe-right closes it.
+      const base = open ? -ACTION_WIDTH : 0;
+      const next = Math.min(0, Math.max(-ACTION_WIDTH, base + e.deltaX));
+      setOffset(next);
+    },
+    [open],
+  );
+
+  const handleSwiped = useCallback(() => {
+    if (offset <= -SWIPE_OPEN_THRESHOLD) {
+      setOpen(true);
+      setOffset(-ACTION_WIDTH);
+    } else {
+      setOpen(false);
+      setOffset(0);
+    }
+  }, [offset]);
+
+  const handlers = useSwipeable({
+    onSwiping: handleSwiping,
+    onSwiped: handleSwiped,
+    // Allow mouse for desktop testing (chrome-devtools MCP / Playwright
+    // emulation drives synthetic mouse events even in mobile mode).
+    trackMouse: true,
+    // Higher delta means a smaller initial jitter doesn't register —
+    // critical so tap events still reach the inner button/checkbox.
+    delta: TAP_DEADZONE,
+    preventScrollOnSwipe: false,
+  });
+
+  // Single click handler — bubble phase. We bind it to the card body
+  // wrapper so clicks on the inner checkbox label (which stops
+  // propagation) never reach us. The row's `onTap` is called only for
+  // genuine taps (no drag, not currently open, not on a child that
+  // already handled the click).
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const wasDragged = draggedRef.current;
+      // Reset the drag flag for the next interaction. Doing it here
+      // (rather than in onSwiped) guarantees we always clear, even on
+      // gestures that bail out without a swiped event.
+      draggedRef.current = false;
+      // If the row is open, swallow the click and just close — the
+      // user's intent is to dismiss the action drawer, not drill in.
+      if (open) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        setOffset(0);
+        return;
+      }
+      // If the last gesture was a drag, suppress the click so we don't
+      // accidentally drill in after a horizontal swipe.
+      if (wasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // Genuine tap — delegate to the consumer.
+      onTap?.();
+    },
+    [open, onTap],
+  );
+
+  return (
+    <li
+      style={{
+        position: "relative",
+        borderBottom: "1px solid var(--border-subtle)",
+        background: selected ? "var(--card-active)" : "transparent",
+        overflow: "hidden",
+        // `touch-action: pan-y` keeps vertical scrolling smooth while
+        // letting react-swipeable own horizontal pans.
+        touchAction: "pan-y",
+      }}
+    >
+      {/* Underlay: red "Remove" action, revealed as the row slides
+        * left. Positioned absolutely so it doesn't affect the row's
+        * layout when closed. */}
+      <button
+        type="button"
+        aria-label={`Remove ${symbol}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(symbol);
+          setOpen(false);
+          setOffset(0);
+        }}
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: ACTION_WIDTH,
+          // Hard-coded red — `--stock-down` is green in the TW theme
+          // (down = green per Asian market convention), but destructive
+          // UI actions follow the universal red convention everywhere.
+          background: "#dc2626",
+          color: "white",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          border: "none",
+          cursor: "pointer",
+          // Hide the button from AT when fully closed — it's purely
+          // visual padding then.
+          opacity: offset < 0 ? 1 : 0,
+          transition: "opacity 0.12s",
+          pointerEvents: offset < -TAP_DEADZONE ? "auto" : "none",
+        }}
+      >
+        Remove
+      </button>
+
+      <div
+        {...handlers}
+        onClick={handleClick}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: offset === 0 || offset === -ACTION_WIDTH
+            ? "transform 0.18s ease-out"
+            : "none",
+          // Preserve the row's selection tint via the slider so the
+          // colour stays attached to the moving surface (not the
+          // stationary `<li>` underneath).
+          backgroundColor: selected ? "var(--card-active)" : "var(--background)",
+          willChange: "transform",
+        }}
+      >
+        {children}
+      </div>
+    </li>
+  );
+}
 
 export function HoldingsCardList({
   positions,
@@ -193,6 +397,7 @@ export function HoldingsCardList({
   selectedSymbols,
   onSelectionChange,
   emptyState,
+  onSwipeRemove,
 }: HoldingsCardListProps) {
   const selectedSet = useMemo(
     () => new Set(selectedSymbols ?? []),
@@ -238,6 +443,10 @@ export function HoldingsCardList({
     );
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  Render                                                              */
+  /* ------------------------------------------------------------------ */
+
   return (
     <GlassPanel noPadding>
       <ul
@@ -257,19 +466,15 @@ export function HoldingsCardList({
           : rows.map((r) => {
               const sel = selectedSet.has(r.raw.symbol);
               const clickable = !!onRowClick;
-              return (
-                <li
-                  key={`${r.raw.account_id}-${r.raw.symbol}`}
-                  style={{
-                    borderBottom: "1px solid var(--border-subtle)",
-                    background: sel ? "var(--card-active)" : "transparent",
-                    transition: "background 0.12s",
-                  }}
-                >
+              const swipeEnabled = !!onSwipeRemove;
+              const rowKey = `${r.raw.account_id}-${r.raw.symbol}`;
+              // The inner content tree is identical between swipe-on /
+              // swipe-off — we just choose a different wrapper below.
+              const cardBody = (
                   <div
                     role={clickable ? "button" : undefined}
                     tabIndex={clickable ? 0 : undefined}
-                    onClick={() => onRowClick?.(r.raw)}
+                    onClick={swipeEnabled ? undefined : () => onRowClick?.(r.raw)}
                     onKeyDown={(e) => {
                       if (!clickable) return;
                       if (e.key === "Enter" || e.key === " ") {
@@ -422,6 +627,32 @@ export function HoldingsCardList({
                       />
                     </div>
                   </div>
+              );
+
+              if (swipeEnabled) {
+                return (
+                  <SwipeableCardRow
+                    key={rowKey}
+                    symbol={r.raw.symbol}
+                    selected={sel}
+                    onRemove={onSwipeRemove!}
+                    onTap={clickable ? () => onRowClick?.(r.raw) : undefined}
+                  >
+                    {cardBody}
+                  </SwipeableCardRow>
+                );
+              }
+
+              return (
+                <li
+                  key={rowKey}
+                  style={{
+                    borderBottom: "1px solid var(--border-subtle)",
+                    background: sel ? "var(--card-active)" : "transparent",
+                    transition: "background 0.12s",
+                  }}
+                >
+                  {cardBody}
                 </li>
               );
             })}

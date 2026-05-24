@@ -38,6 +38,13 @@ export interface HoldingsTableProps {
   selectedSymbols?: string[];
   onSelectionChange?: (symbols: string[]) => void;
   emptyState?: ReactNode;
+  /**
+   * Phase 8 R.1 — mobile-only swipe-left action handler. The desktop
+   * table ignores this prop; it's declared here so `HoldingsTableResponsive`
+   * can spread the same props object to both children without TS noise.
+   * See `HoldingsCardListProps.onSwipeRemove` for the full contract.
+   */
+  onSwipeRemove?: (symbol: string) => void;
 }
 
 type SortKey =
