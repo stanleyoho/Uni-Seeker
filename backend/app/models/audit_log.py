@@ -22,7 +22,7 @@ class AuditLog(Base):
 
     action: Mapped[str] = mapped_column(String(100))
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID_TYPE, primary_key=True, init=False, default=uuid.uuid4
+        UUID_TYPE, primary_key=True, init=False, default_factory=uuid.uuid4
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()

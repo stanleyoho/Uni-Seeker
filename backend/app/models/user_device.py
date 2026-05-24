@@ -34,7 +34,7 @@ class UserDevice(Base):
     )
     fingerprint_hash: Mapped[str] = mapped_column(String(64))
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID_TYPE, primary_key=True, init=False, default=uuid.uuid4
+        UUID_TYPE, primary_key=True, init=False, default_factory=uuid.uuid4
     )
     user_agent: Mapped[str | None] = mapped_column(String(500), default=None)
     ip_address: Mapped[str | None] = mapped_column(String(45), default=None)
