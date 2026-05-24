@@ -16,17 +16,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install ruff + obs deps
-        run: pip install ruff structlog
+      # Phase 8 V.2: pytest tests/obs/ uses backend conftest which imports
+      # full app (sqlalchemy etc) — need deploy key to install AAE git+ssh deps.
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
+      - name: Install ruff + project deps
+        run: |
+          pip install ruff uv
+          uv pip install --system -e ".[dev]"
       - name: ruff T20 print-detect (production paths)
         run: ruff check --select T20 .
       - name: pytest tests/obs/
         env:
           ENV: test
-        run: |
-          pip install -r requirements.txt 2>/dev/null || true
-          pip install pytest pytest-asyncio || true
-          pytest tests/obs/ -v
+        run: pytest tests/obs/ -v --no-cov
       - name: Sentry DSN policy (prod only)
         env:
           ENV: ${{ vars.ENV || 'dev' }}
