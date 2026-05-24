@@ -41,3 +41,24 @@ allowed-confusables = ["：", "（", "）"]
 
 [lint.isort]
 known-first-party = ["app"]
+
+# B008 (function-call-in-default-argument) doesn't understand FastAPI's
+# dependency-injection pattern. `Depends(...)` / `Query(...)` / `Body(...)` /
+# `HTTPBearer()` etc are required to appear in argument defaults — that's how
+# FastAPI's DI resolves them. Auth helpers built on top of `Depends` (e.g.
+# `require_tier`, `require_risk_tolerance`) are the same shape.
+[lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.security.HTTPBearer",
+    "app.auth.require_risk_tolerance",
+    "app.modules.billing.tier_limits.require_tier",
+    "app.modules.billing.tier_limits.tier_guard",
+]
