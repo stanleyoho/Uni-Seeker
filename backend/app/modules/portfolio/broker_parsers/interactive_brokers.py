@@ -35,7 +35,8 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import date as date_type, datetime
+from datetime import date as date_type
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from app.modules.portfolio.broker_parsers.base import (
@@ -43,7 +44,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ACTION_SELL,
     ParsedRow,
 )
-
 
 # Detection markers — any of these in the first ~20 lines flips
 # can_handle() to True. We pick three signals because a Flex file

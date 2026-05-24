@@ -1,4 +1,9 @@
-from app.middleware.error_handler import AppError, NotFoundError, ValidationError, ExternalServiceError
+from app.middleware.error_handler import (
+    AppError,
+    ExternalServiceError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 def test_app_error() -> None:

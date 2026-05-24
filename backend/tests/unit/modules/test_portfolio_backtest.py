@@ -19,7 +19,6 @@ from app.modules.backtester.portfolio_backtest import (
 )
 from app.modules.strategy.base import Signal, StrategyConfig
 
-
 # ---------------------------------------------------------------------------
 # Helpers: lightweight StockPrice mock + simple strategies
 # ---------------------------------------------------------------------------

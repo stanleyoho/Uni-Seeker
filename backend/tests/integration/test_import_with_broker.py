@@ -23,7 +23,6 @@ from app.db.models.portfolio.trade import PortfolioTrade
 from app.models.enums import UserTier
 from app.models.user import User
 
-
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 

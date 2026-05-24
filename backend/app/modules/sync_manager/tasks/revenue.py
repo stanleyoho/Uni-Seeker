@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.revenue import MonthlyRevenue
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
 from app.modules.finmind.client import FinMindClient, FinMindRateLimitError
-from app.config import settings
 from app.modules.sync_manager.rate_limiter import RateLimiter
 from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 

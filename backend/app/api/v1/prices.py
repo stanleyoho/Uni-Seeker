@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
 from app.models.stock import Stock
-from app.modules.price_updater.twse import TWSEProvider
 from app.modules.price_updater.tpex import TPEXProvider
+from app.modules.price_updater.twse import TWSEProvider
 from app.modules.price_updater.updater import PriceUpdater
 from app.schemas.price import (
     BackfillRequest,

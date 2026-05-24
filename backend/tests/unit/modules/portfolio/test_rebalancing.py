@@ -39,7 +39,6 @@ from app.modules.portfolio.rebalancing import (
     validate_targets,
 )
 
-
 # ── helpers ───────────────────────────────────────────────────────────────
 
 

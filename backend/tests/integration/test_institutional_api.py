@@ -59,7 +59,6 @@ from app.repositories.institutional import (
 )
 from app.services.institutional.filing_service import F13FilingService
 
-
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 

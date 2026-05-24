@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
-from app.modules.company.twse_company import TWSECompanyProvider, INDUSTRY_MAP
+from app.modules.company.twse_company import INDUSTRY_MAP, TWSECompanyProvider
 
 SAMPLE = [
     {

@@ -121,8 +121,9 @@ async def test_blocked_device_with_same_fingerprint_rejected(
     (would violate the unique constraint) and NOT pass the active count
     check (would let blocked attackers in)."""
     u = await _register_user(db_session, "dev4@x.tw", "dev4")
-    from app.services.device import compute_fingerprint
     from types import SimpleNamespace
+
+    from app.services.device import compute_fingerprint
     # We need the fingerprint that the TestClient will produce. Easiest:
     # do one normal login to register it, then mark it blocked.
     r0 = await client.post(

@@ -26,14 +26,13 @@ from decimal import Decimal, getcontext
 
 import pytest
 
+from app.modules.portfolio.cost_basis import Lot
 from app.modules.portfolio.dividend_processor import (
     CashDividendInputs,
     StockDividendInputs,
     process_cash_dividend,
     process_stock_dividend,
 )
-from app.modules.portfolio.cost_basis import Lot
-
 
 # ---------------------------------------------------------------------------
 # CASH dividend

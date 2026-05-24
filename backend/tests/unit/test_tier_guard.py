@@ -1,7 +1,8 @@
 # tests/unit/test_tier_guard.py
 import pytest
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+
 from app.middleware.tier_guard import require_tier
 from app.models.enums import UserTier
 from app.models.user import User

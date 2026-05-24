@@ -43,8 +43,8 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.db.models.institutional.filer import F13Filer
-    from app.modules.institutional.edgar_client import EdgarClient
     from app.models.user import User
+    from app.modules.institutional.edgar_client import EdgarClient
 
 logger = logging.getLogger(__name__)
 

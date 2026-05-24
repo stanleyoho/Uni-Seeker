@@ -41,7 +41,6 @@ from app.modules.portfolio.analytics import (
     daily_returns_from_navs,
 )
 
-
 # ── TWR ─────────────────────────────────────────────────────────────────────
 
 

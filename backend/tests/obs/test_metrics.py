@@ -48,6 +48,7 @@ async def test_audit_event_counter_increments_on_log_audit_event(db_session):
 
 def test_subscription_active_gauge_is_gauge():
     from prometheus_client import Gauge
+
     from app.obs.metrics import SUBSCRIPTION_ACTIVE
     assert isinstance(SUBSCRIPTION_ACTIVE, Gauge)
 

@@ -92,7 +92,7 @@ def test_before_send_keeps_stripe_5xx():
 
 def test_before_send_drops_expected_drift_alert():
     """ExpectedDriftAlert is a notification channel, not a bug."""
-    from app.obs._sentry_filters import build_before_send, ExpectedDriftAlert
+    from app.obs._sentry_filters import ExpectedDriftAlert, build_before_send
     bs = build_before_send()
     err = ExpectedDriftAlert("orange drift on nba")
     event = {"exception": {"values": [{"type": "ExpectedDriftAlert"}]}}

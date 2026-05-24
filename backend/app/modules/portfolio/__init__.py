@@ -27,14 +27,6 @@ from app.modules.portfolio.dividend_processor import (
     process_cash_dividend,
     process_stock_dividend,
 )
-from app.modules.portfolio.split_processor import (
-    SplitType,
-    StockSplitInputs,
-    StockSplitResult,
-    compute_split_multiplier,
-    process_stock_split,
-    validate_split_inputs,
-)
 from app.modules.portfolio.live_price_fetcher import (
     CachedDailyCloseLivePriceFetcher,
     CompositeLivePriceFetcher,
@@ -51,6 +43,14 @@ from app.modules.portfolio.pnl import (
     daily_change,
     summarize,
     unrealized,
+)
+from app.modules.portfolio.split_processor import (
+    SplitType,
+    StockSplitInputs,
+    StockSplitResult,
+    compute_split_multiplier,
+    process_stock_split,
+    validate_split_inputs,
 )
 
 __all__ = [

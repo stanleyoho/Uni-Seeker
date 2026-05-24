@@ -42,8 +42,8 @@ from app.modules.institutional.edgar_client import (
     FilingMetadata,
 )
 from app.modules.institutional.parser import (
-    ParseError,
     ParsedHolding,
+    ParseError,
     parse_infotable_xml,
     summarize_filing,
 )

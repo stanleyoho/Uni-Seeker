@@ -21,7 +21,6 @@ from app.modules.portfolio.fx_fetcher import (
     YFinanceFxFetcher,
 )
 
-
 # ── helpers ──────────────────────────────────────────────────────────────
 
 

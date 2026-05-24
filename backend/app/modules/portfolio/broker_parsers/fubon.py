@@ -27,7 +27,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ParsedRow,
 )
 
-
 _FUBON_MARKERS = ("日期", "代號", "委託類別")
 
 

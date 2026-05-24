@@ -10,9 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import Market
 from app.models.industry import Industry
 from app.models.stock import Stock
-from app.models.enums import Market
 from app.models.sync_state import SyncState
 from app.modules.finmind.market_provider import FinMindMarketProvider
 from app.modules.sync_manager.rate_limiter import RateLimiter

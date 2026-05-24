@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.middleware.compliance_purifier import (
-    CompliancePurifierMiddleware,
     PURIFIER_REPLACEMENTS,
+    CompliancePurifierMiddleware,
 )
 
 

@@ -31,7 +31,6 @@ from app.models.enums import Market, UserTier
 from app.models.user import User
 from app.modules.portfolio.live_price_fetcher import PriceQuote
 
-
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 

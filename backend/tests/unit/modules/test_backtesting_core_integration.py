@@ -4,7 +4,6 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
-
 from backtesting_core import (
     StockMetrics,
     StockMetricsReport,
@@ -21,8 +20,8 @@ def test_stock_metrics_importable_in_uniseeker() -> None:
 
 def test_walk_forward_validator_produces_splits() -> None:
     """WalkForwardValidator works with 200-row dataset inside Uni-Seeker."""
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     df = pd.DataFrame({"close": np.linspace(100, 200, 200)})
     v = WalkForwardValidator(n_splits=4, test_size=30, purge_gap=5, embargo=5)

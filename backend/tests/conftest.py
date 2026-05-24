@@ -1,10 +1,11 @@
 from collections.abc import AsyncGenerator
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 from typing import Annotated
 
 import pytest
 from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCompiler
+
 
 # ── Patch SQLite compiler to handle PostgreSQL JSONB ─────────────────────────
 def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> str:  # type: ignore[override]
@@ -13,11 +14,11 @@ def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> 
 _SQLiteTypeCompiler.visit_JSONB = _visit_JSONB  # type: ignore[attr-defined]
 # ─────────────────────────────────────────────────────────────────────────────
 
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import create_app
 from app.api.deps import get_db
+from app.main import create_app
 from app.models.base import Base
 from app.models.enums import Market
 from app.models.price import StockPrice

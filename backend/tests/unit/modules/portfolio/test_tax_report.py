@@ -31,7 +31,6 @@ from app.modules.portfolio.tax_report import (
     summarize_by_year,
 )
 
-
 # ── classify_holding_period ───────────────────────────────────────────
 
 

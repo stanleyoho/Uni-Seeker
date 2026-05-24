@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 
 from app.modules.low_base.indicators import (
-    PEPercentile,
     MADeviation,
     PEGRatio,
-    calculate_pe_percentile,
+    PEPercentile,
     calculate_ma_deviation,
+    calculate_pe_percentile,
     calculate_peg,
 )
 

@@ -14,13 +14,13 @@ from app.modules.notifier.telegram import TelegramNotifier
 from app.modules.sync_manager.rate_limiter import RateLimiter
 from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 from app.modules.sync_manager.tasks.financials import FinancialsSyncTask
+from app.modules.sync_manager.tasks.industry import IndustryAggregatesSyncTask
 from app.modules.sync_manager.tasks.margin import MarginSyncTask
 from app.modules.sync_manager.tasks.per_pbr import PerPbrSyncTask
 from app.modules.sync_manager.tasks.prices import PriceSyncTask
 from app.modules.sync_manager.tasks.revenue import RevenueSyncTask
 from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
 from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
-from app.modules.sync_manager.tasks.industry import IndustryAggregatesSyncTask
 
 logger = structlog.get_logger()
 

@@ -1,10 +1,17 @@
 """Unit tests for FIFO engine — T01–T14."""
 from __future__ import annotations
+
 from decimal import Decimal
+
 import pytest
+
 from app.modules.trade_journal.fifo_engine import (
-    FIFOEngine, Lot, FIFOResult, InsufficientSharesError,
+    FIFOEngine,
+    FIFOResult,
+    InsufficientSharesError,
+    Lot,
 )
+
 
 def _engine(lots: list[Lot]) -> FIFOEngine:
     return FIFOEngine(open_lots=lots)

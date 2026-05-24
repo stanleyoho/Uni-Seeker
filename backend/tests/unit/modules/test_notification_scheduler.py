@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, patch
+
 from app.modules.notifier.scheduler import NotificationScheduler
 
 

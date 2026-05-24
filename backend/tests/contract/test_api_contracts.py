@@ -6,7 +6,8 @@ Requirements:
     pip install httpx  (if not already installed)
 """
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+
 from app.main import app
 
 

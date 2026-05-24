@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import List, Optional
+
 import numpy as np
 import structlog
 from sqlalchemy import select

@@ -5,15 +5,15 @@ from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_indicator_registry, get_stock_or_404
 from app.models.price import StockPrice
 from app.models.stock import Stock
-from app.modules.low_base.scorer import calculate_low_base_score
-from app.modules.indicators.rsi import RSIIndicator
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
+from app.modules.indicators.rsi import RSIIndicator
+from app.modules.low_base.scorer import calculate_low_base_score
 from app.modules.scanner.engine import SignalScanner
 from app.modules.strategy import create_default_registry as create_strategy_registry
 from app.obs.logging import get_logger

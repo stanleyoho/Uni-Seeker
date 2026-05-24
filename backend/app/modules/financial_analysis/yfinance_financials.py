@@ -1,9 +1,9 @@
 import asyncio
 from functools import partial
 
-import yfinance as yf
-import structlog
 import pandas as pd
+import structlog
+import yfinance as yf
 
 from app.modules.financial_analysis.base import FinancialData, FinancialStatement
 

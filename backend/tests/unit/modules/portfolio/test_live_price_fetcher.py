@@ -27,7 +27,6 @@ from app.modules.portfolio.live_price_fetcher import (
     PriceQuote,
 )
 
-
 # ── fakes ────────────────────────────────────────────────────────────────
 
 

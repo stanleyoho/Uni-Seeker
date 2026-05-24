@@ -39,7 +39,8 @@ import asyncio
 import smtplib
 from email.message import EmailMessage
 
-from app.config import Settings, settings as default_settings
+from app.config import Settings
+from app.config import settings as default_settings
 from app.obs.logging import get_logger
 
 logger = get_logger(component="email_sender")

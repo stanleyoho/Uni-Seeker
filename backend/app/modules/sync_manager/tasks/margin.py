@@ -10,11 +10,11 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.margin import MarginTrading
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
 from app.modules.finmind.client import FinMindClient, FinMindRateLimitError
-from app.config import settings
 from app.modules.sync_manager.rate_limiter import RateLimiter
 from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 

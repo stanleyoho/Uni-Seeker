@@ -24,8 +24,8 @@ helper `_open_session_via_overrides_or_default` that respects it.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, AsyncIterator
 
 from app.api.deps import get_db
 from app.repositories.portfolio import (

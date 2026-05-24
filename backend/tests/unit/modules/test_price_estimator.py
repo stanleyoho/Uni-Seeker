@@ -1,14 +1,15 @@
-import pytest
+from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
-from datetime import date
 
-from app.modules.price_estimator.utils import ValuationUtils
-from app.modules.price_estimator.pe_model import PEBandEstimator
+import pytest
+
+from app.modules.price_estimator.base import EstimateResult
+from app.modules.price_estimator.composite import CompositeEstimator
 from app.modules.price_estimator.dcf import DCFEstimator
 from app.modules.price_estimator.ddm import DDMEstimator
-from app.modules.price_estimator.composite import CompositeEstimator
-from app.modules.price_estimator.base import EstimateResult
+from app.modules.price_estimator.pe_model import PEBandEstimator
+from app.modules.price_estimator.utils import ValuationUtils
 
 # --- Utils Tests ---
 

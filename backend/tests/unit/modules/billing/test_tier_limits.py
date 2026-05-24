@@ -34,7 +34,6 @@ from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.billing import tier_limits as tl
 
-
 # ── fixtures ────────────────────────────────────────────────────────────────
 
 

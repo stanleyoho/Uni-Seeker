@@ -24,7 +24,6 @@ from datetime import date as date_type
 from decimal import Decimal
 from typing import Protocol, runtime_checkable
 
-
 # Canonical action vocabulary used downstream by `PortfolioTradeService.
 # record_trade`. Adapters MUST normalize their broker's vocabulary into
 # one of these tokens (or surface a per-row error). DIVIDEND / SPLIT

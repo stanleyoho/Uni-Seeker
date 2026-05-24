@@ -60,9 +60,8 @@ def _get_sync_engine():
     """Return (and lazily build) a sync SQLAlchemy engine for prediction_engine."""
     global _PE_ENGINE
     if _PE_ENGINE is None:
-        from sqlalchemy import create_engine
-
         from prediction_engine.models import Base
+        from sqlalchemy import create_engine
 
         _PE_ENGINE = create_engine(
             "sqlite:///prediction_engine.db",
@@ -77,9 +76,8 @@ def _get_sync_engine():
 @router.post("/save", status_code=201, response_model=SavePredictionResponse)
 async def save_prediction(req: SavePredictionRequest) -> SavePredictionResponse:
     """Record a new model prediction."""
-    from sqlalchemy.orm import Session
-
     from prediction_engine.store import PredictionStore
+    from sqlalchemy.orm import Session
 
     engine = _get_sync_engine()
 
@@ -112,10 +110,9 @@ async def resolve_prediction(
     req: ResolvePredictionRequest,
 ) -> ResolvePredictionResponse:
     """Fill in actual outcome for a previously saved prediction."""
-    from sqlalchemy.orm import Session
-
     from prediction_engine.models import PredictionRecord
     from prediction_engine.store import PredictionStore
+    from sqlalchemy.orm import Session
 
     engine = _get_sync_engine()
 
@@ -165,9 +162,8 @@ async def get_performance(
     days: int = Query(7, ge=1, le=90),
 ) -> PerformanceResponse:
     """Return accuracy statistics for *domain* over the last *days* days."""
-    from sqlalchemy.orm import Session
-
     from prediction_engine.store import PredictionStore
+    from sqlalchemy.orm import Session
 
     engine = _get_sync_engine()
 

@@ -34,7 +34,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ParsedRow,
 )
 
-
 # Header keywords we look for during auto-detection. Yuanta files
 # always start with ``交易日期`` and ``股票代號`` in the first row.
 _YUANTA_MARKERS = ("交易日期", "股票代號", "交易類別")

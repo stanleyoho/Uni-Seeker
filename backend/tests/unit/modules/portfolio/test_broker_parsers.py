@@ -38,7 +38,6 @@ from app.modules.portfolio.broker_parsers.base import (
     ACTION_SELL,
 )
 
-
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 

@@ -1,8 +1,10 @@
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.user import User
+
 
 @pytest.mark.asyncio
 async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSession):

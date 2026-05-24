@@ -1,5 +1,7 @@
 from pydantic import BaseModel
+
 from app.schemas.types import DecimalStr
+
 
 class MarketMover(BaseModel):
     symbol: str
