@@ -1,4 +1,4 @@
-"""Wire schemas for ``/api/v1/holdings/rebalance/preview``.
+"""Wire schemas for ``/api/v1/holdings/rebalance/{preview,execute}``.
 
 Phase 5+ Pro-tier rebalancing tool. Same Decimal-as-string convention as
 the rest of ``schemas/holdings/`` (see ``summary.py``).
@@ -15,6 +15,12 @@ Schema shape:
         final_allocation_pct: dict[str, Decimal]
         skipped_trades: list[dict]  — pass-through from domain layer
         cash_residual: Decimal
+
+    RebalanceExecuteResponse (Phase 2):
+        executed:  [ExecutedTrade{symbol, market, action, qty, price, trade_id}]
+        skipped:   [SkippedTrade{symbol, market, reason, ...}]
+        failed:    [FailedTrade{symbol, market, error_code, message}]
+        total_executed_value: Decimal
 """
 from __future__ import annotations
 
@@ -30,6 +36,10 @@ __all__ = [
     "RebalanceRequest",
     "SuggestedTradeResponse",
     "RebalanceResponse",
+    "ExecutedTrade",
+    "SkippedTrade",
+    "FailedTrade",
+    "RebalanceExecuteResponse",
 ]
 
 
@@ -126,3 +136,79 @@ class RebalanceResponse(BaseModel):
     @field_serializer("final_allocation_pct", when_used="json")
     def _serialize_alloc(self, value: dict[str, Decimal]) -> dict[str, str]:
         return {k: str(v) for k, v in value.items()}
+
+
+# ── Phase 2: execute endpoint ───────────────────────────────────────────────
+
+
+class ExecutedTrade(BaseModel):
+    """One suggested trade that was successfully persisted as a real
+    ``portfolio_trades`` row.
+
+    ``trade_id`` is the primary key of the inserted row — the UI can
+    deep-link to it via ``GET /holdings/trades/{trade_id}``.
+    """
+
+    symbol: str
+    market: Market
+    action: Literal["BUY", "SELL"]
+    qty: Decimal
+    price: Decimal
+    trade_id: int
+
+    @field_serializer("qty", "price", when_used="json")
+    def _serialize_decimal(self, value: Decimal) -> str:
+        return str(value)
+
+
+class SkippedTrade(BaseModel):
+    """A suggested trade dropped by the planner BEFORE execution attempt.
+
+    Mirrors the dict shape emitted by ``compute_rebalance.skipped_trades``
+    so the frontend can use one schema for both preview and execute. The
+    canonical ``reason`` values today are:
+      - ``below_min_trade_value``
+      - ``missing_price_for_buy``
+      - ``missing_price_for_sell``
+    """
+
+    symbol: str
+    market: str
+    reason: str
+    target_pct: str | None = None
+    delta_value: str | None = None
+
+
+class FailedTrade(BaseModel):
+    """A suggested trade that the planner produced but the trade-write
+    pipeline rejected (e.g. ``InsufficientShares`` on a SELL whose stale
+    snapshot disagrees with the live lot total).
+
+    ``error_code`` matches the canonical ``_detail`` strings (e.g.
+    ``insufficient_shares``, ``invalid_trade_input``) so the frontend
+    can localise / icon-map identically to the regular trade-create flow.
+    """
+
+    symbol: str
+    market: Market
+    action: Literal["BUY", "SELL"]
+    error_code: str
+    message: str
+
+
+class RebalanceExecuteResponse(BaseModel):
+    """Full execute response — per-trade independent commit.
+
+    ``total_executed_value`` is the sum of ``qty * price`` across rows in
+    ``executed`` (skipped + failed do NOT count). The UI surfaces it as
+    "actually moved $X this rebalance".
+    """
+
+    executed: list[ExecutedTrade]
+    skipped: list[SkippedTrade]
+    failed: list[FailedTrade]
+    total_executed_value: Decimal
+
+    @field_serializer("total_executed_value", when_used="json")
+    def _serialize_decimal(self, value: Decimal) -> str:
+        return str(value)
