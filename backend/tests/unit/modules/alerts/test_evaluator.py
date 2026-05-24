@@ -1,4 +1,5 @@
 """Unit tests for app.modules.alerts.evaluator — pure rule evaluator."""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -29,9 +30,7 @@ def _ctx(
 
 
 def test_price_drop_pct_triggers_when_close_drops_more_than_threshold() -> None:
-    snap = PositionSnapshot(
-        last_price=Decimal("89"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("89"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         RuleType.POSITION_PRICE_DROP,
@@ -45,9 +44,7 @@ def test_price_drop_pct_triggers_when_close_drops_more_than_threshold() -> None:
 
 
 def test_price_drop_pct_no_trigger_when_drop_below_threshold() -> None:
-    snap = PositionSnapshot(
-        last_price=Decimal("95"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("95"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         RuleType.POSITION_PRICE_DROP,
@@ -61,9 +58,7 @@ def test_price_drop_pct_no_trigger_when_drop_below_threshold() -> None:
 
 
 def test_price_drop_absolute_triggers() -> None:
-    snap = PositionSnapshot(
-        last_price=Decimal("85"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("85"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         RuleType.POSITION_PRICE_DROP,
@@ -80,9 +75,7 @@ def test_price_drop_absolute_triggers() -> None:
 
 
 def test_price_rise_pct_triggers() -> None:
-    snap = PositionSnapshot(
-        last_price=Decimal("115"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("115"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         RuleType.POSITION_PRICE_RISE,
@@ -96,9 +89,7 @@ def test_price_rise_pct_triggers() -> None:
 
 
 def test_price_rise_no_trigger_when_flat() -> None:
-    snap = PositionSnapshot(
-        last_price=Decimal("100"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("100"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         RuleType.POSITION_PRICE_RISE,
@@ -271,9 +262,7 @@ def test_position_rule_without_symbol_does_not_trigger() -> None:
 
 def test_string_inputs_are_coerced() -> None:
     """Rule type/threshold_type passed as plain strings still work."""
-    snap = PositionSnapshot(
-        last_price=Decimal("85"), prev_close=Decimal("100")
-    )
+    snap = PositionSnapshot(last_price=Decimal("85"), prev_close=Decimal("100"))
     ctx = _ctx(positions={("NVDA", "US_NASDAQ"): snap})
     result = evaluate_rule(
         "POSITION_PRICE_DROP",

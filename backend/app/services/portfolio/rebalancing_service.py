@@ -22,6 +22,7 @@ Phase 1 scope:
     on top of ``trade_service.record_trade``. The preview / execute
     split lets the frontend confirm with the user before any DB writes.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -92,13 +93,9 @@ class RebalancingService:
     # ── ownership helpers ──────────────────────────────────────────────
 
     async def _require_owned_account(self, account_id: int) -> None:
-        account = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
     # ── public API ──────────────────────────────────────────────────────
 
@@ -142,18 +139,12 @@ class RebalancingService:
         # ----- load positions ------------------------------------------------
         if account_id is not None:
             await self._require_owned_account(account_id)
-            position_rows = await self._position_repo.list_by_account(
-                account_id
-            )
+            position_rows = await self._position_repo.list_by_account(account_id)
         else:
-            position_rows = await self._position_repo.list_by_user(
-                self._user.id
-            )
+            position_rows = await self._position_repo.list_by_user(self._user.id)
 
         # Only open positions participate in rebalancing math.
-        open_positions = [
-            p for p in position_rows if (p.quantity or _ZERO) > _ZERO
-        ]
+        open_positions = [p for p in position_rows if (p.quantity or _ZERO) > _ZERO]
 
         # ----- fetch live prices --------------------------------------------
         symbols = sorted({p.symbol for p in open_positions})

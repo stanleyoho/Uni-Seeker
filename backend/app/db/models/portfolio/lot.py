@@ -4,6 +4,7 @@ FIFO lot. Created when a BUY trade is recorded; `remaining_qty` is
 decremented as SELL trades consume oldest-open lots first. Exhaustion
 flag is the cheap predicate the FIFO engine filters on.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -33,17 +34,15 @@ class PortfolioLot(Base):
     __table_args__ = (
         Index(
             "ix_portfolio_lots_fifo",
-            "account_id", "symbol", "market", "is_exhausted", "trade_id",
+            "account_id",
+            "symbol",
+            "market",
+            "is_exhausted",
+            "trade_id",
         ),
-        CheckConstraint(
-            "original_qty > 0", name="ck_portfolio_lots_original_qty_positive"
-        ),
-        CheckConstraint(
-            "remaining_qty >= 0", name="ck_portfolio_lots_remaining_qty_nonneg"
-        ),
-        CheckConstraint(
-            "cost_per_unit > 0", name="ck_portfolio_lots_cost_positive"
-        ),
+        CheckConstraint("original_qty > 0", name="ck_portfolio_lots_original_qty_positive"),
+        CheckConstraint("remaining_qty >= 0", name="ck_portfolio_lots_remaining_qty_nonneg"),
+        CheckConstraint("cost_per_unit > 0", name="ck_portfolio_lots_cost_positive"),
     )
 
     # non-default fields first
@@ -65,16 +64,10 @@ class PortfolioLot(Base):
     cost_per_unit: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
 
     # defaulted fields after
-    is_exhausted: Mapped[bool] = mapped_column(
-        Boolean, default=False, index=True
-    )
+    is_exhausted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
-    account: Mapped[PortfolioAccount] = relationship(
-        back_populates="lots", init=False
-    )
-    trade: Mapped[PortfolioTrade] = relationship(
-        back_populates="lots", init=False
-    )
+    account: Mapped[PortfolioAccount] = relationship(back_populates="lots", init=False)
+    trade: Mapped[PortfolioTrade] = relationship(back_populates="lots", init=False)
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
         return (

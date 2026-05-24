@@ -33,11 +33,7 @@ async def run_valuation_sync(db: AsyncSession, limit: int = 100) -> dict:
             error_count += 1
 
     logger.info("finish_valuation_sync", success=success_count, errors=error_count)
-    return {
-        "total_processed": len(stock_ids),
-        "success": success_count,
-        "errors": error_count
-    }
+    return {"total_processed": len(stock_ids), "success": success_count, "errors": error_count}
 
 
 class ValuationSyncTask(SyncTask):
@@ -59,5 +55,5 @@ class ValuationSyncTask(SyncTask):
             stocks_processed=result["total_processed"],
             records_synced=result["success"],
             errors=result["errors"],
-            stopped_reason="completed"
+            stopped_reason="completed",
         )

@@ -21,6 +21,7 @@ ON CONFLICT for the user-wide (account_id IS NULL) row — we
 explicitly detect-and-update there. The detect-then-write path is
 race-tolerant within the snapshot-job's single-user transaction.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -234,9 +235,7 @@ class HoldingsSnapshotRepo:
 
     # ── internals ───────────────────────────────────────────────────────
 
-    async def _get_user_wide(
-        self, user_id: int, snapshot_date: date
-    ) -> HoldingsSnapshot | None:
+    async def _get_user_wide(self, user_id: int, snapshot_date: date) -> HoldingsSnapshot | None:
         stmt = select(HoldingsSnapshot).where(
             HoldingsSnapshot.user_id == user_id,
             HoldingsSnapshot.account_id.is_(None),

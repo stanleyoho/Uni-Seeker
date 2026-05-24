@@ -5,12 +5,22 @@ from app.modules.margin.twse_margin import TWSEMarginProvider, _parse_int
 
 SAMPLE = [
     {
-        "股票代號": "2330", "股票名稱": "台積電",
-        "融資買進": "2965", "融資賣出": "836", "融資現金償還": "",
-        "融資前日餘額": "9551", "融資今日餘額": "11680", "融資限額": "338535",
-        "融券買進": "", "融券賣出": "1", "融券現券償還": "",
-        "融券前日餘額": "3", "融券今日餘額": "4", "融券限額": "338535",
-        "資券互抵": "17", "註記": " ",
+        "股票代號": "2330",
+        "股票名稱": "台積電",
+        "融資買進": "2965",
+        "融資賣出": "836",
+        "融資現金償還": "",
+        "融資前日餘額": "9551",
+        "融資今日餘額": "11680",
+        "融資限額": "338535",
+        "融券買進": "",
+        "融券賣出": "1",
+        "融券現券償還": "",
+        "融券前日餘額": "3",
+        "融券今日餘額": "4",
+        "融券限額": "338535",
+        "資券互抵": "17",
+        "註記": " ",
     },
 ]
 
@@ -54,12 +64,23 @@ async def test_empty_response() -> None:
 
 def test_margin_data_fields() -> None:
     from app.modules.margin.base import MarginData
+
     d = MarginData(
-        symbol="2330.TW", name="台積電", date=date.today(),
-        margin_buy=100, margin_sell=50, margin_cash_repay=0,
-        margin_balance_prev=500, margin_balance=550, margin_limit=10000,
-        short_buy=0, short_sell=10, short_cash_repay=0,
-        short_balance_prev=20, short_balance=30, short_limit=10000,
+        symbol="2330.TW",
+        name="台積電",
+        date=date.today(),
+        margin_buy=100,
+        margin_sell=50,
+        margin_cash_repay=0,
+        margin_balance_prev=500,
+        margin_balance=550,
+        margin_limit=10000,
+        short_buy=0,
+        short_sell=10,
+        short_cash_repay=0,
+        short_balance_prev=20,
+        short_balance=30,
+        short_limit=10000,
         offset=5,
     )
     assert d.margin_balance == 550

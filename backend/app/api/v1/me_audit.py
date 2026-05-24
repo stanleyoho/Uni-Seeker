@@ -16,6 +16,7 @@ Writes go nowhere through this surface — the only mutation path into
 ``audit_logs`` remains ``app.services.audit.log_audit_event`` so the
 metrics/Sentry breadcrumb side-effects stay co-located with the write.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -78,9 +79,7 @@ async def list_my_audit_logs(
     """
     service = AuditQueryService(db, user_id=user.id)
 
-    rows = await service.list_my_audit_logs(
-        limit=limit, offset=offset, event_types=event_types
-    )
+    rows = await service.list_my_audit_logs(limit=limit, offset=offset, event_types=event_types)
     total = await service.count_my_audit_logs(event_types=event_types)
 
     entries = [AuditLogEntry.from_orm_row(r) for r in rows]

@@ -11,11 +11,11 @@ async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSes
     # 1. Test Registration
     register_data = {
         "email": "test@example.com",
-        "password": "Password123", # Must contain letter and number
-        "username": "testuser"     # Required field
+        "password": "Password123",  # Must contain letter and number
+        "username": "testuser",  # Required field
     }
     response = await client.post("/api/v1/auth/register", json=register_data)
-    assert response.status_code == 201 # Defined as 201 in API
+    assert response.status_code == 201  # Defined as 201 in API
     data = response.json()
     assert "access_token" in data
 
@@ -26,10 +26,7 @@ async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSes
     assert user.username == "testuser"
 
     # 2. Test Login
-    login_data = {
-        "email": "test@example.com",
-        "password": "Password123"
-    }
+    login_data = {"email": "test@example.com", "password": "Password123"}
     response = await client.post("/api/v1/auth/login", json=login_data)
     assert response.status_code == 200
     data = response.json()
@@ -43,14 +40,13 @@ async def test_register_and_login_flow(client: AsyncClient, db_session: AsyncSes
     data = response.json()
     assert data["email"] == "test@example.com"
 
+
 @pytest.mark.asyncio
 async def test_login_invalid_credentials(client: AsyncClient):
-    login_data = {
-        "email": "nonexistent@example.com",
-        "password": "WrongPassword123"
-    }
+    login_data = {"email": "nonexistent@example.com", "password": "WrongPassword123"}
     response = await client.post("/api/v1/auth/login", json=login_data)
     assert response.status_code == 401
+
 
 @pytest.mark.asyncio
 async def test_register_duplicate_email(client: AsyncClient, db_session: AsyncSession):
@@ -62,7 +58,7 @@ async def test_register_duplicate_email(client: AsyncClient, db_session: AsyncSe
     register_data = {
         "email": "duplicate@example.com",
         "password": "Password123",
-        "username": "newuser"
+        "username": "newuser",
     }
     response = await client.post("/api/v1/auth/register", json=register_data)
     assert response.status_code == 400

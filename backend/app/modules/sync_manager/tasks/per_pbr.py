@@ -57,12 +57,8 @@ class PerPbrSyncTask(SyncTask):
             return result
 
         # -- sync state map -----------------------------------------------
-        sync_q = await db.execute(
-            select(SyncState).where(SyncState.dataset == self.dataset_name)
-        )
-        sync_map: dict[int | None, SyncState] = {
-            s.stock_id: s for s in sync_q.scalars().all()
-        }
+        sync_q = await db.execute(select(SyncState).where(SyncState.dataset == self.dataset_name))
+        sync_map: dict[int | None, SyncState] = {s.stock_id: s for s in sync_q.scalars().all()}
 
         client = FinMindClient(
             token=settings.finmind_api_token,

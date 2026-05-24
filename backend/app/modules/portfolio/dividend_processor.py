@@ -21,6 +21,7 @@ FastAPI imports. `Lot` is re-exported from `cost_basis`, which itself
 re-exports it from `trade_journal.fifo_engine` — this stays purely within
 the domain layer (no schema coupling).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -115,17 +116,11 @@ def process_cash_dividend(inputs: CashDividendInputs) -> CashDividendResult:
             silent on refund semantics, so we surface the anomaly upward).
     """
     if inputs.qty_at_record < _ZERO:
-        raise ValueError(
-            f"qty_at_record must be non-negative, got {inputs.qty_at_record}"
-        )
+        raise ValueError(f"qty_at_record must be non-negative, got {inputs.qty_at_record}")
     if inputs.amount_per_share < _ZERO:
-        raise ValueError(
-            f"amount_per_share must be non-negative, got {inputs.amount_per_share}"
-        )
+        raise ValueError(f"amount_per_share must be non-negative, got {inputs.amount_per_share}")
     if inputs.withholding_tax < _ZERO:
-        raise ValueError(
-            f"withholding_tax must be non-negative, got {inputs.withholding_tax}"
-        )
+        raise ValueError(f"withholding_tax must be non-negative, got {inputs.withholding_tax}")
 
     total_amount = inputs.qty_at_record * inputs.amount_per_share
 

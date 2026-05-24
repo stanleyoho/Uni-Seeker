@@ -3,6 +3,7 @@
 Plan 4.5 T2. Each row = one (user, fingerprint) pair. Up to 3 active
 (blocked_at IS NULL) rows per user; login flow enforces the cap.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -25,13 +26,9 @@ UUID_TYPE = Uuid(as_uuid=True)
 
 class UserDevice(Base):
     __tablename__ = "user_devices"
-    __table_args__ = (
-        UniqueConstraint("user_id", "fingerprint_hash", name="uq_user_device"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "fingerprint_hash", name="uq_user_device"),)
 
-    user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE")
-    )
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
     fingerprint_hash: Mapped[str] = mapped_column(String(64))
     id: Mapped[uuid.UUID] = mapped_column(
         UUID_TYPE, primary_key=True, init=False, default_factory=uuid.uuid4

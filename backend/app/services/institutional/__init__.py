@@ -21,6 +21,7 @@ Tier enforcement (spec §9 double guard):
   `F13TierLimitExceeded` / `F13TierFeatureUnavailable` domain
   exceptions for the API layer to translate to HTTP 403.
 """
+
 from app.services.institutional.cross_stock_service import (
     F13CrossStockService,
 )

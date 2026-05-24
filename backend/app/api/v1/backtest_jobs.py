@@ -47,6 +47,7 @@ def _result_to_history_item(rec: BacktestResultRecord) -> BacktestHistoryItem:
     trade_log = None
     if rec.trade_log:
         from app.schemas.backtest_job import TradeLogEntry
+
         trade_log = [
             TradeLogEntry(
                 date=t.get("date", ""),

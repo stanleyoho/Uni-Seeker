@@ -41,15 +41,15 @@ class DDMEstimator:
                 fair_price=None,
                 expensive_price=None,
                 confidence=Decimal("0.0"),
-                details={"reason": "No dividend history or yield data"}
+                details={"reason": "No dividend history or yield data"},
             )
 
         # DPS = Yield * Price / 100 (assuming yield is in percentage points like 4.5)
         dps = float(current_price * div_yield / Decimal("100.0"))
 
         # 2. Model Parameters (Defaults)
-        growth_rate = 0.03       # 3% dividend growth
-        required_return = 0.08   # 8% required return (r > g required for Gordon model)
+        growth_rate = 0.03  # 3% dividend growth
+        required_return = 0.08  # 8% required return (r > g required for Gordon model)
 
         if required_return <= growth_rate:
             return EstimateResult(
@@ -58,7 +58,7 @@ class DDMEstimator:
                 fair_price=None,
                 expensive_price=None,
                 confidence=Decimal("0.0"),
-                details={"reason": "Required return must be greater than growth rate"}
+                details={"reason": "Required return must be greater than growth rate"},
             )
 
         # 3. Gordon Growth Model Formula: P = D1 / (r - g)
@@ -79,6 +79,6 @@ class DDMEstimator:
                 "derived_dps": round(dps, 2),
                 "growth_rate": growth_rate,
                 "required_return": required_return,
-                "dividend_yield": float(div_yield)
-            }
+                "dividend_yield": float(div_yield),
+            },
         )

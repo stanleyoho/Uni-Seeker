@@ -153,8 +153,11 @@ def _demo_heatmap() -> HeatmapResponse:
     for name, count, avg_chg, total_vol, stocks_data in sectors_data:
         stocks = [
             HeatmapStock(
-                symbol=s[0], name=s[1], close=s[2],
-                change_percent=s[3], volume=s[4],
+                symbol=s[0],
+                name=s[1],
+                close=s[2],
+                change_percent=s[3],
+                volume=s[4],
             )
             for s in stocks_data
         ]

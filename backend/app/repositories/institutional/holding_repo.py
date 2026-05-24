@@ -12,6 +12,7 @@ hangs off a filer (shared). Access control is enforced at the service
 layer via subscription check OR Pro-tier `institutional_ownership_panel`
 feature flag for cross-filer views.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -35,9 +36,7 @@ class F13HoldingRepo:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def bulk_insert(
-        self, filing_id: int, holdings: list[dict[str, Any]]
-    ) -> int:
+    async def bulk_insert(self, filing_id: int, holdings: list[dict[str, Any]]) -> int:
         """Batch-INSERT holdings rows for one filing. Returns the count.
 
         Each dict in `holdings` should carry the column kwargs accepted

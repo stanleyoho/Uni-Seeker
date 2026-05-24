@@ -11,6 +11,7 @@ Covers the fan-out contract:
 ``send_telegram_message`` is patched per-test to a thin coroutine so
 NO real HTTP call ever leaves the test process.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -121,12 +122,8 @@ async def test_notify_new_filings_sends_to_subscribed_users(
         chat_id="chat-1",
     )
     filer = await _mk_filer(db_session, cik="0010000001", name="ACME Capital")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-1"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-1")
 
     calls: list[dict] = []
 
@@ -162,16 +159,10 @@ async def test_notify_skips_users_without_telegram_chat_id(
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
-    user = await _mk_user(
-        db_session, email="n2@x.com", username="n2", chat_id=None
-    )
+    user = await _mk_user(db_session, email="n2@x.com", username="n2", chat_id=None)
     filer = await _mk_filer(db_session, cik="0010000002", name="NoChat Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-2"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-2")
 
     async def fake_send(**kwargs):  # pragma: no cover - must NOT be called
         raise AssertionError("should not send when chat_id is NULL")
@@ -201,12 +192,8 @@ async def test_notify_respects_notify_on_new_filing_false(
         chat_id="chat-3",
     )
     filer = await _mk_filer(db_session, cik="0010000003", name="Opted Out Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=False
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-3"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=False)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-3")
 
     async def fake_send(**kwargs):  # pragma: no cover - must NOT fire
         raise AssertionError("must not send when notify_on_new_filing is False")
@@ -223,27 +210,15 @@ async def test_notify_respects_notify_on_new_filing_false(
     assert result["skipped_opted_out"] == 1
 
 
-async def test_notify_handles_partial_send_failures(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_notify_handles_partial_send_failures(db_session: AsyncSession, monkeypatch) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
-    user_a = await _mk_user(
-        db_session, email="na@x.com", username="na", chat_id="chat-a"
-    )
-    user_b = await _mk_user(
-        db_session, email="nb@x.com", username="nb", chat_id="chat-b"
-    )
+    user_a = await _mk_user(db_session, email="na@x.com", username="na", chat_id="chat-a")
+    user_b = await _mk_user(db_session, email="nb@x.com", username="nb", chat_id="chat-b")
     filer = await _mk_filer(db_session, cik="0010000004", name="Partial Co")
-    await _mk_subscription(
-        db_session, user_id=user_a.id, filer_id=filer.id, notify=True
-    )
-    await _mk_subscription(
-        db_session, user_id=user_b.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-4"
-    )
+    await _mk_subscription(db_session, user_id=user_a.id, filer_id=filer.id, notify=True)
+    await _mk_subscription(db_session, user_id=user_b.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-4")
 
     async def fake_send(**kwargs):
         return kwargs["chat_id"] == "chat-a"
@@ -260,29 +235,17 @@ async def test_notify_handles_partial_send_failures(
     assert result["errors"] == 1
 
 
-async def test_notify_cross_user_isolation(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_notify_cross_user_isolation(db_session: AsyncSession, monkeypatch) -> None:
     """User subscribed to filer X must NOT receive alerts for filer Y."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
-    user_x = await _mk_user(
-        db_session, email="ix@x.com", username="ix", chat_id="chat-x"
-    )
-    user_y = await _mk_user(
-        db_session, email="iy@x.com", username="iy", chat_id="chat-y"
-    )
+    user_x = await _mk_user(db_session, email="ix@x.com", username="ix", chat_id="chat-x")
+    user_y = await _mk_user(db_session, email="iy@x.com", username="iy", chat_id="chat-y")
     filer_x = await _mk_filer(db_session, cik="0010000005", name="X Corp")
     filer_y = await _mk_filer(db_session, cik="0010000006", name="Y Corp")
-    await _mk_subscription(
-        db_session, user_id=user_x.id, filer_id=filer_x.id, notify=True
-    )
-    await _mk_subscription(
-        db_session, user_id=user_y.id, filer_id=filer_y.id, notify=True
-    )
-    filing_x = await _mk_filing(
-        db_session, filer_id=filer_x.id, accession="acc-x"
-    )
+    await _mk_subscription(db_session, user_id=user_x.id, filer_id=filer_x.id, notify=True)
+    await _mk_subscription(db_session, user_id=user_y.id, filer_id=filer_y.id, notify=True)
+    filing_x = await _mk_filing(db_session, filer_id=filer_x.id, accession="acc-x")
 
     seen: list[str] = []
 
@@ -306,13 +269,9 @@ async def test_notify_handles_empty_new_filings_is_noop(
 ) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
-    user = await _mk_user(
-        db_session, email="ne@x.com", username="ne", chat_id="chat-e"
-    )
+    user = await _mk_user(db_session, email="ne@x.com", username="ne", chat_id="chat-e")
     filer = await _mk_filer(db_session, cik="0010000007", name="Empty Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
 
     async def fake_send(**kwargs):  # pragma: no cover - must not run
         raise AssertionError("empty new_filings should not call send")
@@ -340,18 +299,10 @@ async def test_notify_message_format_contains_filer_and_filing_fields(
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
     monkeypatch.setattr(settings, "app_url", "https://example.test")
 
-    user = await _mk_user(
-        db_session, email="fm@x.com", username="fm", chat_id="chat-fm"
-    )
-    filer = await _mk_filer(
-        db_session, cik="0010000008", name="Format Capital"
-    )
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-fmt"
-    )
+    user = await _mk_user(db_session, email="fm@x.com", username="fm", chat_id="chat-fm")
+    filer = await _mk_filer(db_session, cik="0010000008", name="Format Capital")
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-fmt")
 
     captured: dict[str, str] = {}
 
@@ -375,22 +326,14 @@ async def test_notify_message_format_contains_filer_and_filing_fields(
     assert f"https://example.test/institutional?filer={filer.id}" in text
 
 
-async def test_notify_audit_log_written(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_notify_audit_log_written(db_session: AsyncSession, monkeypatch) -> None:
     """A single audit row records the fan-out summary."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
-    user = await _mk_user(
-        db_session, email="al@x.com", username="al", chat_id="chat-al"
-    )
+    user = await _mk_user(db_session, email="al@x.com", username="al", chat_id="chat-al")
     filer = await _mk_filer(db_session, cik="0010000009", name="Audit Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-al"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-al")
 
     async def fake_send(**kwargs):
         return True
@@ -412,22 +355,14 @@ async def test_notify_audit_log_written(
     assert int(count.scalar() or 0) == 1
 
 
-async def test_notify_disabled_when_token_empty(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_notify_disabled_when_token_empty(db_session: AsyncSession, monkeypatch) -> None:
     """uni_telegram_bot_token empty → globally disabled audit row, no sends."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "")
 
-    user = await _mk_user(
-        db_session, email="dis@x.com", username="dis", chat_id="chat-d"
-    )
+    user = await _mk_user(db_session, email="dis@x.com", username="dis", chat_id="chat-d")
     filer = await _mk_filer(db_session, cik="0010000010", name="Disabled Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-d"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-d")
 
     async def fake_send(**kwargs):  # pragma: no cover - must not run
         raise AssertionError("must not send when bot_token empty")
@@ -456,9 +391,7 @@ async def test_notify_disabled_when_token_empty(
     assert int(count.scalar() or 0) == 1
 
 
-async def test_notify_skips_inactive_users(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_notify_skips_inactive_users(db_session: AsyncSession, monkeypatch) -> None:
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "fake")
 
     user = await _mk_user(
@@ -469,12 +402,8 @@ async def test_notify_skips_inactive_users(
         is_active=False,
     )
     filer = await _mk_filer(db_session, cik="0010000011", name="Inactive Co")
-    await _mk_subscription(
-        db_session, user_id=user.id, filer_id=filer.id, notify=True
-    )
-    filing = await _mk_filing(
-        db_session, filer_id=filer.id, accession="acc-i"
-    )
+    await _mk_subscription(db_session, user_id=user.id, filer_id=filer.id, notify=True)
+    filing = await _mk_filing(db_session, filer_id=filer.id, accession="acc-i")
 
     async def fake_send(**kwargs):  # pragma: no cover - must not run
         raise AssertionError("inactive users must not receive alerts")

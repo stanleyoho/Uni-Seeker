@@ -13,6 +13,7 @@ LivePriceFetcher injection pattern (constructor, not per-call):
 - This keeps the call sites clean (`svc.list_positions()`) and lets the
   fetcher hold its own batch cache without changing the public API.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -81,9 +82,7 @@ class PortfolioPositionService:
 
     # ── public API ──────────────────────────────────────────────────────
 
-    async def list_positions(
-        self, account_id: int | None = None
-    ) -> list[PositionWithPnL]:
+    async def list_positions(self, account_id: int | None = None) -> list[PositionWithPnL]:
         """All positions visible to the requesting user.
 
         Args:
@@ -104,9 +103,7 @@ class PortfolioPositionService:
 
         return await self._enrich_with_pnl(positions)
 
-    async def get_position(
-        self, account_id: int, symbol: str, market: Market
-    ) -> PositionWithPnL:
+    async def get_position(self, account_id: int, symbol: str, market: Market) -> PositionWithPnL:
         """Fetch one enriched position. Verifies account ownership."""
         await self._require_owned_account(account_id)
         pos = await self._position_repo.get(account_id, symbol, market=market)
@@ -122,17 +119,11 @@ class PortfolioPositionService:
     # ── internals ──────────────────────────────────────────────────────
 
     async def _require_owned_account(self, account_id: int) -> None:
-        account = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
-    async def _enrich_with_pnl(
-        self, positions: list[PortfolioPosition]
-    ) -> list[PositionWithPnL]:
+    async def _enrich_with_pnl(self, positions: list[PortfolioPosition]) -> list[PositionWithPnL]:
         """Batch-fetch quotes for the distinct symbols, then compose
         unrealized + daily change per row. Symbols absent from the
         quote dict are surfaced with `last_price=None` (§12 R8).

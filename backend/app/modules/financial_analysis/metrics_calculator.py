@@ -108,9 +108,7 @@ def compute_metrics(
             current_liabilities,
         ),
         "eps": eps,
-        "fcf": (op_cf + inv_cf)
-        if op_cf is not None and inv_cf is not None
-        else None,
+        "fcf": (op_cf + inv_cf) if op_cf is not None and inv_cf is not None else None,
         "operating_cf_ratio": _safe_div(op_cf, net_income),
     }
 
@@ -121,9 +119,7 @@ def compute_metrics(
         prev_op = prev_year_income.get("OperatingIncome")
 
         metrics["revenue_growth_yoy"] = _safe_pct(
-            (revenue - prev_rev)
-            if revenue is not None and prev_rev is not None
-            else None,
+            (revenue - prev_rev) if revenue is not None and prev_rev is not None else None,
             abs(prev_rev) if prev_rev else None,
         )
         metrics["eps_growth_yoy"] = _safe_pct(

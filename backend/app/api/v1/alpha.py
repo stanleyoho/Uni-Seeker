@@ -8,6 +8,7 @@ The sports-prophet pipeline is reached via the `fetch_nba_predictions_today`
 indirection so tests can patch it. Production wiring (sports-prophet as a
 service) lives outside this module.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone, UTC
@@ -30,6 +31,7 @@ ProUser = Annotated[User, Depends(require_tier(UserTier.PRO))]
 # Stub: sports-prophet integration deferred to production wiring task.
 # ---------------------------------------------------------------------------
 
+
 async def fetch_nba_predictions_today() -> list[dict[str, Any]]:
     """Return today's NBA predictions from the sports-prophet pipeline.
 
@@ -44,6 +46,7 @@ async def fetch_nba_predictions_today() -> list[dict[str, Any]]:
 # Response schemas
 # ---------------------------------------------------------------------------
 
+
 class NbaPredictionItem(BaseModel):
     game_id: str
     home_team: str
@@ -51,9 +54,9 @@ class NbaPredictionItem(BaseModel):
     win_probability: float
     calibrated: bool
     predicted_spread: float
-    sharp_signal: str          # "sharp" | "square" | "neutral"
+    sharp_signal: str  # "sharp" | "square" | "neutral"
     sharp_side: str | None
-    confidence_tier: str       # "HIGH" | "MEDIUM" | "LOW"
+    confidence_tier: str  # "HIGH" | "MEDIUM" | "LOW"
 
 
 class NbaPredictionsResponse(BaseModel):
@@ -65,6 +68,7 @@ class NbaPredictionsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
 
 @router.get("/nba/predictions/today", response_model=NbaPredictionsResponse)
 async def get_nba_predictions_today(user: ProUser) -> NbaPredictionsResponse:
@@ -100,7 +104,7 @@ async def fetch_stock_edge_signal(stock_id: str) -> EdgeSignal:
 class StockEdgeResponse(BaseModel):
     stock_id: str
     date: str
-    direction: str            # "long" | "short" | "neutral"
+    direction: str  # "long" | "short" | "neutral"
     confidence: float
     divergence_detected: bool
     reason: str

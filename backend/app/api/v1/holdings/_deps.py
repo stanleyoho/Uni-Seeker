@@ -25,6 +25,7 @@ or simply has no data for a symbol. TTLs:
 `_FX_FETCHER` is module-level so its TTL cache outlives a single request
 (no point caching a USD→TWD rate if a fresh fetcher is built per request).
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -58,9 +59,7 @@ def get_live_price_fetcher() -> LivePriceFetcher:
     """
     return CompositeLivePriceFetcher(
         primary=YFinanceLivePriceFetcher(ttl_seconds=60),
-        secondary=CachedDailyCloseLivePriceFetcher(
-            async_session, ttl_seconds=300
-        ),
+        secondary=CachedDailyCloseLivePriceFetcher(async_session, ttl_seconds=300),
     )
 
 

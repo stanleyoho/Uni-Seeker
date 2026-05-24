@@ -9,6 +9,7 @@ Per spec §5.3 + §11 R3, this repo does NOT run FIFO. It only:
 
 FIFO algorithm lives in the domain layer; this is purely persistence.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -77,9 +78,7 @@ class PortfolioLotRepo:
         )
         await self.db.flush()
 
-    async def bulk_update(
-        self, lots: list[tuple[int, Decimal, bool]]
-    ) -> None:
+    async def bulk_update(self, lots: list[tuple[int, Decimal, bool]]) -> None:
         """Persist many lot updates in a single SQL round trip.
 
         `lots` is a list of (lot_id, remaining_qty, is_exhausted) tuples
@@ -113,7 +112,5 @@ class PortfolioLotRepo:
     async def delete_by_trade(self, trade_id: int) -> None:
         """Wipe all lots produced by `trade_id`. Used by trade PATCH /
         DELETE to rebuild the lot chain from scratch."""
-        await self.db.execute(
-            delete(PortfolioLot).where(PortfolioLot.trade_id == trade_id)
-        )
+        await self.db.execute(delete(PortfolioLot).where(PortfolioLot.trade_id == trade_id))
         await self.db.flush()

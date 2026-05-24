@@ -1,4 +1,5 @@
 """Pure FIFO engine — no database, no side effects."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -88,7 +89,9 @@ class FIFOEngine:
 
         # Return all lots (not just consumed ones) so callers can access untouched lots
         # by index — e.g. position_sync needs to check is_exhausted on every lot.
-        return FIFOResult(realized_pnl=proceeds - total_cost, updated_lots=list(self._lots), qty_consumed=qty)
+        return FIFOResult(
+            realized_pnl=proceeds - total_cost, updated_lots=list(self._lots), qty_consumed=qty
+        )
 
     def process_split(self, ratio: Decimal) -> list[Lot]:
         """Apply a stock split ratio to all open lots.

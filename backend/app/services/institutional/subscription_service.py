@@ -17,6 +17,7 @@ Transaction boundary: the API layer commits after the service call
 returns. We `flush` on every repo write so subsequent reads in the
 same coroutine see the change.
 """
+
 from __future__ import annotations
 
 import logging
@@ -130,14 +131,10 @@ class F13SubscriptionService:
         if isinstance(cik_or_filer_id, int):
             filer = await self._filer_repo.get_by_id(cik_or_filer_id)
             if filer is None:
-                raise F13FilerNotFound(
-                    f"filer_id={cik_or_filer_id} not found"
-                )
+                raise F13FilerNotFound(f"filer_id={cik_or_filer_id} not found")
         else:
             if not name:
-                raise ValueError(
-                    "name is required when subscribing by CIK string"
-                )
+                raise ValueError("name is required when subscribing by CIK string")
             filer, _ = await self._filer_repo.get_or_create_by_cik(
                 cik=cik_or_filer_id,
                 name=name,
@@ -152,9 +149,7 @@ class F13SubscriptionService:
             raise F13SubscriptionExists(filer_id=filer.id)
 
         # Step 4: INSERT + audit
-        await self._sub_repo.subscribe(
-            user_id=self._user.id, filer_id=filer.id
-        )
+        await self._sub_repo.subscribe(user_id=self._user.id, filer_id=filer.id)
         await log_audit_event(
             self._db,
             action="f13_filer_subscribed",
@@ -176,13 +171,9 @@ class F13SubscriptionService:
                 successful path — failed attempts at non-existent rows
                 are not audited (matches portfolio convention).
         """
-        deleted = await self._sub_repo.unsubscribe(
-            user_id=self._user.id, filer_id=filer_id
-        )
+        deleted = await self._sub_repo.unsubscribe(user_id=self._user.id, filer_id=filer_id)
         if not deleted:
-            raise F13FilerNotFound(
-                f"subscription to filer_id={filer_id} not found"
-            )
+            raise F13FilerNotFound(f"subscription to filer_id={filer_id} not found")
         await log_audit_event(
             self._db,
             action="f13_filer_unsubscribed",
@@ -197,15 +188,11 @@ class F13SubscriptionService:
 
     async def get_subscription_status(self, filer_id: int) -> bool:
         """Convenience predicate for the API layer."""
-        return await self._sub_repo.is_subscribed(
-            self._user.id, filer_id
-        )
+        return await self._sub_repo.is_subscribed(self._user.id, filer_id)
 
     # ── bulk subscribe ──────────────────────────────────────────────────
 
-    async def bulk_subscribe(
-        self, items: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    async def bulk_subscribe(self, items: list[dict[str, Any]]) -> dict[str, Any]:
         """Subscribe to multiple filers in one atomic transaction.
 
         `items` is a list of `{"cik": str, "name": str | None}` dicts —
@@ -260,16 +247,12 @@ class F13SubscriptionService:
         for raw in items:
             raw_cik = raw.get("cik") if isinstance(raw, dict) else None
             if not isinstance(raw_cik, str) or not raw_cik.strip():
-                errors.append(
-                    {"cik": str(raw_cik or ""), "reason": "invalid_cik"}
-                )
+                errors.append({"cik": str(raw_cik or ""), "reason": "invalid_cik"})
                 continue
             try:
                 normalised = _pad_cik(raw_cik)
             except ValueError:
-                errors.append(
-                    {"cik": raw_cik, "reason": "invalid_cik"}
-                )
+                errors.append({"cik": raw_cik, "reason": "invalid_cik"})
                 continue
             if normalised in seen:
                 # Request-level dedupe: do not double-process the same
@@ -292,9 +275,7 @@ class F13SubscriptionService:
         candidate_ciks: list[str] = []
         for cik in normalised_ciks:
             filer = await self._filer_repo.get_by_cik(cik)
-            if filer is not None and await self._sub_repo.is_subscribed(
-                self._user.id, filer.id
-            ):
+            if filer is not None and await self._sub_repo.is_subscribed(self._user.id, filer.id):
                 already_subscribed_ciks.append(cik)
             else:
                 candidate_ciks.append(cik)
@@ -327,9 +308,7 @@ class F13SubscriptionService:
                             cik,
                             exc,
                         )
-                        errors.append(
-                            {"cik": cik, "reason": "edgar_lookup_failed"}
-                        )
+                        errors.append({"cik": cik, "reason": "edgar_lookup_failed"})
                         continue
 
             # 5b: get_or_create_by_cik + INSERT subscription. Any
@@ -340,9 +319,7 @@ class F13SubscriptionService:
                 name=name,
                 legal_name=legal_name,
             )
-            await self._sub_repo.subscribe(
-                user_id=self._user.id, filer_id=filer.id
-            )
+            await self._sub_repo.subscribe(user_id=self._user.id, filer_id=filer.id)
             await log_audit_event(
                 self._db,
                 action="f13_filer_subscribed",

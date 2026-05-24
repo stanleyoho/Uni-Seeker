@@ -36,9 +36,18 @@ _AUTO_GRIDS: dict[str, dict[str, list]] = {
     "rsi_oversold": {"rsi_buy": [20, 25, 30, 35], "rsi_sell": [65, 70, 75, 80]},
     "macd_crossover": {"macd_fast": [8, 12], "macd_slow": [21, 26], "macd_signal": [7, 9]},
     "bollinger_bounce": {"bb_period": [15, 20, 25], "bb_std": [1.5, 2.0, 2.5]},
-    "bias_reversal": {"bias_period": [10, 20, 30], "bias_buy": [-3, -5, -7], "bias_sell": [3, 5, 7]},
+    "bias_reversal": {
+        "bias_period": [10, 20, 30],
+        "bias_buy": [-3, -5, -7],
+        "bias_sell": [3, 5, 7],
+    },
     "ma_crossover": {"ma_short": [3, 5, 10], "ma_long": [15, 20, 30]},
-    "rsi_bias_combo": {"rsi_buy": [25, 30, 35], "rsi_sell": [65, 70, 75], "bias_buy": [-3, -5], "bias_sell": [3, 5]},
+    "rsi_bias_combo": {
+        "rsi_buy": [25, 30, 35],
+        "rsi_sell": [65, 70, 75],
+        "bias_buy": [-3, -5],
+        "bias_sell": [3, 5],
+    },
 }
 
 # Map flat grid param names to (strategy_key, constructor_kwarg).
@@ -48,9 +57,18 @@ _DIRECT_PARAM_MAP: dict[str, dict[str, str]] = {
     "rsi_oversold": {"rsi_buy": "buy_threshold", "rsi_sell": "sell_threshold"},
     "macd_crossover": {"macd_fast": "fast", "macd_slow": "slow", "macd_signal": "signal"},
     "bollinger_bounce": {"bb_period": "period", "bb_std": "num_std"},
-    "bias_reversal": {"bias_period": "period", "bias_buy": "buy_threshold", "bias_sell": "sell_threshold"},
+    "bias_reversal": {
+        "bias_period": "period",
+        "bias_buy": "buy_threshold",
+        "bias_sell": "sell_threshold",
+    },
     "ma_crossover": {"ma_short": "short_period", "ma_long": "long_period"},
-    "rsi_bias_combo": {"rsi_buy": "rsi_buy", "rsi_sell": "rsi_sell", "bias_buy": "bias_buy", "bias_sell": "bias_sell"},
+    "rsi_bias_combo": {
+        "rsi_buy": "rsi_buy",
+        "rsi_sell": "rsi_sell",
+        "bias_buy": "bias_buy",
+        "bias_sell": "bias_sell",
+    },
 }
 
 
@@ -135,8 +153,12 @@ class AutoDiscoveryEngine:
     """Automatically discovers the best trading strategy for a stock."""
 
     _TECHNICAL_STRATEGIES = [
-        "ma_crossover", "rsi_oversold", "macd_crossover",
-        "bollinger_bounce", "bias_reversal", "rsi_bias_combo",
+        "ma_crossover",
+        "rsi_oversold",
+        "macd_crossover",
+        "bollinger_bounce",
+        "bias_reversal",
+        "rsi_bias_combo",
     ]
 
     def __init__(self, registry: StrategyRegistry) -> None:
@@ -258,20 +280,22 @@ class AutoDiscoveryEngine:
             bt = engine.run(strategy, prices, symbol)
             m = bt.metrics
 
-            results.append(AutoDiscoveryResultItem(
-                phase=1,
-                strategy_name=key,
-                strategy_keys=[key],
-                params={},
-                composite_mode=None,
-                total_return=m.total_return,
-                annualized_return=m.annualized_return,
-                max_drawdown=m.max_drawdown,
-                sharpe_ratio=m.sharpe_ratio,
-                win_rate=m.win_rate,
-                total_trades=m.total_trades,
-                profit_factor=m.profit_factor,
-            ))
+            results.append(
+                AutoDiscoveryResultItem(
+                    phase=1,
+                    strategy_name=key,
+                    strategy_keys=[key],
+                    params={},
+                    composite_mode=None,
+                    total_return=m.total_return,
+                    annualized_return=m.annualized_return,
+                    max_drawdown=m.max_drawdown,
+                    sharpe_ratio=m.sharpe_ratio,
+                    win_rate=m.win_rate,
+                    total_trades=m.total_trades,
+                    profit_factor=m.profit_factor,
+                )
+            )
 
         # Sort by total_return descending
         results.sort(key=lambda r: r.total_return, reverse=True)
@@ -426,20 +450,22 @@ class AutoDiscoveryEngine:
                     m = bt.metrics
 
                     name = f"composite({'+'.join(keys_in_combo)}, {mode})"
-                    results.append(AutoDiscoveryResultItem(
-                        phase=3,
-                        strategy_name=name,
-                        strategy_keys=keys_in_combo,
-                        params=all_params,
-                        composite_mode=mode,
-                        total_return=m.total_return,
-                        annualized_return=m.annualized_return,
-                        max_drawdown=m.max_drawdown,
-                        sharpe_ratio=m.sharpe_ratio,
-                        win_rate=m.win_rate,
-                        total_trades=m.total_trades,
-                        profit_factor=m.profit_factor,
-                    ))
+                    results.append(
+                        AutoDiscoveryResultItem(
+                            phase=3,
+                            strategy_name=name,
+                            strategy_keys=keys_in_combo,
+                            params=all_params,
+                            composite_mode=mode,
+                            total_return=m.total_return,
+                            annualized_return=m.annualized_return,
+                            max_drawdown=m.max_drawdown,
+                            sharpe_ratio=m.sharpe_ratio,
+                            win_rate=m.win_rate,
+                            total_trades=m.total_trades,
+                            profit_factor=m.profit_factor,
+                        )
+                    )
                     total_tested += 1
 
         total_tested += 0  # combos that failed don't count

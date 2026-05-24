@@ -13,6 +13,7 @@ from app.modules.price_estimator.utils import ValuationUtils
 
 # --- Utils Tests ---
 
+
 def test_calculate_cagr():
     # Scenario 1: Steady growth 100 -> 121 over 2 years (8 quarters)
     # (121/100)^(1/2) - 1 = 0.1 (10%)
@@ -29,13 +30,16 @@ def test_calculate_cagr():
     assert ValuationUtils.calculate_cagr([0, 100]) == 0.05
     assert ValuationUtils.calculate_cagr([-10, 100]) == 0.05
 
+
 def test_clean_outliers():
-    data = [10, 12, 11, 13, 100, 9] # 100 is outlier
+    data = [10, 12, 11, 13, 100, 9]  # 100 is outlier
     cleaned = ValuationUtils.clean_outliers(data)
     assert 100 not in cleaned
     assert 12 in cleaned
 
+
 # --- Model Tests (Mocks) ---
+
 
 @pytest.mark.asyncio
 async def test_pe_band_logic():
@@ -58,6 +62,7 @@ async def test_pe_band_logic():
     # Fair = 4 * 15 = 60
     assert float(res.fair_price) == 60.0
     assert res.confidence > 0.5
+
 
 @pytest.mark.asyncio
 async def test_pe_band_insufficient_data():
@@ -158,7 +163,9 @@ async def test_composite_returns_none_when_all_models_fail():
 @pytest.mark.asyncio
 async def test_composite_divergence_penalty():
     session = AsyncMock()
-    session.add = MagicMock()  # SQLAlchemy add() is sync — keep it sync to avoid unawaited-coroutine RuntimeWarning
+    session.add = (
+        MagicMock()
+    )  # SQLAlchemy add() is sync — keep it sync to avoid unawaited-coroutine RuntimeWarning
 
     # Mock current price = 100
     price_res = MagicMock()
@@ -182,4 +189,4 @@ async def test_composite_divergence_penalty():
     # But because 100 and 500 are divergent, convergence_score will be low
     # And because 300 is 3x the current price (100), market penalty applies
     assert res.model_type == "composite"
-    assert res.confidence < 0.3 # Heavily penalized
+    assert res.confidence < 0.3  # Heavily penalized

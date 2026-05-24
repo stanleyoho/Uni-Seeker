@@ -24,7 +24,9 @@ class BacktestJob(Base):
         index=True,
     )
     status: Mapped[str] = mapped_column(
-        String(20), default="pending", index=True,
+        String(20),
+        default="pending",
+        index=True,
     )  # pending, running, completed, failed, cancelled
     priority: Mapped[int] = mapped_column(Integer, default=0)
     config_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
@@ -32,14 +34,19 @@ class BacktestJob(Base):
     error_message: Mapped[str | None] = mapped_column(String(1000), default=None)
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None,
+        DateTime(timezone=True),
+        default=None,
     )
     completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None,
+        DateTime(timezone=True),
+        default=None,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None,
+        DateTime(timezone=True),
+        default=None,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )

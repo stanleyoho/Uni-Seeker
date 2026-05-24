@@ -13,6 +13,7 @@ Fetcher injection
 on a per-test basis. Decimals in the response body are JSON strings
 per `CLAUDE.md` Decimal-as-string rule.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -59,14 +60,10 @@ def _auth(user: User) -> dict[str, str]:
 class _MockLivePriceFetcher:
     """In-memory `LivePriceFetcher` for dep override."""
 
-    def __init__(
-        self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None
-    ) -> None:
+    def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None) -> None:
         self._quotes = quotes or {}
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid not in self._quotes:
@@ -96,9 +93,7 @@ def _client_app(client: AsyncClient):
 def mock_fetcher_empty(client: AsyncClient):
     """Override live price fetcher with an empty MockLivePriceFetcher."""
     app = _client_app(client)
-    app.dependency_overrides[get_live_price_fetcher] = (
-        lambda: _MockLivePriceFetcher()
-    )
+    app.dependency_overrides[get_live_price_fetcher] = lambda: _MockLivePriceFetcher()
     yield
     app.dependency_overrides.pop(get_live_price_fetcher, None)
 
@@ -110,17 +105,13 @@ def mock_fetcher_factory(client: AsyncClient):
     app = _client_app(client)
 
     def _setup(quotes: dict[str, tuple[Decimal, Decimal]]) -> None:
-        app.dependency_overrides[get_live_price_fetcher] = (
-            lambda: _MockLivePriceFetcher(quotes)
-        )
+        app.dependency_overrides[get_live_price_fetcher] = lambda: _MockLivePriceFetcher(quotes)
 
     yield _setup
     app.dependency_overrides.pop(get_live_price_fetcher, None)
 
 
-async def _create_account_via_api(
-    client: AsyncClient, user: User, name: str = "Yuanta"
-) -> int:
+async def _create_account_via_api(client: AsyncClient, user: User, name: str = "Yuanta") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": name, "market": "TW_TWSE", "broker": "Yuanta"},
@@ -188,17 +179,13 @@ async def test_accounts_get_unknown_returns_404(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "acc3@x.tw")
-    r = await client.get(
-        "/api/v1/holdings/accounts/99999", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/accounts/99999", headers=_auth(user))
     assert r.status_code == 404
     assert r.json()["message"] == "portfolio_account_not_found"
 
 
 @pytest.mark.asyncio
-async def test_accounts_patch_updates_fields(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_accounts_patch_updates_fields(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "acc4@x.tw")
     aid = await _create_account_via_api(client, user, name="old")
     r = await client.patch(
@@ -222,24 +209,24 @@ async def test_accounts_delete_removes_and_cascades(
     rt = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
     )
     assert rt.status_code == 201, rt.text
 
-    r = await client.delete(
-        f"/api/v1/holdings/accounts/{aid}", headers=_auth(user)
-    )
+    r = await client.delete(f"/api/v1/holdings/accounts/{aid}", headers=_auth(user))
     assert r.status_code == 200
     assert r.json() == {"ok": True}
 
     # Refetch → 404 (the account row is gone)
-    rg = await client.get(
-        f"/api/v1/holdings/accounts/{aid}", headers=_auth(user)
-    )
+    rg = await client.get(f"/api/v1/holdings/accounts/{aid}", headers=_auth(user))
     assert rg.status_code == 404
 
 
@@ -253,14 +240,11 @@ async def test_accounts_max_accounts_quota_blocks_with_403(
     multi_account feature flag does NOT trip; only the numeric quota
     does.
     """
-    user = await _mk_user(
-        db_session, "acc6@x.tw", tier=UserTier.BASIC
-    )
-    with patch(
-        "app.services.portfolio.account_service.settings"
-    ) as s_svc, patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg:
+    user = await _mk_user(db_session, "acc6@x.tw", tier=UserTier.BASIC)
+    with (
+        patch("app.services.portfolio.account_service.settings") as s_svc,
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+    ):
         s_svc.enable_monetization = True
         s_tg.enable_monetization = True
         for n in range(3):
@@ -285,14 +269,11 @@ async def test_accounts_multi_account_feature_blocks_free_with_403(
 ) -> None:
     """FREE tier: multi_account=false → 2nd create blocked by feature
     flag (before the numeric quota would matter)."""
-    user = await _mk_user(
-        db_session, "acc7@x.tw", tier=UserTier.FREE
-    )
-    with patch(
-        "app.services.portfolio.account_service.settings"
-    ) as s_svc, patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg:
+    user = await _mk_user(db_session, "acc7@x.tw", tier=UserTier.FREE)
+    with (
+        patch("app.services.portfolio.account_service.settings") as s_svc,
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+    ):
         s_svc.enable_monetization = True
         s_tg.enable_monetization = True
         r1 = await client.post(
@@ -321,9 +302,7 @@ async def test_accounts_cross_user_get_returns_404(
     b = await _mk_user(db_session, "acc8b@x.tw")
     aid = await _create_account_via_api(client, a)
 
-    r = await client.get(
-        f"/api/v1/holdings/accounts/{aid}", headers=_auth(b)
-    )
+    r = await client.get(f"/api/v1/holdings/accounts/{aid}", headers=_auth(b))
     assert r.status_code == 404
     assert r.json()["message"] == "portfolio_account_not_found"
 
@@ -342,9 +321,14 @@ async def test_trades_post_buy_creates_position(
     r = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "100", "price": "500",
-            "fee": "28", "trade_date": "2026-05-01",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "100",
+            "price": "500",
+            "fee": "28",
+            "trade_date": "2026-05-01",
         },
         headers=_auth(user),
     )
@@ -369,8 +353,12 @@ async def test_trades_post_sell_after_buy_realizes_pnl(
     r1 = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "100", "price": "500",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "100",
+            "price": "500",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -379,8 +367,12 @@ async def test_trades_post_sell_after_buy_realizes_pnl(
     r2 = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "SELL", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "60", "price": "600",
+            "account_id": aid,
+            "action": "SELL",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "60",
+            "price": "600",
             "trade_date": "2026-05-02",
         },
         headers=_auth(user),
@@ -397,8 +389,12 @@ async def test_trades_post_sell_insufficient_shares_returns_422(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "X",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "X",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -406,8 +402,12 @@ async def test_trades_post_sell_insufficient_shares_returns_422(
     r = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "SELL", "symbol": "X",
-            "market": "TW_TWSE", "qty": "11", "price": "200",
+            "account_id": aid,
+            "action": "SELL",
+            "symbol": "X",
+            "market": "TW_TWSE",
+            "qty": "11",
+            "price": "200",
             "trade_date": "2026-05-02",
         },
         headers=_auth(user),
@@ -417,17 +417,19 @@ async def test_trades_post_sell_insufficient_shares_returns_422(
 
 
 @pytest.mark.asyncio
-async def test_trades_get_list_paginates(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_trades_get_list_paginates(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "tr4@x.tw")
     aid = await _create_account_via_api(client, user)
     for i in range(5):
         await client.post(
             "/api/v1/holdings/trades",
             json={
-                "account_id": aid, "action": "BUY", "symbol": f"S{i}",
-                "market": "TW_TWSE", "qty": "1", "price": "100",
+                "account_id": aid,
+                "action": "BUY",
+                "symbol": f"S{i}",
+                "market": "TW_TWSE",
+                "qty": "1",
+                "price": "100",
                 "trade_date": "2026-05-01",
             },
             headers=_auth(user),
@@ -445,9 +447,7 @@ async def test_trades_get_unknown_returns_404(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "tr5@x.tw")
-    r = await client.get(
-        "/api/v1/holdings/trades/99999", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/trades/99999", headers=_auth(user))
     assert r.status_code == 404
     assert r.json()["message"] == "portfolio_trade_not_found"
 
@@ -461,8 +461,12 @@ async def test_trades_patch_rebuilds_position(
     r1 = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "100", "price": "500",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "100",
+            "price": "500",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -479,29 +483,27 @@ async def test_trades_patch_rebuilds_position(
 
 
 @pytest.mark.asyncio
-async def test_trades_delete_rebuilds(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_trades_delete_rebuilds(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "tr7@x.tw")
     aid = await _create_account_via_api(client, user)
     r1 = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
     )
     tid = r1.json()["id"]
-    r2 = await client.delete(
-        f"/api/v1/holdings/trades/{tid}", headers=_auth(user)
-    )
+    r2 = await client.delete(f"/api/v1/holdings/trades/{tid}", headers=_auth(user))
     assert r2.status_code == 200, r2.text
     # Refetching that trade now 404s.
-    r3 = await client.get(
-        f"/api/v1/holdings/trades/{tid}", headers=_auth(user)
-    )
+    r3 = await client.get(f"/api/v1/holdings/trades/{tid}", headers=_auth(user))
     assert r3.status_code == 404
 
 
@@ -516,25 +518,27 @@ async def test_trades_monthly_quota_blocks_with_403(
     service-level second line raises `TierLimitExceeded` and the API
     translates to 403.
     """
-    user = await _mk_user(
-        db_session, "tr8@x.tw", tier=UserTier.FREE
-    )
+    user = await _mk_user(db_session, "tr8@x.tw", tier=UserTier.FREE)
     aid = await _create_account_via_api(client, user)
-    with patch(
-        "app.services.portfolio.trade_service.settings"
-    ) as s_svc, patch(
-        "app.modules.billing.tier_limits.settings"
-    ) as s_tg, patch(
-        "app.repositories.portfolio.trade_repo.PortfolioTradeRepo.count_by_user_this_month",
-        return_value=30,
+    with (
+        patch("app.services.portfolio.trade_service.settings") as s_svc,
+        patch("app.modules.billing.tier_limits.settings") as s_tg,
+        patch(
+            "app.repositories.portfolio.trade_repo.PortfolioTradeRepo.count_by_user_this_month",
+            return_value=30,
+        ),
     ):
         s_svc.enable_monetization = True
         s_tg.enable_monetization = True
         r = await client.post(
             "/api/v1/holdings/trades",
             json={
-                "account_id": aid, "action": "BUY", "symbol": "2330",
-                "market": "TW_TWSE", "qty": "1", "price": "100",
+                "account_id": aid,
+                "action": "BUY",
+                "symbol": "2330",
+                "market": "TW_TWSE",
+                "qty": "1",
+                "price": "100",
                 "trade_date": "2026-05-01",
             },
             headers=_auth(user),
@@ -552,8 +556,12 @@ async def test_trades_audit_log_emitted_on_post(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -581,8 +589,12 @@ async def test_trades_cross_user_post_returns_404(
     r = await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid_a, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "1", "price": "100",
+            "account_id": aid_a,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "1",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(b),
@@ -607,17 +619,19 @@ async def test_positions_list_includes_live_pnl(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "100", "price": "500",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "100",
+            "price": "500",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
     )
     mock_fetcher_factory({"2330": (Decimal("550"), Decimal("540"))})
 
-    r = await client.get(
-        "/api/v1/holdings/positions", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/positions", headers=_auth(user))
     assert r.status_code == 200, r.text
     body = r.json()
     assert len(body["positions"]) == 1
@@ -641,8 +655,12 @@ async def test_positions_get_single_returns_enriched_row(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -667,9 +685,7 @@ async def test_positions_empty_portfolio_returns_empty_list(
     mock_fetcher_empty,
 ) -> None:
     user = await _mk_user(db_session, "po3@x.tw")
-    r = await client.get(
-        "/api/v1/holdings/positions", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/positions", headers=_auth(user))
     assert r.status_code == 200
     assert r.json() == {"account_id": None, "positions": []}
 
@@ -687,17 +703,19 @@ async def test_positions_cross_user_list_is_empty(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid_a, "action": "BUY", "symbol": "2330",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid_a,
+            "action": "BUY",
+            "symbol": "2330",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(a),
     )
     mock_fetcher_factory({"2330": (Decimal("120"), Decimal("110"))})
 
-    r = await client.get(
-        "/api/v1/holdings/positions", headers=_auth(b)
-    )
+    r = await client.get("/api/v1/holdings/positions", headers=_auth(b))
     assert r.status_code == 200
     assert r.json()["positions"] == []
 
@@ -723,20 +741,24 @@ async def test_summary_user_wide_aggregates_across_accounts(
         await client.post(
             "/api/v1/holdings/trades",
             json={
-                "account_id": aid, "action": "BUY", "symbol": sym,
-                "market": "TW_TWSE", "qty": qty, "price": price,
+                "account_id": aid,
+                "action": "BUY",
+                "symbol": sym,
+                "market": "TW_TWSE",
+                "qty": qty,
+                "price": price,
                 "trade_date": "2026-05-01",
             },
             headers=_auth(user),
         )
-    mock_fetcher_factory({
-        "2330": (Decimal("600"), Decimal("550")),
-        "2454": (Decimal("1100"), Decimal("1050")),
-    })
-
-    r = await client.get(
-        "/api/v1/holdings/summary", headers=_auth(user)
+    mock_fetcher_factory(
+        {
+            "2330": (Decimal("600"), Decimal("550")),
+            "2454": (Decimal("1100"), Decimal("1050")),
+        }
     )
+
+    r = await client.get("/api/v1/holdings/summary", headers=_auth(user))
     assert r.status_code == 200, r.text
     body = r.json()
     # total_cost = 10*500 + 5*1000 = 10000
@@ -760,8 +782,12 @@ async def test_summary_account_scoped(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid1, "action": "BUY", "symbol": "A",
-            "market": "TW_TWSE", "qty": "10", "price": "100",
+            "account_id": aid1,
+            "action": "BUY",
+            "symbol": "A",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "100",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
@@ -769,20 +795,24 @@ async def test_summary_account_scoped(
     await client.post(
         "/api/v1/holdings/trades",
         json={
-            "account_id": aid2, "action": "BUY", "symbol": "B",
-            "market": "TW_TWSE", "qty": "10", "price": "200",
+            "account_id": aid2,
+            "action": "BUY",
+            "symbol": "B",
+            "market": "TW_TWSE",
+            "qty": "10",
+            "price": "200",
             "trade_date": "2026-05-01",
         },
         headers=_auth(user),
     )
-    mock_fetcher_factory({
-        "A": (Decimal("110"), Decimal("105")),
-        "B": (Decimal("220"), Decimal("210")),
-    })
-
-    r1 = await client.get(
-        f"/api/v1/holdings/summary/{aid1}", headers=_auth(user)
+    mock_fetcher_factory(
+        {
+            "A": (Decimal("110"), Decimal("105")),
+            "B": (Decimal("220"), Decimal("210")),
+        }
     )
+
+    r1 = await client.get(f"/api/v1/holdings/summary/{aid1}", headers=_auth(user))
     assert r1.status_code == 200, r1.text
     b1 = r1.json()
     assert Decimal(b1["total_cost"]) == Decimal("1000")
@@ -797,9 +827,7 @@ async def test_summary_empty_portfolio_returns_zeros(
     mock_fetcher_empty,
 ) -> None:
     user = await _mk_user(db_session, "su3@x.tw")
-    r = await client.get(
-        "/api/v1/holdings/summary", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/summary", headers=_auth(user))
     assert r.status_code == 200, r.text
     body = r.json()
     assert Decimal(body["total_cost"]) == Decimal("0")

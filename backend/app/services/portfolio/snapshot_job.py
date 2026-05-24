@@ -31,6 +31,7 @@ The job relies on the same `LivePriceFetcher` Protocol that powers
 prod / fallback composite (see `app/api/v1/holdings/_deps.py`) — the
 job remains protocol-typed for testability.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -206,9 +207,7 @@ async def _aggregate_positions(
             "position_count": 0,
         }
 
-    open_positions = [
-        p for p in positions if (p.quantity or _ZERO) > _ZERO
-    ]
+    open_positions = [p for p in positions if (p.quantity or _ZERO) > _ZERO]
     # Realized PnL accumulates across both open and closed positions.
     for p in positions:
         realized_cum += p.realized_pnl or _ZERO

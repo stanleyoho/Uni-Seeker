@@ -9,6 +9,7 @@ Tier guard is service-side only (not declarative): the service's
 based dep-layer `tier_guard` factory is over-engineered for a simple
 feature flag and would conflict with the count_provider contract.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -54,9 +55,7 @@ async def get_institutional_for_stock(
     """
     svc = F13CrossStockService(db, user)  # type: ignore[arg-type]
     try:
-        holders = await svc.get_institutional_holders_for_stock(
-            symbol=symbol, limit=limit
-        )
+        holders = await svc.get_institutional_holders_for_stock(symbol=symbol, limit=limit)
     except F13TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -65,9 +64,7 @@ async def get_institutional_for_stock(
 
     # Resolve stock_id for the envelope (may be None when the symbol
     # has no `stocks` row yet but holdings exist by CUSIP).
-    stock_row = await db.execute(
-        select(Stock.id).where(Stock.symbol == symbol)
-    )
+    stock_row = await db.execute(select(Stock.id).where(Stock.symbol == symbol))
     stock_id = stock_row.scalar_one_or_none()
 
     return F13InstitutionalStockResponse(

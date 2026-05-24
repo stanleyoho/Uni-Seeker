@@ -8,14 +8,20 @@ def test_strong_low_base_candidate() -> None:
     """Stock with low PE, below MA, good quality = high score."""
     closes = [120.0] * 200 + [float(120 - i * 0.3) for i in range(60)]
     score = calculate_low_base_score(
-        symbol="TEST.TW", name="Test",
+        symbol="TEST.TW",
+        name="Test",
         closes=closes,
-        pe=10.0, pb=0.8, dividend_yield=5.0,
+        pe=10.0,
+        pb=0.8,
+        dividend_yield=5.0,
         pe_history=[10, 12, 15, 18, 20, 22, 25, 10],
         industry_avg_pe=18.0,
-        roe=0.15, debt_ratio=0.3,
-        revenue_yoy_growth=8.0, eps=3.0,
-        health_score=65.0, rsi=28.0,
+        roe=0.15,
+        debt_ratio=0.3,
+        revenue_yoy_growth=8.0,
+        eps=3.0,
+        health_score=65.0,
+        rsi=28.0,
     )
     assert score.total_score > 65
     assert not score.disqualified
@@ -25,9 +31,12 @@ def test_overvalued_stock_low_score() -> None:
     """Stock with high PE, above MA = low score."""
     closes = [float(100 + i * 0.5) for i in range(260)]
     score = calculate_low_base_score(
-        symbol="HIGH.TW", name="High",
+        symbol="HIGH.TW",
+        name="High",
         closes=closes,
-        pe=35.0, pb=5.0, dividend_yield=0.5,
+        pe=35.0,
+        pb=5.0,
+        dividend_yield=0.5,
         industry_avg_pe=18.0,
         rsi=75.0,
     )
@@ -36,7 +45,8 @@ def test_overvalued_stock_low_score() -> None:
 
 def test_negative_eps_disqualified() -> None:
     score = calculate_low_base_score(
-        symbol="LOSS.TW", name="Loss",
+        symbol="LOSS.TW",
+        name="Loss",
         closes=[100.0] * 30,
         eps=-2.0,
     )
@@ -48,7 +58,8 @@ def test_minimal_data() -> None:
     """With only price data, should still produce a score."""
     closes = [float(100 - i * 0.2) for i in range(30)]
     score = calculate_low_base_score(
-        symbol="MIN.TW", name="Minimal",
+        symbol="MIN.TW",
+        name="Minimal",
         closes=closes,
     )
     assert 0 <= score.total_score <= 100
@@ -58,9 +69,13 @@ def test_minimal_data() -> None:
 def test_score_components_weighted() -> None:
     closes = [100.0] * 260
     score = calculate_low_base_score(
-        symbol="X", name="X", closes=closes,
-        pe=15.0, industry_avg_pe=15.0,
-        roe=0.10, rsi=50.0,
+        symbol="X",
+        name="X",
+        closes=closes,
+        pe=15.0,
+        industry_avg_pe=15.0,
+        roe=0.10,
+        rsi=50.0,
     )
     # With neutral values, score should be around 50
     assert 30 < score.total_score < 70
@@ -115,16 +130,24 @@ class TestEnhancedScoring:
 
     def test_without_enhanced_no_inst_tech_score(self) -> None:
         score = calculate_low_base_score(
-            symbol="X", name="X", closes=self._base_closes(),
+            symbol="X",
+            name="X",
+            closes=self._base_closes(),
         )
         assert score.institutional_technical_score is None
         # Original weights: 40/30/30
-        expected = score.valuation_score * 0.4 + score.price_position_score * 0.3 + score.quality_score * 0.3
+        expected = (
+            score.valuation_score * 0.4
+            + score.price_position_score * 0.3
+            + score.quality_score * 0.3
+        )
         assert abs(score.total_score - round(expected, 2)) < 0.01
 
     def test_with_institutional_data_uses_enhanced_weights(self) -> None:
         score = calculate_low_base_score(
-            symbol="X", name="X", closes=self._base_closes(),
+            symbol="X",
+            name="X",
+            closes=self._base_closes(),
             foreign_net_buy_5d=1000.0,
             trust_net_buy_5d=500.0,
             dealer_net_buy_5d=-200.0,
@@ -141,7 +164,9 @@ class TestEnhancedScoring:
 
     def test_with_technical_score_only(self) -> None:
         score = calculate_low_base_score(
-            symbol="X", name="X", closes=self._base_closes(),
+            symbol="X",
+            name="X",
+            closes=self._base_closes(),
             technical_score=80.0,
         )
         assert score.institutional_technical_score is not None
@@ -151,7 +176,9 @@ class TestEnhancedScoring:
 
     def test_with_all_enhanced_params(self) -> None:
         score = calculate_low_base_score(
-            symbol="X", name="X", closes=self._base_closes(),
+            symbol="X",
+            name="X",
+            closes=self._base_closes(),
             foreign_net_buy_5d=500.0,
             trust_net_buy_5d=300.0,
             dealer_net_buy_5d=100.0,
@@ -166,10 +193,16 @@ class TestEnhancedScoring:
         """Calling without any new params produces identical results."""
         closes = [120.0] * 200 + [float(120 - i * 0.3) for i in range(60)]
         base = calculate_low_base_score(
-            symbol="T", name="T", closes=closes, rsi=35.0,
+            symbol="T",
+            name="T",
+            closes=closes,
+            rsi=35.0,
         )
         enhanced = calculate_low_base_score(
-            symbol="T", name="T", closes=closes, rsi=35.0,
+            symbol="T",
+            name="T",
+            closes=closes,
+            rsi=35.0,
         )
         assert base.total_score == enhanced.total_score
         assert base.institutional_technical_score is None
@@ -177,7 +210,9 @@ class TestEnhancedScoring:
 
     def test_details_contain_institutional_info(self) -> None:
         score = calculate_low_base_score(
-            symbol="X", name="X", closes=self._base_closes(),
+            symbol="X",
+            name="X",
+            closes=self._base_closes(),
             foreign_net_buy_5d=1000.0,
             trust_net_buy_5d=-500.0,
             dealer_net_buy_5d=200.0,

@@ -22,10 +22,13 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Oversold Bounce",
         description_zh="RSI < 30 且 KD K值 < 20，短期可能反彈",
         description_en="RSI < 30 and KD K < 20, potential short-term bounce",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op="<", value=30),
-            Condition(indicator="KD_K", params={"k_period": 9}, op="<", value=20),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op="<", value=30),
+                Condition(indicator="KD_K", params={"k_period": 9}, op="<", value=20),
+            ],
+        ),
         sort_by="RSI",
         sort_order="asc",
     ),
@@ -35,10 +38,13 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Strong Momentum",
         description_zh="RSI > 60 且股價站上 MA20，趨勢向上",
         description_en="RSI > 60 and price above MA20, uptrend confirmed",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op=">", value=60),
-            Condition(indicator="RSI", params={"period": 14}, op="<", value=80),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op=">", value=60),
+                Condition(indicator="RSI", params={"period": 14}, op="<", value=80),
+            ],
+        ),
         sort_by="RSI",
         sort_order="desc",
     ),
@@ -48,9 +54,12 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Overbought Warning",
         description_zh="RSI > 80，短期有回檔壓力",
         description_en="RSI > 80, potential short-term pullback",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op=">", value=80),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op=">", value=80),
+            ],
+        ),
         sort_by="RSI",
         sort_order="desc",
     ),
@@ -60,9 +69,12 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Bollinger Squeeze",
         description_zh="股價觸及布林下軌且 RSI < 40，可能即將反彈",
         description_en="Price near lower Bollinger Band with RSI < 40",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op="<", value=40),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op="<", value=40),
+            ],
+        ),
         sort_by="RSI",
         sort_order="asc",
     ),
@@ -72,10 +84,13 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Steady Growth",
         description_zh="RSI 在 40-60 之間，趨勢穩定不過熱",
         description_en="RSI between 40-60, stable trend without overheating",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op=">=", value=40),
-            Condition(indicator="RSI", params={"period": 14}, op="<=", value=60),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op=">=", value=40),
+                Condition(indicator="RSI", params={"period": 14}, op="<=", value=60),
+            ],
+        ),
         sort_by="RSI",
         sort_order="asc",
     ),
@@ -85,9 +100,12 @@ PRESETS: dict[str, ScreenerPreset] = {
         name_en="Volume Breakout",
         description_zh="RSI > 55 且成交量放大，可能即將突破",
         description_en="RSI > 55 with volume surge, potential breakout",
-        conditions=ConditionGroup(operator="AND", rules=[
-            Condition(indicator="RSI", params={"period": 14}, op=">", value=55),
-        ]),
+        conditions=ConditionGroup(
+            operator="AND",
+            rules=[
+                Condition(indicator="RSI", params={"period": 14}, op=">", value=55),
+            ],
+        ),
         sort_by="RSI",
         sort_order="desc",
     ),

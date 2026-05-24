@@ -79,15 +79,19 @@ async def screen_stocks(
     # Run screener
     engine = ScreenerEngine(registry=registry)
     results = engine.screen(
-        stocks_prices, conditions,
-        sort_by=req.sort_by, sort_order=req.sort_order,
+        stocks_prices,
+        conditions,
+        sort_by=req.sort_by,
+        sort_order=req.sort_order,
     )
 
     # Apply limit
-    limited = results[:req.limit]
+    limited = results[: req.limit]
 
     return ScreenResponse(
-        results=[ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited],
+        results=[
+            ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited
+        ],
         total=len(results),
     )
 
@@ -128,12 +132,16 @@ async def run_preset(
 
     engine = ScreenerEngine(registry=registry)
     results = engine.screen(
-        stocks_prices, preset.conditions,
-        sort_by=preset.sort_by, sort_order=preset.sort_order,
+        stocks_prices,
+        preset.conditions,
+        sort_by=preset.sort_by,
+        sort_order=preset.sort_order,
     )
     limited = results[:limit]
 
     return ScreenResponse(
-        results=[ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited],
+        results=[
+            ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited
+        ],
         total=len(results),
     )

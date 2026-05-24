@@ -32,9 +32,7 @@ async def get_company_info(
     # Resolve industry name via JOIN
     industry_name = ""
     if stock.industry_id is not None:
-        ind_result = await db.execute(
-            select(Industry.name).where(Industry.id == stock.industry_id)
-        )
+        ind_result = await db.execute(select(Industry.name).where(Industry.id == stock.industry_id))
         ind_row = ind_result.scalar_one_or_none()
         if ind_row:
             industry_name = ind_row
@@ -58,9 +56,7 @@ async def update_company_info(
 
     updated = 0
     for company in companies:
-        result = await db.execute(
-            select(Stock).where(Stock.symbol == company.symbol)
-        )
+        result = await db.execute(select(Stock).where(Stock.symbol == company.symbol))
         stock = result.scalar_one_or_none()
         if stock:
             # Find or create the industry

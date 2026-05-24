@@ -38,6 +38,7 @@ Anti-coupling contract:
   as ``skipped`` — losing the race to a user request is the *correct*
   outcome, not an error.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -132,8 +133,7 @@ async def refresh_for_tier(
     """
     if tier is UserTier.FREE:
         raise ValueError(
-            "refresh_for_tier rejects FREE tier — Free users are "
-            "on-demand-only by spec Q1."
+            "refresh_for_tier rejects FREE tier — Free users are on-demand-only by spec Q1."
         )
 
     if now is None:
@@ -196,10 +196,7 @@ async def refresh_for_tier(
             # within the per-tier window. ``latest_filing_date`` is None
             # for brand-new subscriptions (we've never run a refresh yet)
             # — those MUST be refreshed, hence the explicit None check.
-            if (
-                filer.latest_filing_date is not None
-                and filer.latest_filing_date >= skip_floor_date
-            ):
+            if filer.latest_filing_date is not None and filer.latest_filing_date >= skip_floor_date:
                 skipped += 1
                 logger.debug(
                     "13f_scheduled_skip_recent",
@@ -320,9 +317,7 @@ async def daily_pro_refresh_entrypoint() -> None:  # pragma: no cover - thin wir
                 logger.info("13f_pro_daily_complete", **result)
             except Exception as exc:
                 await db.rollback()
-                logger.exception(
-                    "13f_pro_daily_failed", error=str(exc)
-                )
+                logger.exception("13f_pro_daily_failed", error=str(exc))
     except Exception as exc:
         # Last-resort guard: never let APScheduler see an exception —
         # if we did, the misfire policy would re-schedule us into a
@@ -342,10 +337,6 @@ async def weekly_basic_refresh_entrypoint() -> None:  # pragma: no cover - thin 
                 logger.info("13f_basic_weekly_complete", **result)
             except Exception as exc:
                 await db.rollback()
-                logger.exception(
-                    "13f_basic_weekly_failed", error=str(exc)
-                )
+                logger.exception("13f_basic_weekly_failed", error=str(exc))
     except Exception as exc:
-        logger.exception(
-            "13f_basic_weekly_outer_failed", error=str(exc)
-        )
+        logger.exception("13f_basic_weekly_outer_failed", error=str(exc))

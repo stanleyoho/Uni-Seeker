@@ -16,6 +16,7 @@ Coverage (~12 cases):
   P11 summarize — total_cost == 0 (gain_simple_pct guard)
   P12 summarize — Q6 (A) gain = total_value - total_cost
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -120,8 +121,8 @@ def test_P08_summarize_mixed():
         (Decimal("50"), Decimal("200"), Decimal("180"), Decimal("190")),
     ]
     s = summarize(positions)
-    assert s.total_cost == Decimal("20000")        # 100*100 + 50*200
-    assert s.total_value == Decimal("24000")       # 100*150 + 50*180
+    assert s.total_cost == Decimal("20000")  # 100*100 + 50*200
+    assert s.total_value == Decimal("24000")  # 100*150 + 50*180
     assert s.total_unrealized_pnl == Decimal("4000")
     assert s.total_daily_change == Decimal("500")  # 1000 + (-500)
     assert s.gain_simple == Decimal("4000")

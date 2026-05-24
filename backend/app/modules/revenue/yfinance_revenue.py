@@ -39,10 +39,15 @@ class YFinanceRevenueProvider:
                         q = (col.month - 1) // 3 + 1
                         period_str = f"{col.year}-Q{q}"
 
-                    records.append(RevenueRecord(
-                        symbol=symbol, period=period_str,
-                        period_type="quarterly", revenue=revenue_val, currency=currency,
-                    ))
+                    records.append(
+                        RevenueRecord(
+                            symbol=symbol,
+                            period=period_str,
+                            period_type="quarterly",
+                            revenue=revenue_val,
+                            currency=currency,
+                        )
+                    )
 
         # Sort by period descending
         records.sort(key=lambda r: r.period, reverse=True)

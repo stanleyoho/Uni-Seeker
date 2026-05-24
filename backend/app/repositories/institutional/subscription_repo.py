@@ -10,6 +10,7 @@ method takes `user_id` and applies it as a WHERE clause.
 
 CRUD only — no business logic, no tier checks (spec §11 R3).
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -71,9 +72,7 @@ class F13UserSubscriptionRepo:
         await self.db.flush()
         return (result.rowcount or 0) > 0
 
-    async def list_by_user(
-        self, user_id: int
-    ) -> list[F13UserSubscription]:
+    async def list_by_user(self, user_id: int) -> list[F13UserSubscription]:
         """All subscriptions owned by `user_id`, with `filer` eager-loaded.
 
         Eager-loading `filer` via `selectinload` lets callers render the
@@ -120,8 +119,6 @@ class F13UserSubscriptionRepo:
         quota check (`max_tracked_filers`) at the service layer.
         """
         result = await self.db.execute(
-            select(func.count(F13UserSubscription.id)).where(
-                F13UserSubscription.user_id == user_id
-            )
+            select(func.count(F13UserSubscription.id)).where(F13UserSubscription.user_id == user_id)
         )
         return int(result.scalar() or 0)

@@ -1,4 +1,5 @@
 """Shared fixtures for integration tests."""
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -4,6 +4,7 @@ Materialized roll-up of open lots for a (account, symbol, market) tuple.
 One row per holding; updated atomically by the trade-processing service
 on every trade upsert. Uniqueness is the upsert key.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -34,12 +35,12 @@ class PortfolioPosition(Base):
     __tablename__ = "portfolio_positions"
     __table_args__ = (
         UniqueConstraint(
-            "account_id", "symbol", "market",
+            "account_id",
+            "symbol",
+            "market",
             name="uq_portfolio_positions_account_symbol_market",
         ),
-        CheckConstraint(
-            "quantity >= 0", name="ck_portfolio_positions_qty_nonneg"
-        ),
+        CheckConstraint("quantity >= 0", name="ck_portfolio_positions_qty_nonneg"),
     )
 
     # non-default fields first
@@ -55,18 +56,10 @@ class PortfolioPosition(Base):
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
 
     # defaulted / nullable fields after
-    quantity: Mapped[Decimal] = mapped_column(
-        Numeric(24, 8), default=Decimal("0")
-    )
-    avg_cost_fifo: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 8), default=None
-    )
-    total_cost: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 8), default=None
-    )
-    realized_pnl: Mapped[Decimal] = mapped_column(
-        Numeric(24, 8), default=Decimal("0")
-    )
+    quantity: Mapped[Decimal] = mapped_column(Numeric(24, 8), default=Decimal("0"))
+    avg_cost_fifo: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), default=None)
+    total_cost: Mapped[Decimal | None] = mapped_column(Numeric(24, 8), default=None)
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(24, 8), default=Decimal("0"))
     is_closed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -75,9 +68,7 @@ class PortfolioPosition(Base):
         onupdate=func.now(),
     )
 
-    account: Mapped[PortfolioAccount] = relationship(
-        back_populates="positions", init=False
-    )
+    account: Mapped[PortfolioAccount] = relationship(back_populates="positions", init=False)
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
         return (

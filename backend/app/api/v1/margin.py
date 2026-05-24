@@ -39,17 +39,24 @@ async def get_margin_data(
         short_usage = (d.short_balance / d.short_limit * 100) if d.short_limit > 0 else 0
         ms_ratio = (d.short_balance / d.margin_balance * 100) if d.margin_balance > 0 else 0
 
-        results.append(MarginDataResponse(
-            symbol=d.symbol, name=d.name,
-            margin_buy=d.margin_buy, margin_sell=d.margin_sell,
-            margin_balance=d.margin_balance, margin_limit=d.margin_limit,
-            margin_usage_pct=round(margin_usage, 2),
-            short_buy=d.short_buy, short_sell=d.short_sell,
-            short_balance=d.short_balance, short_limit=d.short_limit,
-            short_usage_pct=round(short_usage, 2),
-            offset=d.offset,
-            margin_short_ratio=round(ms_ratio, 2),
-        ))
+        results.append(
+            MarginDataResponse(
+                symbol=d.symbol,
+                name=d.name,
+                margin_buy=d.margin_buy,
+                margin_sell=d.margin_sell,
+                margin_balance=d.margin_balance,
+                margin_limit=d.margin_limit,
+                margin_usage_pct=round(margin_usage, 2),
+                short_buy=d.short_buy,
+                short_sell=d.short_sell,
+                short_balance=d.short_balance,
+                short_limit=d.short_limit,
+                short_usage_pct=round(short_usage, 2),
+                offset=d.offset,
+                margin_short_ratio=round(ms_ratio, 2),
+            )
+        )
 
     return MarginListResponse(data=results, total=len(results))
 
@@ -74,12 +81,17 @@ async def get_margin_by_symbol(
             ms_ratio = (d.short_balance / d.margin_balance * 100) if d.margin_balance > 0 else 0
 
             return MarginDataResponse(
-                symbol=d.symbol, name=d.name,
-                margin_buy=d.margin_buy, margin_sell=d.margin_sell,
-                margin_balance=d.margin_balance, margin_limit=d.margin_limit,
+                symbol=d.symbol,
+                name=d.name,
+                margin_buy=d.margin_buy,
+                margin_sell=d.margin_sell,
+                margin_balance=d.margin_balance,
+                margin_limit=d.margin_limit,
                 margin_usage_pct=round(margin_usage, 2),
-                short_buy=d.short_buy, short_sell=d.short_sell,
-                short_balance=d.short_balance, short_limit=d.short_limit,
+                short_buy=d.short_buy,
+                short_sell=d.short_sell,
+                short_balance=d.short_balance,
+                short_limit=d.short_limit,
                 short_usage_pct=round(short_usage, 2),
                 offset=d.offset,
                 margin_short_ratio=round(ms_ratio, 2),

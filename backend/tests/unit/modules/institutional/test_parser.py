@@ -3,6 +3,7 @@
 Covers happy path, namespace variants, missing/optional fields, malformed
 input, and the long-vs-options summary split (spec §3.3 Q3).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

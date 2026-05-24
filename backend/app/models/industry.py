@@ -8,9 +8,7 @@ from app.models.base import Base
 
 class Industry(Base):
     __tablename__ = "industries"
-    __table_args__ = (
-        Index("ix_industries_name", "name"),
-    )
+    __table_args__ = (Index("ix_industries_name", "name"),)
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)

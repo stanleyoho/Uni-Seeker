@@ -14,6 +14,7 @@ It serves two roles:
    match either, the service surfaces the standard
    `invalid_csv_format` 422 to the API layer.
 """
+
 from __future__ import annotations
 
 import csv
@@ -168,10 +169,7 @@ class GenericCsvParser:
             trade_date=trade_date,
             note=note_s or None,
             currency="USD",  # service overrides via market if needed
-            raw_row={
-                k: v
-                for k, v in zip(REQUIRED_HEADER, cols, strict=False)
-            },
+            raw_row={k: v for k, v in zip(REQUIRED_HEADER, cols, strict=False)},
             error=error,
         )
 

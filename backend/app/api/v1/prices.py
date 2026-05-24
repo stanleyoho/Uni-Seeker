@@ -134,9 +134,7 @@ async def get_stock_prices(
     prices = list(result.scalars().all())
 
     count_query = (
-        select(func.count())
-        .select_from(StockPrice)
-        .where(StockPrice.stock_id == stock.id)
+        select(func.count()).select_from(StockPrice).where(StockPrice.stock_id == stock.id)
     )
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0

@@ -1,4 +1,5 @@
 """Integration tests for /api/v1/predictions endpoints."""
+
 from __future__ import annotations
 
 import pytest
@@ -17,9 +18,7 @@ async def test_post_save_prediction_returns_201() -> None:
 
     app = create_app()
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/predictions/save",
             json={
@@ -44,9 +43,7 @@ async def test_post_resolve_prediction_returns_200() -> None:
 
     app = create_app()
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         save_resp = await client.post(
             "/api/v1/predictions/save",
             json={
@@ -77,9 +74,7 @@ async def test_post_resolve_not_found_returns_404() -> None:
 
     app = create_app()
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/predictions/resolve/99999999",
             json={"actual_value": 0.01},
@@ -94,9 +89,7 @@ async def test_post_resolve_already_resolved_returns_409() -> None:
 
     app = create_app()
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         save_resp = await client.post(
             "/api/v1/predictions/save",
             json={
@@ -127,9 +120,7 @@ async def test_get_performance_window_returns_stats() -> None:
 
     app = create_app()
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get(
             "/api/v1/predictions/performance",
             params={"domain": "stocks", "days": 7},

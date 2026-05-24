@@ -13,6 +13,7 @@ Header rules:
     - ``Content-Length`` is rebuilt from the rewritten body (the upstream
       value would be wrong after substitution and trip strict clients).
 """
+
 from __future__ import annotations
 
 import re
@@ -63,10 +64,7 @@ class CompliancePurifierMiddleware(BaseHTTPMiddleware):
         new_body = _purify(body)
 
         # Rebuild headers without the now-stale Content-Length.
-        new_headers = [
-            (k, v) for k, v in response.headers.items()
-            if k.lower() != "content-length"
-        ]
+        new_headers = [(k, v) for k, v in response.headers.items() if k.lower() != "content-length"]
         return Response(
             content=new_body,
             status_code=response.status_code,

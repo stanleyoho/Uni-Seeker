@@ -4,6 +4,7 @@ Spec §5. `F13SubscribeRequest` accepts a CIK string + optional name;
 when the caller supplies a CIK we haven't ingested yet, the service
 creates the filer row idempotently (`F13SubscriptionService.subscribe`).
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -75,9 +76,7 @@ class F13BulkSubscribeRequest(BaseModel):
         large paste.
     """
 
-    items: list[F13BulkSubscribeRequestItem] = Field(
-        ..., min_length=1, max_length=20
-    )
+    items: list[F13BulkSubscribeRequestItem] = Field(..., min_length=1, max_length=20)
 
 
 class F13BulkSubscribeError(BaseModel):

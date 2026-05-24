@@ -5,8 +5,10 @@ from app.modules.strategy.builtin import MACrossoverStrategy, RSIOversoldStrateg
 def test_ma_crossover_is_strategy() -> None:
     assert isinstance(MACrossoverStrategy(), Strategy)
 
+
 def test_rsi_oversold_is_strategy() -> None:
     assert isinstance(RSIOversoldStrategy(), Strategy)
+
 
 def test_signal_creation() -> None:
     s = Signal(action="BUY", symbol="2330.TW", reason="test")

@@ -24,6 +24,7 @@ The ``value_usd`` field of each ``ParsedHolding`` is already
 the SEC 13F instructions, and we unroll once at the parser boundary so
 no downstream caller has to remember the multiplier.
 """
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -246,15 +247,11 @@ def _parse_one_info_table(el: ET.Element) -> ParsedHolding | None:
     discretion = (_find_text(el, "investmentDiscretion") or "SOLE").strip().upper()
 
     voting_el = _find_child(el, "votingAuthority")
-    voting_sole = _decimal_or_zero(
-        _find_text(voting_el, "Sole") if voting_el is not None else None
-    )
+    voting_sole = _decimal_or_zero(_find_text(voting_el, "Sole") if voting_el is not None else None)
     voting_shared = _decimal_or_zero(
         _find_text(voting_el, "Shared") if voting_el is not None else None
     )
-    voting_none = _decimal_or_zero(
-        _find_text(voting_el, "None") if voting_el is not None else None
-    )
+    voting_none = _decimal_or_zero(_find_text(voting_el, "None") if voting_el is not None else None)
 
     return ParsedHolding(
         cusip=cusip,

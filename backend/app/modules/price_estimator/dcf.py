@@ -39,7 +39,9 @@ class DCFEstimator:
         capital = 0
         if latest_bs:
             # TW SE precise keys
-            capital = latest_bs.get("股本", latest_bs.get("普通股股本", latest_bs.get("權益總額", 0)))
+            capital = latest_bs.get(
+                "股本", latest_bs.get("普通股股本", latest_bs.get("權益總額", 0))
+            )
 
         shares_outstanding = (capital / 10) if capital > 0 else 0
 
@@ -50,7 +52,7 @@ class DCFEstimator:
                 fair_price=None,
                 expensive_price=None,
                 confidence=Decimal("0.0"),
-                details={"reason": "Negative FCF or invalid share count"}
+                details={"reason": "Negative FCF or invalid share count"},
             )
 
         # 3. Dynamic Parameters
@@ -63,10 +65,12 @@ class DCFEstimator:
         pv_fcf = 0
         fcf_projection = current_fcf
         for t in range(1, projection_years + 1):
-            fcf_projection *= (1 + growth_rate)
+            fcf_projection *= 1 + growth_rate
             pv_fcf += fcf_projection / ((1 + discount_rate) ** t)
 
-        terminal_value = (fcf_projection * (1 + terminal_growth)) / (discount_rate - terminal_growth)
+        terminal_value = (fcf_projection * (1 + terminal_growth)) / (
+            discount_rate - terminal_growth
+        )
         pv_terminal = terminal_value / ((1 + discount_rate) ** projection_years)
 
         total_value = pv_fcf + pv_terminal
@@ -93,6 +97,6 @@ class DCFEstimator:
                 "terminal_growth": terminal_growth,
                 "pv_fcf": round(pv_fcf, 2),
                 "pv_terminal": round(pv_terminal, 2),
-                "shares_outstanding": int(shares_outstanding)
-            }
+                "shares_outstanding": int(shares_outstanding),
+            },
         )

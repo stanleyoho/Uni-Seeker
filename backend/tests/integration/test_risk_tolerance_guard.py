@@ -1,4 +1,5 @@
 """Plan 4.5 T6 — require_risk_tolerance guard."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,9 @@ async def test_no_kyc_blocked_with_kyc_required(client: AsyncClient, db_session:
 
 
 @pytest.mark.asyncio
-async def test_conservative_blocked_with_insufficient(client: AsyncClient, db_session: AsyncSession):
+async def test_conservative_blocked_with_insufficient(
+    client: AsyncClient, db_session: AsyncSession
+):
     u = await _user(db_session, "rt2@x.tw", "rt2", risk="conservative")
     r = await client.get("/api/v1/onboarding/risky-demo", headers=_auth(u))
     assert r.status_code == 403

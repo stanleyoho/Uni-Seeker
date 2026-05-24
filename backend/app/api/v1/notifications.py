@@ -77,7 +77,9 @@ def list_notification_templates() -> list[dict]:
             "description_zh": "RSI 低於 30 時通知，可能有反彈機會",
             "description_en": "Alert when RSI drops below 30",
             "rule_type": "indicator_alert",
-            "default_conditions": [{"indicator": "RSI", "operator": "<", "value": 30, "params": {"period": 14}}],
+            "default_conditions": [
+                {"indicator": "RSI", "operator": "<", "value": 30, "params": {"period": 14}}
+            ],
         },
         {
             "key": "daily_summary",

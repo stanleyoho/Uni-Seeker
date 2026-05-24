@@ -26,6 +26,7 @@ Architectural notes:
   `_session_scope()` workaround for the fact that `tier_guard`'s
   count provider is NOT a FastAPI dependency (it cannot use Depends).
 """
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -125,9 +126,7 @@ async def tracked_filers_count_provider(*, user: User) -> int:
 
     async def _q() -> int:
         async with _session_scope() as session:
-            return await F13UserSubscriptionRepo(session).count_by_user(
-                user.id
-            )
+            return await F13UserSubscriptionRepo(session).count_by_user(user.id)
 
     return await _safe_count(_q)
 

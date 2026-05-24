@@ -5,6 +5,7 @@ a single position (POSITION_*) or the user's whole portfolio
 (PORTFOLIO_*). Evaluation lives in
 ``app.modules.alerts.evaluator`` — this model is data-only.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -43,21 +44,15 @@ class AlertRule(Base):
     __tablename__ = "alert_rules"
     __table_args__ = (
         CheckConstraint(
-            "rule_type IN ("
-            + ", ".join(f"'{rt}'" for rt in ALERT_RULE_TYPES)
-            + ")",
+            "rule_type IN (" + ", ".join(f"'{rt}'" for rt in ALERT_RULE_TYPES) + ")",
             name="ck_alert_rules_rule_type",
         ),
         CheckConstraint(
-            "status IN ("
-            + ", ".join(f"'{s}'" for s in ALERT_STATUSES)
-            + ")",
+            "status IN (" + ", ".join(f"'{s}'" for s in ALERT_STATUSES) + ")",
             name="ck_alert_rules_status",
         ),
         CheckConstraint(
-            "threshold_type IN ("
-            + ", ".join(f"'{t}'" for t in ALERT_THRESHOLD_TYPES)
-            + ")",
+            "threshold_type IN (" + ", ".join(f"'{t}'" for t in ALERT_THRESHOLD_TYPES) + ")",
             name="ck_alert_rules_threshold_type",
         ),
         Index("ix_alert_rules_user_status", "user_id", "status"),
@@ -73,21 +68,13 @@ class AlertRule(Base):
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     rule_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    threshold_value: Mapped[Decimal] = mapped_column(
-        Numeric(24, 8), nullable=False
-    )
+    threshold_value: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
     threshold_type: Mapped[str] = mapped_column(String(10), nullable=False)
 
     # nullable / defaulted fields
-    symbol: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, default=None
-    )
-    market: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, default=None
-    )
-    status: Mapped[str] = mapped_column(
-        String(10), nullable=False, default="ACTIVE"
-    )
+    symbol: Mapped[str | None] = mapped_column(String(20), nullable=True, default=None)
+    market: Mapped[str | None] = mapped_column(String(20), nullable=True, default=None)
+    status: Mapped[str] = mapped_column(String(10), nullable=False, default="ACTIVE")
     last_evaluated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )

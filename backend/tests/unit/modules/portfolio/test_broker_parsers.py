@@ -14,6 +14,7 @@ We cover:
 
 No DB, no FastAPI — adapters are pure.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -266,9 +267,10 @@ class TestGeneric:
 
     def test_can_handle_canonical_header(self) -> None:
         parser = GenericCsvParser()
-        assert parser.can_handle(
-            "trade_date,action,symbol,market,quantity,price,fee,tax,note\n"
-        ) is True
+        assert (
+            parser.can_handle("trade_date,action,symbol,market,quantity,price,fee,tax,note\n")
+            is True
+        )
 
 
 # ── Auto-detect ───────────────────────────────────────────────────────

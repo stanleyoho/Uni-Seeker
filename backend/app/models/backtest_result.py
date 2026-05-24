@@ -29,7 +29,9 @@ class BacktestResultRecord(Base):
     composite_mode: Mapped[str | None] = mapped_column(String(20), default=None)
 
     # Backtest metadata
-    backtest_type: Mapped[str] = mapped_column(String(20), default="single")  # single, grid_search, auto_discovery, portfolio
+    backtest_type: Mapped[str] = mapped_column(
+        String(20), default="single"
+    )  # single, grid_search, auto_discovery, portfolio
     date_range_start: Mapped[date | None] = mapped_column(Date, default=None)
     date_range_end: Mapped[date | None] = mapped_column(Date, default=None)
     buy_hold_return: Mapped[float | None] = mapped_column(Float, default=None)
@@ -41,8 +43,11 @@ class BacktestResultRecord(Base):
     win_rate: Mapped[float] = mapped_column(Float, default=0.0)
 
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None,
+        DateTime(timezone=True),
+        default=None,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )

@@ -23,21 +23,35 @@ async def test_get_valuation_estimates_success(
     today = date.today()
     estimates = [
         PriceEstimate(
-            stock_id=stock.id, date=today, model_type="dcf",
-            cheap_price=Decimal("800"), fair_price=Decimal("1000"),
-            expensive_price=Decimal("1200"), confidence=Decimal("0.6"), details={}
+            stock_id=stock.id,
+            date=today,
+            model_type="dcf",
+            cheap_price=Decimal("800"),
+            fair_price=Decimal("1000"),
+            expensive_price=Decimal("1200"),
+            confidence=Decimal("0.6"),
+            details={},
         ),
         PriceEstimate(
-            stock_id=stock.id, date=today, model_type="pe_band",
-            cheap_price=Decimal("800"), fair_price=Decimal("1000"),
-            expensive_price=Decimal("1200"), confidence=Decimal("0.8"), details={}
+            stock_id=stock.id,
+            date=today,
+            model_type="pe_band",
+            cheap_price=Decimal("800"),
+            fair_price=Decimal("1000"),
+            expensive_price=Decimal("1200"),
+            confidence=Decimal("0.8"),
+            details={},
         ),
         PriceEstimate(
-            stock_id=stock.id, date=today, model_type="composite",
-            cheap_price=Decimal("800"), fair_price=Decimal("1000"),
-            expensive_price=Decimal("1200"), confidence=Decimal("0.7"),
-            details={"models_used": ["dcf", "pe_band"], "convergence_score": 1.0}
-        )
+            stock_id=stock.id,
+            date=today,
+            model_type="composite",
+            cheap_price=Decimal("800"),
+            fair_price=Decimal("1000"),
+            expensive_price=Decimal("1200"),
+            confidence=Decimal("0.7"),
+            details={"models_used": ["dcf", "pe_band"], "convergence_score": 1.0},
+        ),
     ]
     db_session.add_all(estimates)
     await db_session.commit()
@@ -58,6 +72,7 @@ async def test_get_valuation_estimates_success(
     # Verify DecimalStr serialization
     assert float(data["latest_composite"]["fair_price"]) == 1000.0
     assert float(data["latest_composite"]["confidence"]) == 0.7
+
 
 @pytest.mark.asyncio
 async def test_get_valuation_no_data(

@@ -9,25 +9,44 @@ from app.modules.financial_analysis.base import FinancialData, FinancialStatemen
 
 def _mock_financial_data() -> FinancialData:
     return FinancialData(
-        symbol="AAPL", currency="USD",
+        symbol="AAPL",
+        currency="USD",
         income_statements=[
-            FinancialStatement(period="2024-12-31", period_type="quarterly", data={
-                "Total Revenue": 1000000, "Cost Of Revenue": 600000,
-                "Operating Income": 200000, "Net Income": 150000,
-            }),
+            FinancialStatement(
+                period="2024-12-31",
+                period_type="quarterly",
+                data={
+                    "Total Revenue": 1000000,
+                    "Cost Of Revenue": 600000,
+                    "Operating Income": 200000,
+                    "Net Income": 150000,
+                },
+            ),
         ],
         balance_sheets=[
-            FinancialStatement(period="2024-12-31", period_type="quarterly", data={
-                "Total Assets": 5000000, "Current Assets": 2000000,
-                "Current Liabilities": 1500000, "Stockholders Equity": 3000000,
-                "Total Liabilities Net Minority Interest": 2000000,
-                "Inventory": 500000, "Net Receivables": 800000,
-            }),
+            FinancialStatement(
+                period="2024-12-31",
+                period_type="quarterly",
+                data={
+                    "Total Assets": 5000000,
+                    "Current Assets": 2000000,
+                    "Current Liabilities": 1500000,
+                    "Stockholders Equity": 3000000,
+                    "Total Liabilities Net Minority Interest": 2000000,
+                    "Inventory": 500000,
+                    "Net Receivables": 800000,
+                },
+            ),
         ],
         cash_flows=[
-            FinancialStatement(period="2024-12-31", period_type="quarterly", data={
-                "Operating Cash Flow": 200000, "Capital Expenditure": -50000,
-            }),
+            FinancialStatement(
+                period="2024-12-31",
+                period_type="quarterly",
+                data={
+                    "Operating Cash Flow": 200000,
+                    "Capital Expenditure": -50000,
+                },
+            ),
         ],
     )
 

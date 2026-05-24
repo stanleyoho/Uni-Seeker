@@ -1,4 +1,5 @@
 """Plan 7 T1 — audit_logs entries on Stripe / auth flows."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -34,15 +35,14 @@ async def _user(
 
 
 async def _count(db: AsyncSession, action: str) -> int:
-    return await db.scalar(
-        select(func.count()).select_from(AuditLog).where(AuditLog.action == action)
-    ) or 0
+    return (
+        await db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.action == action))
+        or 0
+    )
 
 
 @pytest.mark.asyncio
-async def test_register_writes_audit(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_register_writes_audit(client: AsyncClient, db_session: AsyncSession) -> None:
     r = await client.post(
         "/api/v1/auth/register",
         json={
@@ -57,9 +57,7 @@ async def test_register_writes_audit(
 
 
 @pytest.mark.asyncio
-async def test_login_writes_audit(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_login_writes_audit(client: AsyncClient, db_session: AsyncSession) -> None:
     await _user(db_session, "login@x.tw", "login")
     r = await client.post(
         "/api/v1/auth/login",
@@ -74,9 +72,7 @@ async def test_login_writes_audit(
 async def test_subscription_cancel_writes_audit(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    u = await _user(
-        db_session, "cancel@x.tw", "cancel", tier=UserTier.PRO, sub_id="sub_test"
-    )
+    u = await _user(db_session, "cancel@x.tw", "cancel", tier=UserTier.PRO, sub_id="sub_test")
     token = create_access_token(u.id, u.email)
 
     mock_svc = MagicMock()
@@ -118,10 +114,10 @@ async def test_webhook_tier_upgrade_writes_audit(
     assert r.status_code == 200, r.text
 
     rows = (
-        await db_session.execute(
-            select(AuditLog).where(AuditLog.action == "tier_upgrade")
-        )
-    ).scalars().all()
+        (await db_session.execute(select(AuditLog).where(AuditLog.action == "tier_upgrade")))
+        .scalars()
+        .all()
+    )
     assert len(rows) == 1
     row = rows[0]
     assert row.actor_type == "webhook"
@@ -139,8 +135,11 @@ async def test_webhook_tier_downgrade_writes_audit(
     from app.modules.billing.stripe_service import WebhookResult
 
     user = await _user(
-        db_session, "downgrade@x.tw", "downgrade",
-        tier=UserTier.PRO, sub_id="sub_dn",
+        db_session,
+        "downgrade@x.tw",
+        "downgrade",
+        tier=UserTier.PRO,
+        sub_id="sub_dn",
     )
 
     mock_svc = MagicMock()
@@ -159,10 +158,10 @@ async def test_webhook_tier_downgrade_writes_audit(
     assert r.status_code == 200, r.text
 
     rows = (
-        await db_session.execute(
-            select(AuditLog).where(AuditLog.action == "tier_downgrade")
-        )
-    ).scalars().all()
+        (await db_session.execute(select(AuditLog).where(AuditLog.action == "tier_downgrade")))
+        .scalars()
+        .all()
+    )
     assert len(rows) == 1
     row = rows[0]
     assert row.actor_type == "webhook"

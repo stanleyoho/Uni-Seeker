@@ -4,6 +4,7 @@ Spec §5.4 + §7. Service returns enriched `PositionWithPnL` dataclasses;
 we flatten them into the wire schema declared in
 `app.schemas.portfolio.position`.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -52,18 +53,10 @@ def _to_response(p: PositionWithPnL) -> PositionResponse:
         last_price=p.last_price,
         prev_close=p.prev_close,
         price_as_of=p.price_as_of,
-        unrealized_pnl=(
-            p.unrealized_pnl.unrealized_pnl if p.unrealized_pnl else None
-        ),
-        unrealized_pnl_pct=(
-            p.unrealized_pnl.unrealized_pnl_pct if p.unrealized_pnl else None
-        ),
-        daily_change=(
-            p.daily_change.delta_total if p.daily_change else None
-        ),
-        daily_change_pct=(
-            p.daily_change.delta_pct if p.daily_change else None
-        ),
+        unrealized_pnl=(p.unrealized_pnl.unrealized_pnl if p.unrealized_pnl else None),
+        unrealized_pnl_pct=(p.unrealized_pnl.unrealized_pnl_pct if p.unrealized_pnl else None),
+        daily_change=(p.daily_change.delta_total if p.daily_change else None),
+        daily_change_pct=(p.daily_change.delta_pct if p.daily_change else None),
         is_closed=p.is_closed,
     )
 
@@ -115,9 +108,7 @@ async def get_position(
     """
     service = PortfolioPositionService(db, user, fetcher)  # type: ignore[arg-type]
     try:
-        row = await service.get_position(
-            account_id, symbol, market=market
-        )
+        row = await service.get_position(account_id, symbol, market=market)
     except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

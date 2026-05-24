@@ -43,6 +43,7 @@ User-controllable knobs:
     surface keeps room for a future "absolute" mode but the function
     signature does not yet expose it (premature parametrisation).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -151,8 +152,7 @@ def validate_targets(targets: list[TargetAllocation]) -> None:
     for t in targets:
         if t.target_pct < _ZERO:
             raise ValueError(
-                f"target_pct must be ≥ 0, got {t.target_pct} for "
-                f"{t.symbol}/{t.market}"
+                f"target_pct must be ≥ 0, got {t.target_pct} for {t.symbol}/{t.market}"
             )
 
     # Duplicate detection on the composite key (symbol, market) — same
@@ -161,16 +161,12 @@ def validate_targets(targets: list[TargetAllocation]) -> None:
     for t in targets:
         key = (t.symbol, t.market)
         if key in seen:
-            raise ValueError(
-                f"duplicate target for {t.symbol}/{t.market}"
-            )
+            raise ValueError(f"duplicate target for {t.symbol}/{t.market}")
         seen.add(key)
 
     total = sum((t.target_pct for t in targets), _ZERO)
     if abs(total - _HUNDRED) > _PCT_TOLERANCE:
-        raise ValueError(
-            f"sum(target_pct) must equal 100 (±{_PCT_TOLERANCE}); got {total}"
-        )
+        raise ValueError(f"sum(target_pct) must equal 100 (±{_PCT_TOLERANCE}); got {total}")
 
 
 # ── core computation ───────────────────────────────────────────────────────
@@ -206,17 +202,13 @@ def compute_rebalance(
             ``validate_targets``'s rules fire.
     """
     if min_trade_value < _ZERO:
-        raise ValueError(
-            f"min_trade_value must be ≥ 0, got {min_trade_value}"
-        )
+        raise ValueError(f"min_trade_value must be ≥ 0, got {min_trade_value}")
 
     validate_targets(targets)
 
     # Pre-aggregate positions into a lookup. We accept the input order as
     # canonical so the resulting trade list can preserve user intent.
-    pos_by_key: dict[str, CurrentPosition] = {
-        _key(p.symbol, p.market): p for p in positions
-    }
+    pos_by_key: dict[str, CurrentPosition] = {_key(p.symbol, p.market): p for p in positions}
 
     total_value = sum((p.current_value for p in positions), _ZERO)
 
@@ -364,8 +356,7 @@ def compute_rebalance(
                 estimated_price=p.last_price,
                 estimated_value=p.current_value,
                 rationale=(
-                    f"exit position (current "
-                    f"{_pct_of(p.current_value, total_value)}% → target 0%)"
+                    f"exit position (current {_pct_of(p.current_value, total_value)}% → target 0%)"
                 ),
             )
         )

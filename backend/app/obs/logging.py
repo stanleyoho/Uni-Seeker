@@ -9,6 +9,7 @@ Since 2026-05-24 Stage 2 migration the actual implementation lives in
 existing ``from app.obs.logging import configure_logging, get_logger``
 call sites without modification.
 """
+
 from __future__ import annotations
 
 from typing import Any

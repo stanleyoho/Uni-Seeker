@@ -10,6 +10,7 @@ Since 2026-05-24 Stage 2 migration the actual filter logic lives in
 ``observability_core._sentry_filters`` — callers (production wiring +
 unit tests) keep using ``from app.obs._sentry_filters import ...``.
 """
+
 from __future__ import annotations
 
 from typing import Callable

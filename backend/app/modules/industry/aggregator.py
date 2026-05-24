@@ -47,9 +47,7 @@ class IndustryAggregator:
 
         # Fetch latest daily valuations for each stock
         latest_val_subquery = (
-            select(
-                StockValuation.stock_id, func.max(StockValuation.date).label("max_date")
-            )
+            select(StockValuation.stock_id, func.max(StockValuation.date).label("max_date"))
             .where(StockValuation.stock_id.in_(stock_ids))
             .group_by(StockValuation.stock_id)
             .subquery()
@@ -77,25 +75,15 @@ class IndustryAggregator:
             "median_gross_margin": get_median([m.gross_margin for m in metrics]),
             "median_operating_margin": get_median([m.operating_margin for m in metrics]),
             "median_net_margin": get_median([m.net_margin for m in metrics]),
-            "median_revenue_growth_yoy": get_median(
-                [m.revenue_growth_yoy for m in metrics]
-            ),
+            "median_revenue_growth_yoy": get_median([m.revenue_growth_yoy for m in metrics]),
         }
 
         val_data = {
             "median_pe": get_median(
-                [
-                    float(v.pe_ratio)
-                    for v in valuations
-                    if v.pe_ratio is not None and v.pe_ratio > 0
-                ]
+                [float(v.pe_ratio) for v in valuations if v.pe_ratio is not None and v.pe_ratio > 0]
             ),
             "median_pb": get_median(
-                [
-                    float(v.pb_ratio)
-                    for v in valuations
-                    if v.pb_ratio is not None and v.pb_ratio > 0
-                ]
+                [float(v.pb_ratio) for v in valuations if v.pb_ratio is not None and v.pb_ratio > 0]
             ),
             "median_yield": get_median(
                 [float(v.dividend_yield) for v in valuations if v.dividend_yield is not None]
@@ -106,9 +94,7 @@ class IndustryAggregator:
         metric_record_query = select(IndustryMetrics).where(
             IndustryMetrics.industry_id == industry_id, IndustryMetrics.period == period
         )
-        metric_record = (
-            (await self.session.execute(metric_record_query)).scalars().first()
-        )
+        metric_record = (await self.session.execute(metric_record_query)).scalars().first()
 
         if not metric_record:
             metric_record = IndustryMetrics(

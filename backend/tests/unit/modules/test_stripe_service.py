@@ -8,9 +8,7 @@ from app.modules.billing.stripe_service import StripeService, WebhookResult
 
 def _make_event(event_type: str, data: dict) -> bytes:
     """Build a minimal Stripe event JSON payload."""
-    return json.dumps(
-        {"type": event_type, "data": {"object": data}}
-    ).encode()
+    return json.dumps({"type": event_type, "data": {"object": data}}).encode()
 
 
 @pytest.fixture
@@ -134,6 +132,7 @@ def test_webhook_invoice_payment_failed(mock_construct: MagicMock, service: Stri
 @patch("stripe.Webhook.construct_event")
 def test_webhook_invalid_signature_raises(mock_construct: MagicMock, service: StripeService):
     import stripe as stripe_lib
+
     mock_construct.side_effect = stripe_lib.error.SignatureVerificationError(
         "Invalid signature", sig_header="bad"
     )
@@ -142,9 +141,7 @@ def test_webhook_invalid_signature_raises(mock_construct: MagicMock, service: St
 
 
 @patch("stripe.Subscription.modify")
-def test_cancel_subscription_uses_period_end(
-    mock_modify: MagicMock, service: StripeService
-):
+def test_cancel_subscription_uses_period_end(mock_modify: MagicMock, service: StripeService):
     """cancel_subscription 必須呼叫 Subscription.modify 並帶 cancel_at_period_end=True，
     而非立即 delete。"""
     service.cancel_subscription("sub_abc")

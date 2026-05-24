@@ -8,6 +8,7 @@ Business validation (e.g. tier quota, threshold sign) lives in the
 service. The repo only validates structural constraints already
 encoded as DB CHECKs.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -58,17 +59,13 @@ class AlertRuleRepo:
     async def get(self, rule_id: int, *, user_id: int) -> AlertRule | None:
         """Fetch one rule, enforcing ownership in the WHERE clause."""
         result = await self.db.execute(
-            select(AlertRule).where(
-                AlertRule.id == rule_id, AlertRule.user_id == user_id
-            )
+            select(AlertRule).where(AlertRule.id == rule_id, AlertRule.user_id == user_id)
         )
         return result.scalars().first()
 
     async def list_by_user(self, user_id: int) -> list[AlertRule]:
         result = await self.db.execute(
-            select(AlertRule)
-            .where(AlertRule.user_id == user_id)
-            .order_by(AlertRule.id.asc())
+            select(AlertRule).where(AlertRule.user_id == user_id).order_by(AlertRule.id.asc())
         )
         return list(result.scalars().all())
 
@@ -135,9 +132,7 @@ class AlertRuleRepo:
             values["last_evaluated_at"] = last_evaluated_at
         if last_triggered_at is not None:
             values["last_triggered_at"] = last_triggered_at
-        await self.db.execute(
-            update(AlertRule).where(AlertRule.id == rule_id).values(**values)
-        )
+        await self.db.execute(update(AlertRule).where(AlertRule.id == rule_id).values(**values))
         await self.db.flush()
 
     async def delete(self, rule_id: int, *, user_id: int) -> bool:
@@ -153,9 +148,7 @@ class AlertRuleRepo:
 
     async def count_by_user(self, user_id: int) -> int:
         result = await self.db.execute(
-            select(func.count(AlertRule.id)).where(
-                AlertRule.user_id == user_id
-            )
+            select(func.count(AlertRule.id)).where(AlertRule.user_id == user_id)
         )
         return int(result.scalar() or 0)
 

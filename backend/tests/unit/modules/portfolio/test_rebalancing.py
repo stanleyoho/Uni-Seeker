@@ -24,6 +24,7 @@ Coverage (16 cases):
     R15 min_trade_value == 0 disables skip
     R16 decimal precision preserved (no float artifacts)
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -60,14 +61,10 @@ def _pos(
 
 
 def _tgt(symbol: str, pct: str, market: str = "TW_TWSE") -> TargetAllocation:
-    return TargetAllocation(
-        symbol=symbol, market=market, target_pct=Decimal(pct)
-    )
+    return TargetAllocation(symbol=symbol, market=market, target_pct=Decimal(pct))
 
 
-def _find(
-    trades: list[SuggestedTrade], symbol: str
-) -> SuggestedTrade | None:
+def _find(trades: list[SuggestedTrade], symbol: str) -> SuggestedTrade | None:
     return next((t for t in trades if t.symbol == symbol), None)
 
 
@@ -221,9 +218,7 @@ def test_R07_min_trade_threshold_skip():
     skipped_keys = {s["symbol"] for s in result.skipped_trades}
     assert skipped_keys == {"X", "Y"}
     # Both have "below_min_trade_value" reason.
-    assert all(
-        s["reason"] == "below_min_trade_value" for s in result.skipped_trades
-    )
+    assert all(s["reason"] == "below_min_trade_value" for s in result.skipped_trades)
 
 
 def test_R08_cash_residual_computed():
@@ -319,9 +314,7 @@ def test_R15_min_trade_value_zero_no_skip():
         _pos("B", qty="100", last_price="100"),  # 50%
     ]
     targets = [_tgt("A", "50.5"), _tgt("B", "49.5")]
-    result = compute_rebalance(
-        positions, targets, min_trade_value=Decimal("0")
-    )
+    result = compute_rebalance(positions, targets, min_trade_value=Decimal("0"))
     # Tiny deltas still produce trades.
     assert len(result.suggested_trades) == 2
     actions = {t.symbol: t.action for t in result.suggested_trades}
@@ -336,9 +329,7 @@ def test_R16_decimal_precision_preserved():
     ]
     # Target 1/3, 1/3, 1/3 doesn't sum nicely → use clean split.
     targets = [_tgt("A", "60"), _tgt("B", "40")]
-    result = compute_rebalance(
-        positions, targets, min_trade_value=Decimal("0")
-    )
+    result = compute_rebalance(positions, targets, min_trade_value=Decimal("0"))
 
     # total_value = 300.30 + 300.60 = 600.90
     # A target = 600.90 * 0.6 = 360.54; current 300.30; delta 60.24

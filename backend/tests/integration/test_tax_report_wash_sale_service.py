@@ -5,6 +5,7 @@ Coverage:
     IW02 apply_wash_sales=false default keeps Round-10 CSV shape
     IW03 apply_wash_sales=true CSV includes Code='W' + Adjustment
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -107,18 +108,13 @@ async def test_IW01_generate_with_wash_sales_pro_user(
     user = await _mk_user(db_session, "wash1@x.tw", UserTier.PRO)
     aid = await _create_account(client, user)
     # Loss leg: buy 100 @ 150, sell 100 @ 100 → -5000 loss.
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150",
-                      "2024-01-05")
-    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100",
-                      "2024-06-01")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150", "2024-01-05")
+    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100", "2024-06-01")
     # Replacement BUY 20 days after the sale → wash sale.
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120",
-                      "2024-06-21")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120", "2024-06-21")
 
     service = TaxReportService(db_session, user)
-    matches, adjustments, summary = (
-        await service.generate_form_8949_with_wash_sales()
-    )
+    matches, adjustments, summary = await service.generate_form_8949_with_wash_sales()
     assert len(matches) == 1
     assert matches[0].is_wash_sale is True
     assert matches[0].gain_loss == Decimal("0")
@@ -136,12 +132,9 @@ async def test_IW02_apply_wash_sales_flag_default_false(
     """Without apply_wash_sales=true the CSV stays Round-10 compatible."""
     user = await _mk_user(db_session, "wash2@x.tw", UserTier.PRO)
     aid = await _create_account(client, user)
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150",
-                      "2024-01-05")
-    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100",
-                      "2024-06-01")
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120",
-                      "2024-06-21")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150", "2024-01-05")
+    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100", "2024-06-01")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120", "2024-06-21")
 
     r = await client.get(
         "/api/v1/holdings/exports/form8949.csv",
@@ -165,12 +158,9 @@ async def test_IW03_apply_wash_sales_csv_includes_W_code(
     """apply_wash_sales=true → Code='W', Adjustment positive, Gain/Loss=0."""
     user = await _mk_user(db_session, "wash3@x.tw", UserTier.PRO)
     aid = await _create_account(client, user)
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150",
-                      "2024-01-05")
-    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100",
-                      "2024-06-01")
-    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120",
-                      "2024-06-21")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "150", "2024-01-05")
+    await _post_trade(client, user, aid, "SELL", "AAPL", "100", "100", "2024-06-01")
+    await _post_trade(client, user, aid, "BUY", "AAPL", "100", "120", "2024-06-21")
 
     r = await client.get(
         "/api/v1/holdings/exports/form8949.csv?apply_wash_sales=true",
@@ -179,7 +169,7 @@ async def test_IW03_apply_wash_sales_csv_includes_W_code(
     assert r.status_code == 200, r.text
     header, rows = _parse_csv(r.content)
     assert len(rows) == 1
-    assert rows[0][5] == "W"                          # Code
-    assert Decimal(rows[0][6]) == Decimal("5000")     # Adjustment
-    assert Decimal(rows[0][7]) == Decimal("0")        # Gain/Loss zeroed
-    assert rows[0][10] == "true"                      # Wash Sale flag
+    assert rows[0][5] == "W"  # Code
+    assert Decimal(rows[0][6]) == Decimal("5000")  # Adjustment
+    assert Decimal(rows[0][7]) == Decimal("0")  # Gain/Loss zeroed
+    assert rows[0][10] == "true"  # Wash Sale flag

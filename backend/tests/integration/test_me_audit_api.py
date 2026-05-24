@@ -15,6 +15,7 @@ care about ordering write ``created_at`` explicitly with sub-second
 offsets — that exercises the real ``ORDER BY created_at DESC`` path
 without depending on insert-time clock resolution.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone, UTC
@@ -53,9 +54,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 async def _seed_event(
@@ -105,9 +104,7 @@ async def test_list_my_audit_logs_returns_newest_first(
     await _seed_event(
         db_session, user, action="watchlist_added", created_at=base + timedelta(seconds=2)
     )
-    await _seed_event(
-        db_session, user, action="user_login", created_at=base
-    )
+    await _seed_event(db_session, user, action="user_login", created_at=base)
     await _seed_event(
         db_session,
         user,
@@ -115,9 +112,7 @@ async def test_list_my_audit_logs_returns_newest_first(
         created_at=base + timedelta(seconds=5),
     )
 
-    resp = await client.get(
-        "/api/v1/me/audit-logs", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs", headers=_auth(user))
     assert resp.status_code == 200, resp.text
     body = resp.json()
 
@@ -128,14 +123,12 @@ async def test_list_my_audit_logs_returns_newest_first(
     event_types = [e["event_type"] for e in body["entries"]]
     assert event_types == [
         "me_notifications_updated",  # base + 5s — newest
-        "watchlist_added",           # base + 2s
-        "user_login",                # base — oldest
+        "watchlist_added",  # base + 2s
+        "user_login",  # base — oldest
     ]
 
 
-async def test_list_my_audit_logs_paginates(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_list_my_audit_logs_paginates(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "audit_page@x.com")
     base = datetime.now(UTC) - timedelta(hours=1)
     for i in range(5):
@@ -147,9 +140,7 @@ async def test_list_my_audit_logs_paginates(
         )
 
     # First page
-    resp = await client.get(
-        "/api/v1/me/audit-logs?limit=2&offset=0", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs?limit=2&offset=0", headers=_auth(user))
     assert resp.status_code == 200
     body = resp.json()
     assert body["total_count"] == 5
@@ -162,18 +153,14 @@ async def test_list_my_audit_logs_paginates(
     ]
 
     # Second page
-    resp = await client.get(
-        "/api/v1/me/audit-logs?limit=2&offset=2", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs?limit=2&offset=2", headers=_auth(user))
     body = resp.json()
     assert body["total_count"] == 5
     assert body["has_more"] is True
     assert len(body["entries"]) == 2
 
     # Last page — has_more flips to False
-    resp = await client.get(
-        "/api/v1/me/audit-logs?limit=2&offset=4", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs?limit=2&offset=4", headers=_auth(user))
     body = resp.json()
     assert body["total_count"] == 5
     assert body["has_more"] is False
@@ -190,8 +177,7 @@ async def test_list_my_audit_logs_filters_by_event_types(
     await _seed_event(db_session, user, action="kyc_completed")
 
     resp = await client.get(
-        "/api/v1/me/audit-logs"
-        "?event_types=watchlist_added&event_types=watchlist_removed",
+        "/api/v1/me/audit-logs?event_types=watchlist_added&event_types=watchlist_removed",
         headers=_auth(user),
     )
     assert resp.status_code == 200
@@ -206,9 +192,7 @@ async def test_list_my_audit_logs_empty_when_no_rows(
 ) -> None:
     user = await _mk_user(db_session, "audit_empty@x.com")
 
-    resp = await client.get(
-        "/api/v1/me/audit-logs", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs", headers=_auth(user))
     assert resp.status_code == 200
     body = resp.json()
     assert body == {"entries": [], "total_count": 0, "has_more": False}
@@ -225,17 +209,13 @@ async def test_list_my_audit_logs_isolates_users(
     await _seed_event(db_session, bob, action="bob_only_2")
 
     # Alice sees only her row.
-    resp = await client.get(
-        "/api/v1/me/audit-logs", headers=_auth(alice)
-    )
+    resp = await client.get("/api/v1/me/audit-logs", headers=_auth(alice))
     body = resp.json()
     assert body["total_count"] == 1
     assert [e["event_type"] for e in body["entries"]] == ["alice_only"]
 
     # Bob sees only his two rows.
-    resp = await client.get(
-        "/api/v1/me/audit-logs", headers=_auth(bob)
-    )
+    resp = await client.get("/api/v1/me/audit-logs", headers=_auth(bob))
     body = resp.json()
     assert body["total_count"] == 2
     assert {e["event_type"] for e in body["entries"]} == {
@@ -250,15 +230,11 @@ async def test_list_my_audit_logs_rejects_excessive_limit(
     user = await _mk_user(db_session, "audit_cap@x.com")
 
     # 500 is the documented cap — pass.
-    resp = await client.get(
-        "/api/v1/me/audit-logs?limit=500", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs?limit=500", headers=_auth(user))
     assert resp.status_code == 200
 
     # 501 is over the cap — Pydantic Query validation kicks in.
-    resp = await client.get(
-        "/api/v1/me/audit-logs?limit=501", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs?limit=501", headers=_auth(user))
     assert resp.status_code == 422
 
 
@@ -278,9 +254,7 @@ async def test_list_my_audit_logs_preserves_all_fields(
         metadata=metadata,
     )
 
-    resp = await client.get(
-        "/api/v1/me/audit-logs", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/audit-logs", headers=_auth(user))
     body = resp.json()
     assert body["total_count"] == 1
     entry = body["entries"][0]

@@ -26,6 +26,7 @@ Why a plain function and not a class:
     settings live on the global ``settings`` singleton, which the
     sender modules read directly.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -102,8 +103,14 @@ async def dispatch_notification(
     chat_id = user.telegram_chat_id
     if bot_token and chat_id:
         results["channels_attempted"] = int(results["channels_attempted"]) + 1
-        text = tg_text if tg_text is not None else _compose_tg(
-            title=title, body_text=body_text, deep_link=deep_link,
+        text = (
+            tg_text
+            if tg_text is not None
+            else _compose_tg(
+                title=title,
+                body_text=body_text,
+                deep_link=deep_link,
+            )
         )
         ok = await send_telegram_message(
             bot_token=bot_token,
@@ -112,9 +119,7 @@ async def dispatch_notification(
         )
         if ok:
             results["tg_sent"] = True
-            results["channels_succeeded"] = (
-                int(results["channels_succeeded"]) + 1
-            )
+            results["channels_succeeded"] = int(results["channels_succeeded"]) + 1
         else:
             # Sender already logged the reason at warning; we re-log
             # at debug with the user_id so cross-channel correlation
@@ -142,9 +147,7 @@ async def dispatch_notification(
         )
         if ok:
             results["email_sent"] = True
-            results["channels_succeeded"] = (
-                int(results["channels_succeeded"]) + 1
-            )
+            results["channels_succeeded"] = int(results["channels_succeeded"]) + 1
         else:
             logger.debug(
                 "dispatch_email_send_failed",
@@ -169,9 +172,7 @@ def _compose_tg(
     to. We escape the title so any caller-supplied ``<`` / ``>`` in
     the headline doesn't break the Bot API parser.
     """
-    safe_title = (
-        title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     footer = f"\n\n看詳情: {deep_link}" if deep_link else ""
     return f"<b>{safe_title}</b>\n{body_text}{footer}"
 

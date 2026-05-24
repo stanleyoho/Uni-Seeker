@@ -27,7 +27,7 @@ _DEADLINE: dict[int, tuple[int, int]] = {
     1: (5, 15),
     2: (8, 14),
     3: (11, 14),
-    4: (3, 31),   # next calendar year
+    4: (3, 31),  # next calendar year
 }
 
 # Q → period-end date within fiscal year
@@ -42,10 +42,11 @@ _PERIOD_END: dict[int, tuple[int, int]] = {
 @dataclass(frozen=True)
 class EarningsEvent:
     """One upcoming or recent earnings filing event."""
+
     symbol: str
     fiscal_year: int
     fiscal_quarter: int
-    period_label: str        # e.g. "2025-Q4"
+    period_label: str  # e.g. "2025-Q4"
     period_end_date: date
     deadline_date: date
     days_until_deadline: int  # negative = already past deadline
@@ -99,9 +100,7 @@ class EarningsCalendarService:
 
         # Resolve stock
         stock_q = await db.execute(
-            select(Stock).where(
-                Stock.symbol.in_([symbol, f"{symbol}.TW"])
-            ).limit(1)
+            select(Stock).where(Stock.symbol.in_([symbol, f"{symbol}.TW"])).limit(1)
         )
         stock = stock_q.scalar_one_or_none()
 
@@ -109,8 +108,7 @@ class EarningsCalendarService:
         periods_in_db: set[str] = set()
         if stock is not None:
             db_q = await db.execute(
-                select(FSModel.period)
-                .where(
+                select(FSModel.period).where(
                     FSModel.stock_id == stock.id,
                     FSModel.statement_type == "income",
                 )
@@ -127,16 +125,18 @@ class EarningsCalendarService:
             period_end = _period_end_for(fy, q)
             days_until = (deadline - today).days
 
-            events.append(EarningsEvent(
-                symbol=symbol,
-                fiscal_year=fy,
-                fiscal_quarter=q,
-                period_label=period_label,
-                period_end_date=period_end,
-                deadline_date=deadline,
-                days_until_deadline=days_until,
-                already_in_db=period_label in periods_in_db,
-            ))
+            events.append(
+                EarningsEvent(
+                    symbol=symbol,
+                    fiscal_year=fy,
+                    fiscal_quarter=q,
+                    period_label=period_label,
+                    period_end_date=period_end,
+                    deadline_date=deadline,
+                    days_until_deadline=days_until,
+                    already_in_db=period_label in periods_in_db,
+                )
+            )
 
             # Advance one quarter forward
             if q == 4:
@@ -153,9 +153,7 @@ class EarningsCalendarService:
     ) -> str | None:
         """Return the most recent period label in DB for this stock, or None."""
         stock_q = await db.execute(
-            select(Stock).where(
-                Stock.symbol.in_([symbol, f"{symbol}.TW"])
-            ).limit(1)
+            select(Stock).where(Stock.symbol.in_([symbol, f"{symbol}.TW"])).limit(1)
         )
         stock = stock_q.scalar_one_or_none()
         if stock is None:

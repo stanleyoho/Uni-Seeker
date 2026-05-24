@@ -3,6 +3,7 @@
 Exposes save and resolve operations for the prediction_engine package,
 enabling Uni-Seeker's stock models to record and evaluate their predictions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
+
 
 class SavePredictionRequest(BaseModel):
     domain: str = Field(..., pattern="^(stocks|nba)$")
@@ -72,6 +74,7 @@ def _get_sync_engine():
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.post("/save", status_code=201, response_model=SavePredictionResponse)
 async def save_prediction(req: SavePredictionRequest) -> SavePredictionResponse:
@@ -143,9 +146,7 @@ async def resolve_prediction(
         if "not found" in msg:
             raise HTTPException(status_code=404, detail=msg) from exc
         if "already_resolved" in msg or "already resolved" in msg:
-            raise HTTPException(
-                status_code=409, detail="Prediction already resolved"
-            ) from exc
+            raise HTTPException(status_code=409, detail="Prediction already resolved") from exc
         raise HTTPException(status_code=400, detail=msg) from exc
 
     return ResolvePredictionResponse(

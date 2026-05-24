@@ -27,6 +27,7 @@ We therefore declare ONE UniqueConstraint on the triple. If a stricter
 partial unique index `WHERE account_id IS NULL` in a follow-up
 migration; the daily job's UPSERT already enforces this in practice.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -57,7 +58,9 @@ class HoldingsSnapshot(Base):
     __tablename__ = "holdings_snapshots"
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "account_id", "snapshot_date",
+            "user_id",
+            "account_id",
+            "snapshot_date",
             name="uq_holdings_snapshots_user_account_date",
         ),
         # spec §6 Table 6 — invariants enforced at the DB layer so a buggy
@@ -73,11 +76,13 @@ class HoldingsSnapshot(Base):
         # Hot-path queries — latest-N per user / per account.
         Index(
             "ix_holdings_snapshots_user_date",
-            "user_id", "snapshot_date",
+            "user_id",
+            "snapshot_date",
         ),
         Index(
             "ix_holdings_snapshots_account_date",
-            "account_id", "snapshot_date",
+            "account_id",
+            "snapshot_date",
         ),
     )
 
@@ -89,17 +94,11 @@ class HoldingsSnapshot(Base):
         nullable=False,
         index=True,
     )
-    snapshot_date: Mapped[date] = mapped_column(
-        Date, nullable=False, index=True
-    )
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     total_value: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
     total_cost: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
-    total_unrealized_pnl: Mapped[Decimal] = mapped_column(
-        Numeric(24, 8), nullable=False
-    )
-    realized_pnl_cum: Mapped[Decimal] = mapped_column(
-        Numeric(24, 8), nullable=False
-    )
+    total_unrealized_pnl: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
+    realized_pnl_cum: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
     position_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # defaulted / nullable fields after

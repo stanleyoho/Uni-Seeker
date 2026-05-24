@@ -94,6 +94,7 @@ Cost-basis inheritance strategy (applied later via
     adjustment on the affected match so the CSV "Code=W" / "Adjustment
     amount" columns can be populated per IRS instructions.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -126,14 +127,14 @@ class WashSaleAdjustment:
     adjustments and stays a normal deductible loss.
     """
 
-    sold_trade_id: int           # SELL trade that realised the loss
-    replacement_trade_id: int    # BUY trade within the ±30-day window
+    sold_trade_id: int  # SELL trade that realised the loss
+    replacement_trade_id: int  # BUY trade within the ±30-day window
     symbol: str
     market: str
     sale_date: date
     replacement_date: date
-    disallowed_loss: Decimal     # always a positive Decimal (magnitude)
-    matched_qty: Decimal         # shares of replacement getting basis bump
+    disallowed_loss: Decimal  # always a positive Decimal (magnitude)
+    matched_qty: Decimal  # shares of replacement getting basis bump
     new_holding_period_start: date  # original acquisition_date (inherited)
 
 
@@ -172,10 +173,7 @@ def _to_decimal(v: Any) -> Decimal:
         return Decimal(v)
     if v is None:
         return Decimal("0")
-    raise TypeError(
-        f"wash_sale_detector expects Decimal/int/str numerics, "
-        f"got {type(v).__name__}"
-    )
+    raise TypeError(f"wash_sale_detector expects Decimal/int/str numerics, got {type(v).__name__}")
 
 
 def _buy_trades_only(trades: list[dict]) -> list[dict]:
@@ -239,11 +237,7 @@ def detect_wash_sales(
     # ── Loss-matches sorted chronologically — earliest loss gets
     #    first claim on overlapping replacements (FIFO across losses).
     loss_matches = sorted(
-        (
-            (idx, m)
-            for idx, m in enumerate(matches)
-            if m.gain_loss < Decimal("0")
-        ),
+        ((idx, m) for idx, m in enumerate(matches) if m.gain_loss < Decimal("0")),
         key=lambda pair: (pair[1].sale_date, pair[0]),
     )
 

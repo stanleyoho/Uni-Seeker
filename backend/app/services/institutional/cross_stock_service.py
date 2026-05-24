@@ -18,6 +18,7 @@ holdings table carries the CUSIP directly, we fall back to
 the same dict shape so the API layer doesn't branch on which one was
 used.
 """
+
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -59,15 +60,11 @@ class F13CrossStockService:
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "institutional_ownership_panel"):
-            raise F13TierFeatureUnavailable(
-                feature="institutional_ownership_panel"
-            )
+            raise F13TierFeatureUnavailable(feature="institutional_ownership_panel")
 
     # ── public API ──────────────────────────────────────────────────────
 
-    async def get_institutional_holders_for_stock(
-        self, symbol: str, limit: int = 50
-    ) -> list[dict]:
+    async def get_institutional_holders_for_stock(self, symbol: str, limit: int = 50) -> list[dict]:
         """List institutional holders for `symbol`, latest-per-filer.
 
         Returns a list of dicts with this shape:
@@ -94,21 +91,15 @@ class F13CrossStockService:
         self._assert_feature()
 
         # Step 1: try local stock lookup (preferred — uses indexed FK).
-        stock_row = await self._db.execute(
-            select(Stock).where(Stock.symbol == symbol)
-        )
+        stock_row = await self._db.execute(select(Stock).where(Stock.symbol == symbol))
         stock = stock_row.scalar_one_or_none()
 
         tuples: list[tuple]
         if stock is not None:
-            tuples = await self._holding_repo.list_by_stock(
-                stock.id, limit=limit * 4
-            )
+            tuples = await self._holding_repo.list_by_stock(stock.id, limit=limit * 4)
             # Fallback to CUSIP if stock has one but no holdings linked yet.
             if not tuples and stock.cusip:
-                tuples = await self._holding_repo.list_by_cusip(
-                    stock.cusip, limit=limit * 4
-                )
+                tuples = await self._holding_repo.list_by_cusip(stock.cusip, limit=limit * 4)
         else:
             # No stock row — caller might still hold a CUSIP via the
             # API layer wrapping the same symbol. Phase 1 keeps this

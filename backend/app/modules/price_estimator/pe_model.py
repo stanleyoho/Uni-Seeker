@@ -48,7 +48,7 @@ class PEBandEstimator:
                 fair_price=None,
                 expensive_price=None,
                 confidence=Decimal("0.0"),
-                details={"reason": "Insufficient PE data or negative EPS"}
+                details={"reason": "Insufficient PE data or negative EPS"},
             )
 
         # 4. Calculate stats
@@ -79,6 +79,6 @@ class PEBandEstimator:
                 "pe_median": round(pe_50, 2),
                 "pe_std_dev": round(pe_std, 2),
                 "stability": round(stability, 2),
-                "sample_count": len(pe_list)
-            }
+                "sample_count": len(pe_list),
+            },
         )

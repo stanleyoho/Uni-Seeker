@@ -13,6 +13,7 @@ analogy is specific to the TW stock market dataset (FinMind futures +
 TWSE margin balance). The general ML utilities live in
 adaptive-alpha-engine.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,8 +21,8 @@ from datetime import date
 from typing import Literal
 
 # Tunable thresholds — derived from historical noise floor of TW data
-INSTITUTIONAL_THRESHOLD = 500.0   # foreign futures contracts (口數)
-RETAIL_THRESHOLD = 5.0             # margin balance change (億元)
+INSTITUTIONAL_THRESHOLD = 500.0  # foreign futures contracts (口數)
+RETAIL_THRESHOLD = 5.0  # margin balance change (億元)
 
 Direction = Literal["long", "short", "neutral"]
 
@@ -73,11 +74,7 @@ class StockSharpDetector:
     ) -> StockSharpSignal:
         inst_dir = self._classify_institutional(foreign_futures_net)
         retail_dir = self._classify_retail(margin_balance_change)
-        divergence = (
-            inst_dir != "neutral"
-            and retail_dir != "neutral"
-            and inst_dir != retail_dir
-        )
+        divergence = inst_dir != "neutral" and retail_dir != "neutral" and inst_dir != retail_dir
         return StockSharpSignal(
             institutional_direction=inst_dir,
             retail_direction=retail_dir,

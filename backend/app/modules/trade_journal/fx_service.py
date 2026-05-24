@@ -1,4 +1,5 @@
 """FX rate lookup with fallback to most recent available date."""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -39,7 +40,5 @@ async def get_rate(
     result = await db.execute(stmt)
     row = result.scalar_one_or_none()
     if row is None:
-        raise FXRateNotFoundError(
-            f"No FX rate found for {from_currency}→{to_currency}"
-        )
+        raise FXRateNotFoundError(f"No FX rate found for {from_currency}→{to_currency}")
     return row

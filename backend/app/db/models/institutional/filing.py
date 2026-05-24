@@ -14,6 +14,7 @@ UNIQUE (filer_id, accession_number) — re-ingesting the same SEC
 accession is idempotent. CHECK on `form_type` to refuse non-13F-HR
 forms (e.g. 13F-NT is intentionally out of scope for Phase 1).
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -47,7 +48,8 @@ class F13Filing(Base):
     __tablename__ = "f13_filings"
     __table_args__ = (
         UniqueConstraint(
-            "filer_id", "accession_number",
+            "filer_id",
+            "accession_number",
             name="uq_f13_filings_filer_accession",
         ),
         CheckConstraint(
@@ -56,11 +58,13 @@ class F13Filing(Base):
         ),
         Index(
             "ix_f13_filings_filer_period_desc",
-            "filer_id", text("report_period_end DESC"),
+            "filer_id",
+            text("report_period_end DESC"),
         ),
         Index(
             "ix_f13_filings_filer_filed_desc",
-            "filer_id", text("filed_at DESC"),
+            "filer_id",
+            text("filed_at DESC"),
         ),
     )
 
@@ -75,24 +79,30 @@ class F13Filing(Base):
     form_type: Mapped[str] = mapped_column(String(20), nullable=False)
     report_period_end: Mapped[date] = mapped_column(Date, nullable=False)
     filed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
     )
 
     # defaulted / nullable fields after
     total_value_usd: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 2), default=None,
+        Numeric(24, 2),
+        default=None,
     )
     options_notional_usd: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 2), default=None,
+        Numeric(24, 2),
+        default=None,
     )
     total_positions: Mapped[int | None] = mapped_column(Integer, default=None)
     raw_xml_url: Mapped[str | None] = mapped_column(String(500), default=None)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )
 
     filer: Mapped[F13Filer] = relationship(
-        back_populates="filings", init=False,
+        back_populates="filings",
+        init=False,
     )
     holdings: Mapped[list[F13Holding]] = relationship(
         back_populates="filing",

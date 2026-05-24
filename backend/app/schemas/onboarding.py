@@ -1,12 +1,17 @@
 """Pydantic schemas for /onboarding endpoints."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class KYCRequest(BaseModel):
-    answers: list[int] = Field(..., min_length=5, max_length=5,
-                                description="Exactly 5 risk-questionnaire answers, each 1-5.")
+    answers: list[int] = Field(
+        ...,
+        min_length=5,
+        max_length=5,
+        description="Exactly 5 risk-questionnaire answers, each 1-5.",
+    )
     terms_version: str = Field(..., min_length=1)
 
     @field_validator("answers")

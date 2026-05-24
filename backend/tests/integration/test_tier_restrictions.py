@@ -2,6 +2,7 @@
 
 Plan 4 Task 6: 為 existing API 加 tier 限制。
 """
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from app.models.user import User
 def _enable_monetization(monkeypatch):
     """強制 monetization toggle 開啟，否則 require_tier 會放行所有用戶。"""
     from app.config import settings
+
     monkeypatch.setattr(settings, "enable_monetization", True)
 
 

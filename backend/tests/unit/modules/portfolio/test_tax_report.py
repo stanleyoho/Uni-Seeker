@@ -18,6 +18,7 @@ Phase 4+ tax export (Round 10). Coverage:
   T14 summarize_by_year — year split + gain/loss separation
   T15 summarize_by_year — empty matches returns empty dict
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -107,8 +108,8 @@ def test_T06_single_buy_sell_fifo_match():
     assert m.quantity == Decimal("100")
     assert m.acquisition_date == date(2024, 1, 5)
     assert m.sale_date == date(2024, 7, 1)
-    assert m.cost_basis == Decimal("15000")     # 150 * 100
-    assert m.proceeds == Decimal("20000")        # 200 * 100
+    assert m.cost_basis == Decimal("15000")  # 150 * 100
+    assert m.proceeds == Decimal("20000")  # 200 * 100
     assert m.gain_loss == Decimal("5000")
     assert m.term == "SHORT"
     assert m.holding_period_days == 178
@@ -132,16 +133,16 @@ def test_T07_sell_across_three_buys_chain_match():
     assert matches[1].acquisition_date == date(2024, 2, 1)
     assert matches[2].acquisition_date == date(2024, 3, 1)
     # Cost basis per row:
-    assert matches[0].cost_basis == Decimal("5000")   # 100 * 50
-    assert matches[1].cost_basis == Decimal("6000")   # 120 * 50
-    assert matches[2].cost_basis == Decimal("7500")   # 150 * 50
+    assert matches[0].cost_basis == Decimal("5000")  # 100 * 50
+    assert matches[1].cost_basis == Decimal("6000")  # 120 * 50
+    assert matches[2].cost_basis == Decimal("7500")  # 150 * 50
     # Proceeds is split evenly (no fee): 200 * 50 per row.
     for m in matches:
         assert m.proceeds == Decimal("10000")
         assert m.quantity == Decimal("50")
     # Net gain summed:
     total_gain = sum((m.gain_loss for m in matches), Decimal("0"))
-    assert total_gain == Decimal("11500")             # 30000 - 18500
+    assert total_gain == Decimal("11500")  # 30000 - 18500
 
 
 def test_T08_short_and_long_term_mix_in_one_sell():
@@ -179,8 +180,7 @@ def test_T09_buy_fee_allocated_proportionally():
 def test_T10_proceeds_net_of_sell_fee_and_tax():
     """SELL of 100 @ 150, fee 20, tax 30 → proceeds = 15000 - 50 = 14950."""
     buys = [_buy(1, "AAPL", date(2024, 1, 1), "100", "100")]
-    sells = [_sell(2, "AAPL", date(2024, 6, 1), "100", "150",
-                   fee="20", tax="30")]
+    sells = [_sell(2, "AAPL", date(2024, 6, 1), "100", "150", fee="20", tax="30")]
     matches = compute_matched_pairs(buys, sells)
     assert len(matches) == 1
     assert matches[0].proceeds == Decimal("14950")
@@ -197,20 +197,15 @@ def test_T11_insufficient_buy_history_raises():
 
 def test_T12_decimal_precision_preserved():
     """Eight-decimal qty + price round-trips exactly."""
-    buys = [_buy(1, "BTC", date(2024, 1, 1), "0.12345678", "30000.55",
-                 market="US_NYSE")]
-    sells = [_sell(2, "BTC", date(2024, 6, 1), "0.12345678", "45000.99",
-                   market="US_NYSE")]
+    buys = [_buy(1, "BTC", date(2024, 1, 1), "0.12345678", "30000.55", market="US_NYSE")]
+    sells = [_sell(2, "BTC", date(2024, 6, 1), "0.12345678", "45000.99", market="US_NYSE")]
     matches = compute_matched_pairs(buys, sells)
     assert len(matches) == 1
     # cost = 30000.55 * 0.12345678 = 3703.7041389...
     assert matches[0].cost_basis == Decimal("30000.55") * Decimal("0.12345678")
     assert matches[0].proceeds == Decimal("45000.99") * Decimal("0.12345678")
     # gain_loss == proceeds - cost_basis exactly.
-    assert (
-        matches[0].gain_loss
-        == matches[0].proceeds - matches[0].cost_basis
-    )
+    assert matches[0].gain_loss == matches[0].proceeds - matches[0].cost_basis
 
 
 def test_T13_multi_symbol_isolation():

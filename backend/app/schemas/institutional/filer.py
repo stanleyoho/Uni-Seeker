@@ -5,6 +5,7 @@ columns on `f13_filers` so dashboard cards can render without a JOIN
 (see `F13Filer.latest_*` ORM fields). Decimal fields are emitted as
 JSON strings per CLAUDE.md Decimal-as-string contract.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

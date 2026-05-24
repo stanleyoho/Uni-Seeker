@@ -28,7 +28,7 @@ async def test_get_prices_success(client: AsyncClient, db_session: AsyncSession)
             close=Decimal("505"),
             volume=1000000,
             change=Decimal("5"),
-            change_percent=Decimal("1.0")
+            change_percent=Decimal("1.0"),
         )
     ]
     db_session.add_all(prices)
@@ -45,6 +45,7 @@ async def test_get_prices_success(client: AsyncClient, db_session: AsyncSession)
     # Verify DecimalStr serialization (should be string)
     assert isinstance(data["data"][0]["close"], str)
     assert float(data["data"][0]["close"]) == 505.0
+
 
 @pytest.mark.asyncio
 async def test_get_prices_not_found(client: AsyncClient):

@@ -8,6 +8,7 @@ Covers the daily snapshot job that writes `holdings_snapshots`:
   J05 take_daily_snapshot_for_all_active_users discovers users from
       portfolio_accounts and snapshots each one
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -46,9 +47,7 @@ class _MockFetcher:
     def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None):
         self._quotes = quotes or {}
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid not in self._quotes:
@@ -127,10 +126,14 @@ async def test_J01_take_daily_snapshot_for_user_creates_rows(
     assert rows_written == 2
 
     snaps = (
-        await db_session.execute(
-            select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+        (
+            await db_session.execute(
+                select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(snaps) == 2
     # User-wide row mirrors the single per-account total_value (550 * 100).
     user_wide = next(s for s in snaps if s.account_id is None)
@@ -154,7 +157,9 @@ async def test_J02_upsert_overwrites_same_day(
     # First snapshot: last_price = 550
     fetcher1 = _MockFetcher({"2330": (Decimal("550"), Decimal("540"))})
     await take_daily_snapshot_for_user(
-        db_session, user_id=user.id, live_price_fetcher=fetcher1,
+        db_session,
+        user_id=user.id,
+        live_price_fetcher=fetcher1,
         snapshot_date=date(2026, 5, 19),
     )
     await db_session.commit()
@@ -162,16 +167,22 @@ async def test_J02_upsert_overwrites_same_day(
     # Second snapshot same day with a different price → overwrite, no dup.
     fetcher2 = _MockFetcher({"2330": (Decimal("600"), Decimal("550"))})
     await take_daily_snapshot_for_user(
-        db_session, user_id=user.id, live_price_fetcher=fetcher2,
+        db_session,
+        user_id=user.id,
+        live_price_fetcher=fetcher2,
         snapshot_date=date(2026, 5, 19),
     )
     await db_session.commit()
 
     snaps = (
-        await db_session.execute(
-            select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+        (
+            await db_session.execute(
+                select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     # Still exactly 2 rows (per-account + user-wide), not 4.
     assert len(snaps) == 2
     user_wide = next(s for s in snaps if s.account_id is None)
@@ -198,10 +209,14 @@ async def test_J03_empty_portfolio_writes_user_wide_zeros(
     assert rows_written == 1
 
     snaps = (
-        await db_session.execute(
-            select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+        (
+            await db_session.execute(
+                select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(snaps) == 1
     assert snaps[0].account_id is None
     assert snaps[0].total_value == Decimal("0")
@@ -223,12 +238,16 @@ async def test_J04_multi_account_rollup(
     await _seed_buy(db_session, user, acc1.id, symbol="2330", qty="100", price="500")
     await _seed_buy(db_session, user, acc2.id, symbol="2317", qty="200", price="100")
 
-    fetcher = _MockFetcher({
-        "2330": (Decimal("550"), Decimal("540")),
-        "2317": (Decimal("110"), Decimal("100")),
-    })
+    fetcher = _MockFetcher(
+        {
+            "2330": (Decimal("550"), Decimal("540")),
+            "2317": (Decimal("110"), Decimal("100")),
+        }
+    )
     rows_written = await take_daily_snapshot_for_user(
-        db_session, user_id=user.id, live_price_fetcher=fetcher,
+        db_session,
+        user_id=user.id,
+        live_price_fetcher=fetcher,
         snapshot_date=date(2026, 5, 19),
     )
     await db_session.commit()
@@ -236,10 +255,14 @@ async def test_J04_multi_account_rollup(
     assert rows_written == 3
 
     snaps = (
-        await db_session.execute(
-            select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+        (
+            await db_session.execute(
+                select(HoldingsSnapshot).where(HoldingsSnapshot.user_id == user.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     by_acc = {s.account_id: s for s in snaps}
     assert by_acc[acc1.id].total_value == Decimal("55000")  # 550*100
     assert by_acc[acc2.id].total_value == Decimal("22000")  # 110*200
@@ -270,7 +293,9 @@ async def test_J05_all_active_users_discovered(
 
     fetcher = _MockFetcher({"2330": (Decimal("550"), Decimal("540"))})
     rows = await take_daily_snapshot_for_all_active_users(
-        db_session, fetcher, snapshot_date=date(2026, 5, 19),
+        db_session,
+        fetcher,
+        snapshot_date=date(2026, 5, 19),
     )
     await db_session.commit()
 
@@ -280,9 +305,5 @@ async def test_J05_all_active_users_discovered(
     assert rows[u2.id] == 2
 
     # u3 (no portfolio) is not in the dict.
-    cnt = (
-        await db_session.execute(
-            select(HoldingsSnapshot)
-        )
-    ).scalars().all()
+    cnt = (await db_session.execute(select(HoldingsSnapshot))).scalars().all()
     assert len(cnt) == 4

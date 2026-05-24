@@ -47,12 +47,8 @@ class PriceSyncTask(SyncTask):
             return result
 
         # -- load existing sync states keyed by stock_id ------------------
-        sync_q = await db.execute(
-            select(SyncState).where(SyncState.dataset == self.dataset_name)
-        )
-        sync_map: dict[int | None, SyncState] = {
-            s.stock_id: s for s in sync_q.scalars().all()
-        }
+        sync_q = await db.execute(select(SyncState).where(SyncState.dataset == self.dataset_name))
+        sync_map: dict[int | None, SyncState] = {s.stock_id: s for s in sync_q.scalars().all()}
 
         client = FinMindClient(
             token=settings.finmind_api_token,
@@ -124,9 +120,7 @@ class PriceSyncTask(SyncTask):
                 # Compute change_percent
                 prev_close = close_val - change if change else None
                 change_pct = (
-                    (change / prev_close * 100)
-                    if prev_close and prev_close != 0
-                    else Decimal("0")
+                    (change / prev_close * 100) if prev_close and prev_close != 0 else Decimal("0")
                 )
 
                 stmt = pg_insert(StockPrice).values(

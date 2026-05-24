@@ -1,4 +1,5 @@
 """Pydantic schemas for Trade Journal API."""
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -8,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 # ── Account ───────────────────────────────────────────────────────────────────
+
 
 class AccountCreate(BaseModel):
     name: str
@@ -30,6 +32,7 @@ class AccountResponse(BaseModel):
 
 
 # ── Trade ─────────────────────────────────────────────────────────────────────
+
 
 class TradeCreate(BaseModel):
     symbol: str
@@ -84,6 +87,7 @@ class TradeListResponse(BaseModel):
 
 # ── Position ──────────────────────────────────────────────────────────────────
 
+
 class PositionResponse(BaseModel):
     id: int
     account_id: int
@@ -101,12 +105,14 @@ class PositionResponse(BaseModel):
 
 # ── Account Detail (with positions) ──────────────────────────────────────────
 
+
 class AccountDetailResponse(BaseModel):
     account: AccountResponse
     positions: list[PositionResponse]
 
 
 # ── Group ─────────────────────────────────────────────────────────────────────
+
 
 class GroupMemberInput(BaseModel):
     account_id: int
@@ -140,6 +146,7 @@ class GroupResponse(BaseModel):
 
 # ── Allocation Rule ───────────────────────────────────────────────────────────
 
+
 class AllocationRuleCreate(BaseModel):
     symbol: str
     target_weight: Decimal
@@ -160,6 +167,7 @@ class AllocationRuleResponse(BaseModel):
 
 
 # ── Rebalance Alert ───────────────────────────────────────────────────────────
+
 
 class RebalanceAlert(BaseModel):
     scope: Literal["account", "group"]

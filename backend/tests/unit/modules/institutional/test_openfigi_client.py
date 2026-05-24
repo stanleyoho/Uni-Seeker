@@ -7,6 +7,7 @@ two suites stay consistent.
 Time-sensitive tests (rate limiter) monkey-patch ``asyncio.sleep`` to
 keep the suite under a second.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -44,9 +45,7 @@ def _figi_row(
     }
 
 
-def _make_client(
-    handler, api_key: str | None = None
-) -> OpenFigiClient:
+def _make_client(handler, api_key: str | None = None) -> OpenFigiClient:
     """Build an OpenFigiClient whose live httpx client is backed by ``handler``.
 
     The client's ``__aenter__`` opens a real httpx.AsyncClient; we close it
@@ -78,6 +77,7 @@ async def _open(client: OpenFigiClient, handler) -> None:
 
 async def test_map_cusips_returns_mapping() -> None:
     """Single CUSIP → one FigiMapping with ticker populated."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         body = [{"data": [_figi_row("AAPL", name="APPLE INC")]}]
         return httpx.Response(200, json=body)
@@ -104,12 +104,11 @@ async def test_map_cusips_batches_above_10_free_tier() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         import json
+
         body = json.loads(request.content)
         calls.append(len(body))
         # Return one stub row per request body item.
-        resp = [
-            {"data": [_figi_row(f"T{i}")]} for i in range(len(body))
-        ]
+        resp = [{"data": [_figi_row(f"T{i}")]} for i in range(len(body))]
         return httpx.Response(200, json=resp)
 
     client = _make_client(handler, api_key=None)
@@ -128,6 +127,7 @@ async def test_map_cusips_batches_above_10_free_tier() -> None:
 
 async def test_map_cusips_handles_errors_per_row() -> None:
     """Per-row error field → ticker None, error populated."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         body = [
             {"data": [_figi_row("AAPL")]},
@@ -139,9 +139,7 @@ async def test_map_cusips_handles_errors_per_row() -> None:
     client = _make_client(handler)
     await _open(client, handler)
     try:
-        out = await client.map_cusips(
-            ["037833100", "999999999", "ZZZZZZZZZ"]
-        )
+        out = await client.map_cusips(["037833100", "999999999", "ZZZZZZZZZ"])
     finally:
         await client.__aexit__()
 
@@ -187,6 +185,7 @@ async def test_rate_limiter_auth_250_per_min() -> None:
 
 async def test_map_cusips_filters_non_us() -> None:
     """Non-US exchCode rows must NOT produce a ticker."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         body = [
             {"data": [_figi_row("XYZ", exch="LN", sec_type="Common Stock")]},
@@ -206,6 +205,7 @@ async def test_map_cusips_filters_non_us() -> None:
 
 async def test_map_cusips_filters_non_common_stock() -> None:
     """Preferred / ADR / fund unit must be rejected even when US-listed."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         body = [
             # Preferred shares — must be rejected.
@@ -242,6 +242,7 @@ async def test_map_cusips_skips_empty_cusips_locally() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         import json
+
         body = json.loads(request.content)
         seen.append(len(body))
         # Echo only the live (non-empty) CUSIPs.

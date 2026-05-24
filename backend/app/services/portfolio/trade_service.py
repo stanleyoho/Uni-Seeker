@@ -20,6 +20,7 @@ Key invariants:
 - All exceptions raised are domain-level
   (`app.services.portfolio.exceptions`). API layer translates them.
 """
+
 from __future__ import annotations
 
 from datetime import date as date_type
@@ -87,9 +88,7 @@ class PortfolioTradeService:
         limit = get_limit(self._user.tier, "max_trades_per_month")
         if limit is None:
             return
-        current = await self._trade_repo.count_by_user_this_month(
-            self._user.id
-        )
+        current = await self._trade_repo.count_by_user_this_month(self._user.id)
         if current >= limit:
             raise TierLimitExceeded(
                 limit_key="max_trades_per_month",
@@ -112,37 +111,25 @@ class PortfolioTradeService:
         limit = get_limit(self._user.tier, "max_positions")
         if limit is None:
             return
-        existing = await self._position_repo.get(
-            account_id, symbol, market=market
-        )
+        existing = await self._position_repo.get(account_id, symbol, market=market)
         if existing is not None and existing.quantity > Decimal("0"):
             # Adding to an already-tracked position; not a new row.
             return
         current = await self._position_repo.count_by_user(self._user.id)
         if current >= limit:
-            raise TierLimitExceeded(
-                limit_key="max_positions", current=current, limit=limit
-            )
+            raise TierLimitExceeded(limit_key="max_positions", current=current, limit=limit)
 
     # ── ownership helpers ──────────────────────────────────────────────
 
     async def _require_owned_account(self, account_id: int) -> None:
-        account = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
     async def _require_owned_trade(self, trade_id: int) -> PortfolioTrade:
-        trade = await self._trade_repo.get_by_id(
-            trade_id, user_id=self._user.id
-        )
+        trade = await self._trade_repo.get_by_id(trade_id, user_id=self._user.id)
         if trade is None:
-            raise PortfolioTradeNotFound(
-                f"trade {trade_id} not found or not owned"
-            )
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
         return trade
 
     # ── public API ──────────────────────────────────────────────────────
@@ -178,18 +165,14 @@ class PortfolioTradeService:
             ValueError (on invalid action / non-positive qty).
         """
         if action not in (_BUY, _SELL):
-            raise ValueError(
-                f"unsupported action {action!r}; expected BUY or SELL"
-            )
+            raise ValueError(f"unsupported action {action!r}; expected BUY or SELL")
         if qty <= Decimal("0"):
             raise ValueError(f"qty must be positive, got {qty}")
 
         await self._require_owned_account(account_id)
         await self._assert_trades_quota()
         if action == _BUY:
-            await self._assert_positions_quota_for_new_symbol(
-                account_id, symbol, market
-            )
+            await self._assert_positions_quota_for_new_symbol(account_id, symbol, market)
 
         trade = await self._trade_repo.create(
             account_id=account_id,
@@ -207,9 +190,7 @@ class PortfolioTradeService:
         # repo returns None only on wrong owner — already guarded above,
         # but keep a defensive branch.
         if trade is None:  # pragma: no cover
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         if action == _BUY:
             await self._apply_buy_side(
@@ -249,9 +230,7 @@ class PortfolioTradeService:
         )
         return trade
 
-    async def update_trade(
-        self, trade_id: int, **fields: Any
-    ) -> PortfolioTrade:
+    async def update_trade(self, trade_id: int, **fields: Any) -> PortfolioTrade:
         """PATCH a historical trade and replay the lot chain for that
         (account, symbol, market) tuple.
 
@@ -273,13 +252,9 @@ class PortfolioTradeService:
         old_symbol = existing.symbol
         old_market = existing.market
 
-        updated = await self._trade_repo.update(
-            trade_id, user_id=self._user.id, **fields
-        )
+        updated = await self._trade_repo.update(trade_id, user_id=self._user.id, **fields)
         if updated is None:  # pragma: no cover
-            raise PortfolioTradeNotFound(
-                f"trade {trade_id} not found or not owned"
-            )
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
 
         # Wipe lots tied to this specific trade — they will be rebuilt
         # by the chronological replay.
@@ -291,9 +266,7 @@ class PortfolioTradeService:
             or updated.market != old_market
             or updated.account_id != old_account_id
         ):
-            await self._rebuild_position(
-                updated.account_id, updated.symbol, updated.market
-            )
+            await self._rebuild_position(updated.account_id, updated.symbol, updated.market)
 
         await log_audit_event(
             self._db,
@@ -306,12 +279,8 @@ class PortfolioTradeService:
                 "symbol": updated.symbol,
                 "market": updated.market.value if updated.market else None,
                 "action": updated.action,
-                "qty": str(updated.quantity)
-                if updated.quantity is not None
-                else None,
-                "price": str(updated.price)
-                if updated.price is not None
-                else None,
+                "qty": str(updated.quantity) if updated.quantity is not None else None,
+                "price": str(updated.price) if updated.price is not None else None,
             },
         )
         return updated
@@ -329,13 +298,9 @@ class PortfolioTradeService:
         symbol = existing.symbol
         market = existing.market
 
-        deleted = await self._trade_repo.delete(
-            trade_id, user_id=self._user.id
-        )
+        deleted = await self._trade_repo.delete(trade_id, user_id=self._user.id)
         if not deleted:  # pragma: no cover
-            raise PortfolioTradeNotFound(
-                f"trade {trade_id} not found or not owned"
-            )
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
         # Lots are cascaded by FK on portfolio_trades.id, but to be
         # safe against any future change to the FK we explicitly wipe
         # by trade_id too (idempotent).
@@ -354,12 +319,8 @@ class PortfolioTradeService:
                 "symbol": symbol,
                 "market": market.value if market else None,
                 "action": existing.action,
-                "qty": str(existing.quantity)
-                if existing.quantity is not None
-                else None,
-                "price": str(existing.price)
-                if existing.price is not None
-                else None,
+                "qty": str(existing.quantity) if existing.quantity is not None else None,
+                "price": str(existing.price) if existing.price is not None else None,
             },
         )
 
@@ -427,8 +388,7 @@ class PortfolioTradeService:
 
         # Persist lot consumption in one bulk UPDATE.
         bulk: list[tuple[int, Decimal, bool]] = [
-            (lot.lot_id, lot.remaining_qty, lot.is_exhausted)
-            for lot in sell.updated_lots
+            (lot.lot_id, lot.remaining_qty, lot.is_exhausted) for lot in sell.updated_lots
         ]
         await self._lot_repo.bulk_update(bulk)
 
@@ -459,24 +419,18 @@ class PortfolioTradeService:
             account_id=account_id, symbol=symbol, market=market
         )
         domain_lots = [_orm_lot_to_domain(row) for row in open_lots]
-        total_qty = sum(
-            (lot.remaining_qty for lot in domain_lots), Decimal("0")
-        )
+        total_qty = sum((lot.remaining_qty for lot in domain_lots), Decimal("0"))
         avg = average_cost(domain_lots)
         total_cost = avg * total_qty if total_qty > Decimal("0") else Decimal("0")
         is_closed = total_qty == Decimal("0")
 
-        existing = await self._position_repo.get(
-            account_id, symbol, market=market
-        )
+        existing = await self._position_repo.get(account_id, symbol, market=market)
         prior_realized = (
             existing.realized_pnl
             if existing is not None and existing.realized_pnl is not None
             else Decimal("0")
         )
-        currency = (
-            existing.currency if existing is not None else _currency_for(market)
-        )
+        currency = existing.currency if existing is not None else _currency_for(market)
 
         await self._position_repo.upsert(
             account_id=account_id,
@@ -490,9 +444,7 @@ class PortfolioTradeService:
             is_closed=is_closed,
         )
 
-    async def _rebuild_position(
-        self, account_id: int, symbol: str, market: Market
-    ) -> None:
+    async def _rebuild_position(self, account_id: int, symbol: str, market: Market) -> None:
         """Replay every BUY/SELL for (account_id, symbol, market) in
         chronological order and reconstruct lots + position from scratch.
 
@@ -520,9 +472,7 @@ class PortfolioTradeService:
                                        so newer rows always replay last
                                        (consistent with FIFO insertion).
         """
-        trades = await self._list_all_trades_for_position(
-            account_id, symbol, market
-        )
+        trades = await self._list_all_trades_for_position(account_id, symbol, market)
         # Wipe ALL lots for these trades — clean slate replay.
         for t in trades:
             await self._lot_repo.delete_by_trade(t.id)
@@ -537,9 +487,7 @@ class PortfolioTradeService:
                 fee = t.fee or Decimal("0")
                 if qty <= Decimal("0"):
                     continue
-                buy = apply_buy(
-                    lot_id=t.id, qty=qty, price=price, fee=fee
-                )
+                buy = apply_buy(lot_id=t.id, qty=qty, price=price, fee=fee)
                 # Persist the new lot tied to this trade.
                 await self._lot_repo.create(
                     trade_id=t.id,
@@ -572,32 +520,23 @@ class PortfolioTradeService:
                     # Replay invariant violated: this means the user
                     # PATCHed history into an impossible state. Surface
                     # as domain error so the API layer can 422 back.
-                    raise InsufficientShares(
-                        f"rebuild replay: {exc}"
-                    ) from exc
+                    raise InsufficientShares(f"rebuild replay: {exc}") from exc
                 accumulated_realized += sell.realized_pnl
                 # Mutate in_memory_lots in place to match what
                 # apply_sell returned.
                 in_memory_lots = sell.updated_lots
                 # Persist remaining_qty updates for affected DB lots.
                 bulk: list[tuple[int, Decimal, bool]] = [
-                    (lot.lot_id, lot.remaining_qty, lot.is_exhausted)
-                    for lot in sell.updated_lots
+                    (lot.lot_id, lot.remaining_qty, lot.is_exhausted) for lot in sell.updated_lots
                 ]
                 await self._lot_repo.bulk_update(bulk)
             # other actions (DIVIDEND / SPLIT) ignored in Phase 1
 
         # Final position aggregate.
-        total_qty = sum(
-            (lot.remaining_qty for lot in in_memory_lots), Decimal("0")
-        )
+        total_qty = sum((lot.remaining_qty for lot in in_memory_lots), Decimal("0"))
         avg = average_cost(in_memory_lots)
-        existing = await self._position_repo.get(
-            account_id, symbol, market=market
-        )
-        currency = (
-            existing.currency if existing is not None else _currency_for(market)
-        )
+        existing = await self._position_repo.get(account_id, symbol, market=market)
+        currency = existing.currency if existing is not None else _currency_for(market)
         await self._position_repo.upsert(
             account_id=account_id,
             symbol=symbol,
@@ -640,9 +579,7 @@ class PortfolioTradeService:
             offset += page_size
 
         # Filter to the target (symbol, market), sort ASC by (date, id).
-        filtered = [
-            r for r in all_rows if r.symbol == symbol and r.market == market
-        ]
+        filtered = [r for r in all_rows if r.symbol == symbol and r.market == market]
         filtered.sort(key=lambda r: (r.trade_date, r.id))
         return filtered
 

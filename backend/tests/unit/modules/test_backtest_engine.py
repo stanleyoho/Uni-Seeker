@@ -13,8 +13,10 @@ def _make_prices(closes: list[float]) -> list[StockPrice]:
         StockPrice(
             stock_id=1,
             date=start + timedelta(days=i),
-            open=Decimal(str(c - 1)), high=Decimal(str(c + 2)),
-            low=Decimal(str(c - 2)), close=Decimal(str(c)),
+            open=Decimal(str(c - 1)),
+            high=Decimal(str(c + 2)),
+            low=Decimal(str(c - 2)),
+            close=Decimal(str(c)),
             volume=10_000_000,
         )
         for i, c in enumerate(closes)
@@ -22,7 +24,9 @@ def _make_prices(closes: list[float]) -> list[StockPrice]:
 
 
 def test_backtest_runs() -> None:
-    prices = _make_prices([float(100 - i * 0.5) for i in range(30)] + [float(85 + i) for i in range(30)])
+    prices = _make_prices(
+        [float(100 - i * 0.5) for i in range(30)] + [float(85 + i) for i in range(30)]
+    )
     config = BacktestConfig(initial_capital=1_000_000, position_size=0.5)
     engine = BacktestEngine(config=config)
     result = engine.run(RSIOversoldStrategy(), prices, symbol="TEST.TW")
@@ -40,7 +44,9 @@ def test_backtest_empty_prices() -> None:
 
 def test_backtest_trade_log() -> None:
     # Falling then rising should trigger buy then sell
-    prices = _make_prices([float(100 - i) for i in range(20)] + [float(80 + i * 2) for i in range(20)])
+    prices = _make_prices(
+        [float(100 - i) for i in range(20)] + [float(80 + i * 2) for i in range(20)]
+    )
     engine = BacktestEngine(BacktestConfig(position_size=0.3))
     result = engine.run(RSIOversoldStrategy(), prices, symbol="TEST.TW")
     # Should have at least some trades

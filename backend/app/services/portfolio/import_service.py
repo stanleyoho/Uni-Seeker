@@ -31,6 +31,7 @@ The legacy `_REQUIRED_HEADER` shape is still served by the
 zero changes — the generic parser is the fallback when auto-detect
 finds no broker-specific match.
 """
+
 from __future__ import annotations
 
 from datetime import date as date_type
@@ -154,9 +155,7 @@ class CsvImportService:
 
         parsed_count = len(clean) + len(errors)
         failed_rows = len(errors)
-        successful_rows = (
-            len(clean) if (failed_rows == 0 or dry_run) else 0
-        )
+        successful_rows = len(clean) if (failed_rows == 0 or dry_run) else 0
 
         if dry_run:
             return ImportResult(
@@ -204,9 +203,7 @@ class CsvImportService:
 
     # ── parser dispatch ────────────────────────────────────────────────
 
-    def _pick_parser(
-        self, broker_key: str | None, csv_content: str
-    ) -> BrokerParser:
+    def _pick_parser(self, broker_key: str | None, csv_content: str) -> BrokerParser:
         if broker_key:
             parser = self._parsers.get(broker_key)
             if parser is None:
@@ -260,9 +257,7 @@ class CsvImportService:
         limit = get_limit(self._user.tier, "max_trades_per_month")
         if limit is None:
             return
-        current = await self._trade_service._trade_repo.count_by_user_this_month(
-            self._user.id
-        )
+        current = await self._trade_service._trade_repo.count_by_user_this_month(self._user.id)
         if current + batch_size > limit:
             raise TierLimitExceeded(
                 limit_key="max_trades_per_month",

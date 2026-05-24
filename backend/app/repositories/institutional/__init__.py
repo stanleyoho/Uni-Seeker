@@ -20,6 +20,7 @@ User isolation per table:
                               `institutional_ownership_panel`) gate at
                               the service layer.
 """
+
 # Eagerly load `app.models` so that the package fully initialises before
 # any of our `app.db.models.institutional.*` leaf imports trigger
 # `app.models.base`. Without this, a fresh import that enters via the

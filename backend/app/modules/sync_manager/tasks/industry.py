@@ -26,9 +26,7 @@ class IndustryAggregatesSyncTask(SyncTask):
 
         # 1. Determine the latest period available in the system
         period_query = (
-            select(FinancialMetrics.period)
-            .order_by(FinancialMetrics.period.desc())
-            .limit(1)
+            select(FinancialMetrics.period).order_by(FinancialMetrics.period.desc()).limit(1)
         )
         period_result = await db.execute(period_query)
         period = period_result.scalar_one_or_none()

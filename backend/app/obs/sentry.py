@@ -11,6 +11,7 @@ filter wiring lives in observability-core. The hardcoded policy that
 used to live in ``app.obs._sentry_filters`` is now supplied here as
 init kwargs.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

@@ -10,6 +10,7 @@ Semantics:
 - Caller passes plain Python types; we wrap them into an AuditLog row.
 - We ``flush`` (not commit) so the caller controls transaction boundary.
 """
+
 from __future__ import annotations
 
 from typing import Any

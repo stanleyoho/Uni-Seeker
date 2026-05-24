@@ -16,6 +16,7 @@ in-memory per-symbol TTL cache (`TTLCacheMixin`) to limit network calls.
 `CachedDailyCloseLivePriceFetcher` wraps the Phase 1 DB impl in the same cache
 for testability and as a fallback when external APIs are unavailable.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -93,9 +94,7 @@ class DailyCloseLivePriceFetcher:
         """
         self._db_factory = db_session_factory
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         if not stock_ids:
             return {}
 
@@ -127,9 +126,7 @@ class DailyCloseLivePriceFetcher:
         from sqlalchemy import text
 
         stmt = text(
-            "SELECT close, date FROM stock_prices "
-            "WHERE stock_id = :sid "
-            "ORDER BY date DESC LIMIT 2"
+            "SELECT close, date FROM stock_prices WHERE stock_id = :sid ORDER BY date DESC LIMIT 2"
         )
         return list(session.execute(stmt, {"sid": stock_id}).all())
 
@@ -236,9 +233,7 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
     def __init__(self, ttl_seconds: int = 60) -> None:
         super().__init__(ttl_seconds=ttl_seconds)
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         if not stock_ids:
             return {}
 
@@ -292,9 +287,7 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
                 return None
 
             last_price = Decimal(str(closes[-1]))
-            prev_close = (
-                Decimal(str(closes[-2])) if len(closes) >= 2 else last_price
-            )
+            prev_close = Decimal(str(closes[-2])) if len(closes) >= 2 else last_price
             as_of = self._coerce_as_of(indices[-1])
             return PriceQuote(
                 stock_id=symbol,
@@ -347,9 +340,7 @@ class CachedDailyCloseLivePriceFetcher(TTLCacheMixin):
         super().__init__(ttl_seconds=ttl_seconds)
         self._inner = DailyCloseLivePriceFetcher(db_session_factory)
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         if not stock_ids:
             return {}
 
@@ -413,9 +404,7 @@ class CompositeLivePriceFetcher:
         self._primary = primary
         self._secondary = secondary
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         if not stock_ids:
             return {}
 

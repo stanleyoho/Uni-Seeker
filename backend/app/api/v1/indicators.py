@@ -44,9 +44,7 @@ async def _compute_indicator(
     stock = await get_stock_or_404(db, req.symbol)
 
     query = (
-        select(StockPrice)
-        .where(StockPrice.stock_id == stock.id)
-        .order_by(StockPrice.date.asc())
+        select(StockPrice).where(StockPrice.stock_id == stock.id).order_by(StockPrice.date.asc())
     )
     result = await db.execute(query)
     prices = list(result.scalars().all())
@@ -100,10 +98,7 @@ async def calculate_advanced_indicator(
     if req.indicator not in _ADVANCED_INDICATORS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"{req.indicator} is not an advanced indicator; "
-                "use /calculate instead."
-            ),
+            detail=(f"{req.indicator} is not an advanced indicator; use /calculate instead."),
         )
     return await _compute_indicator(req, db, registry)
 

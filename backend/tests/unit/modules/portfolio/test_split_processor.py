@@ -31,6 +31,7 @@ Coverage map:
     S19 direction mismatch (FORWARD declared but ratio_to < ratio_from)
     S20 round_down policy requires current_market_price
 """
+
 from __future__ import annotations
 
 from decimal import Decimal, getcontext
@@ -79,9 +80,7 @@ def _fwd(
         ratio_to=Decimal(ratio_to),
         open_lots=lots,
         fractional_policy=policy,
-        current_market_price=(
-            Decimal(market_price) if market_price is not None else None
-        ),
+        current_market_price=(Decimal(market_price) if market_price is not None else None),
     )
 
 
@@ -98,9 +97,7 @@ def _rev(
         ratio_to=Decimal(ratio_to),
         open_lots=lots,
         fractional_policy=policy,
-        current_market_price=(
-            Decimal(market_price) if market_price is not None else None
-        ),
+        current_market_price=(Decimal(market_price) if market_price is not None else None),
     )
 
 
@@ -112,9 +109,7 @@ def _rev(
 # S01 — 4:1 doubles shares, halves cost (canonical AAPL-style 4-for-1)
 def test_forward_4_to_1_quadruples_shares_quarters_cost():
     lots = [_lot(1, "100", "100", "50")]
-    res = process_stock_split(
-        _fwd("1", "4", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd("1", "4", lots, policy="keep_fractional", market_price=None))
     assert res.multiplier == Decimal("4")
     assert len(res.updated_lots) == 1
     new = res.updated_lots[0]
@@ -131,9 +126,7 @@ def test_forward_4_to_1_quadruples_shares_quarters_cost():
 # S02 — 3:2 forward split happy path
 def test_forward_3_to_2_split():
     lots = [_lot(1, "100", "100", "60")]
-    res = process_stock_split(
-        _fwd("2", "3", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd("2", "3", lots, policy="keep_fractional", market_price=None))
     assert res.multiplier == Decimal("3") / Decimal("2")
     new = res.updated_lots[0]
     assert new.remaining_qty == Decimal("150")
@@ -154,9 +147,7 @@ def test_forward_3_to_2_split():
 )
 def test_forward_preserves_total_cost_invariant(frm, to, qty, cost):
     lots = [_lot(1, qty, qty, cost)]
-    res = process_stock_split(
-        _fwd(frm, to, lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd(frm, to, lots, policy="keep_fractional", market_price=None))
     new = res.updated_lots[0]
     assert new.remaining_qty * new.cost_per_unit == Decimal(qty) * Decimal(cost)
 
@@ -168,9 +159,7 @@ def test_forward_multi_lot_all_scaled():
         _lot(2, "200", "200", "60"),
         _lot(3, "50", "30", "70"),  # partial fill
     ]
-    res = process_stock_split(
-        _fwd("1", "2", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd("1", "2", lots, policy="keep_fractional", market_price=None))
     assert res.multiplier == Decimal("2")
     assert len(res.updated_lots) == 3
     # Lot 1
@@ -229,9 +218,7 @@ def test_forward_3_to_2_creates_fractional_with_cil():
 # S07 — 1:5 reverse (collapse 5 shares into 1)
 def test_reverse_1_to_5_reduces_shares_increases_cost():
     lots = [_lot(1, "500", "500", "1")]
-    res = process_stock_split(
-        _rev("5", "1", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_rev("5", "1", lots, policy="keep_fractional", market_price=None))
     # multiplier = 1/5 = 0.2
     assert res.multiplier == Decimal("1") / Decimal("5")
     new = res.updated_lots[0]
@@ -269,9 +256,7 @@ def test_reverse_total_qty_decreases():
         _lot(1, "200", "200", "10"),
         _lot(2, "300", "300", "12"),
     ]
-    res = process_stock_split(
-        _rev("4", "1", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_rev("4", "1", lots, policy="keep_fractional", market_price=None))
     assert res.total_old_qty == Decimal("500")
     assert res.total_new_qty == Decimal("125")
     assert res.total_new_qty < res.total_old_qty
@@ -286,18 +271,14 @@ def test_reverse_total_qty_decreases():
 def test_ratio_from_zero_raises():
     lots = [_lot(1, "10", "10", "5")]
     with pytest.raises(ValueError, match="ratio_from"):
-        process_stock_split(
-            _fwd("0", "4", lots, policy="keep_fractional", market_price=None)
-        )
+        process_stock_split(_fwd("0", "4", lots, policy="keep_fractional", market_price=None))
 
 
 # S11 — ratio_to = 0 raises
 def test_ratio_to_zero_raises():
     lots = [_lot(1, "10", "10", "5")]
     with pytest.raises(ValueError, match="ratio_to"):
-        process_stock_split(
-            _fwd("1", "0", lots, policy="keep_fractional", market_price=None)
-        )
+        process_stock_split(_fwd("1", "0", lots, policy="keep_fractional", market_price=None))
 
 
 # S12 — negative ratios raise
@@ -308,9 +289,7 @@ def test_ratio_to_zero_raises():
 def test_negative_ratio_raises(frm, to):
     lots = [_lot(1, "10", "10", "5")]
     with pytest.raises(ValueError):
-        process_stock_split(
-            _fwd(frm, to, lots, policy="keep_fractional", market_price=None)
-        )
+        process_stock_split(_fwd(frm, to, lots, policy="keep_fractional", market_price=None))
 
 
 # S13 — equal ratios (3:3) is a no-op
@@ -319,9 +298,7 @@ def test_same_ratio_is_noop():
         _lot(1, "100", "100", "50"),
         _lot(2, "200", "150", "60", exhausted=False),
     ]
-    res = process_stock_split(
-        _fwd("3", "3", lots, policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd("3", "3", lots, policy="keep_fractional", market_price=None))
     assert res.multiplier == Decimal("1")
     for orig, new in zip(lots, res.updated_lots, strict=True):
         assert new.lot_id == orig.lot_id
@@ -336,9 +313,7 @@ def test_same_ratio_is_noop():
 
 # S14 — empty open_lots returns empty result
 def test_empty_lots_returns_empty():
-    res = process_stock_split(
-        _fwd("1", "4", [], policy="keep_fractional", market_price=None)
-    )
+    res = process_stock_split(_fwd("1", "4", [], policy="keep_fractional", market_price=None))
     assert res.updated_lots == []
     assert res.total_old_qty == Decimal("0")
     assert res.total_new_qty == Decimal("0")
@@ -369,18 +344,16 @@ def test_keep_fractional_policy_preserves_decimals():
 @pytest.mark.parametrize(
     ("ratio_from", "ratio_to", "remaining_qty", "expected_qty"),
     [
-        ("2", "3", "1", "2"),    # 1.5 → 2 (HALF_UP)
-        ("5", "7", "1", "1"),    # 1.4 → 1
-        ("5", "8", "1", "2"),    # 1.6 → 2
-        ("4", "1", "23", "6"),   # reverse: 5.75 → 6
+        ("2", "3", "1", "2"),  # 1.5 → 2 (HALF_UP)
+        ("5", "7", "1", "1"),  # 1.4 → 1
+        ("5", "8", "1", "2"),  # 1.6 → 2
+        ("4", "1", "23", "6"),  # reverse: 5.75 → 6
     ],
 )
 def test_round_to_nearest_policy(ratio_from, ratio_to, remaining_qty, expected_qty):
     lots = [_lot(1, remaining_qty, remaining_qty, "100")]
     split_type = (
-        SplitType.FORWARD
-        if Decimal(ratio_to) >= Decimal(ratio_from)
-        else SplitType.REVERSE
+        SplitType.FORWARD if Decimal(ratio_to) >= Decimal(ratio_from) else SplitType.REVERSE
     )
     inputs = StockSplitInputs(
         split_type=split_type,
@@ -393,10 +366,7 @@ def test_round_to_nearest_policy(ratio_from, ratio_to, remaining_qty, expected_q
     new = res.updated_lots[0]
     assert new.remaining_qty == Decimal(expected_qty)
     # Invariant preserved on rounded qty
-    assert (
-        new.remaining_qty * new.cost_per_unit
-        == Decimal(remaining_qty) * Decimal("100")
-    )
+    assert new.remaining_qty * new.cost_per_unit == Decimal(remaining_qty) * Decimal("100")
     assert res.cash_in_lieu_usd == Decimal("0")  # no CIL under this policy
 
 
@@ -480,13 +450,10 @@ def test_round_down_policy_requires_market_price():
 
 # Bonus — compute_split_multiplier helper sanity
 def test_compute_split_multiplier_basic():
-    assert (
-        compute_split_multiplier(SplitType.FORWARD, Decimal("1"), Decimal("4"))
-        == Decimal("4")
-    )
-    assert compute_split_multiplier(
-        SplitType.REVERSE, Decimal("5"), Decimal("1")
-    ) == Decimal("1") / Decimal("5")
+    assert compute_split_multiplier(SplitType.FORWARD, Decimal("1"), Decimal("4")) == Decimal("4")
+    assert compute_split_multiplier(SplitType.REVERSE, Decimal("5"), Decimal("1")) == Decimal(
+        "1"
+    ) / Decimal("5")
 
 
 def test_compute_split_multiplier_zero_raises():

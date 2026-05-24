@@ -13,6 +13,7 @@ Coverage (6 cases):
   RS05 audit log row written with the right action + metadata
   RS06 live_price_fetcher is invoked with the union of position symbols
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
@@ -56,15 +57,11 @@ async def _mk_user(
 class MockLivePriceFetcher:
     """In-memory `LivePriceFetcher` for service tests."""
 
-    def __init__(
-        self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None
-    ) -> None:
+    def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]] | None = None) -> None:
         self._quotes = quotes or {}
         self.calls: list[list[str]] = []
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         self.calls.append(list(stock_ids))
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
@@ -158,9 +155,7 @@ async def test_RS02_tier_free_raises_feature_unavailable(
     fetcher = MockLivePriceFetcher()
     svc = RebalancingService(db_session, user, fetcher)
 
-    with patch(
-        "app.services.portfolio.rebalancing_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.rebalancing_service.settings") as s:
         s.enable_monetization = True
         with pytest.raises(TierFeatureUnavailable) as exc:
             await svc.preview_rebalance(targets=[])
@@ -176,9 +171,7 @@ async def test_RS03_tier_basic_raises_feature_unavailable(
     fetcher = MockLivePriceFetcher()
     svc = RebalancingService(db_session, user, fetcher)
 
-    with patch(
-        "app.services.portfolio.rebalancing_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.rebalancing_service.settings") as s:
         s.enable_monetization = True
         with pytest.raises(TierFeatureUnavailable) as exc:
             await svc.preview_rebalance(targets=[])
@@ -229,15 +222,11 @@ async def test_RS05_audit_log_written(
     acc_id = await _seed_account(db_session, user)
     await _buy(db_session, user, acc_id, "2330", qty="100", price="500")
 
-    fetcher = MockLivePriceFetcher(
-        {"2330": (Decimal("500"), Decimal("500"))}
-    )
+    fetcher = MockLivePriceFetcher({"2330": (Decimal("500"), Decimal("500"))})
     svc = RebalancingService(db_session, user, fetcher)
 
     await svc.preview_rebalance(
-        targets=[
-            {"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}
-        ],
+        targets=[{"symbol": "2330", "market": "TW_TWSE", "target_pct": "100"}],
         account_id=acc_id,
     )
     await db_session.commit()

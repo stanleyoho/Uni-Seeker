@@ -25,6 +25,7 @@ Cases:
 remains self-contained — pytest discovery order can mark a test file's
 helpers unimportable for siblings that diverge on conftest.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -74,9 +75,7 @@ class MockEdgarClient:
         self.calls_list_filings: list[str] = []
         self.calls_fetch_xml: list[str] = []
 
-    def set_filings_response(
-        self, cik: str, filings: list[FilingMetadata]
-    ) -> None:
+    def set_filings_response(self, cik: str, filings: list[FilingMetadata]) -> None:
         self._filings_responses[cik] = filings
 
     def set_xml_response(self, url: str, xml: str) -> None:
@@ -141,9 +140,7 @@ async def _mk_filer(
     return f
 
 
-async def _subscribe(
-    db: AsyncSession, user_id: int, filer_id: int
-) -> F13UserSubscription:
+async def _subscribe(db: AsyncSession, user_id: int, filer_id: int) -> F13UserSubscription:
     sub = F13UserSubscription(user_id=user_id, filer_id=filer_id)
     db.add(sub)
     await db.commit()
@@ -293,14 +290,13 @@ async def test_refresh_calls_edgar_via_filing_service(
         "0008000003",
         [
             _mk_filing_meta(
-                "acc-edgar", date(2026, 3, 31),
+                "acc-edgar",
+                date(2026, 3, 31),
                 url="https://example.com/acc-edgar.xml",
             )
         ],
     )
-    edgar.set_xml_response(
-        "https://example.com/acc-edgar.xml", _MINIMAL_INFOTABLE_XML
-    )
+    edgar.set_xml_response("https://example.com/acc-edgar.xml", _MINIMAL_INFOTABLE_XML)
 
     await daily_pro_refresh(db_session, edgar, now=_FIXED_NOW)  # type: ignore[arg-type]
     await db_session.commit()
@@ -336,7 +332,9 @@ async def test_concurrent_refresh_counted_as_skipped(
         edgar.set_filings_response("0008000004", [])
 
         result = await daily_pro_refresh(
-            db_session, edgar, now=_FIXED_NOW  # type: ignore[arg-type]
+            db_session,
+            edgar,
+            now=_FIXED_NOW,  # type: ignore[arg-type]
         )
         await db_session.commit()
 
@@ -387,9 +385,7 @@ async def test_basic_weekly_skips_recent_within_6_days(
 ) -> None:
     """Filer refreshed 5d ago → skipped. Filer refreshed 7d ago → refreshed."""
     # 5d-old filer subscribed by user A — should be skipped on the basic run.
-    user_a = await _mk_user(
-        db_session, "basic1@x.com", "basic1", tier=UserTier.BASIC
-    )
+    user_a = await _mk_user(db_session, "basic1@x.com", "basic1", tier=UserTier.BASIC)
     filer_recent = await _mk_filer(
         db_session,
         cik="0009000001",
@@ -398,9 +394,7 @@ async def test_basic_weekly_skips_recent_within_6_days(
     await _subscribe(db_session, user_a.id, filer_recent.id)
 
     # 7d-old filer subscribed by user B — should be refreshed.
-    user_b = await _mk_user(
-        db_session, "basic2@x.com", "basic2", tier=UserTier.BASIC
-    )
+    user_b = await _mk_user(db_session, "basic2@x.com", "basic2", tier=UserTier.BASIC)
     filer_stale = await _mk_filer(
         db_session,
         cik="0009000002",

@@ -12,6 +12,7 @@ Coverage (~5 cases):
 Uses an in-memory `FakeSession` mock that records the params each call
 received and returns canned rows.
 """
+
 from __future__ import annotations
 
 import asyncio

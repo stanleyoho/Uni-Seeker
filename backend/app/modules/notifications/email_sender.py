@@ -33,6 +33,7 @@ Failure semantics:
     return ``False``. We never raise into the caller because the
     notification fan-out is best-effort.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -161,7 +162,7 @@ def _send_sync(msg: EmailMessage, cfg: Settings, timeout: float) -> None:
     # smtplib otherwise leaves the relay holding the socket open until
     # its idle timeout.
     with smtplib.SMTP(
-        host=cfg.uni_smtp_host,   # narrowed by caller
+        host=cfg.uni_smtp_host,  # narrowed by caller
         port=cfg.uni_smtp_port,
         timeout=timeout,
     ) as smtp:

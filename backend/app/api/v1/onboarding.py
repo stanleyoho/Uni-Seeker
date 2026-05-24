@@ -4,6 +4,7 @@ Plan 4.5 T5. Computes risk_tolerance from 5 questionnaire answers and
 persists it on the user record. Also records an audit_logs entry via
 the T3 stub.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone, UTC

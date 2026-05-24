@@ -5,6 +5,7 @@ Spec §9 双保险: service-level tier assertions raise domain exceptions
 status codes. This keeps services callable from non-HTTP contexts
 (e.g. CLI tools, batch jobs, tests) without importing FastAPI.
 """
+
 from __future__ import annotations
 
 
@@ -39,9 +40,7 @@ class TierLimitExceeded(PortfolioServiceError):
         self.limit_key = limit_key
         self.current = current
         self.limit = limit
-        super().__init__(
-            f"tier limit '{limit_key}' exceeded: {current} >= {limit}"
-        )
+        super().__init__(f"tier limit '{limit_key}' exceeded: {current} >= {limit}")
 
 
 class TierFeatureUnavailable(PortfolioServiceError):

@@ -19,6 +19,7 @@ Coverage (per Phase 1 Batch A1 acceptance):
 Pattern: mirrors `tests/unit/test_tier_guard.py` (FastAPI TestClient +
 `app.dependency_overrides[require_auth]`).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -117,9 +118,7 @@ def test_pro_max_positions_is_none(default_limits: tl.AllTierLimits):
         (UserTier.PRO, "max_accounts", None),
     ],
 )
-def test_get_limit_returns_correct_value(
-    tier: UserTier, key: str, expected: int | None
-):
+def test_get_limit_returns_correct_value(tier: UserTier, key: str, expected: int | None):
     assert tl.get_limit(tier, key) == expected
 
 
@@ -220,9 +219,7 @@ def test_tier_guard_dependency_raises_403_when_limit_exceeded():
         # FREE max_accounts == 1, simulate user already has 1 → next create blocked.
         return 1
 
-    app = _make_guarded_app(
-        limit_key="max_accounts", current_count_provider=at_quota
-    )
+    app = _make_guarded_app(limit_key="max_accounts", current_count_provider=at_quota)
     app.dependency_overrides[require_auth] = lambda: _make_user(UserTier.FREE)
     with TestClient(app) as c:
         r = c.get("/guarded", headers={"Authorization": "Bearer fake"})
@@ -234,9 +231,7 @@ def test_tier_guard_dependency_under_quota_passes():
     async def under_quota(*, user: User) -> int:
         return 0
 
-    app = _make_guarded_app(
-        limit_key="max_accounts", current_count_provider=under_quota
-    )
+    app = _make_guarded_app(limit_key="max_accounts", current_count_provider=under_quota)
     app.dependency_overrides[require_auth] = lambda: _make_user(UserTier.FREE)
     with TestClient(app) as c:
         r = c.get("/guarded", headers={"Authorization": "Bearer fake"})
@@ -249,9 +244,7 @@ def test_tier_guard_pro_unlimited_skips_count_provider():
     async def explode(*, user: User) -> int:
         raise AssertionError("provider must not be called for unlimited tier")
 
-    app = _make_guarded_app(
-        limit_key="max_accounts", current_count_provider=explode
-    )
+    app = _make_guarded_app(limit_key="max_accounts", current_count_provider=explode)
     app.dependency_overrides[require_auth] = lambda: _make_user(UserTier.PRO)
     with TestClient(app) as c:
         r = c.get("/guarded", headers={"Authorization": "Bearer fake"})
@@ -325,9 +318,7 @@ def test_yaml_missing_raises_file_not_found(tmp_path: Path):
 
 def _counter_value(tier: str, key: str) -> float:
     """Read current counter value for a specific label set."""
-    sample = tl.TIER_LIMIT_BLOCK_TOTAL.labels(
-        tier=tier, feature_or_limit=key, action="block"
-    )
+    sample = tl.TIER_LIMIT_BLOCK_TOTAL.labels(tier=tier, feature_or_limit=key, action="block")
     # prometheus_client Counter stores cumulative count in `._value.get()`.
     return sample._value.get()  # type: ignore[attr-defined]
 
@@ -350,9 +341,7 @@ def test_counter_increments_on_limit_block():
         return 1
 
     before = _counter_value("free", "max_accounts")
-    app = _make_guarded_app(
-        limit_key="max_accounts", current_count_provider=at_quota
-    )
+    app = _make_guarded_app(limit_key="max_accounts", current_count_provider=at_quota)
     app.dependency_overrides[require_auth] = lambda: _make_user(UserTier.FREE)
     with TestClient(app) as c:
         r = c.get("/guarded", headers={"Authorization": "Bearer fake"})

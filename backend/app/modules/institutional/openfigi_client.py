@@ -26,6 +26,7 @@ per-CUSIP HTTP roundtrips.
 Anti-coupling: NO imports from ``app.db.*``, ``fastapi``, or
 ``smart_money``. Same surface contract as :mod:`edgar_client`.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -178,13 +179,9 @@ class OpenFigiClient:
         if rate_limiter is not None:
             self._limiter = rate_limiter
         else:
-            self._limiter = OpenFigiRateLimiter(
-                max_per_min=250 if self._api_key else 25
-            )
+            self._limiter = OpenFigiRateLimiter(max_per_min=250 if self._api_key else 25)
         self._batch_size = (
-            self.MAX_MAPPINGS_PER_CALL_AUTH
-            if self._api_key
-            else self.MAX_MAPPINGS_PER_CALL_FREE
+            self.MAX_MAPPINGS_PER_CALL_AUTH if self._api_key else self.MAX_MAPPINGS_PER_CALL_FREE
         )
         self._client: httpx.AsyncClient | None = None
 
@@ -247,8 +244,11 @@ class OpenFigiClient:
             c = (raw or "").strip()
             if not c:
                 results[i] = FigiMapping(
-                    cusip="", ticker=None, name=None,
-                    exch_code=None, security_type=None,
+                    cusip="",
+                    ticker=None,
+                    name=None,
+                    exch_code=None,
+                    security_type=None,
                     error="empty_cusip",
                 )
             else:
@@ -268,9 +268,7 @@ class OpenFigiClient:
 
     # ── internals ──
 
-    async def _post_mapping_chunk(
-        self, cusips: list[str]
-    ) -> list[FigiMapping]:
+    async def _post_mapping_chunk(self, cusips: list[str]) -> list[FigiMapping]:
         """POST a single chunk (≤ ``batch_size``) and parse the response.
 
         OpenFIGI returns a parallel array: response[i] corresponds to
@@ -322,9 +320,7 @@ class OpenFigiClient:
                 out.append(_empty_mapping(cusip, error="missing_row"))
         return out
 
-    async def _post_with_retry(
-        self, url: str, json_body: list[dict[str, str]]
-    ) -> Any:
+    async def _post_with_retry(self, url: str, json_body: list[dict[str, str]]) -> Any:
         if self._client is None:
             raise RuntimeError(
                 "OpenFigiClient must be used as an async context manager "
@@ -338,7 +334,7 @@ class OpenFigiClient:
                 response = await self._client.post(url, json=json_body)
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last_exc = exc
-                wait_s = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                wait_s = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "openfigi_request_transport_error",
                     url=url,
@@ -356,9 +352,9 @@ class OpenFigiClient:
                     try:
                         wait_s = float(retry_after)
                     except ValueError:
-                        wait_s = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                        wait_s = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 else:
-                    wait_s = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                    wait_s = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "openfigi_rate_limited",
                     url=url,
@@ -375,7 +371,7 @@ class OpenFigiClient:
                 continue
 
             if 500 <= response.status_code < 600:
-                wait_s = self._BACKOFF_BASE_SECONDS * (2 ** attempt)
+                wait_s = self._BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
                     "openfigi_server_error",
                     url=url,
@@ -464,8 +460,4 @@ def openfigi_api_key_from_env() -> str | None:
     back to the app-prefixed ``UNI_OPENFIGI_API_KEY``. Returns None when
     both are missing — caller wires the client without auth (free tier).
     """
-    return (
-        os.getenv("OPENFIGI_API_KEY")
-        or os.getenv("UNI_OPENFIGI_API_KEY")
-        or None
-    )
+    return os.getenv("OPENFIGI_API_KEY") or os.getenv("UNI_OPENFIGI_API_KEY") or None

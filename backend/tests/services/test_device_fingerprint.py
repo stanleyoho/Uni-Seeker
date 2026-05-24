@@ -1,4 +1,5 @@
 """Plan 4.5 T4 — compute_fingerprint unit tests."""
+
 from types import SimpleNamespace
 
 import pytest

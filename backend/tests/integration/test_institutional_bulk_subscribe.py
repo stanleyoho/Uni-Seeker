@@ -26,6 +26,7 @@ Coverage (~10 cases):
 EDGAR client is dep-overridden to `_MockEdgarClient` (same pattern as
 `test_institutional_api.py`).
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -63,9 +64,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 def _client_app(client: AsyncClient):
@@ -97,9 +96,7 @@ class _MockEdgarClient:
             raise RuntimeError("edgar transient failure (mock)")
         if cik in self.metadata_responses:
             return self.metadata_responses[cik]
-        return FilerMetadata(
-            cik=cik, name=f"EDGAR Resolved {cik}", legal_name=None
-        )
+        return FilerMetadata(cik=cik, name=f"EDGAR Resolved {cik}", legal_name=None)
 
 
 @pytest.fixture
@@ -155,12 +152,8 @@ async def test_bulk_subscribe_tier_quota_atomic(
     user = await _mk_user(db_session, "bulk02@x.com", tier=UserTier.FREE)
 
     with (
-        patch(
-            "app.modules.billing.tier_limits.settings"
-        ) as guard_settings,
-        patch(
-            "app.services.institutional.subscription_service.settings"
-        ) as svc_settings,
+        patch("app.modules.billing.tier_limits.settings") as guard_settings,
+        patch("app.services.institutional.subscription_service.settings") as svc_settings,
     ):
         guard_settings.enable_monetization = True
         svc_settings.enable_monetization = True
@@ -261,10 +254,7 @@ async def test_bulk_subscribe_invalid_cik_format(
     body = resp.json()
     assert len(body["subscribed"]) == 1
     assert body["subscribed"][0]["cik"] == "0005000001"
-    assert any(
-        e["cik"] == "ABCDEF" and e["reason"] == "invalid_cik"
-        for e in body["errors"]
-    )
+    assert any(e["cik"] == "ABCDEF" and e["reason"] == "invalid_cik" for e in body["errors"])
 
 
 async def test_bulk_subscribe_edgar_metadata_fallback(
@@ -378,9 +368,7 @@ async def test_bulk_subscribe_over_20_422(
 ) -> None:
     """Pydantic rejects > 20-item batches with 422."""
     user = await _mk_user(db_session, "bulk09@x.com", tier=UserTier.PRO)
-    items = [
-        {"cik": f"00090000{i:02d}", "name": f"f{i}"} for i in range(21)
-    ]
+    items = [{"cik": f"00090000{i:02d}", "name": f"f{i}"} for i in range(21)]
     resp = await client.post(
         BULK_URL,
         headers=_auth(user),
@@ -409,9 +397,7 @@ async def test_bulk_subscribe_cross_user_isolation(
     assert resp_a.status_code == 201
 
     # B's list should be empty — no leak.
-    list_b = await client.get(
-        "/api/v1/institutional/filers", headers=_auth(user_b)
-    )
+    list_b = await client.get("/api/v1/institutional/filers", headers=_auth(user_b))
     assert list_b.status_code == 200
     assert list_b.json() == []
 

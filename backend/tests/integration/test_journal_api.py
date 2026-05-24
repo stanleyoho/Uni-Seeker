@@ -7,6 +7,7 @@ SQLite compatibility note: The Trade model uses PostgreSQL JSONB for the ``tags`
 column. We patch ``SQLiteTypeCompiler`` to render JSONB as JSON so that
 in-memory SQLite works for testing without changing the production model.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -37,6 +38,7 @@ TRADE_DATE = date(2026, 1, 15).isoformat()
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 async def app_with_journal_db():
     """Shared app fixture with in-memory SQLite and dependency override."""
@@ -60,12 +62,16 @@ async def app_with_journal_db():
 
 # ── Helper ─────────────────────────────────────────────────────────────────────
 
+
 async def _create_account(client: AsyncClient, name: str, market: str, currency: str) -> int:
-    resp = await client.post("/api/v1/journal/accounts", json={
-        "name": name,
-        "market": market,
-        "currency": currency,
-    })
+    resp = await client.post(
+        "/api/v1/journal/accounts",
+        json={
+            "name": name,
+            "market": market,
+            "currency": currency,
+        },
+    )
     assert resp.status_code == 201, resp.text
     return resp.json()["id"]
 
@@ -79,14 +85,17 @@ async def _add_trade(
     price: float,
     quantity: float,
 ) -> dict:
-    resp = await client.post(f"/api/v1/journal/accounts/{account_id}/trades", json={
-        "symbol": symbol,
-        "market": market,
-        "action": action,
-        "date": TRADE_DATE,
-        "price": str(price),
-        "quantity": str(quantity),
-    })
+    resp = await client.post(
+        f"/api/v1/journal/accounts/{account_id}/trades",
+        json={
+            "symbol": symbol,
+            "market": market,
+            "action": action,
+            "date": TRADE_DATE,
+            "price": str(price),
+            "quantity": str(quantity),
+        },
+    )
     assert resp.status_code == 201, resp.text
     return resp.json()
 
@@ -98,6 +107,7 @@ async def _get_position(client: AsyncClient, account_id: int) -> list[dict]:
 
 
 # ── T15: BUY creates position ──────────────────────────────────────────────────
+
 
 async def test_t15_buy_creates_position(app_with_journal_db) -> None:
     """T15: BUY 100 shares @100 → position qty=100, total_cost=10000."""
@@ -116,6 +126,7 @@ async def test_t15_buy_creates_position(app_with_journal_db) -> None:
 
 
 # ── T16: SELL updates position ─────────────────────────────────────────────────
+
 
 async def test_t16_sell_updates_position(app_with_journal_db) -> None:
     """T16: BUY 100@100 → SELL 40@150 → qty=60, realized_pnl=+2000."""
@@ -136,6 +147,7 @@ async def test_t16_sell_updates_position(app_with_journal_db) -> None:
 
 # ── T17: Full sell closes position ─────────────────────────────────────────────
 
+
 async def test_t17_full_sell_closes_position(app_with_journal_db) -> None:
     """T17: BUY 100@100 → SELL 100@150 → position is_closed=True, not in open positions."""
     transport = ASGITransport(app=app_with_journal_db)
@@ -151,6 +163,7 @@ async def test_t17_full_sell_closes_position(app_with_journal_db) -> None:
 
 
 # ── T19: Multiple trades consistent ────────────────────────────────────────────
+
 
 async def test_t19_multiple_trades_consistent(app_with_journal_db) -> None:
     """T19: BUY 100@100, BUY 80@110, BUY 60@120 → SELL 110 → qty=130 remaining."""
@@ -171,6 +184,7 @@ async def test_t19_multiple_trades_consistent(app_with_journal_db) -> None:
 
 
 # ── T20: Cross-market no collision ─────────────────────────────────────────────
+
 
 async def test_t20_cross_market_no_collision(app_with_journal_db) -> None:
     """T20: TW account with 2330 TW and US account with 2330 US → separate positions, no interference."""

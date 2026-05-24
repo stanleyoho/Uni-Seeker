@@ -5,6 +5,7 @@ User isolation: positions are scoped by `account_id`. Cross-user
 to enforce ownership. Per §5.3 + §11 R3, no P&L / cost-basis logic
 runs here.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -99,9 +100,7 @@ class PortfolioPositionRepo:
             await self.db.refresh(existing)
             return existing
         # Post-upsert this should always exist; surface a clear error if not.
-        raise RuntimeError(
-            "PortfolioPositionRepo.upsert: row missing after upsert"
-        )
+        raise RuntimeError("PortfolioPositionRepo.upsert: row missing after upsert")
 
     async def get(
         self, account_id: int, symbol: str, market: Any | None = None
@@ -116,9 +115,7 @@ class PortfolioPositionRepo:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
-    async def list_by_account(
-        self, account_id: int
-    ) -> list[PortfolioPosition]:
+    async def list_by_account(self, account_id: int) -> list[PortfolioPosition]:
         """All positions on a single account (open + closed)."""
         result = await self.db.execute(
             select(PortfolioPosition)
@@ -155,9 +152,7 @@ class PortfolioPositionRepo:
         )
         return int(result.scalar() or 0)
 
-    async def delete(
-        self, account_id: int, symbol: str, market: Any | None = None
-    ) -> None:
+    async def delete(self, account_id: int, symbol: str, market: Any | None = None) -> None:
         """Remove a position row (typically when a stock is fully closed
         and the service decides to prune)."""
         stmt = delete(PortfolioPosition).where(

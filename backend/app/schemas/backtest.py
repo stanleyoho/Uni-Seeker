@@ -14,7 +14,7 @@ class BacktestRequest(BaseModel):
     stop_loss: float | None = None
     take_profit: float | None = None
     start_date: str | None = None  # YYYY-MM-DD, inclusive
-    end_date: str | None = None    # YYYY-MM-DD, inclusive
+    end_date: str | None = None  # YYYY-MM-DD, inclusive
 
 
 class CompositeBacktestRequest(BaseModel):
@@ -65,4 +65,4 @@ class AutoDiscoveryRequest(BaseModel):
     stop_loss: float | None = None
     take_profit: float | None = None
     start_date: str | None = None  # YYYY-MM-DD, inclusive
-    end_date: str | None = None    # YYYY-MM-DD, inclusive
+    end_date: str | None = None  # YYYY-MM-DD, inclusive

@@ -1,4 +1,5 @@
 """Plan 5 T4 — StockSharpDetector divergence logic tests."""
+
 from datetime import date
 
 import pytest
@@ -94,11 +95,11 @@ class TestStockSharpDetector:
         """Edge confidence with divergence must exceed edge confidence without."""
         detector_divergence = StockSharpDetector(
             foreign_futures_net=15000.0,
-            margin_balance_change=-80.0,   # divergence
+            margin_balance_change=-80.0,  # divergence
         )
         detector_no_divergence = StockSharpDetector(
             foreign_futures_net=15000.0,
-            margin_balance_change=80.0,    # both long, no divergence
+            margin_balance_change=80.0,  # both long, no divergence
         )
         edge_div = detector_divergence.get_edge_signal("2330", date(2026, 5, 9))
         edge_no = detector_no_divergence.get_edge_signal("2330", date(2026, 5, 9))
@@ -108,7 +109,7 @@ class TestStockSharpDetector:
         """Reason field should be non-trivial Chinese text mentioning 法人."""
         detector = StockSharpDetector(
             foreign_futures_net=8000.0,
-            margin_balance_change=-40.0,   # divergence
+            margin_balance_change=-40.0,  # divergence
         )
         edge = detector.get_edge_signal("0050", date(2026, 5, 9))
         assert len(edge.reason) > 20
@@ -118,7 +119,7 @@ class TestStockSharpDetector:
         """Even with extreme institutional positions, confidence must not exceed 0.9."""
         detector = StockSharpDetector(
             foreign_futures_net=999999.0,
-            margin_balance_change=-999.0,   # divergence with extreme magnitude
+            margin_balance_change=-999.0,  # divergence with extreme magnitude
         )
         edge = detector.get_edge_signal("2330", date(2026, 5, 9))
         assert edge.confidence <= 0.9

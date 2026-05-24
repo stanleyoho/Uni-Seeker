@@ -73,21 +73,28 @@ def _build_full_response(data, symbol: str) -> FullAnalysisResponse:
 
     ratios_resp = [
         FinancialRatiosResponse(
-            symbol=r.symbol, period=r.period,
-            gross_margin=r.gross_margin, operating_margin=r.operating_margin,
-            net_margin=r.net_margin, roe=r.roe, roa=r.roa,
+            symbol=r.symbol,
+            period=r.period,
+            gross_margin=r.gross_margin,
+            operating_margin=r.operating_margin,
+            net_margin=r.net_margin,
+            roe=r.roe,
+            roa=r.roa,
             inventory_turnover=r.inventory_turnover,
             receivable_turnover=r.receivable_turnover,
-            current_ratio=r.current_ratio, quick_ratio=r.quick_ratio,
+            current_ratio=r.current_ratio,
+            quick_ratio=r.quick_ratio,
             debt_ratio=r.debt_ratio,
-            revenue_growth=r.revenue_growth, net_income_growth=r.net_income_growth,
+            revenue_growth=r.revenue_growth,
+            net_income_growth=r.net_income_growth,
         )
         for r in ratios_list
     ]
 
     health_resp = [
         HealthScoreResponse(
-            symbol=h.symbol, period=h.period,
+            symbol=h.symbol,
+            period=h.period,
             total_score=h.total_score,
             profitability_score=h.profitability_score,
             efficiency_score=h.efficiency_score,
@@ -108,6 +115,7 @@ def _build_full_response(data, symbol: str) -> FullAnalysisResponse:
 # ------------------------------------------------------------------ #
 # Endpoints                                                            #
 # ------------------------------------------------------------------ #
+
 
 @router.get("/{symbol}", response_model=FullAnalysisResponse)
 async def get_full_analysis(symbol: str, db: DbSession) -> FullAnalysisResponse:
@@ -142,14 +150,20 @@ async def get_ratios(symbol: str, db: DbSession) -> list[FinancialRatiosResponse
     ratios_list = calculate_ratios(data)
     return [
         FinancialRatiosResponse(
-            symbol=r.symbol, period=r.period,
-            gross_margin=r.gross_margin, operating_margin=r.operating_margin,
-            net_margin=r.net_margin, roe=r.roe, roa=r.roa,
+            symbol=r.symbol,
+            period=r.period,
+            gross_margin=r.gross_margin,
+            operating_margin=r.operating_margin,
+            net_margin=r.net_margin,
+            roe=r.roe,
+            roa=r.roa,
             inventory_turnover=r.inventory_turnover,
             receivable_turnover=r.receivable_turnover,
-            current_ratio=r.current_ratio, quick_ratio=r.quick_ratio,
+            current_ratio=r.current_ratio,
+            quick_ratio=r.quick_ratio,
             debt_ratio=r.debt_ratio,
-            revenue_growth=r.revenue_growth, net_income_growth=r.net_income_growth,
+            revenue_growth=r.revenue_growth,
+            net_income_growth=r.net_income_growth,
         )
         for r in ratios_list
     ]

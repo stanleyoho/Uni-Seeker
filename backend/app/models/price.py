@@ -36,9 +36,7 @@ class StockPrice(Base):
     close: Mapped[Decimal] = mapped_column(Numeric(12, 4))
     volume: Mapped[int] = mapped_column(BigInteger)
     change: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=Decimal("0"))
-    change_percent: Mapped[Decimal] = mapped_column(
-        Numeric(8, 4), default=Decimal("0")
-    )
+    change_percent: Mapped[Decimal] = mapped_column(Numeric(8, 4), default=Decimal("0"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
     )

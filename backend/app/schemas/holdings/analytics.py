@@ -5,6 +5,7 @@ Decimal-as-string per `CLAUDE.md` line 35 — every numeric field is
 serialised as JSON string when emitted on the wire (parity with the
 other holdings response models).
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

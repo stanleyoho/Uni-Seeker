@@ -11,6 +11,7 @@ Covers the eligibility matrix:
 ``send_telegram_message`` and ``send_email`` are patched per test so no
 real network I/O leaves the process.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -54,9 +55,7 @@ async def _mk_user(
 # ── tests ──────────────────────────────────────────────────────────────
 
 
-async def test_dispatch_both_channels_both_succeed(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_dispatch_both_channels_both_succeed(db_session: AsyncSession, monkeypatch) -> None:
     """User opted into TG + Email; both senders succeed."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
     monkeypatch.setattr(settings, "uni_smtp_host", "smtp.x")
@@ -69,13 +68,16 @@ async def test_dispatch_both_channels_both_succeed(
         notify_via_email=True,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=True),
-    ) as tg_mock, patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=True),
-    ) as email_mock:
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=True),
+        ) as tg_mock,
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=True),
+        ) as email_mock,
+    ):
         result = await dispatch_notification(
             user,
             title="Title",
@@ -106,15 +108,20 @@ async def test_dispatch_only_telegram_when_email_opted_out(
         notify_via_email=False,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=True),
-    ) as tg_mock, patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=True),
-    ) as email_mock:
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=True),
+        ) as tg_mock,
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=True),
+        ) as email_mock,
+    ):
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     assert result["tg_sent"] is True
@@ -140,15 +147,20 @@ async def test_dispatch_only_email_when_no_tg_chat_id(
         notify_via_email=True,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=True),
-    ) as tg_mock, patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=True),
-    ) as email_mock:
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=True),
+        ) as tg_mock,
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=True),
+        ) as email_mock,
+    ):
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     assert result["tg_sent"] is False
@@ -171,15 +183,20 @@ async def test_dispatch_none_when_both_disabled(
         notify_via_email=False,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=True),
-    ) as tg_mock, patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=True),
-    ) as email_mock:
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=True),
+        ) as tg_mock,
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=True),
+        ) as email_mock,
+    ):
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     assert result == {
@@ -205,15 +222,20 @@ async def test_dispatch_partial_success_tg_ok_email_fail(
         notify_via_email=True,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=True),
-    ), patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=False),
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=False),
+        ),
     ):
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     assert result["tg_sent"] is True
@@ -235,15 +257,20 @@ async def test_dispatch_tracks_attempt_count_correctly(
         notify_via_email=True,
     )
 
-    with patch(
-        "app.modules.notifications.dispatcher.send_telegram_message",
-        new=AsyncMock(return_value=False),
-    ), patch(
-        "app.modules.notifications.dispatcher.send_email",
-        new=AsyncMock(return_value=False),
+    with (
+        patch(
+            "app.modules.notifications.dispatcher.send_telegram_message",
+            new=AsyncMock(return_value=False),
+        ),
+        patch(
+            "app.modules.notifications.dispatcher.send_email",
+            new=AsyncMock(return_value=False),
+        ),
     ):
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     # Two channels eligible, both failed → 2 attempted, 0 succeeded.
@@ -253,9 +280,7 @@ async def test_dispatch_tracks_attempt_count_correctly(
     assert result["email_sent"] is False
 
 
-async def test_dispatch_uses_pre_rendered_tg_text(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_dispatch_uses_pre_rendered_tg_text(db_session: AsyncSession, monkeypatch) -> None:
     """When caller passes ``tg_text`` we forward it verbatim to TG."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "bot-tok")
     user = await _mk_user(
@@ -325,9 +350,7 @@ async def test_dispatch_email_appends_deep_link_to_text(
     assert "查看詳情: https://app/x?y=1" in captured["body_text"]
 
 
-async def test_dispatch_no_tg_when_token_empty(
-    db_session: AsyncSession, monkeypatch
-) -> None:
+async def test_dispatch_no_tg_when_token_empty(db_session: AsyncSession, monkeypatch) -> None:
     """Empty bot token → TG channel skipped even if chat_id present."""
     monkeypatch.setattr(settings, "uni_telegram_bot_token", "")
     user = await _mk_user(
@@ -343,7 +366,9 @@ async def test_dispatch_no_tg_when_token_empty(
         new=AsyncMock(return_value=True),
     ) as tg_mock:
         result = await dispatch_notification(
-            user, title="t", body_text="b",
+            user,
+            title="t",
+            body_text="b",
         )
 
     tg_mock.assert_not_called()

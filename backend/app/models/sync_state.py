@@ -24,9 +24,7 @@ class SyncState(Base):
         default=None,
     )
     last_synced_date: Mapped[date | None] = mapped_column(Date, default=None)
-    last_run_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     status: Mapped[str] = mapped_column(String(20), default="idle")
     error_message: Mapped[str | None] = mapped_column(String(500), default=None)
     records_synced: Mapped[int] = mapped_column(Integer, default=0)

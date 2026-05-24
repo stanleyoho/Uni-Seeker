@@ -8,6 +8,7 @@ public API and assert against captured requests.
 Time-sensitive tests (rate limiter, backoff) monkey-patch
 ``asyncio.sleep`` so the suite finishes in <1s.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -124,9 +125,7 @@ def _make_router_handler(
             parts = path.strip("/").split("/")
             accession = parts[-2]
             items = idx_map.get(accession)
-            return httpx.Response(
-                200, json=_filing_index_payload(accession, items=items)
-            )
+            return httpx.Response(200, json=_filing_index_payload(accession, items=items))
         return httpx.Response(404, text=f"unhandled mock path: {path}")
 
     return handler
@@ -335,9 +334,7 @@ async def test_list_filings_resolves_infotable_xml_via_index_json(
     - ``infotable.xml`` (ARK convention)
     - ``<digits>.xml`` (Berkshire convention, accession-derived)
     """
-    monkeypatch.setattr(
-        "app.modules.institutional.edgar_client.asyncio.sleep", _no_sleep
-    )
+    monkeypatch.setattr("app.modules.institutional.edgar_client.asyncio.sleep", _no_sleep)
 
     # The first 4 13F accessions in the submissions fixture:
     # 0001234567-25-000001 (period 2025-12-31) → infotable.xml
@@ -358,9 +355,7 @@ async def test_list_filings_resolves_infotable_xml_via_index_json(
             {"name": "primary_doc.xml", "type": "text.gif"},
         ],
     }
-    transport = httpx.MockTransport(
-        _make_router_handler(index_items=index_items)
-    )
+    transport = httpx.MockTransport(_make_router_handler(index_items=index_items))
     client = EdgarClient(user_agent="Uni-Seeker contact@example.com")
     async with client:
         assert client._client is not None
@@ -401,9 +396,7 @@ async def test_list_filings_returns_none_when_infotable_not_in_index(
     must surface with ``raw_xml_url=None`` (the service layer will skip
     it). We must NOT silently fall back to ``primary_doc.xml``.
     """
-    monkeypatch.setattr(
-        "app.modules.institutional.edgar_client.asyncio.sleep", _no_sleep
-    )
+    monkeypatch.setattr("app.modules.institutional.edgar_client.asyncio.sleep", _no_sleep)
 
     # All filings get a degenerate index with only cover + non-XML files.
     degenerate_items = [
@@ -418,9 +411,7 @@ async def test_list_filings_returns_none_when_infotable_not_in_index(
         "000123456723000040",
     ]
     index_items = dict.fromkeys(accessions, degenerate_items)
-    transport = httpx.MockTransport(
-        _make_router_handler(index_items=index_items)
-    )
+    transport = httpx.MockTransport(_make_router_handler(index_items=index_items))
     client = EdgarClient(user_agent="Uni-Seeker contact@example.com")
     async with client:
         assert client._client is not None

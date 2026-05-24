@@ -4,6 +4,7 @@ Spec: docs/superpowers/plans/2026-05-22-institutional-13f-tracking-design.md
 §5.3 + §5.4 (diff). Access control: every read is gated on subscription
 status by the service (raises `F13FilerNotFound` when not subscribed).
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -32,9 +33,7 @@ from app.services.institutional import (
     F13FilingService,
 )
 
-router = APIRouter(
-    prefix="/filers/{filer_id}", tags=["institutional.filings"]
-)
+router = APIRouter(prefix="/filers/{filer_id}", tags=["institutional.filings"])
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 UserDep = Annotated[object, Depends(require_auth)]
@@ -60,9 +59,7 @@ async def list_filings(
     """
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
-        filings = await svc.list_filings_for_filer(
-            filer_id, limit=limit, offset=offset
-        )
+        filings = await svc.list_filings_for_filer(filer_id, limit=limit, offset=offset)
     except F13FilerNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -88,9 +85,7 @@ async def get_holdings(
     """Filing + holdings rows for one period."""
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
-        filing, holdings = await svc.get_holdings_at_period(
-            filer_id=filer_id, period=period
-        )
+        filing, holdings = await svc.get_holdings_at_period(filer_id=filer_id, period=period)
     except F13FilerNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,7 +205,5 @@ async def get_holding_history(
         filer_id=payload["filer_id"],
         cusip=payload["cusip"],
         symbol=payload["symbol"],
-        entries=[
-            F13HoldingHistoryEntry(**e) for e in payload["entries"]
-        ],
+        entries=[F13HoldingHistoryEntry(**e) for e in payload["entries"]],
     )

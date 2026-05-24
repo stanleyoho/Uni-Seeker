@@ -1,4 +1,5 @@
 """Trade Journal API — /api/v1/journal/"""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -48,6 +49,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 
 # ── Accounts ──────────────────────────────────────────────────────────────────
 
+
 @router.post("/accounts", response_model=AccountResponse, status_code=201)
 async def create_account(body: AccountCreate, db: DbDep) -> AccountResponse:
     account = TradeAccount(
@@ -75,13 +77,17 @@ async def get_account(account_id: int, db: DbDep) -> AccountDetailResponse:
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     positions_rows = (
-        await db.execute(
-            select(Position).where(
-                Position.account_id == account_id,
-                Position.is_closed.is_(False),
+        (
+            await db.execute(
+                select(Position).where(
+                    Position.account_id == account_id,
+                    Position.is_closed.is_(False),
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return AccountDetailResponse(
         account=AccountResponse.model_validate(account),
         positions=[PositionResponse.model_validate(p) for p in positions_rows],
@@ -89,6 +95,7 @@ async def get_account(account_id: int, db: DbDep) -> AccountDetailResponse:
 
 
 # ── Trades ────────────────────────────────────────────────────────────────────
+
 
 @router.post("/accounts/{account_id}/trades", response_model=TradeResponse, status_code=201)
 async def add_trade(account_id: int, body: TradeCreate, db: DbDep) -> TradeResponse:
@@ -120,9 +127,7 @@ async def add_trade(account_id: int, body: TradeCreate, db: DbDep) -> TradeRespo
             await apply_sell(db, trade, currency=account.currency)
         elif body.action == "SPLIT":
             if not body.split_ratio:
-                raise HTTPException(
-                    status_code=422, detail="split_ratio required for SPLIT action"
-                )
+                raise HTTPException(status_code=422, detail="split_ratio required for SPLIT action")
             await apply_split(db, trade, split_ratio=body.split_ratio)
         # DIVIDEND: recorded in trades only, no position change
     except InsufficientSharesError as e:
@@ -149,13 +154,16 @@ async def list_trades(
     total = (await db.execute(count_stmt)).scalar_one()
 
     rows = (
-        await db.execute(
-            base_stmt
-            .order_by(Trade.date.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
+        (
+            await db.execute(
+                base_stmt.order_by(Trade.date.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return TradeListResponse(
         total=total,
         items=[TradeResponse.model_validate(r) for r in rows],
@@ -163,6 +171,7 @@ async def list_trades(
 
 
 # ── Groups ────────────────────────────────────────────────────────────────────
+
 
 @router.post("/groups", response_model=GroupResponse, status_code=201)
 async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
@@ -182,7 +191,9 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
                 await db.execute(
                     select(TradeAccount.id).where(TradeAccount.id.in_(list(requested_ids)))
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         }
         missing = requested_ids - found_ids
         if missing:
@@ -192,11 +203,13 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
             )
 
     for member in body.members:
-        db.add(AccountGroupMember(
-            group_id=group.id,
-            account_id=member.account_id,
-            target_weight=member.target_weight,
-        ))
+        db.add(
+            AccountGroupMember(
+                group_id=group.id,
+                account_id=member.account_id,
+                target_weight=member.target_weight,
+            )
+        )
 
     await db.commit()
     await db.refresh(group)
@@ -219,10 +232,14 @@ async def get_group(group_id: int, db: DbDep) -> GroupResponse:
 
 async def _build_group_response(db: AsyncSession, group: AccountGroup) -> GroupResponse:
     members_rows = (
-        await db.execute(
-            select(AccountGroupMember).where(AccountGroupMember.group_id == group.id)
+        (
+            await db.execute(
+                select(AccountGroupMember).where(AccountGroupMember.group_id == group.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     if not members_rows:
         return GroupResponse(
@@ -238,10 +255,10 @@ async def _build_group_response(db: AsyncSession, group: AccountGroup) -> GroupR
     accounts_map: dict[int, TradeAccount] = {
         acc.id: acc
         for acc in (
-            await db.execute(
-                select(TradeAccount).where(TradeAccount.id.in_(member_account_ids))
-            )
-        ).scalars().all()
+            await db.execute(select(TradeAccount).where(TradeAccount.id.in_(member_account_ids)))
+        )
+        .scalars()
+        .all()
     }
 
     members = []
@@ -249,11 +266,13 @@ async def _build_group_response(db: AsyncSession, group: AccountGroup) -> GroupR
         acc = accounts_map.get(m.account_id)
         if acc is None:
             continue  # account was deleted, skip orphaned member
-        members.append(GroupMemberResponse(
-            account_id=m.account_id,
-            target_weight=m.target_weight,
-            account=AccountResponse.model_validate(acc),
-        ))
+        members.append(
+            GroupMemberResponse(
+                account_id=m.account_id,
+                target_weight=m.target_weight,
+                account=AccountResponse.model_validate(acc),
+            )
+        )
     return GroupResponse(
         id=group.id,
         name=group.name,
@@ -265,7 +284,12 @@ async def _build_group_response(db: AsyncSession, group: AccountGroup) -> GroupR
 
 # ── Allocation Rules ──────────────────────────────────────────────────────────
 
-@router.post("/accounts/{account_id}/allocation", response_model=list[AllocationRuleResponse], status_code=201)
+
+@router.post(
+    "/accounts/{account_id}/allocation",
+    response_model=list[AllocationRuleResponse],
+    status_code=201,
+)
 async def set_account_allocation(
     account_id: int,
     rules: list[AllocationRuleCreate],
@@ -290,27 +314,30 @@ async def set_account_allocation(
             existing.upper_threshold = rule_in.upper_threshold
             existing.is_active = rule_in.is_active
         else:
-            db.add(AllocationRule(
-                account_id=account_id,
-                group_id=None,
-                symbol=rule_in.symbol,
-                target_weight=rule_in.target_weight,
-                lower_threshold=rule_in.lower_threshold,
-                upper_threshold=rule_in.upper_threshold,
-                is_active=rule_in.is_active,
-            ))
+            db.add(
+                AllocationRule(
+                    account_id=account_id,
+                    group_id=None,
+                    symbol=rule_in.symbol,
+                    target_weight=rule_in.target_weight,
+                    lower_threshold=rule_in.lower_threshold,
+                    upper_threshold=rule_in.upper_threshold,
+                    is_active=rule_in.is_active,
+                )
+            )
 
     await db.commit()
 
     rows = (
-        await db.execute(
-            select(AllocationRule).where(AllocationRule.account_id == account_id)
-        )
-    ).scalars().all()
+        (await db.execute(select(AllocationRule).where(AllocationRule.account_id == account_id)))
+        .scalars()
+        .all()
+    )
     return [AllocationRuleResponse.model_validate(r) for r in rows]
 
 
 # ── Rebalance Alerts ──────────────────────────────────────────────────────────
+
 
 @router.get("/alerts", response_model=AlertsResponse)
 async def get_alerts(db: DbDep) -> AlertsResponse:
@@ -324,24 +351,32 @@ async def get_alerts(db: DbDep) -> AlertsResponse:
     accounts = (await db.execute(select(TradeAccount))).scalars().all()
     for account in accounts:
         rules_rows = (
-            await db.execute(
-                select(AllocationRule).where(
-                    AllocationRule.account_id == account.id,
-                    AllocationRule.is_active.is_(True),
+            (
+                await db.execute(
+                    select(AllocationRule).where(
+                        AllocationRule.account_id == account.id,
+                        AllocationRule.is_active.is_(True),
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not rules_rows:
             continue
 
         positions_rows = (
-            await db.execute(
-                select(Position).where(
-                    Position.account_id == account.id,
-                    Position.is_closed.is_(False),
+            (
+                await db.execute(
+                    select(Position).where(
+                        Position.account_id == account.id,
+                        Position.is_closed.is_(False),
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         pos_data = [
             PositionData(
@@ -350,9 +385,7 @@ async def get_alerts(db: DbDep) -> AlertsResponse:
             )
             for p in positions_rows
         ]
-        total_value = sum(
-            (p.market_value for p in pos_data), Decimal("0")
-        )
+        total_value = sum((p.market_value for p in pos_data), Decimal("0"))
 
         rule_data = [
             AllocationRuleData(
@@ -370,15 +403,17 @@ async def get_alerts(db: DbDep) -> AlertsResponse:
             total_value=total_value,
         )
         for a in raw_alerts:
-            all_alerts.append(RebalanceAlert(
-                scope="account",
-                scope_id=account.id,
-                scope_name=account.name,
-                symbol=a.symbol,
-                current_weight=a.current_weight,
-                target_weight=a.target_weight,
-                deviation=a.deviation,
-                direction=a.direction,
-            ))
+            all_alerts.append(
+                RebalanceAlert(
+                    scope="account",
+                    scope_id=account.id,
+                    scope_name=account.name,
+                    symbol=a.symbol,
+                    current_weight=a.current_weight,
+                    target_weight=a.target_weight,
+                    deviation=a.deviation,
+                    direction=a.direction,
+                )
+            )
 
     return AlertsResponse(alerts=all_alerts)

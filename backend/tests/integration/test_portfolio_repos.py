@@ -13,6 +13,7 @@ users / accounts to verify structural user isolation: a second user
 must not see or mutate the first user's data even though both rows
 exist in the same DB.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
@@ -54,9 +55,7 @@ async def _mk_user(
     return u
 
 
-async def _mk_stock(
-    db: AsyncSession, symbol: str, market: Market = Market.TW_TWSE
-) -> Stock:
+async def _mk_stock(db: AsyncSession, symbol: str, market: Market = Market.TW_TWSE) -> Stock:
     s = Stock(symbol=symbol, name=symbol, market=market)
     db.add(s)
     await db.commit()
@@ -123,9 +122,7 @@ async def test_account_repo_update_persists_fields(
     user = await _mk_user(db_session, "b@x.com", "b")
     repo = PortfolioAccountRepo(db_session)
 
-    acc = await repo.create(
-        user_id=user.id, name="old", market=Market.TW_TWSE
-    )
+    acc = await repo.create(user_id=user.id, name="old", market=Market.TW_TWSE)
     await db_session.commit()
 
     updated = await repo.update(
@@ -151,9 +148,7 @@ async def test_account_repo_delete_cascades(db_session: AsyncSession) -> None:
     repo_t = PortfolioTradeRepo(db_session)
     repo_p = PortfolioPositionRepo(db_session)
 
-    acc = await repo_a.create(
-        user_id=user.id, name="cascade", market=Market.TW_TWSE
-    )
+    acc = await repo_a.create(user_id=user.id, name="cascade", market=Market.TW_TWSE)
     await db_session.commit()
     await repo_t.create(
         account_id=acc.id,
@@ -191,9 +186,7 @@ async def test_account_repo_count_by_user(db_session: AsyncSession) -> None:
     assert await repo.count_by_user(user.id) == 0
 
     for n in range(3):
-        await repo.create(
-            user_id=user.id, name=f"a{n}", market=Market.TW_TWSE
-        )
+        await repo.create(user_id=user.id, name=f"a{n}", market=Market.TW_TWSE)
     await db_session.commit()
 
     assert await repo.count_by_user(user.id) == 3
@@ -205,9 +198,7 @@ async def test_account_repo_user_isolation(db_session: AsyncSession) -> None:
     user_b = await _mk_user(db_session, "ub@x.com", "ub")
     repo = PortfolioAccountRepo(db_session)
 
-    acc_a = await repo.create(
-        user_id=user_a.id, name="A's", market=Market.TW_TWSE
-    )
+    acc_a = await repo.create(user_id=user_a.id, name="A's", market=Market.TW_TWSE)
     await db_session.commit()
 
     # get_by_id with wrong user_id → None
@@ -305,9 +296,7 @@ async def test_trade_repo_list_by_account_orders_and_isolates(
     acc = await _mk_account(db_session, user_a.id, name="acc1")
     repo = PortfolioTradeRepo(db_session)
 
-    for i, d in enumerate(
-        [date(2026, 5, 1), date(2026, 5, 3), date(2026, 5, 2)]
-    ):
+    for i, d in enumerate([date(2026, 5, 1), date(2026, 5, 3), date(2026, 5, 2)]):
         await repo.create(
             account_id=acc.id,
             user_id=user_a.id,
@@ -340,9 +329,7 @@ async def test_trade_repo_count_this_month_boundary(
     repo = PortfolioTradeRepo(db_session)
 
     now = datetime.now(UTC)
-    month_start = now.replace(
-        day=1, hour=0, minute=0, second=0, microsecond=0
-    ).date()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
     prev_month_day = month_start - timedelta(days=1)
 
     # 2 trades this month, 1 in previous month
@@ -380,9 +367,7 @@ async def test_trade_repo_update(db_session: AsyncSession) -> None:
     await db_session.commit()
     assert trade is not None
 
-    updated = await repo.update(
-        trade.id, user_id=user.id, price=Decimal("120"), note="bumped"
-    )
+    updated = await repo.update(trade.id, user_id=user.id, price=Decimal("120"), note="bumped")
     await db_session.commit()
     assert updated is not None
     assert updated.price == Decimal("120")
@@ -408,9 +393,7 @@ async def test_trade_repo_delete_isolates(db_session: AsyncSession) -> None:
     await db_session.commit()
     assert trade is not None
 
-    assert (
-        await repo.delete(trade.id, user_id=user_b.id) is False
-    )  # cross-user blocked
+    assert await repo.delete(trade.id, user_id=user_b.id) is False  # cross-user blocked
     assert await repo.get_by_id(trade.id, user_id=user_a.id) is not None
 
     assert await repo.delete(trade.id, user_id=user_a.id) is True
@@ -458,9 +441,7 @@ async def test_lot_repo_create_and_list_open_fifo(
 
     # Make 3 sequential BUY trades → 3 lots
     lots: list[PortfolioLot] = []
-    for i, (q, p) in enumerate(
-        [(Decimal("10"), 100), (Decimal("20"), 110), (Decimal("15"), 120)]
-    ):
+    for i, (q, p) in enumerate([(Decimal("10"), 100), (Decimal("20"), 110), (Decimal("15"), 120)]):
         t = await _mk_buy_trade(
             db_session,
             acc.id,
@@ -554,9 +535,7 @@ async def test_lot_repo_delete_by_trade(db_session: AsyncSession) -> None:
     acc = await _mk_account(db_session, user.id, name="delete")
     lot_repo = PortfolioLotRepo(db_session)
 
-    t = await _mk_buy_trade(
-        db_session, acc.id, user.id, qty=Decimal("10")
-    )
+    t = await _mk_buy_trade(db_session, acc.id, user.id, qty=Decimal("10"))
     await lot_repo.create(
         trade_id=t.id,
         account_id=acc.id,
@@ -667,11 +646,7 @@ async def test_position_repo_count_by_user(db_session: AsyncSession) -> None:
     repo = PortfolioPositionRepo(db_session)
 
     for sym in ["2330", "2454", "AAPL"]:
-        mkt = (
-            Market.US_NASDAQ
-            if sym == "AAPL"
-            else Market.TW_TWSE
-        )
+        mkt = Market.US_NASDAQ if sym == "AAPL" else Market.TW_TWSE
         await repo.upsert(
             account_id=acc.id,
             symbol=sym,

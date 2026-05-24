@@ -76,16 +76,12 @@ async def read_tw_financials(symbol: str, db: AsyncSession) -> FinancialData | N
     Returns None if no data is found (caller should fall back to live fetch).
     """
     # Resolve stock_id
-    stock_q = await db.execute(
-        select(Stock).where(Stock.symbol == symbol).limit(1)
-    )
+    stock_q = await db.execute(select(Stock).where(Stock.symbol == symbol).limit(1))
     stock = stock_q.scalar_one_or_none()
 
     # Also try with .TW suffix (some stocks stored as "2330.TW")
     if stock is None:
-        stock_q = await db.execute(
-            select(Stock).where(Stock.symbol == f"{symbol}.TW").limit(1)
-        )
+        stock_q = await db.execute(select(Stock).where(Stock.symbol == f"{symbol}.TW").limit(1))
         stock = stock_q.scalar_one_or_none()
 
     if stock is None:

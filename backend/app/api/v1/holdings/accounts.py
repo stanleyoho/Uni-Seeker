@@ -5,6 +5,7 @@ line). Endpoints stay thin: instantiate `PortfolioAccountService`,
 translate domain exceptions to HTTP status codes via
 `app.api.v1.holdings._detail`.
 """
+
 from __future__ import annotations
 
 from typing import Annotated

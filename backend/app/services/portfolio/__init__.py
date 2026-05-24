@@ -19,6 +19,7 @@ Tier enforcement (spec §9):
   that even a programmer who forgets the `Depends(...)` cannot create
   data over a tier quota.
 """
+
 from app.services.portfolio.account_service import PortfolioAccountService
 from app.services.portfolio.analytics_service import AnalyticsService
 from app.services.portfolio.dividend_service import (

@@ -5,6 +5,7 @@ from decimal import Decimal
 @dataclass(frozen=True)
 class PEPercentile:
     """PE ratio position in historical range."""
+
     current_pe: float
     percentile: float  # 0.0 - 1.0 (0 = lowest in history, 1 = highest)
     min_pe: float
@@ -16,6 +17,7 @@ class PEPercentile:
 @dataclass(frozen=True)
 class MADeviation:
     """Price deviation from moving average."""
+
     ma_value: float
     current_price: float
     deviation_pct: float  # (price - MA) / MA * 100, negative = below MA
@@ -25,6 +27,7 @@ class MADeviation:
 @dataclass(frozen=True)
 class PEGRatio:
     """Price/Earnings to Growth ratio."""
+
     pe: float
     earnings_growth: float  # annual EPS growth %
     peg: float  # PE / growth. < 1 = undervalued

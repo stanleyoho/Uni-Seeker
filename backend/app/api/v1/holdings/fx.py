@@ -9,6 +9,7 @@ Endpoint behaviour:
   - 400 when base/quote are unsupported.
   - 503 when no rate could be obtained (cache miss + fetcher failure).
 """
+
 from __future__ import annotations
 
 from datetime import date

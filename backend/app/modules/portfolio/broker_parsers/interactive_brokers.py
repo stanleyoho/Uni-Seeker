@@ -31,6 +31,7 @@ Real-format caveat: this adapter is built from spec — Stanley should
 verify against an actual IB Flex export before locking down the
 detection heuristic.
 """
+
 from __future__ import annotations
 
 import csv

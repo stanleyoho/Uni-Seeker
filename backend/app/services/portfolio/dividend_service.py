@@ -33,6 +33,7 @@ returning. Caller (API layer) commits or rolls back. A partial failure
 within a single call leaves the session in a state the caller will
 choose to roll back — see `PortfolioTradeService` for the same pattern.
 """
+
 from __future__ import annotations
 
 from datetime import date as date_type
@@ -109,24 +110,14 @@ class PortfolioDividendService:
             raise TierFeatureUnavailable(feature="dividends")
 
     async def _require_owned_account(self, account_id: int) -> None:
-        account = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
-    async def _require_owned_dividend(
-        self, dividend_id: int
-    ) -> PortfolioDividend:
-        row = await self._dividend_repo.get_by_id(
-            dividend_id, user_id=self._user.id
-        )
+    async def _require_owned_dividend(self, dividend_id: int) -> PortfolioDividend:
+        row = await self._dividend_repo.get_by_id(dividend_id, user_id=self._user.id)
         if row is None:
-            raise PortfolioDividendNotFound(
-                f"dividend {dividend_id} not found or not owned"
-            )
+            raise PortfolioDividendNotFound(f"dividend {dividend_id} not found or not owned")
         return row
 
     # ── public API ─────────────────────────────────────────────────────
@@ -178,19 +169,13 @@ class PortfolioDividendService:
                 f"expected one of {sorted(_VALID_DIVIDEND_TYPES)}"
             )
         if quantity_at_record <= Decimal("0"):
-            raise ValueError(
-                f"quantity_at_record must be positive, got {quantity_at_record}"
-            )
+            raise ValueError(f"quantity_at_record must be positive, got {quantity_at_record}")
         if dividend_type == _CASH:
             if amount_per_share is None or amount_per_share <= Decimal("0"):
-                raise ValueError(
-                    "amount_per_share required and > 0 for CASH dividend"
-                )
+                raise ValueError("amount_per_share required and > 0 for CASH dividend")
         else:  # STOCK
             if ratio is None or ratio <= Decimal("0"):
-                raise ValueError(
-                    "ratio required and > 0 for STOCK dividend"
-                )
+                raise ValueError("ratio required and > 0 for STOCK dividend")
 
         # Guards -----------------------------------------------------------
         self._assert_dividends_feature()
@@ -221,9 +206,7 @@ class PortfolioDividendService:
             note=note,
         )
 
-    async def list_dividends(
-        self, account_id: int | None = None
-    ) -> list[PortfolioDividend]:
+    async def list_dividends(self, account_id: int | None = None) -> list[PortfolioDividend]:
         """List dividends scoped to the user.
 
         When `account_id` is given, the account is verified to belong to
@@ -233,9 +216,7 @@ class PortfolioDividendService:
         """
         if account_id is None:
             return await self._dividend_repo.list_by_user(self._user.id)
-        owned = await self._account_repo.get_by_id(
-            account_id, user_id=self._user.id
-        )
+        owned = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if owned is None:
             return []
         return await self._dividend_repo.list_by_account(
@@ -246,9 +227,7 @@ class PortfolioDividendService:
         """Fetch one owned dividend or raise `PortfolioDividendNotFound`."""
         return await self._require_owned_dividend(dividend_id)
 
-    async def update_dividend(
-        self, dividend_id: int, **fields: Any
-    ) -> PortfolioDividend:
+    async def update_dividend(self, dividend_id: int, **fields: Any) -> PortfolioDividend:
         """PATCH a dividend; only `note` / `pay_date` / `withholding_tax`
         may change. Any other key surfaced via `fields` raises
         `ValueError` so the API layer can return 422.
@@ -274,13 +253,9 @@ class PortfolioDividendService:
             "pay_date": existing.pay_date.isoformat() if existing.pay_date else None,
             "withholding_tax": str(existing.withholding_tax),
         }
-        updated = await self._dividend_repo.update(
-            dividend_id, user_id=self._user.id, **fields
-        )
+        updated = await self._dividend_repo.update(dividend_id, user_id=self._user.id, **fields)
         if updated is None:  # pragma: no cover — race with delete
-            raise PortfolioDividendNotFound(
-                f"dividend {dividend_id} not found or not owned"
-            )
+            raise PortfolioDividendNotFound(f"dividend {dividend_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_dividend_updated",
@@ -290,9 +265,7 @@ class PortfolioDividendService:
             before_state=before,
             after_state={
                 "note": updated.note,
-                "pay_date": updated.pay_date.isoformat()
-                if updated.pay_date
-                else None,
+                "pay_date": updated.pay_date.isoformat() if updated.pay_date else None,
                 "withholding_tax": str(updated.withholding_tax),
             },
         )
@@ -311,13 +284,9 @@ class PortfolioDividendService:
             "dividend_type": existing.dividend_type,
             "ex_dividend_date": existing.ex_dividend_date.isoformat(),
         }
-        deleted = await self._dividend_repo.delete(
-            dividend_id, user_id=self._user.id
-        )
+        deleted = await self._dividend_repo.delete(dividend_id, user_id=self._user.id)
         if not deleted:  # pragma: no cover
-            raise PortfolioDividendNotFound(
-                f"dividend {dividend_id} not found or not owned"
-            )
+            raise PortfolioDividendNotFound(f"dividend {dividend_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_dividend_deleted",
@@ -378,9 +347,7 @@ class PortfolioDividendService:
             note=note,
         )
         if dividend is None:  # pragma: no cover — guarded above
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         await self._accrue_realized_pnl(
             account_id=account_id,
@@ -481,9 +448,7 @@ class PortfolioDividendService:
 
         # Build the dividend row's note. Preserve caller's note if any.
         ratio_note = f"STOCK dividend ratio={ratio}"
-        full_note = (
-            f"{note} | {ratio_note}" if note else ratio_note
-        )
+        full_note = f"{note} | {ratio_note}" if note else ratio_note
 
         dividend = await self._dividend_repo.create(
             account_id=account_id,
@@ -503,9 +468,7 @@ class PortfolioDividendService:
             note=full_note,
         )
         if dividend is None:  # pragma: no cover — guarded above
-            raise PortfolioAccountNotFound(
-                f"account {account_id} not found or not owned"
-            )
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         # Re-derive position from scaled lots.
         await self._reupsert_position_from_lots(
@@ -547,9 +510,7 @@ class PortfolioDividendService:
         we still upsert a zero-qty row carrying the cash income so the
         portfolio summary correctly reflects realized cash.
         """
-        existing = await self._position_repo.get(
-            account_id, symbol, market=market
-        )
+        existing = await self._position_repo.get(account_id, symbol, market=market)
         prior_realized = (
             existing.realized_pnl
             if existing is not None and existing.realized_pnl is not None
@@ -606,16 +567,10 @@ class PortfolioDividendService:
             )
             for row in open_lots_orm
         ]
-        total_qty = sum(
-            (lot.remaining_qty for lot in domain_lots), Decimal("0")
-        )
+        total_qty = sum((lot.remaining_qty for lot in domain_lots), Decimal("0"))
         avg = average_cost(domain_lots)
-        total_cost = (
-            avg * total_qty if total_qty > Decimal("0") else Decimal("0")
-        )
-        existing = await self._position_repo.get(
-            account_id, symbol, market=market
-        )
+        total_cost = avg * total_qty if total_qty > Decimal("0") else Decimal("0")
+        existing = await self._position_repo.get(account_id, symbol, market=market)
         prior_realized = (
             existing.realized_pnl
             if existing is not None and existing.realized_pnl is not None

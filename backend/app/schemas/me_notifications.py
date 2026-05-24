@@ -9,6 +9,7 @@ the columns live on ``users`` (``telegram_chat_id`` + ``notify_via_email``).
 LINE / Webhook will follow the same additive pattern when those channels
 actually ship.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

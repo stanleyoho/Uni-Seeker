@@ -21,7 +21,10 @@ def test_post_market_summary_format() -> None:
         {"strategy": "超跌反彈", "symbol": "2412.TW", "name": "中華電", "detail": "RSI: 28.5"},
     ]
     msg = format_post_market_summary(
-        market="台股", date="2026-04-22", holdings=holdings, screener_hits=hits,
+        market="台股",
+        date="2026-04-22",
+        holdings=holdings,
+        screener_hits=hits,
     )
     assert "盤後總結" in msg
     assert "台積電" in msg
@@ -31,7 +34,10 @@ def test_post_market_summary_format() -> None:
 
 def test_screener_hit_format() -> None:
     msg = format_screener_hit(
-        strategy="低基期", symbol="3034.TW", name="聯詠", detail="PE: 11.2, 產業均: 18.5",
+        strategy="低基期",
+        symbol="3034.TW",
+        name="聯詠",
+        detail="PE: 11.2, 產業均: 18.5",
     )
     assert "低基期" in msg
     assert "3034.TW" in msg

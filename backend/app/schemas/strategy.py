@@ -13,6 +13,9 @@ class StrategyListResponse(BaseModel):
 
 class CompositeStrategyRequest(BaseModel):
     """Request to build a composite strategy for backtest."""
+
     strategies: list[str]  # e.g. ["rsi_oversold", "bias_reversal"]
     mode: str = "majority"  # "all", "any", "majority"
-    params: dict[str, dict[str, object]] = {}  # per-strategy params, e.g. {"rsi_oversold": {"period": 10}}
+    params: dict[
+        str, dict[str, object]
+    ] = {}  # per-strategy params, e.g. {"rsi_oversold": {"period": 10}}

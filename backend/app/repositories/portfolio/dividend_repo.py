@@ -7,6 +7,7 @@ method that takes `user_id` enforces it via JOIN to `portfolio_accounts`,
 mirroring the `PortfolioTradeRepo` pattern. Per §5.3 + §11 R3, no
 business logic (cost-basis effect, tier check) lives here.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -52,9 +53,7 @@ class PortfolioDividendRepo:
         await self.db.refresh(dividend)
         return dividend
 
-    async def get_by_id(
-        self, dividend_id: int, user_id: int
-    ) -> PortfolioDividend | None:
+    async def get_by_id(self, dividend_id: int, user_id: int) -> PortfolioDividend | None:
         """Fetch dividend only if its parent account belongs to `user_id`."""
         result = await self.db.execute(
             select(PortfolioDividend)
@@ -142,9 +141,7 @@ class PortfolioDividendRepo:
         if not patch:
             return existing
         await self.db.execute(
-            update(PortfolioDividend)
-            .where(PortfolioDividend.id == dividend_id)
-            .values(**patch)
+            update(PortfolioDividend).where(PortfolioDividend.id == dividend_id).values(**patch)
         )
         await self.db.flush()
         return await self.get_by_id(dividend_id, user_id)
@@ -155,11 +152,7 @@ class PortfolioDividendRepo:
         existing = await self.get_by_id(dividend_id, user_id)
         if existing is None:
             return False
-        await self.db.execute(
-            delete(PortfolioDividend).where(
-                PortfolioDividend.id == dividend_id
-            )
-        )
+        await self.db.execute(delete(PortfolioDividend).where(PortfolioDividend.id == dividend_id))
         await self.db.flush()
         return True
 
@@ -168,9 +161,7 @@ class PortfolioDividendRepo:
         across the user's accounts — exposed for future tier quotas if
         we ever cap monthly dividend records."""
         now = datetime.now(UTC)
-        month_start = now.replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0
-        ).date()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
         result = await self.db.execute(
             select(func.count(PortfolioDividend.id))
             .join(

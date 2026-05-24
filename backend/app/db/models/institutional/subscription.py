@@ -10,6 +10,7 @@ twice. Cascade deletes from both sides: deleting the user removes their
 subs; deleting a filer (never happens via UI but migration-safe) removes
 all dangling subs.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -36,7 +37,8 @@ class F13UserSubscription(Base):
     __tablename__ = "f13_user_subscriptions"
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "filer_id",
+            "user_id",
+            "filer_id",
             name="uq_f13_user_subscriptions_user_filer",
         ),
         Index("ix_f13_user_subscriptions_user_id", "user_id"),
@@ -58,14 +60,19 @@ class F13UserSubscription(Base):
 
     # defaulted / nullable fields after
     notify_on_new_filing: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False,
+        Boolean,
+        default=True,
+        nullable=False,
     )
     subscribed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )
 
     filer: Mapped[F13Filer] = relationship(
-        back_populates="subscriptions", init=False,
+        back_populates="subscriptions",
+        init=False,
     )
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic

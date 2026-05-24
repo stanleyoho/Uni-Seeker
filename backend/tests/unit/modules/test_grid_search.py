@@ -22,8 +22,32 @@ def test_config_empty_grid():
 
 def test_composite_scores_filters_low_trades():
     items = [
-        GridSearchResultItem(name="few", params={}, total_return=100, annualized_return=50, max_drawdown=-10, win_rate=80, total_trades=2, profit_factor=5, sharpe=1.5, wins=2, losses=0),
-        GridSearchResultItem(name="many", params={}, total_return=50, annualized_return=30, max_drawdown=-15, win_rate=60, total_trades=20, profit_factor=2, sharpe=0.8, wins=12, losses=8),
+        GridSearchResultItem(
+            name="few",
+            params={},
+            total_return=100,
+            annualized_return=50,
+            max_drawdown=-10,
+            win_rate=80,
+            total_trades=2,
+            profit_factor=5,
+            sharpe=1.5,
+            wins=2,
+            losses=0,
+        ),
+        GridSearchResultItem(
+            name="many",
+            params={},
+            total_return=50,
+            annualized_return=30,
+            max_drawdown=-15,
+            win_rate=60,
+            total_trades=20,
+            profit_factor=2,
+            sharpe=0.8,
+            wins=12,
+            losses=8,
+        ),
     ]
     scored = compute_composite_scores(items, min_trades=6, min_win_rate=50)
     assert len(scored) == 1

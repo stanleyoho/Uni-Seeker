@@ -8,6 +8,7 @@ Structural user isolation: every read method that touches an audit row
 takes a non-optional ``user_id`` and filters by it directly. There is
 no method here that can return one user's row to another user.
 """
+
 from app.repositories.audit.audit_repo import AuditLogRepo
 
 __all__ = ["AuditLogRepo"]

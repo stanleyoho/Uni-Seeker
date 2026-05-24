@@ -22,6 +22,7 @@ Edge-case contract:
   - missing rate for a currency  → FxRateMissing (KeyError subclass)
   - amount currency == base      → no rate lookup needed, added as-is
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

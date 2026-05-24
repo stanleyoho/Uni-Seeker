@@ -28,6 +28,7 @@ Threshold sign convention
 Always positive for DROP/RISE; PNL_PCT_BELOW accepts negative inputs
 to encode stop-loss-style "fire if I'm down more than 10%".
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -79,9 +80,7 @@ class EvaluationContext:
     """
 
     portfolio_value: Decimal
-    positions: Mapping[tuple[str, str], PositionSnapshot] = field(
-        default_factory=dict
-    )
+    positions: Mapping[tuple[str, str], PositionSnapshot] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -118,11 +117,7 @@ def evaluate_rule(
     """
     # Normalise inputs so string-based callers (e.g. ORM rows) work too.
     rt = RuleType(rule_type) if isinstance(rule_type, str) else rule_type
-    tt = (
-        ThresholdType(threshold_type)
-        if isinstance(threshold_type, str)
-        else threshold_type
-    )
+    tt = ThresholdType(threshold_type) if isinstance(threshold_type, str) else threshold_type
 
     # Portfolio-wide rules ──────────────────────────────────────────────
     if rt is RuleType.PORTFOLIO_VALUE_ABOVE:
@@ -166,15 +161,11 @@ def evaluate_rule(
 
     # Position-scoped rules ────────────────────────────────────────────
     if symbol is None or market is None:
-        return _no_trigger(
-            "position rules require symbol + market", threshold
-        )
+        return _no_trigger("position rules require symbol + market", threshold)
 
     snapshot = context.positions.get((symbol, market))
     if snapshot is None:
-        return _no_trigger(
-            f"no snapshot for {symbol}/{market}", threshold
-        )
+        return _no_trigger(f"no snapshot for {symbol}/{market}", threshold)
 
     if rt is RuleType.POSITION_PRICE_DROP:
         return _eval_price_drop(symbol, market, threshold, tt, snapshot)
@@ -200,27 +191,21 @@ def _eval_price_drop(
     snap: PositionSnapshot,
 ) -> EvaluationResult:
     if snap.last_price is None or snap.prev_close is None:
-        return _no_trigger(
-            f"{symbol}/{market}: missing quote", threshold
-        )
+        return _no_trigger(f"{symbol}/{market}: missing quote", threshold)
     if tt is ThresholdType.PCT:
         # Drop percent expressed as a positive number; convert to a ratio
         # against prev_close to compare absolute prices.
-        bound = snap.prev_close * (
-            _ONE_HUNDRED - threshold
-        ) / _ONE_HUNDRED
+        bound = snap.prev_close * (_ONE_HUNDRED - threshold) / _ONE_HUNDRED
     else:
         bound = snap.prev_close - threshold
     triggered = snap.last_price <= bound
     pct_drop = (
-        ((snap.prev_close - snap.last_price) / snap.prev_close)
-        * _ONE_HUNDRED
+        ((snap.prev_close - snap.last_price) / snap.prev_close) * _ONE_HUNDRED
         if snap.prev_close != _ZERO
         else _ZERO
     )
     msg = (
-        f"{symbol} dropped {pct_drop:.2f}% "
-        f"({snap.last_price} from {snap.prev_close})"
+        f"{symbol} dropped {pct_drop:.2f}% ({snap.last_price} from {snap.prev_close})"
         if triggered
         else f"{symbol} drop {pct_drop:.2f}% below threshold"
     )
@@ -240,25 +225,19 @@ def _eval_price_rise(
     snap: PositionSnapshot,
 ) -> EvaluationResult:
     if snap.last_price is None or snap.prev_close is None:
-        return _no_trigger(
-            f"{symbol}/{market}: missing quote", threshold
-        )
+        return _no_trigger(f"{symbol}/{market}: missing quote", threshold)
     if tt is ThresholdType.PCT:
-        bound = snap.prev_close * (
-            _ONE_HUNDRED + threshold
-        ) / _ONE_HUNDRED
+        bound = snap.prev_close * (_ONE_HUNDRED + threshold) / _ONE_HUNDRED
     else:
         bound = snap.prev_close + threshold
     triggered = snap.last_price >= bound
     pct_rise = (
-        ((snap.last_price - snap.prev_close) / snap.prev_close)
-        * _ONE_HUNDRED
+        ((snap.last_price - snap.prev_close) / snap.prev_close) * _ONE_HUNDRED
         if snap.prev_close != _ZERO
         else _ZERO
     )
     msg = (
-        f"{symbol} rose {pct_rise:.2f}% "
-        f"({snap.last_price} from {snap.prev_close})"
+        f"{symbol} rose {pct_rise:.2f}% ({snap.last_price} from {snap.prev_close})"
         if triggered
         else f"{symbol} rise {pct_rise:.2f}% below threshold"
     )
@@ -279,13 +258,9 @@ def _eval_pnl_above(
 ) -> EvaluationResult:
     # PNL_PCT inherently a percentage — ABSOLUTE doesn't make sense.
     if tt is not ThresholdType.PCT:
-        return _no_trigger(
-            "pnl_pct rules require threshold_type=PCT", threshold
-        )
+        return _no_trigger("pnl_pct rules require threshold_type=PCT", threshold)
     if snap.unrealized_pnl_pct is None:
-        return _no_trigger(
-            f"{symbol}/{market}: no P&L data", threshold
-        )
+        return _no_trigger(f"{symbol}/{market}: no P&L data", threshold)
     actual = snap.unrealized_pnl_pct
     triggered = actual >= threshold
     return EvaluationResult(
@@ -308,13 +283,9 @@ def _eval_pnl_below(
     snap: PositionSnapshot,
 ) -> EvaluationResult:
     if tt is not ThresholdType.PCT:
-        return _no_trigger(
-            "pnl_pct rules require threshold_type=PCT", threshold
-        )
+        return _no_trigger("pnl_pct rules require threshold_type=PCT", threshold)
     if snap.unrealized_pnl_pct is None:
-        return _no_trigger(
-            f"{symbol}/{market}: no P&L data", threshold
-        )
+        return _no_trigger(f"{symbol}/{market}: no P&L data", threshold)
     actual = snap.unrealized_pnl_pct
     triggered = actual <= threshold
     return EvaluationResult(

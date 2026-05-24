@@ -128,11 +128,13 @@ class PriceUpdater:
             if p.symbol in seen_symbols:
                 continue
             seen_symbols.add(p.symbol)
-            stock_data.append({
-                "symbol": p.symbol,
-                "name": p.name or p.symbol,
-                "market": MARKET_MAP.get(p.market, Market.TW_TWSE),
-            })
+            stock_data.append(
+                {
+                    "symbol": p.symbol,
+                    "name": p.name or p.symbol,
+                    "market": MARKET_MAP.get(p.market, Market.TW_TWSE),
+                }
+            )
 
         for batch_start in range(0, len(stock_data), 500):
             batch = stock_data[batch_start : batch_start + 500]
@@ -163,7 +165,7 @@ class PriceUpdater:
                     error=str(e),
                 )
                 if attempt < self._max_retries - 1 and self._retry_delay > 0:
-                    await asyncio.sleep(self._retry_delay * (2 ** attempt))
+                    await asyncio.sleep(self._retry_delay * (2**attempt))
 
         result.errors.append(f"{provider.market}: failed after {self._max_retries} retries")
         return []

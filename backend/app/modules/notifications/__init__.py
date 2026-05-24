@@ -18,6 +18,7 @@ Why a fresh ``app.modules.notifications`` package next to the legacy
 - Cross-repo (sports-prophet) reuse is explicitly out of scope —
   see CLAUDE.md and the design brief: separate token, separate code.
 """
+
 from app.modules.notifications.telegram_sender import send_telegram_message
 
 __all__ = ["send_telegram_message"]

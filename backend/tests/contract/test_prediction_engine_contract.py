@@ -19,6 +19,7 @@ silently breaking Uni-Seeker at runtime.
 Scope note: signatures *not* invoked by Uni-Seeker are intentionally NOT
 pinned — that would make this an upstream test, not a contract test.
 """
+
 from __future__ import annotations
 
 import inspect

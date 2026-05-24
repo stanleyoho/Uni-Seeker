@@ -29,7 +29,12 @@ async def get_valuation_estimates(
 
     # Fetch all estimates for this stock from the latest date available
     # 1. Find the latest date
-    date_stmt = select(PriceEstimate.date).where(PriceEstimate.stock_id == stock.id).order_by(PriceEstimate.date.desc()).limit(1)
+    date_stmt = (
+        select(PriceEstimate.date)
+        .where(PriceEstimate.stock_id == stock.id)
+        .order_by(PriceEstimate.date.desc())
+        .limit(1)
+    )
     date_res = await db.execute(date_stmt)
     latest_date = date_res.scalar_one_or_none()
 
@@ -51,5 +56,5 @@ async def get_valuation_estimates(
     return ValuationEstimatesResponse(
         symbol=symbol,
         estimates=[PriceEstimateBase.model_validate(e) for e in others],
-        latest_composite=PriceEstimateBase.model_validate(composite) if composite else None
+        latest_composite=PriceEstimateBase.model_validate(composite) if composite else None,
     )

@@ -36,6 +36,7 @@ def _enable_monetization(monkeypatch):
     """預設所有 tier_guard 測試在 monetization 啟用狀態下執行。
     需要驗證 toggle 關閉行為的測試會在 fixture 之後再 monkeypatch 覆寫。"""
     from app.config import settings
+
     monkeypatch.setattr(settings, "enable_monetization", True)
 
 
@@ -46,6 +47,7 @@ def _enable_monetization(monkeypatch):
 # 因此移除 @patch decorator 並保留 dep override。
 def test_free_user_accesses_free_endpoint():
     from app.auth import require_auth as real_auth
+
     app = _make_app(UserTier.FREE)
     app.dependency_overrides[real_auth] = lambda: _make_user(UserTier.FREE)
     with TestClient(app) as c:
@@ -56,6 +58,7 @@ def test_free_user_accesses_free_endpoint():
 def test_free_user_blocked_from_basic_endpoint():
     """Free user must get 403 when accessing Basic-required endpoint."""
     from app.auth import require_auth as real_auth
+
     app = _make_app(UserTier.BASIC)
     app.dependency_overrides[real_auth] = lambda: _make_user(UserTier.FREE)
     with TestClient(app) as c:
@@ -67,6 +70,7 @@ def test_free_user_blocked_from_basic_endpoint():
 def test_basic_user_blocked_from_pro_endpoint():
     """Basic user must get 403 when accessing Pro-required endpoint."""
     from app.auth import require_auth as real_auth
+
     app = _make_app(UserTier.PRO)
     app.dependency_overrides[real_auth] = lambda: _make_user(UserTier.BASIC)
     with TestClient(app) as c:
@@ -77,6 +81,7 @@ def test_basic_user_blocked_from_pro_endpoint():
 def test_pro_user_accesses_pro_endpoint():
     """Pro user must pass Pro-required endpoint."""
     from app.auth import require_auth as real_auth
+
     app = _make_app(UserTier.PRO)
     app.dependency_overrides[real_auth] = lambda: _make_user(UserTier.PRO)
     with TestClient(app) as c:
@@ -87,6 +92,7 @@ def test_pro_user_accesses_pro_endpoint():
 def test_pro_user_accesses_basic_endpoint():
     """Pro user must pass Basic-required endpoint (tier hierarchy)."""
     from app.auth import require_auth as real_auth
+
     app = _make_app(UserTier.BASIC)
     app.dependency_overrides[real_auth] = lambda: _make_user(UserTier.PRO)
     with TestClient(app) as c:

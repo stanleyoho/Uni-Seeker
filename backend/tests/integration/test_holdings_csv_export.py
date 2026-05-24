@@ -21,6 +21,7 @@ Conventions copied from ``test_holdings_dividends_api.py`` so reviewer
 cognitive load stays low (``_mk_user``, ``_auth``,
 ``_create_account_via_api``, ``_seed_buy``).
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -62,9 +63,7 @@ def _auth(user: User) -> dict[str, str]:
     return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
-async def _create_account_via_api(
-    client: AsyncClient, user: User, name: str = "Yuanta"
-) -> int:
+async def _create_account_via_api(client: AsyncClient, user: User, name: str = "Yuanta") -> int:
     r = await client.post(
         "/api/v1/holdings/accounts",
         json={"name": name, "market": "TW_TWSE", "broker": "Yuanta"},
@@ -96,9 +95,7 @@ async def _seed_buy(
     }
     if note is not None:
         body["note"] = note
-    r = await client.post(
-        "/api/v1/holdings/trades", json=body, headers=_auth(user)
-    )
+    r = await client.post("/api/v1/holdings/trades", json=body, headers=_auth(user))
     assert r.status_code == 201, r.text
     return int(r.json()["id"])
 
@@ -196,9 +193,7 @@ async def test_export_trades_pro_user_200_returns_csv(
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
 
-    r = await client.get(
-        "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 200, r.text
     assert r.headers["content-type"].startswith("text/csv")
     assert "attachment" in r.headers["content-disposition"]
@@ -236,17 +231,13 @@ async def test_export_trades_free_user_403_feature_unavailable(
 
     with patch("app.services.portfolio.export_service.settings") as s:
         s.enable_monetization = True
-        r = await client.get(
-            "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-        )
+        r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 403, r.text
     assert r.json()["message"] == "feature_unavailable:tax_export"
 
 
 @pytest.mark.asyncio
-async def test_export_trades_basic_user_403(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_export_trades_basic_user_403(client: AsyncClient, db_session: AsyncSession) -> None:
     """BASIC tier also lacks tax_export (only PRO ships it). 403."""
     user = await _mk_user(db_session, "exp_t3@x.tw", tier=UserTier.BASIC)
     aid = await _create_account_via_api(client, user)
@@ -254,9 +245,7 @@ async def test_export_trades_basic_user_403(
 
     with patch("app.services.portfolio.export_service.settings") as s:
         s.enable_monetization = True
-        r = await client.get(
-            "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-        )
+        r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 403, r.text
     assert r.json()["message"] == "feature_unavailable:tax_export"
 
@@ -294,8 +283,7 @@ async def test_export_trades_filter_date_range(
     await _seed_buy(client, user, aid, symbol="C", trade_date="2026-06-20")
 
     r = await client.get(
-        "/api/v1/holdings/exports/trades.csv"
-        "?date_from=2026-05-01&date_to=2026-05-31",
+        "/api/v1/holdings/exports/trades.csv?date_from=2026-05-01&date_to=2026-05-31",
         headers=_auth(user),
     )
     assert r.status_code == 200
@@ -320,9 +308,7 @@ async def test_export_positions_includes_unrealized_pnl(
     await _seed_buy(client, user, aid, qty="100", price="500")
     await _seed_price_history(db_session, "2330", last_close="550", prev_close="540")
 
-    r = await client.get(
-        "/api/v1/holdings/exports/positions.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/positions.csv", headers=_auth(user))
     assert r.status_code == 200, r.text
     header, rows = _parse_csv(r.content)
     assert header == [
@@ -351,18 +337,14 @@ async def test_export_positions_includes_unrealized_pnl(
 
 
 @pytest.mark.asyncio
-async def test_export_dividends_csv_columns(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_export_dividends_csv_columns(client: AsyncClient, db_session: AsyncSession) -> None:
     """Header order is fixed + total_amount/net_amount are computed."""
     user = await _mk_user(db_session, "exp_d1@x.tw", tier=UserTier.PRO)
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
     await _seed_cash_dividend(client, user, aid)
 
-    r = await client.get(
-        "/api/v1/holdings/exports/dividends.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/dividends.csv", headers=_auth(user))
     assert r.status_code == 200, r.text
     header, rows = _parse_csv(r.content)
     assert header == [
@@ -394,18 +376,14 @@ async def test_export_dividends_csv_columns(
 
 
 @pytest.mark.asyncio
-async def test_export_summary_single_row(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_export_summary_single_row(client: AsyncClient, db_session: AsyncSession) -> None:
     """Summary CSV has exactly one data row + nine columns."""
     user = await _mk_user(db_session, "exp_s1@x.tw", tier=UserTier.PRO)
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid, qty="100", price="500")
     await _seed_price_history(db_session, "2330", last_close="550", prev_close="540")
 
-    r = await client.get(
-        "/api/v1/holdings/exports/summary.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/summary.csv", headers=_auth(user))
     assert r.status_code == 200, r.text
     header, rows = _parse_csv(r.content)
     assert header == [
@@ -432,18 +410,14 @@ async def test_export_summary_single_row(
 
 
 @pytest.mark.asyncio
-async def test_export_csv_has_bom_prefix(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_export_csv_has_bom_prefix(client: AsyncClient, db_session: AsyncSession) -> None:
     """Every export starts with the UTF-8 BOM bytes so Excel auto-detects
     encoding for any non-ASCII column (broker/note in Chinese)."""
     user = await _mk_user(db_session, "exp_b1@x.tw", tier=UserTier.PRO)
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)
 
-    r = await client.get(
-        "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 200
     # BOM in UTF-8 is exactly these three bytes.
     assert r.content.startswith(b"\xef\xbb\xbf")
@@ -461,9 +435,7 @@ async def test_export_csv_quotes_field_with_comma_in_note(
     note = 'long, "ROI" play'
     await _seed_buy(client, user, aid, note=note)
 
-    r = await client.get(
-        "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 200
     # Raw body still contains the escaped form...
     assert b'"long, ""ROI"" play"' in r.content
@@ -480,9 +452,7 @@ async def test_export_empty_data_returns_csv_with_header_only(
     the header — file is never zero-bytes."""
     user = await _mk_user(db_session, "exp_e1@x.tw", tier=UserTier.PRO)
 
-    r = await client.get(
-        "/api/v1/holdings/exports/trades.csv", headers=_auth(user)
-    )
+    r = await client.get("/api/v1/holdings/exports/trades.csv", headers=_auth(user))
     assert r.status_code == 200
     header, rows = _parse_csv(r.content)
     assert header[0] == "trade_date"

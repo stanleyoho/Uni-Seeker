@@ -27,7 +27,9 @@ class IndustryScreenResult:
 
 
 class IndustryScreener:
-    def compute_industry_averages(self, valuations: list[ValuationData]) -> dict[str, IndustryAverage]:
+    def compute_industry_averages(
+        self, valuations: list[ValuationData]
+    ) -> dict[str, IndustryAverage]:
         industry_data: dict[str, list[ValuationData]] = {}
         for v in valuations:
             if v.pe_ratio is not None and v.pe_ratio > 0:
@@ -45,12 +47,18 @@ class IndustryScreener:
             std_pe = statistics.stdev(pe_values) if len(pe_values) >= 2 else 0.0
 
             averages[industry] = IndustryAverage(
-                industry=industry, avg_pe=avg_pe, avg_pb=avg_pb,
-                avg_yield=avg_dy, std_pe=std_pe, count=len(stocks),
+                industry=industry,
+                avg_pe=avg_pe,
+                avg_pb=avg_pb,
+                avg_yield=avg_dy,
+                std_pe=std_pe,
+                count=len(stocks),
             )
         return averages
 
-    def find_undervalued(self, valuations: list[ValuationData], z_threshold: float = -1.0) -> list[IndustryScreenResult]:
+    def find_undervalued(
+        self, valuations: list[ValuationData], z_threshold: float = -1.0
+    ) -> list[IndustryScreenResult]:
         averages = self.compute_industry_averages(valuations)
         results: list[IndustryScreenResult] = []
 
@@ -66,11 +74,17 @@ class IndustryScreener:
             z_score = (float(v.pe_ratio) - float(avg.avg_pe)) / avg.std_pe
             if z_score <= z_threshold:
                 score = abs(z_score)
-                results.append(IndustryScreenResult(
-                    symbol=v.symbol, name=v.name, industry=v.industry,
-                    pe_ratio=v.pe_ratio, industry_avg_pe=avg.avg_pe,
-                    pe_z_score=round(z_score, 4), score=round(score, 4),
-                ))
+                results.append(
+                    IndustryScreenResult(
+                        symbol=v.symbol,
+                        name=v.name,
+                        industry=v.industry,
+                        pe_ratio=v.pe_ratio,
+                        industry_avg_pe=avg.avg_pe,
+                        pe_z_score=round(z_score, 4),
+                        score=round(score, 4),
+                    )
+                )
 
         results.sort(key=lambda r: r.score, reverse=True)
         return results

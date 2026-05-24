@@ -1,4 +1,5 @@
 """Integration tests for AlertRuleRepo."""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -119,9 +120,7 @@ async def test_update_fields(db_session: AsyncSession) -> None:
         threshold_type="ABSOLUTE",
     )
     await db_session.commit()
-    updated = await repo.update(
-        rule.id, user_id=user.id, name="renamed", status="PAUSED"
-    )
+    updated = await repo.update(rule.id, user_id=user.id, name="renamed", status="PAUSED")
     assert updated is not None
     assert updated.name == "renamed"
     assert updated.status == "PAUSED"

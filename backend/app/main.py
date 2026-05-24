@@ -76,9 +76,7 @@ def create_app() -> FastAPI:
     # Plan 8 T5: register Prometheus middleware BEFORE uvicorn enters
     # lifespan. starlette throws RuntimeError("Cannot add middleware
     # after an application has started") if this lives inside lifespan.
-    Instrumentator().instrument(app).expose(
-        app, endpoint="/metrics", include_in_schema=False
-    )
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
     allowed_origins = [
         "http://localhost:3000",

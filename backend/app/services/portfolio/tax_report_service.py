@@ -24,6 +24,7 @@ Anti-coupling (spec §11):
       pure-domain layer.
     * Service receives an `AsyncSession`; never opens its own.
 """
+
 from __future__ import annotations
 
 import csv
@@ -63,17 +64,17 @@ _BOM = "﻿"
 
 
 _FORM_8949_HEADER = [
-    "Description",       # `{quantity} {symbol} ({market})`
-    "Date Acquired",     # ISO-8601
-    "Date Sold",         # ISO-8601
-    "Proceeds",          # net of allocated SELL fee/tax
-    "Cost Basis",        # gross BUY cost + allocated BUY fee
-    "Code",              # IRS adjustment code (blank today)
-    "Adjustment",        # IRS adjustment amount (blank today)
-    "Gain/Loss",         # proceeds - cost_basis
-    "Term",              # SHORT / LONG — convenience column, not on the IRS form
+    "Description",  # `{quantity} {symbol} ({market})`
+    "Date Acquired",  # ISO-8601
+    "Date Sold",  # ISO-8601
+    "Proceeds",  # net of allocated SELL fee/tax
+    "Cost Basis",  # gross BUY cost + allocated BUY fee
+    "Code",  # IRS adjustment code (blank today)
+    "Adjustment",  # IRS adjustment amount (blank today)
+    "Gain/Loss",  # proceeds - cost_basis
+    "Term",  # SHORT / LONG — convenience column, not on the IRS form
     "Holding Period Days",  # convenience column for audit
-    "Wash Sale",         # placeholder (always "false")
+    "Wash Sale",  # placeholder (always "false")
 ]
 
 
@@ -222,9 +223,7 @@ class TaxReportService:
                 account_id=account_id, tax_year=tax_year
             )
         else:
-            matches, _ = await self.generate_form_8949(
-                account_id=account_id, tax_year=tax_year
-            )
+            matches, _ = await self.generate_form_8949(account_id=account_id, tax_year=tax_year)
         rows: list[list[str]] = []
         for m in matches:
             # When the row is a wash sale we emit:
@@ -262,9 +261,7 @@ class TaxReportService:
         `tax_year` narrows to a single year. Otherwise emits one row
         per year present in the matched-pair set, sorted ASC.
         """
-        _, summary = await self.generate_form_8949(
-            account_id=account_id, tax_year=tax_year
-        )
+        _, summary = await self.generate_form_8949(account_id=account_id, tax_year=tax_year)
         rows: list[list[str]] = []
         for year in sorted(summary):
             s = summary[year]
@@ -285,9 +282,7 @@ class TaxReportService:
 
     # ── private collectors ─────────────────────────────────────────────
 
-    async def _collect_user_trades(
-        self, account_id: int | None
-    ) -> list[PortfolioTrade]:
+    async def _collect_user_trades(self, account_id: int | None) -> list[PortfolioTrade]:
         """Load every BUY/SELL row for the user.
 
         Walks each owned account (or only the requested one) via the

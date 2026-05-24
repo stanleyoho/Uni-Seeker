@@ -32,7 +32,7 @@ class PriceVolumeIndicator:
             return IndicatorResult(name=self.name, values={"volume_ratio": ratio})
 
         for i in range(period, n):
-            avg = sum(volumes[i - period:i]) / period
+            avg = sum(volumes[i - period : i]) / period
             ratio[i] = round(volumes[i] / avg, 4) if avg > 0 else None
 
         return IndicatorResult(name=self.name, values={"volume_ratio": ratio})
@@ -49,7 +49,7 @@ class PriceVolumeIndicator:
             return IndicatorResult(name=self.name, values={"volume_surge": surge})
 
         for i in range(period, n):
-            avg = sum(volumes[i - period:i]) / period
+            avg = sum(volumes[i - period : i]) / period
             if avg > 0:
                 multiple = volumes[i] / avg
                 surge[i] = round(multiple, 4)
@@ -82,7 +82,7 @@ class PriceVolumeIndicator:
             return IndicatorResult(name=self.name, values={"new_high_low": signal})
 
         for i in range(period, n):
-            window = closes[i - period:i]
+            window = closes[i - period : i]
             if closes[i] > max(window):
                 signal[i] = 1
             elif closes[i] < min(window):
@@ -102,9 +102,7 @@ class PriceVolumeIndicator:
             change: list[float | None] = [None] * n
             for i in range(p, n):
                 if closes[i - p] > 0:
-                    change[i] = round(
-                        (closes[i] - closes[i - p]) / closes[i - p] * 100, 4
-                    )
+                    change[i] = round((closes[i] - closes[i - p]) / closes[i - p] * 100, 4)
             results[f"change_{p}d"] = change
 
         return IndicatorResult(name=self.name, values=results)

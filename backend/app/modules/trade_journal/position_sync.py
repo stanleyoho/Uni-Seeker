@@ -1,4 +1,5 @@
 """Apply FIFO engine results to the database (trade_lots + positions tables)."""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -127,9 +128,7 @@ async def apply_sell(
     currency: str,
 ) -> Decimal:
     """Consume open lots via FIFO and return realized_pnl."""
-    open_lots = await _load_open_lots(
-        db, trade.account_id, trade.symbol, trade.market
-    )
+    open_lots = await _load_open_lots(db, trade.account_id, trade.symbol, trade.market)
     engine = FIFOEngine(open_lots=open_lots)
     result = engine.process_sell(
         qty=trade.quantity,
@@ -183,9 +182,7 @@ async def apply_split(
     split_ratio: Decimal,
 ) -> None:
     """Apply a stock split to all open lots and position for this account+symbol+market."""
-    open_lots = await _load_open_lots(
-        db, trade.account_id, trade.symbol, trade.market
-    )
+    open_lots = await _load_open_lots(db, trade.account_id, trade.symbol, trade.market)
     engine = FIFOEngine(open_lots=open_lots)
     updated_lots = engine.process_split(ratio=split_ratio)
 

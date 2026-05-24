@@ -10,6 +10,7 @@ module — see that module's docstring: "Pure FIFO engine — no database, no si
 effects". The schema-coupling concern is handled by re-exporting these types
 through the domain layer rather than importing ORM models.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -62,9 +63,7 @@ class SellResult:
     qty_consumed: Decimal
 
 
-def apply_buy(
-    lot_id: int, qty: Decimal, price: Decimal, fee: Decimal
-) -> BuyResult:
+def apply_buy(lot_id: int, qty: Decimal, price: Decimal, fee: Decimal) -> BuyResult:
     """Create a new FIFO lot for a BUY trade.
 
     Delegates to `FIFOEngine.make_lot`. Buy-side fee is embedded in

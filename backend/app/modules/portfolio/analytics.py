@@ -35,6 +35,7 @@ Decimal everywhere. The square roots in Sharpe / variance are computed via
 `Decimal.sqrt()` (newton iteration; deterministic & lossless within the
 working precision).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -175,9 +176,7 @@ def compute_twr(
     twr = product - _ONE
 
     # Annualise (calendar days, per spec §11 mention)
-    period_days = (
-        sorted_snaps[-1].snapshot_date - sorted_snaps[0].snapshot_date
-    ).days
+    period_days = (sorted_snaps[-1].snapshot_date - sorted_snaps[0].snapshot_date).days
     if period_days <= 0 or product <= _ZERO:
         # No annualisation possible (single-day window or wiped-out portfolio).
         return (twr, twr)

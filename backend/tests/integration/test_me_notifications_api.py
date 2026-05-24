@@ -9,6 +9,7 @@ Layout (~5 cases):
   - 404 when preferences requested for a filer the user is not
     subscribed to
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -48,9 +49,7 @@ async def _mk_user(
 
 
 def _auth(user: User) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {create_access_token(user.id, user.email)}"
-    }
+    return {"Authorization": f"Bearer {create_access_token(user.id, user.email)}"}
 
 
 # ── /me/notifications ───────────────────────────────────────────────────
@@ -60,9 +59,7 @@ async def test_get_me_notifications_returns_current_state(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     user = await _mk_user(db_session, "me1@x.com", chat_id="chat-init")
-    resp = await client.get(
-        "/api/v1/me/notifications", headers=_auth(user)
-    )
+    resp = await client.get("/api/v1/me/notifications", headers=_auth(user))
     assert resp.status_code == 200
     assert resp.json() == {
         "telegram_chat_id": "chat-init",
@@ -85,9 +82,7 @@ async def test_patch_me_notifications_sets_telegram_chat_id(
         "notify_via_email": False,
     }
 
-    fresh = await db_session.execute(
-        select(User).where(User.id == user.id)
-    )
+    fresh = await db_session.execute(select(User).where(User.id == user.id))
     assert fresh.scalar_one().telegram_chat_id == "987654"
 
 
@@ -106,9 +101,7 @@ async def test_patch_me_notifications_clears_telegram_chat_id_with_null(
         "notify_via_email": False,
     }
 
-    fresh = await db_session.execute(
-        select(User).where(User.id == user.id)
-    )
+    fresh = await db_session.execute(select(User).where(User.id == user.id))
     assert fresh.scalar_one().telegram_chat_id is None
 
 
@@ -128,9 +121,7 @@ async def test_patch_me_notifications_toggles_notify_via_email(
     # PATCH was partial — telegram_chat_id stayed put.
     assert body["telegram_chat_id"] == "keep-me"
 
-    fresh = await db_session.execute(
-        select(User).where(User.id == user.id)
-    )
+    fresh = await db_session.execute(select(User).where(User.id == user.id))
     row = fresh.scalar_one()
     assert row.notify_via_email is True
     assert row.telegram_chat_id == "keep-me"

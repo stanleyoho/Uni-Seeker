@@ -88,7 +88,8 @@ class BacktestJobWorker:
             # Wait before next poll; break early on shutdown signal.
             try:
                 await asyncio.wait_for(
-                    self._shutdown.wait(), timeout=_POLL_INTERVAL,
+                    self._shutdown.wait(),
+                    timeout=_POLL_INTERVAL,
                 )
                 break  # shutdown was signalled
             except asyncio.TimeoutError:
@@ -100,7 +101,9 @@ class BacktestJobWorker:
 
         logger.info(
             "Executing job id=%s type=%s symbol=%s",
-            job.id, job.job_type, job.symbol,
+            job.id,
+            job.job_type,
+            job.symbol,
         )
 
         try:
@@ -118,11 +121,15 @@ class BacktestJobWorker:
                 raise ValueError(f"Unknown job_type: {job.job_type!r}")
 
             await self._queue.update_progress(db, job.id, 90)
-            await self._queue.complete(db, job.id, result={
-                "job_type": job.job_type,
-                "symbol": job.symbol,
-                "status": "done",
-            })
+            await self._queue.complete(
+                db,
+                job.id,
+                result={
+                    "job_type": job.job_type,
+                    "symbol": job.symbol,
+                    "status": "done",
+                },
+            )
 
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {exc}"
@@ -134,12 +141,12 @@ class BacktestJobWorker:
     # ------------------------------------------------------------------
 
     async def _fetch_prices(
-        self, db: AsyncSession, symbol: str,
+        self,
+        db: AsyncSession,
+        symbol: str,
     ) -> list[StockPrice]:
         """Fetch price history for *symbol* from the database."""
-        stock_result = await db.execute(
-            select(Stock).where(Stock.symbol == symbol)
-        )
+        stock_result = await db.execute(select(Stock).where(Stock.symbol == symbol))
         stock = stock_result.scalar_one_or_none()
         if stock is None:
             raise ValueError(f"Stock not found for symbol: {symbol!r}")
@@ -207,14 +214,18 @@ class BacktestJobWorker:
     # ------------------------------------------------------------------
 
     async def _run_single(
-        self, job: BacktestJob, config: dict[str, Any], db: AsyncSession,
+        self,
+        job: BacktestJob,
+        config: dict[str, Any],
+        db: AsyncSession,
     ) -> None:
         symbol = config["symbol"]
         prices = await self._fetch_prices(db, symbol)
 
         registry = create_default_registry()
         strategy = registry.get(
-            config["strategy"], **config.get("params", {}),
+            config["strategy"],
+            **config.get("params", {}),
         )
 
         bt_config = self._build_bt_config(config)
@@ -239,7 +250,10 @@ class BacktestJobWorker:
     # ------------------------------------------------------------------
 
     async def _run_composite(
-        self, job: BacktestJob, config: dict[str, Any], db: AsyncSession,
+        self,
+        job: BacktestJob,
+        config: dict[str, Any],
+        db: AsyncSession,
     ) -> None:
         symbol = config["symbol"]
         prices = await self._fetch_prices(db, symbol)
@@ -282,7 +296,10 @@ class BacktestJobWorker:
     # ------------------------------------------------------------------
 
     async def _run_grid_search(
-        self, job: BacktestJob, config: dict[str, Any], db: AsyncSession,
+        self,
+        job: BacktestJob,
+        config: dict[str, Any],
+        db: AsyncSession,
     ) -> None:
         symbol = config["symbol"]
         prices = await self._fetch_prices(db, symbol)
@@ -311,7 +328,10 @@ class BacktestJobWorker:
             asyncio.ensure_future(_progress_callback(pct))
 
         result = GridSearchEngine(registry).run(
-            grid_config, prices, symbol, progress_callback=sync_progress,
+            grid_config,
+            prices,
+            symbol,
+            progress_callback=sync_progress,
         )
 
         # Save TOP 10 results as individual BacktestResultRecord rows
@@ -348,7 +368,10 @@ class BacktestJobWorker:
     # ------------------------------------------------------------------
 
     async def _run_portfolio(
-        self, job: BacktestJob, config: dict[str, Any], db: AsyncSession,
+        self,
+        job: BacktestJob,
+        config: dict[str, Any],
+        db: AsyncSession,
     ) -> None:
         registry = create_default_registry()
         strategy_params_map: dict[str, dict] = config.get("strategy_params", {})
@@ -363,11 +386,13 @@ class BacktestJobWorker:
             kwargs = strategy_params_map.get(strat_key, {})
             strategy = registry.get(strat_key, **kwargs)
 
-            allocations.append(PortfolioAllocation(
-                symbol=sym,
-                weight=alloc_cfg["weight"],
-                strategy=strategy,
-            ))
+            allocations.append(
+                PortfolioAllocation(
+                    symbol=sym,
+                    weight=alloc_cfg["weight"],
+                    strategy=strategy,
+                )
+            )
 
             if sym not in prices_map:
                 prices_map[sym] = await self._fetch_prices(db, sym)
@@ -392,15 +417,15 @@ class BacktestJobWorker:
         await self._queue.update_progress(db, job.id, 50)
 
         result = PortfolioBacktestEngine(portfolio_config).run(
-            allocations, prices_map,
+            allocations,
+            prices_map,
         )
 
         # Save single result record for the portfolio
         pm = result.portfolio_metrics
         symbols_str = "+".join(a.symbol for a in allocations)
         strategies_str = "+".join(
-            a.get("strategy", "rsi_oversold")
-            for a in config.get("allocations", [])
+            a.get("strategy", "rsi_oversold") for a in config.get("allocations", [])
         )
 
         record = BacktestResultRecord(
@@ -415,9 +440,12 @@ class BacktestJobWorker:
             equity_curve=result.portfolio_equity_curve,
             trade_log=[
                 {
-                    "date": t.date, "symbol": t.symbol,
-                    "action": t.action, "price": t.price,
-                    "shares": t.shares, "reason": t.reason,
+                    "date": t.date,
+                    "symbol": t.symbol,
+                    "action": t.action,
+                    "price": t.price,
+                    "shares": t.shares,
+                    "reason": t.reason,
                 }
                 for t in result.trade_log
             ],

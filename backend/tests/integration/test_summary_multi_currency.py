@@ -11,6 +11,7 @@ Asserts:
   - rate snapshot exposed for transparency
   - missing-rate failure propagates as FxRateUnavailable
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -56,9 +57,7 @@ class _MockLPF:
     def __init__(self, quotes: dict[str, tuple[Decimal, Decimal]]):
         self._q = quotes
 
-    async def fetch_quotes(
-        self, stock_ids: list[str]
-    ) -> dict[str, PriceQuote]:
+    async def fetch_quotes(self, stock_ids: list[str]) -> dict[str, PriceQuote]:
         out: dict[str, PriceQuote] = {}
         for sid in stock_ids:
             if sid not in self._q:
@@ -89,9 +88,7 @@ class _MockFx(YFinanceFxFetcher):
         self._rates = rates or {}
         self._fail = fail_pairs or set()
 
-    async def fetch_rate(
-        self, base: str, quote: str, as_of=None
-    ) -> Decimal:
+    async def fetch_rate(self, base: str, quote: str, as_of=None) -> Decimal:
         if base == quote:
             return Decimal("1")
         if (base, quote) in self._fail:
@@ -148,32 +145,43 @@ async def test_multi_currency_aggregates_usd_and_twd(
     user = await _mk_user(db_session, "mc1@x.com", "mc1", tier=UserTier.PRO)
     # 10 NVDA @ 100 USD (last 110), 100 2330 @ 500 TWD (last 600).
     await _seed_account_and_position(
-        db_session, user,
-        account_name="US", account_currency="USD",
-        market=Market.US_NASDAQ, symbol="NVDA",
-        qty=Decimal("10"), avg_cost=Decimal("100"),
+        db_session,
+        user,
+        account_name="US",
+        account_currency="USD",
+        market=Market.US_NASDAQ,
+        symbol="NVDA",
+        qty=Decimal("10"),
+        avg_cost=Decimal("100"),
     )
     await _seed_account_and_position(
-        db_session, user,
-        account_name="TW", account_currency="TWD",
-        market=Market.TW_TWSE, symbol="2330",
-        qty=Decimal("100"), avg_cost=Decimal("500"),
+        db_session,
+        user,
+        account_name="TW",
+        account_currency="TWD",
+        market=Market.TW_TWSE,
+        symbol="2330",
+        qty=Decimal("100"),
+        avg_cost=Decimal("500"),
     )
 
-    lpf = _MockLPF({
-        "NVDA": (Decimal("110"), Decimal("105")),
-        "2330": (Decimal("600"), Decimal("590")),
-    })
+    lpf = _MockLPF(
+        {
+            "NVDA": (Decimal("110"), Decimal("105")),
+            "2330": (Decimal("600"), Decimal("590")),
+        }
+    )
     fx_fetcher = _MockFx(rates={("USD", "TWD"): Decimal("31")})
     fx_service = FxService(db_session, fx_fetcher)
 
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
-    with patch(
-        "app.services.portfolio.summary_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = False
         result = await svc.get_user_summary_multi_currency(base_currency="TWD")
 
@@ -196,30 +204,41 @@ async def test_multi_currency_tier_gate_blocks_free(
     when positions span >1 currency."""
     user = await _mk_user(db_session, "mc2@x.com", "mc2", tier=UserTier.FREE)
     await _seed_account_and_position(
-        db_session, user,
-        account_name="US", account_currency="USD",
-        market=Market.US_NASDAQ, symbol="NVDA",
-        qty=Decimal("5"), avg_cost=Decimal("100"),
+        db_session,
+        user,
+        account_name="US",
+        account_currency="USD",
+        market=Market.US_NASDAQ,
+        symbol="NVDA",
+        qty=Decimal("5"),
+        avg_cost=Decimal("100"),
     )
     await _seed_account_and_position(
-        db_session, user,
-        account_name="TW", account_currency="TWD",
-        market=Market.TW_TWSE, symbol="2330",
-        qty=Decimal("10"), avg_cost=Decimal("500"),
+        db_session,
+        user,
+        account_name="TW",
+        account_currency="TWD",
+        market=Market.TW_TWSE,
+        symbol="2330",
+        qty=Decimal("10"),
+        avg_cost=Decimal("500"),
     )
 
-    lpf = _MockLPF({
-        "NVDA": (Decimal("100"), Decimal("100")),
-        "2330": (Decimal("500"), Decimal("500")),
-    })
+    lpf = _MockLPF(
+        {
+            "NVDA": (Decimal("100"), Decimal("100")),
+            "2330": (Decimal("500"), Decimal("500")),
+        }
+    )
     fx_service = FxService(db_session, _MockFx(rates={("USD", "TWD"): Decimal("31")}))
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
-    with patch(
-        "app.services.portfolio.summary_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = True
         with pytest.raises(TierFeatureUnavailable) as exc:
             await svc.get_user_summary_multi_currency(base_currency="TWD")
@@ -232,21 +251,26 @@ async def test_multi_currency_single_ccy_no_tier_check(
     """FREE tier with only one currency → does NOT trigger tier gate."""
     user = await _mk_user(db_session, "mc3@x.com", "mc3", tier=UserTier.FREE)
     await _seed_account_and_position(
-        db_session, user,
-        account_name="TW", account_currency="TWD",
-        market=Market.TW_TWSE, symbol="2330",
-        qty=Decimal("10"), avg_cost=Decimal("500"),
+        db_session,
+        user,
+        account_name="TW",
+        account_currency="TWD",
+        market=Market.TW_TWSE,
+        symbol="2330",
+        qty=Decimal("10"),
+        avg_cost=Decimal("500"),
     )
 
     lpf = _MockLPF({"2330": (Decimal("600"), Decimal("590"))})
     fx_service = FxService(db_session, _MockFx())
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
-    with patch(
-        "app.services.portfolio.summary_service.settings"
-    ) as s:
+    with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = True
         result = await svc.get_user_summary_multi_currency(base_currency="TWD")
 
@@ -265,7 +289,10 @@ async def test_multi_currency_empty_portfolio_returns_zero(
     lpf = _MockLPF({})
     fx_service = FxService(db_session, _MockFx())
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
     with patch("app.services.portfolio.summary_service.settings") as s:
@@ -283,28 +310,41 @@ async def test_multi_currency_missing_rate_raises(
     """If FX rate cannot be obtained → FxRateUnavailable propagates."""
     user = await _mk_user(db_session, "mc5@x.com", "mc5", tier=UserTier.PRO)
     await _seed_account_and_position(
-        db_session, user,
-        account_name="US", account_currency="USD",
-        market=Market.US_NASDAQ, symbol="NVDA",
-        qty=Decimal("5"), avg_cost=Decimal("100"),
+        db_session,
+        user,
+        account_name="US",
+        account_currency="USD",
+        market=Market.US_NASDAQ,
+        symbol="NVDA",
+        qty=Decimal("5"),
+        avg_cost=Decimal("100"),
     )
     await _seed_account_and_position(
-        db_session, user,
-        account_name="TW", account_currency="TWD",
-        market=Market.TW_TWSE, symbol="2330",
-        qty=Decimal("10"), avg_cost=Decimal("500"),
+        db_session,
+        user,
+        account_name="TW",
+        account_currency="TWD",
+        market=Market.TW_TWSE,
+        symbol="2330",
+        qty=Decimal("10"),
+        avg_cost=Decimal("500"),
     )
 
-    lpf = _MockLPF({
-        "NVDA": (Decimal("100"), Decimal("100")),
-        "2330": (Decimal("500"), Decimal("500")),
-    })
+    lpf = _MockLPF(
+        {
+            "NVDA": (Decimal("100"), Decimal("100")),
+            "2330": (Decimal("500"), Decimal("500")),
+        }
+    )
     fx_service = FxService(
         db_session,
         _MockFx(fail_pairs={("USD", "TWD")}),
     )
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
     with patch("app.services.portfolio.summary_service.settings") as s:
@@ -319,27 +359,39 @@ async def test_multi_currency_rates_used_exposed(
     """`rates_used` snapshot covers every currency present (including base)."""
     user = await _mk_user(db_session, "mc6@x.com", "mc6", tier=UserTier.PRO)
     await _seed_account_and_position(
-        db_session, user,
-        account_name="JP", account_currency="JPY",
+        db_session,
+        user,
+        account_name="JP",
+        account_currency="JPY",
         market=Market.US_NASDAQ,  # market doesn't matter — currency does
         symbol="SONY",
-        qty=Decimal("100"), avg_cost=Decimal("1500"),
+        qty=Decimal("100"),
+        avg_cost=Decimal("1500"),
     )
     await _seed_account_and_position(
-        db_session, user,
-        account_name="TW", account_currency="TWD",
-        market=Market.TW_TWSE, symbol="2330",
-        qty=Decimal("10"), avg_cost=Decimal("500"),
+        db_session,
+        user,
+        account_name="TW",
+        account_currency="TWD",
+        market=Market.TW_TWSE,
+        symbol="2330",
+        qty=Decimal("10"),
+        avg_cost=Decimal("500"),
     )
 
-    lpf = _MockLPF({
-        "SONY": (Decimal("1600"), Decimal("1550")),
-        "2330": (Decimal("550"), Decimal("540")),
-    })
+    lpf = _MockLPF(
+        {
+            "SONY": (Decimal("1600"), Decimal("1550")),
+            "2330": (Decimal("550"), Decimal("540")),
+        }
+    )
     fx_fetcher = _MockFx(rates={("JPY", "TWD"): Decimal("0.21")})
     fx_service = FxService(db_session, fx_fetcher)
     svc = PortfolioSummaryService(
-        db_session, user, lpf, fx_service=fx_service,  # type: ignore[arg-type]
+        db_session,
+        user,
+        lpf,
+        fx_service=fx_service,  # type: ignore[arg-type]
     )
 
     with patch("app.services.portfolio.summary_service.settings") as s:

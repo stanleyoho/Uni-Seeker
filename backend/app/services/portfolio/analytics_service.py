@@ -36,6 +36,7 @@ from Jan 1 of the current year; for `"all"` we use the earliest
 snapshot date for the user (falling back to today minus 1 day when the
 user has no snapshots, which gives the empty-analytics shape).
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -114,13 +115,9 @@ class AnalyticsService:
 
         # 2) Verify account ownership when caller asked to scope.
         if account_id is not None:
-            owned = await self._account_repo.get_by_id(
-                account_id, user_id=self._user.id
-            )
+            owned = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
             if owned is None:
-                raise PortfolioAccountNotFound(
-                    f"account {account_id} not found or not owned"
-                )
+                raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         # 3) Resolve period window.
         date_to = date.today()
@@ -158,9 +155,7 @@ class AnalyticsService:
 
         # 7) Period metadata for the response.
         if nav_series:
-            period_days = (
-                nav_series[-1].snapshot_date - nav_series[0].snapshot_date
-            ).days
+            period_days = (nav_series[-1].snapshot_date - nav_series[0].snapshot_date).days
         else:
             period_days = 0
 
@@ -195,9 +190,7 @@ class AnalyticsService:
         earliest = await self._earliest_snapshot_date(account_id)
         return earliest or (anchor - timedelta(days=1))
 
-    async def _earliest_snapshot_date(
-        self, account_id: int | None
-    ) -> date | None:
+    async def _earliest_snapshot_date(self, account_id: int | None) -> date | None:
         from sqlalchemy import asc
 
         from app.db.models.portfolio.snapshot import HoldingsSnapshot
@@ -256,15 +249,11 @@ class AnalyticsService:
             tax = t.tax or _ZERO
             if action == "BUY":
                 amount = qty * price + fee + tax
-                flows.append(
-                    CashFlow(flow_date=t.trade_date, amount=amount)
-                )
+                flows.append(CashFlow(flow_date=t.trade_date, amount=amount))
             elif action == "SELL":
                 proceeds = qty * price - fee - tax
                 # Negative because capital is leaving the portfolio.
-                flows.append(
-                    CashFlow(flow_date=t.trade_date, amount=-proceeds)
-                )
+                flows.append(CashFlow(flow_date=t.trade_date, amount=-proceeds))
             # DIVIDEND / SPLIT: skip — already reflected in NAV.
         return flows
 

@@ -9,6 +9,7 @@ takes a non-optional `user_id` parameter and applies it as a `WHERE`
 clause (directly or via JOIN). There is no method on these repos that
 can return one user's row to another user.
 """
+
 # Eagerly load `app.models` so that the package fully initialises before
 # any of our `app.db.models.portfolio.*` leaf imports trigger
 # `app.models.base`. Without this, a fresh import that enters via the

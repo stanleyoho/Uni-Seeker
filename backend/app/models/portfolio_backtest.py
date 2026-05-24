@@ -28,5 +28,7 @@ class PortfolioBacktestRecord(Base):
     equity_curve: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     individual_curves: Mapped[dict] = mapped_column(JSON, default_factory=dict)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now(),
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
     )

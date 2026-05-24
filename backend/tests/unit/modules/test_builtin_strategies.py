@@ -36,8 +36,28 @@ def test_rsi_overbought_sell() -> None:
 
 def test_rsi_hold_in_range() -> None:
     # Mixed prices -> RSI in middle range
-    closes = [100.0, 101.0, 99.0, 102.0, 98.0, 101.0, 100.0, 99.5, 100.5, 101.0,
-              100.0, 99.0, 101.0, 100.5, 99.5, 100.0, 100.5, 99.5, 100.0, 101.0]
+    closes = [
+        100.0,
+        101.0,
+        99.0,
+        102.0,
+        98.0,
+        101.0,
+        100.0,
+        99.5,
+        100.5,
+        101.0,
+        100.0,
+        99.0,
+        101.0,
+        100.5,
+        99.5,
+        100.0,
+        100.5,
+        99.5,
+        100.0,
+        101.0,
+    ]
     strategy = RSIOversoldStrategy()
     signal = strategy.evaluate(closes)
     assert signal.action == "HOLD"

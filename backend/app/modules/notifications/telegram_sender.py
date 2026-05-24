@@ -14,6 +14,7 @@ notification service) MUST NOT raise into the refresh path on a TG
 failure. We therefore return a plain ``bool`` and log every error path.
 The caller counts ``False`` returns as ``errors`` for the audit row.
 """
+
 from __future__ import annotations
 
 import httpx

@@ -4,6 +4,7 @@ Decimal-as-string per project convention — the API contract is
 ``threshold_value: str``. The service consumes ``Decimal`` and Pydantic
 converts on the way out.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

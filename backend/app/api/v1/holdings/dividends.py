@@ -27,6 +27,7 @@ We map both to 422 but distinguish via the `detail` string:
 `immutable_dividend_field` for the patch path. This keeps the frontend
 able to render distinct error toasts.
 """
+
 from __future__ import annotations
 
 from typing import Annotated

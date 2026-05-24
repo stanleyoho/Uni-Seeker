@@ -15,6 +15,7 @@ Anti-coupling invariants (spec §11.2):
 - NO imports from ``smart_money.*``
 - Service layer depends on these modules, not vice versa.
 """
+
 from __future__ import annotations
 
 from app.modules.institutional.diff import (

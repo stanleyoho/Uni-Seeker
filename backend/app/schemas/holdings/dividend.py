@@ -22,6 +22,7 @@ Phase 2 MVP behavioural notes (mirror service-layer docstring on
   here so the wire payload still carries the gross + net figures the
   frontend expects to render.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

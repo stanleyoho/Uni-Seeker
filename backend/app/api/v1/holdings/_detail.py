@@ -13,6 +13,7 @@ Format conventions:
       would be exceeded.
     * other identifiers are flat snake_case nouns.
 """
+
 from __future__ import annotations
 
 ACCOUNT_NOT_FOUND = "portfolio_account_not_found"

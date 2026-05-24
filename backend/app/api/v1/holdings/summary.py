@@ -10,6 +10,7 @@ Phase 4+ — multi-currency:
   flag is required (Pro tier only). Single-currency portfolios are
   unaffected so Free / Basic tiers keep working.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -44,9 +45,7 @@ FetcherDep = Annotated[LivePriceFetcher, Depends(get_live_price_fetcher)]
 FxDep = Annotated[FxService, Depends(get_fx_service)]
 
 
-_SUPPORTED_BASE_CURRENCIES = frozenset(
-    {"TWD", "USD", "JPY", "HKD", "EUR", "GBP", "CNY"}
-)
+_SUPPORTED_BASE_CURRENCIES = frozenset({"TWD", "USD", "JPY", "HKD", "EUR", "GBP", "CNY"})
 
 
 class CurrencyBreakdown(BaseModel):
@@ -135,9 +134,7 @@ async def get_user_summary(
             detail=f"unsupported_base_currency:{base_u}",
         )
 
-    service = PortfolioSummaryService(
-        db, user, fetcher, fx_service=fx
-    )  # type: ignore[arg-type]
+    service = PortfolioSummaryService(db, user, fetcher, fx_service=fx)  # type: ignore[arg-type]
     try:
         multi = await service.get_user_summary_multi_currency(base_currency=base_u)
     except TierFeatureUnavailable as exc:
@@ -160,9 +157,7 @@ async def get_user_summary(
 
     breakdown: list[CurrencyBreakdown] = []
     for ccy, native in multi.by_currency_native.items():
-        cost_b, value_b = multi.by_currency_in_base.get(
-            ccy, (Decimal("0"), Decimal("0"))
-        )
+        cost_b, value_b = multi.by_currency_in_base.get(ccy, (Decimal("0"), Decimal("0")))
         breakdown.append(
             CurrencyBreakdown(
                 currency=ccy,

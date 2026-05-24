@@ -25,6 +25,7 @@ Spec: docs/superpowers/plans/2026-05-20-portfolio-tracker-design.md §11
     A15 pct calculation matches |trough-peak|/peak
     A16 single element → (0, 0)
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -179,9 +180,9 @@ def test_A13_max_drawdown_w_shape_picks_deepest():
     """Two valleys — must pick the deeper one (peak resets on new highs)."""
     navs = [
         Decimal("100"),  # peak 1
-        Decimal("80"),   # dd1 = -20 (-20 %)
+        Decimal("80"),  # dd1 = -20 (-20 %)
         Decimal("120"),  # new peak
-        Decimal("70"),   # dd2 = -50 (-41.67 %) ← deeper
+        Decimal("70"),  # dd2 = -50 (-41.67 %) ← deeper
         Decimal("90"),
     ]
     dd, pct = compute_max_drawdown(navs)

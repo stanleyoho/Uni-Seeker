@@ -115,9 +115,7 @@ class PortfolioBacktestEngine:
         # Build per-symbol price lookup: symbol -> {date_str -> close}
         price_lookup: dict[str, dict[str, float]] = {}
         for sym in symbols:
-            price_lookup[sym] = {
-                str(p.date): float(p.close) for p in prices_map[sym]
-            }
+            price_lookup[sym] = {str(p.date): float(p.close) for p in prices_map[sym]}
 
         # State
         portfolio = Portfolio(initial_capital=self._config.initial_capital)
@@ -131,16 +129,18 @@ class PortfolioBacktestEngine:
         first_date = aligned_dates[0]
         first_prices = {sym: price_lookup[sym][first_date] for sym in symbols}
         self._initial_buy(
-            portfolio, allocations, first_prices, first_date, trade_log,
+            portfolio,
+            allocations,
+            first_prices,
+            first_date,
+            trade_log,
         )
 
         # Record first-day equity
         portfolio.record_equity(first_prices)
         for sym in symbols:
             closes_so_far[sym].append(first_prices[sym])
-            individual_equity[sym].append(
-                first_prices[sym] * portfolio.positions.get(sym, 0)
-            )
+            individual_equity[sym].append(first_prices[sym] * portfolio.positions.get(sym, 0))
 
         # ---- Daily loop (skip first date — already processed) ----
         for date_str in aligned_dates[1:]:
@@ -205,11 +205,18 @@ class PortfolioBacktestEngine:
             # Check rebalancing
             days_since_rebalance += 1
             should_rebalance, reason = self._should_rebalance(
-                portfolio, current_prices, weight_map, days_since_rebalance,
+                portfolio,
+                current_prices,
+                weight_map,
+                days_since_rebalance,
             )
             if should_rebalance:
                 adjustments = self._rebalance(
-                    portfolio, current_prices, weight_map, date_str, trade_log,
+                    portfolio,
+                    current_prices,
+                    weight_map,
+                    date_str,
+                    trade_log,
                 )
                 if adjustments:
                     rebalance_log.append(
@@ -220,9 +227,7 @@ class PortfolioBacktestEngine:
             # Record equity
             portfolio.record_equity(current_prices)
             for sym in symbols:
-                individual_equity[sym].append(
-                    current_prices[sym] * portfolio.positions.get(sym, 0)
-                )
+                individual_equity[sym].append(current_prices[sym] * portfolio.positions.get(sym, 0))
 
         # ---- Force close all positions ----
         last_date = aligned_dates[-1]
@@ -232,7 +237,9 @@ class PortfolioBacktestEngine:
         # ---- Calculate metrics ----
         portfolio_metrics = self._compute_portfolio_metrics(portfolio)
         individual_metrics = self._compute_individual_metrics(
-            symbols, individual_equity, trade_log,
+            symbols,
+            individual_equity,
+            trade_log,
         )
 
         return PortfolioBacktestResult(
@@ -259,9 +266,7 @@ class PortfolioBacktestEngine:
 
         total_weight = sum(a.weight for a in allocations)
         if abs(total_weight - 1.0) > _WEIGHT_TOLERANCE:
-            raise ValueError(
-                f"Allocation weights must sum to 1.0 (got {total_weight:.6f})."
-            )
+            raise ValueError(f"Allocation weights must sum to 1.0 (got {total_weight:.6f}).")
 
         for alloc in allocations:
             if alloc.weight <= 0 or alloc.weight > 1.0:
@@ -280,13 +285,9 @@ class PortfolioBacktestEngine:
     ) -> None:
         for alloc in allocations:
             if alloc.symbol not in prices_map:
-                raise ValueError(
-                    f"No price data provided for symbol '{alloc.symbol}'."
-                )
+                raise ValueError(f"No price data provided for symbol '{alloc.symbol}'.")
             if not prices_map[alloc.symbol]:
-                raise ValueError(
-                    f"Empty price data for symbol '{alloc.symbol}'."
-                )
+                raise ValueError(f"Empty price data for symbol '{alloc.symbol}'.")
 
     # ------------------------------------------------------------------
     # Date alignment
@@ -298,9 +299,7 @@ class PortfolioBacktestEngine:
         prices_map: dict[str, list[StockPrice]],
     ) -> list[str]:
         """Return sorted list of date strings present in ALL symbols' data."""
-        date_sets = [
-            {str(p.date) for p in prices_map[sym]} for sym in symbols
-        ]
+        date_sets = [{str(p.date) for p in prices_map[sym]} for sym in symbols]
         common = date_sets[0]
         for ds in date_sets[1:]:
             common &= ds
@@ -583,9 +582,7 @@ class PortfolioBacktestEngine:
                     daily_returns.append(curve[i] / curve[i - 1] - 1)
             if daily_returns:
                 avg_r = sum(daily_returns) / len(daily_returns)
-                std_r = math.sqrt(
-                    sum((r - avg_r) ** 2 for r in daily_returns) / len(daily_returns)
-                )
+                std_r = math.sqrt(sum((r - avg_r) ** 2 for r in daily_returns) / len(daily_returns))
                 sharpe = (avg_r / std_r * math.sqrt(252)) if std_r > 0 else 0.0
             else:
                 sharpe = 0.0

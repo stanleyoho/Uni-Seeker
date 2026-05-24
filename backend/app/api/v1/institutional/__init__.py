@@ -22,6 +22,7 @@ Each sub-router translates `app.services.institutional` domain
 exceptions into HTTP status codes defined in
 `app.api.v1.institutional._detail`.
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.institutional.filers import router as filers_router

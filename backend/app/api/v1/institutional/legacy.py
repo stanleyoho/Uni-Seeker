@@ -11,6 +11,7 @@ filers / filings / stocks routers so the more specific paths
 resolve first — otherwise `/{symbol}` would swallow the literal
 `filers` segment.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -113,9 +114,7 @@ async def get_institutional(
             end_date=end_date,
         )
     except Exception as exc:
-        raise HTTPException(
-            status_code=502, detail=f"FinMind error: {exc}"
-        ) from exc
+        raise HTTPException(status_code=502, detail=f"FinMind error: {exc}") from exc
 
     if not raw:
         return InstitutionalResponse(symbol=symbol, data=[])

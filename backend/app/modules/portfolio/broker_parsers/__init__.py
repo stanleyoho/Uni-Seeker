@@ -13,6 +13,7 @@ The registry order matters: auto-detect runs `can_handle()` in this
 order and the first hit wins. We list broker-specific parsers BEFORE
 `generic` so a real broker file is never mis-classified as generic.
 """
+
 from __future__ import annotations
 
 from typing import Iterator
