@@ -34,6 +34,8 @@ export {
 
 export { HoldingsTableResponsive } from "./holdings-table-responsive";
 
+export { PullToRefreshWrapper } from "./pull-to-refresh-wrapper";
+
 export {
   BulkActionsBar,
   type BulkActionsBarProps,

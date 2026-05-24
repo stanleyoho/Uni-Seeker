@@ -35,6 +35,7 @@ import {
   HoldingsKpiRow,
   HoldingsTableResponsive,
   PositionsEmptyState,
+  PullToRefreshWrapper,
   RebalanceModal,
 } from "@/components/holdings";
 import {
@@ -112,9 +113,16 @@ export default function HoldingsPage() {
   const multiCurrencyAvailable = isProTier(user?.tier);
 
   /* ----------------------------- Data ------------------------------ */
-  const { data: accounts, isLoading: accountsLoading } = useHoldingAccounts();
-  const { data: positionsRes, isLoading: positionsLoading } =
-    useHoldingPositions(selectedAccountId ?? undefined);
+  const {
+    data: accounts,
+    isLoading: accountsLoading,
+    refetch: refetchAccounts,
+  } = useHoldingAccounts();
+  const {
+    data: positionsRes,
+    isLoading: positionsLoading,
+    refetch: refetchPositions,
+  } = useHoldingPositions(selectedAccountId ?? undefined);
   // For Pro+ users with a non-TWD selection, send `base_currency=`.
   // For everyone else, fall back to the legacy single-currency call so
   // the backend doesn't 403 us on the multi-currency feature flag.
@@ -122,9 +130,24 @@ export default function HoldingsPage() {
     currencyHydrated &&
     multiCurrencyAvailable &&
     selectedCurrency !== "TWD";
-  const { data: summary, isLoading: summaryLoading } = useUserHoldingSummary(
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    refetch: refetchSummary,
+  } = useUserHoldingSummary(
     useMultiCurrencyCall ? selectedCurrency : undefined,
   );
+
+  // Pull-to-refresh handler (R.2 — Phase 8). Re-runs every page-level
+  // query in parallel and resolves only when all three settle so the
+  // mobile spinner stays visible for the full refresh window.
+  const handlePullRefresh = async () => {
+    await Promise.all([
+      refetchAccounts(),
+      refetchPositions(),
+      refetchSummary(),
+    ]);
+  };
 
   const accountList: HoldingAccount[] = accounts ?? [];
   const positions = positionsRes?.positions ?? [];
@@ -176,6 +199,7 @@ export default function HoldingsPage() {
     <main className="relative flex-1 overflow-y-auto">
       <AmbientBackground />
 
+      <PullToRefreshWrapper onRefresh={handlePullRefresh}>
       <div className="relative max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6">
         {/* Page title */}
         <div className="flex items-center justify-between">
@@ -308,10 +332,25 @@ export default function HoldingsPage() {
               loading={positionsLoading}
               selectedSymbols={selectedSymbols}
               onSelectionChange={setSelectedSymbols}
+              // Phase 8 R.1 — mobile swipe-left on a card reveals a
+              // "Remove" action. We don't have a position-level delete
+              // mutation (positions are derived from trades on the
+              // backend; see BulkActionsBar.onDeleteSelected stub
+              // below), so the swipe action funnels the symbol into the
+              // existing bulk-selection state. The floating
+              // BulkActionsBar then surfaces with its own delete path.
+              // Keeps the gesture demonstrably wired without inventing
+              // a back-end contract.
+              onSwipeRemove={(symbol) =>
+                setSelectedSymbols((prev) =>
+                  prev.includes(symbol) ? prev : [...prev, symbol],
+                )
+              }
             />
           )}
         </section>
       </div>
+      </PullToRefreshWrapper>
 
       {/* Floating bulk-actions bar (returns null when count === 0) */}
       <BulkActionsBar
