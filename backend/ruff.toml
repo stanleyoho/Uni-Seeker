@@ -49,6 +49,11 @@ allowed-confusables = ["：", "（", "）"]
 "**/conftest.py" = ["DTZ"]
 "scripts/**" = ["T20"]
 "alembic/**" = ["DTZ", "T20"]
+# Test files that monkey-patch SQLAlchemy's SQLiteTypeCompiler BEFORE importing
+# app modules — that ordering is the patch's whole point, so post-patch
+# imports are by-design E402 violations.
+"tests/conftest.py" = ["E402"]
+"tests/integration/test_journal_api.py" = ["E402"]
 
 [lint.isort]
 known-first-party = ["app"]
