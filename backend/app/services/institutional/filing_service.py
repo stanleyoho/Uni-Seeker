@@ -641,7 +641,8 @@ def _classify_history_point(
     if prev_shares is not None and curr_shares is None:
         return ("EXITED", -prev_shares, None)
     # Both non-None.
-    assert prev_shares is not None and curr_shares is not None
+    assert prev_shares is not None
+    assert curr_shares is not None
     delta = curr_shares - prev_shares
     if prev_shares == 0:
         # Divide-by-zero guard. Treat any movement off a zero base as

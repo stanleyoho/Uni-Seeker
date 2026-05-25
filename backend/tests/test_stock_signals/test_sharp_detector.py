@@ -70,7 +70,8 @@ class TestStockSharpDetector:
         assert edge.direction == "long"
         assert edge.divergence_detected is True
         assert 0.0 <= edge.confidence <= 1.0
-        assert isinstance(edge.reason, str) and len(edge.reason) > 0
+        assert isinstance(edge.reason, str)
+        assert len(edge.reason) > 0
 
     def test_get_edge_signal_short_on_divergence(self):
         detector = StockSharpDetector(

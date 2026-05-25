@@ -113,11 +113,13 @@ def test_R02_need_to_buy_more():
 
     buy = _find(result.suggested_trades, "AAPL")
     sell = _find(result.suggested_trades, "MSFT")
-    assert buy is not None and buy.action == "BUY"
+    assert buy is not None
+    assert buy.action == "BUY"
     # delta_value = 20_000 * 0.70 - 10_000 = 4_000 → 40 shares @ 100.
     assert buy.qty == Decimal("40")
     assert buy.estimated_value == Decimal("4000")
-    assert sell is not None and sell.action == "SELL"
+    assert sell is not None
+    assert sell.action == "SELL"
     assert sell.qty == Decimal("40")
 
 
