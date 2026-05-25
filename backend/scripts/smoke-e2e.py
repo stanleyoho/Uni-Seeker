@@ -19,7 +19,13 @@ Usage:
 Exit 0 if all checks pass, 1 otherwise.
 """
 from __future__ import annotations
-import json, os, sys, time, urllib.request, urllib.error
+
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
 
 BASE = os.environ.get("API_URL", "http://localhost:8000").rstrip("/") + "/api/v1"
 EMAIL = f"smoke+{int(time.time())}@uni-seeker.test"

@@ -83,7 +83,7 @@ async def get_nba_predictions_today(user: ProUser) -> NbaPredictionsResponse:
 # Stock edge stub — production wiring fetches foreign futures + margin data.
 # ---------------------------------------------------------------------------
 
-from app.modules.stock_signals.sharp_detector import (  # noqa: E402 — grouped with related fetch helpers below
+from app.modules.stock_signals.sharp_detector import (
     EdgeSignal,
     StockSharpDetector,
 )

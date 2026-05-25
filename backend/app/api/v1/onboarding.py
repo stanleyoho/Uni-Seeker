@@ -66,7 +66,7 @@ async def submit_kyc(
 
 @router.get("/risky-demo", include_in_schema=False)
 async def risky_demo(
-    user: User = Depends(require_risk_tolerance("moderate")),  # noqa: B008 — guard factory with bound arg, can't lift
+    user: User = Depends(require_risk_tolerance("moderate")),
 ) -> dict:
     """Placeholder endpoint demonstrating the require_risk_tolerance guard.
 

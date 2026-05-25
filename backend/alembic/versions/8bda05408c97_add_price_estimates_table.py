@@ -4,16 +4,17 @@ Revision ID: 8bda05408c97
 Revises: b3a1c9d2e4f5
 Create Date: 2026-05-04 02:03:11.929894
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 revision: str = '8bda05408c97'
-down_revision: Union[str, None] = 'b3a1c9d2e4f5'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = 'b3a1c9d2e4f5'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

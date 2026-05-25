@@ -6,10 +6,10 @@ Usage:
 yfinance supports Taiwan stocks with .TW suffix and has data back to ~2000.
 No API rate limits like FinMind.
 """
-import asyncio
 import argparse
+import asyncio
 import sys
-from datetime import date, datetime, timezone
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 # Top 50 Taiwan stocks by market cap
@@ -42,11 +42,12 @@ async def backfill_stock(symbol_no_suffix: str, start_date: str):
     if hasattr(df.columns, 'levels'):
         df.columns = df.columns.get_level_values(0)
 
-    from app.database import async_session
-    from app.models.stock import Stock
-    from app.models.price import StockPrice
     from sqlalchemy import select
     from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    from app.database import async_session
+    from app.models.price import StockPrice
+    from app.models.stock import Stock
 
     async with async_session() as db:
         # Get stock_id

@@ -28,11 +28,11 @@ shape)? Two reasons:
 Phase-2 (LINE / Webhook) will revisit consolidation when the channel
 list outgrows columns.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 
+from alembic import op
 
 revision: str = "UNI_USER_003"
 # Merge migration — collapses the two open heads that existed before
@@ -42,12 +42,12 @@ revision: str = "UNI_USER_003"
 # Both branches descend from UNI_PORT_003. We list both as parents so
 # alembic linearises the graph at this point and downstream migrations
 # only have to chase a single head again.
-down_revision: Union[str, Sequence[str], None] = (
+down_revision: str | Sequence[str] | None = (
     "UNI_F13_002",
     "UNI_ALERT_001",
 )
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

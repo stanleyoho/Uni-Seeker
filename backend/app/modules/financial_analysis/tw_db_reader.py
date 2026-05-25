@@ -7,6 +7,8 @@ so the rest of the app (ratios, frontend) works without changes.
 
 from __future__ import annotations
 
+import contextlib
+
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.financial_statement import FinancialStatement as FSModel
 from app.models.stock import Stock
 from app.modules.financial_analysis.base import FinancialData, FinancialStatement
-import contextlib
 
 logger = structlog.get_logger()
 

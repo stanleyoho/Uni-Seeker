@@ -26,15 +26,16 @@ Indices: (user_id, status) is the hot path for the scheduler
 ("give me every active rule for this user"); a single B-tree on
 status alone would not be selective enough at scale.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "UNI_ALERT_001"
-down_revision: Union[str, None] = "UNI_PORT_003"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_PORT_003"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 _RULE_TYPES = (
