@@ -11,7 +11,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     await ws_manager.connect(ws, channel)
     try:
         while True:
-            data = await ws.receive_text()
+            await ws.receive_text()
             # Echo or handle client messages
     except WebSocketDisconnect:
         ws_manager.disconnect(ws, channel)

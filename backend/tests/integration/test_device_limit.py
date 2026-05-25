@@ -69,8 +69,7 @@ async def test_same_device_relogin_updates_last_seen_no_audit(
     )
     assert r1.status_code == 200
     # Capture last_seen after first login
-    d = (await db_session.scalars(select(UserDevice).where(UserDevice.user_id == u.id))).one()
-    first_seen = d.last_seen_at
+    (await db_session.scalars(select(UserDevice).where(UserDevice.user_id == u.id))).one()
 
     # second login with same TestClient → same fingerprint
     r2 = await client.post(

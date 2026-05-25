@@ -42,7 +42,7 @@ async def test_create_and_list_rules(app_with_notifications) -> None:
             },
         )
         assert resp.status_code == 201
-        rule_id = resp.json()["id"]
+        resp.json()["id"]
 
         # List
         resp = await client.get("/api/v1/notifications/rules")

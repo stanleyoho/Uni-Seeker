@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.financial_statement import FinancialStatement as FSModel
 from app.models.stock import Stock
 from app.modules.financial_analysis.base import FinancialData, FinancialStatement
+import contextlib
 
 logger = structlog.get_logger()
 
@@ -120,10 +121,8 @@ async def read_tw_financials(symbol: str, db: AsyncSession) -> FinancialData | N
                 continue
             display_name = field_map.get(raw_key)
             if display_name and display_name not in mapped_data:
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     mapped_data[display_name] = float(raw_val)
-                except (TypeError, ValueError):
-                    pass
 
         if mapped_data:
             grouped[stmt_type].append(

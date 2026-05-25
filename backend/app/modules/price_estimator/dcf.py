@@ -18,7 +18,7 @@ class DCFEstimator:
         fcf_query = (
             select(FinancialMetrics.fcf)
             .where(FinancialMetrics.stock_id == stock_id)
-            .where(FinancialMetrics.fcf != None)
+            .where(FinancialMetrics.fcf is not None)
             .order_by(FinancialMetrics.period.desc())
             .limit(4)
         )

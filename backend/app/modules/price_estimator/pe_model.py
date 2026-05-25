@@ -19,7 +19,7 @@ class PEBandEstimator:
         pe_query = (
             select(StockValuation.pe_ratio)
             .where(StockValuation.stock_id == stock_id)
-            .where(StockValuation.pe_ratio != None)
+            .where(StockValuation.pe_ratio is not None)
             .where(StockValuation.pe_ratio > 0)
             .order_by(StockValuation.date.desc())
             .limit(750)
@@ -34,7 +34,7 @@ class PEBandEstimator:
         eps_query = (
             select(FinancialMetrics.eps)
             .where(FinancialMetrics.stock_id == stock_id)
-            .where(FinancialMetrics.eps != None)
+            .where(FinancialMetrics.eps is not None)
             .order_by(FinancialMetrics.period.desc())
             .limit(4)
         )
