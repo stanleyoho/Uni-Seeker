@@ -8,7 +8,7 @@ class PatternIndicator:
 
     name = "PATTERN"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         pattern_type = str(params.get("pattern_type", "ma_alignment"))
 
         if pattern_type == "ma_alignment":
@@ -42,9 +42,11 @@ class PatternIndicator:
             return IndicatorResult(name=self.name, values={"ma_alignment": alignment})
 
         for i in range(min_period - 1, n):
-            mas = [self._sma(closes, p, i) for p in periods]
-            if any(m is None for m in mas):
+            mas_raw = [self._sma(closes, p, i) for p in periods]
+            if any(m is None for m in mas_raw):
                 continue
+            # After None-check above, all values are real floats.
+            mas: list[float] = [m for m in mas_raw if m is not None]
 
             # Check if MAs are in order (bullish: short > long)
             bullish = all(mas[j] > mas[j + 1] for j in range(len(mas) - 1))
@@ -79,7 +81,12 @@ class PatternIndicator:
             short_prev = self._sma(closes, short_p, i - 1)
             long_prev = self._sma(closes, long_p, i - 1)
 
-            if None in (short_now, long_now, short_prev, long_prev):
+            if (
+                short_now is None
+                or long_now is None
+                or short_prev is None
+                or long_prev is None
+            ):
                 cross[i] = 0
                 continue
 
@@ -117,7 +124,7 @@ class PatternIndicator:
             k_prev = k_values[i - 1]
             d_prev = d_values[i - 1]
 
-            if None in (k_now, d_now, k_prev, d_prev):
+            if k_now is None or d_now is None or k_prev is None or d_prev is None:
                 continue
 
             golden = k_prev <= d_prev and k_now > d_now

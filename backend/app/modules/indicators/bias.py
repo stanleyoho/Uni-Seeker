@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
 class BiasIndicator:
     name = "BIAS"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         period = int(params.get("period", 20))
         n = len(closes)
         bias: list[float | None] = [None] * n

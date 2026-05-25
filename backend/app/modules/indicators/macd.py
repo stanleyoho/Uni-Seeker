@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
@@ -18,7 +20,7 @@ def _ema(data: list[float], period: int) -> list[float | None]:
 class MACDIndicator:
     name = "MACD"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         fast = int(params.get("fast", 12))
         slow = int(params.get("slow", 26))
         signal_period = int(params.get("signal", 9))
@@ -38,8 +40,10 @@ class MACDIndicator:
         slow_ema = _ema(closes, slow)
 
         for i in range(n):
-            if fast_ema[i] is not None and slow_ema[i] is not None:
-                macd_line[i] = round(fast_ema[i] - slow_ema[i], 4)
+            fast_v = fast_ema[i]
+            slow_v = slow_ema[i]
+            if fast_v is not None and slow_v is not None:
+                macd_line[i] = round(fast_v - slow_v, 4)
 
         macd_start = slow - 1
         macd_data = [v for v in macd_line[macd_start:] if v is not None]
@@ -49,8 +53,9 @@ class MACDIndicator:
                 idx = macd_start + i
                 if idx < n:
                     signal_line[idx] = val
-                    if val is not None and macd_line[idx] is not None:
-                        histogram[idx] = round(macd_line[idx] - val, 4)
+                    macd_v = macd_line[idx]
+                    if val is not None and macd_v is not None:
+                        histogram[idx] = round(macd_v - val, 4)
 
         return IndicatorResult(
             name=self.name,

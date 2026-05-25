@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
 class RSIIndicator:
     name = "RSI"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         period = int(params.get("period", 14))
         n = len(closes)
         rsi: list[float | None] = [None] * n

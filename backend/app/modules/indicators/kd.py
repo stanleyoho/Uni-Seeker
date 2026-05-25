@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
 class KDIndicator:
     name = "KD"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         highs: list[float] = list(params.get("highs", []))
         lows: list[float] = list(params.get("lows", []))
         k_period = int(params.get("k_period", 9))

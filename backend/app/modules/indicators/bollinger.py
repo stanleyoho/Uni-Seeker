@@ -1,4 +1,5 @@
 import math
+from typing import Any
 
 from app.modules.indicators.base import IndicatorResult
 
@@ -6,7 +7,7 @@ from app.modules.indicators.base import IndicatorResult
 class BollingerBandsIndicator:
     name = "BB"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         period = int(params.get("period", 20))
         num_std = float(params.get("num_std", 2.0))
         n = len(closes)

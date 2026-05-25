@@ -96,27 +96,36 @@ async def apply_buy(
     trade: Trade,
     currency: str,
 ) -> None:
-    """Create a new lot and update position cache for a BUY trade."""
-    cost_per_unit = (trade.price * trade.quantity + trade.fee) / trade.quantity
+    """Create a new lot and update position cache for a BUY trade.
+
+    Domain invariant: BUY trades MUST have price + quantity set.
+    The DB columns are nullable to accommodate DIVIDEND / SPLIT actions
+    where one of those fields legitimately is absent.
+    """
+    assert trade.price is not None, "BUY trade must have price"
+    assert trade.quantity is not None, "BUY trade must have quantity"
+    price = trade.price
+    quantity = trade.quantity
+    cost_per_unit = (price * quantity + trade.fee) / quantity
     lot = TradeLot(
         trade_id=trade.id,
         account_id=trade.account_id,
         symbol=trade.symbol,
         market=trade.market,
-        original_qty=trade.quantity,
-        remaining_qty=trade.quantity,
+        original_qty=quantity,
+        remaining_qty=quantity,
         cost_per_unit=cost_per_unit,
     )
     db.add(lot)
 
-    total_cost = cost_per_unit * trade.quantity
+    total_cost = cost_per_unit * quantity
     await _upsert_position(
         db,
         account_id=trade.account_id,
         symbol=trade.symbol,
         market=trade.market,
         currency=currency,
-        qty_delta=trade.quantity,
+        qty_delta=quantity,
         cost_delta=total_cost,
         realized_pnl_delta=Decimal("0"),
     )
@@ -127,11 +136,17 @@ async def apply_sell(
     trade: Trade,
     currency: str,
 ) -> Decimal:
-    """Consume open lots via FIFO and return realized_pnl."""
+    """Consume open lots via FIFO and return realized_pnl.
+
+    Domain invariant: SELL trades MUST have price + quantity set.
+    """
+    assert trade.price is not None, "SELL trade must have price"
+    assert trade.quantity is not None, "SELL trade must have quantity"
+    quantity = trade.quantity
     open_lots = await _load_open_lots(db, trade.account_id, trade.symbol, trade.market)
     engine = FIFOEngine(open_lots=open_lots)
     result = engine.process_sell(
-        qty=trade.quantity,
+        qty=quantity,
         price=trade.price,
         fee=trade.fee,
         tax=trade.tax,
@@ -168,7 +183,7 @@ async def apply_sell(
         symbol=trade.symbol,
         market=trade.market,
         currency=currency,
-        qty_delta=-trade.quantity,
+        qty_delta=-quantity,
         cost_delta=-cost_consumed,
         realized_pnl_delta=result.realized_pnl,
     )

@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
 class MovingAverageIndicator:
     name = "MA"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         period = int(params.get("period", 20))
         ma_type = str(params.get("ma_type", "SMA"))
         n = len(closes)
