@@ -1,6 +1,7 @@
 import logging as _logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,8 +108,8 @@ def create_app() -> FastAPI:
     app.include_router(v1_router)
 
     @app.get("/health")
-    async def health() -> dict:
-        status: dict = {"status": "ok", "services": {}}
+    async def health() -> dict[str, Any]:
+        status: dict[str, Any] = {"status": "ok", "services": {}}
 
         # Check DB
         try:

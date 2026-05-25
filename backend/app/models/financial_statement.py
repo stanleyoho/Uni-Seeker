@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -42,7 +43,7 @@ class FinancialStatement(Base):
     )  # "income", "balance", "cashflow"
     fiscal_year: Mapped[int] = mapped_column(SmallInteger)
     fiscal_quarter: Mapped[int] = mapped_column(SmallInteger)  # 1-4
-    data: Mapped[dict] = mapped_column(JSONB, default_factory=dict)
+    data: Mapped[dict[str, Any]] = mapped_column(JSONB, default_factory=dict)
     is_cumulative: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()

@@ -30,7 +30,7 @@ from __future__ import annotations
 import asyncio
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import structlog
 
@@ -203,7 +203,7 @@ class F13FilingService:
         from_date: date | None = None,
         to_date: date | None = None,
         limit: int = 20,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Per-stock time-series across multiple quarterly filings.
 
         Replaces the frontend's "N parallel useHoldings + filter"
@@ -297,7 +297,7 @@ class F13FilingService:
         # appears twice (13F-HR + 13F-HR/A), keep the one with the
         # latest `filed_at`. The tuples are ASC by period_end already
         # so we walk once and overwrite on conflict.
-        by_period: dict[date, tuple] = {}
+        by_period: dict[date, tuple[F13Filing, F13Holding | None]] = {}
         for filing, holding in tuples:
             existing = by_period.get(filing.report_period_end)
             if existing is None or filing.filed_at > existing[0].filed_at:
@@ -305,7 +305,7 @@ class F13FilingService:
         collapsed = [by_period[k] for k in sorted(by_period.keys())]
 
         # Step 5: walk forward + compute deltas.
-        entries: list[dict] = []
+        entries: list[dict[str, Any]] = []
         prev_shares: Decimal | None = None
         cusip_out: str | None = None
         symbol_out: str | None = None
@@ -584,7 +584,7 @@ class F13FilingService:
 # ── module-private helpers (pure functions) ────────────────────────────
 
 
-def _parsed_to_holding_kwargs(p: ParsedHolding) -> dict:
+def _parsed_to_holding_kwargs(p: ParsedHolding) -> dict[str, Any]:
     """Adapt a `ParsedHolding` dataclass into `F13Holding` constructor
     kwargs. Keeps service layer free of ORM/Decimal coupling decisions
     that are otherwise scattered.

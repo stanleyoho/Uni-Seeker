@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 @router.get("/channels")
-def list_channels() -> list[dict]:
+def list_channels() -> list[dict[str, Any]]:
     """List available notification channels and their status."""
     return [
         {
@@ -57,7 +58,7 @@ def list_channels() -> list[dict]:
 
 
 @router.get("/templates")
-def list_notification_templates() -> list[dict]:
+def list_notification_templates() -> list[dict[str, Any]]:
     """List preset notification templates."""
     return [
         {

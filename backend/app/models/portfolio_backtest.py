@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSON
@@ -22,11 +23,11 @@ class PortfolioBacktestRecord(Base):
     )
     name: Mapped[str] = mapped_column(String(200))
     rebalance_mode: Mapped[str] = mapped_column(String(20))
-    allocations: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    rebalance_config: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    metrics_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    equity_curve: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    individual_curves: Mapped[dict] = mapped_column(JSON, default_factory=dict)
+    allocations: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    rebalance_config: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    metrics_json: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    equity_curve: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    individual_curves: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         init=False,

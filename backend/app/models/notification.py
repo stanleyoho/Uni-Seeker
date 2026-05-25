@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -29,7 +30,7 @@ class NotificationRule(Base):
     name: Mapped[str] = mapped_column(String(100))
     rule_type: Mapped[str] = mapped_column(String(50))  # price_alert, indicator_alert, schedule
     symbol: Mapped[str] = mapped_column(String(20), default="")
-    conditions: Mapped[dict] = mapped_column(JSON, default_factory=dict)
+    conditions: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
     condition_logic: Mapped[str] = mapped_column(String(10), default="AND")
     channels: Mapped[str] = mapped_column(String(200), default='["telegram"]')
     backtest_result_id: Mapped[int | None] = mapped_column(

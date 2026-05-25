@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -43,7 +45,7 @@ async def get_revenue_analysis(symbol: str) -> RevenueAnalysisResponse:
 
 
 @router.post("/update-tw")
-async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict:
+async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Fetch latest TWSE monthly revenue and store in database."""
     async with httpx.AsyncClient(timeout=60, verify=False) as client:
         provider = TWSERevenueProvider(client=client)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import Date, DateTime, String, func
 from sqlalchemy.dialects.postgresql import JSON
@@ -17,7 +18,7 @@ class SignalScanRecord(Base):
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     symbol: Mapped[str] = mapped_column(String(50), index=True)
     scan_date: Mapped[date] = mapped_column(Date, index=True)
-    signals_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
+    signals_json: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         init=False,

@@ -32,7 +32,7 @@ Returns a dict with counters; caller commits the outer transaction.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select, update
 
@@ -277,7 +277,7 @@ async def backfill_cusips_global_with_figi(
 
 async def _resolve_and_apply(
     db: AsyncSession,
-    rows: list,
+    rows: list[Any],
     scope: str,
 ) -> dict[str, int]:
     """Common path for filer-scoped and global backfill.
@@ -337,7 +337,7 @@ async def _resolve_and_apply(
 
 async def _resolve_and_apply_with_figi(
     db: AsyncSession,
-    rows: list,
+    rows: list[Any],
     scope: str,
     figi_client: OpenFigiClient | None,
 ) -> dict[str, int]:

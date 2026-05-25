@@ -216,7 +216,7 @@ async def get_heatmap_data(
     rows = result.all()
 
     # Group by industry
-    sector_map: dict[str, list] = {}
+    sector_map: dict[str, list[HeatmapStock]] = {}
     for row in rows:
         industry = row.industry_name or "Other"
         if industry not in sector_map:

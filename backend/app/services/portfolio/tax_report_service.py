@@ -30,7 +30,7 @@ from __future__ import annotations
 import csv
 import io
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.config import settings
 from app.modules.billing.tier_limits import has_feature
@@ -326,7 +326,7 @@ class TaxReportService:
 
 def _project_trades(
     trades: list[PortfolioTrade],
-) -> tuple[list[dict], list[dict]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Project ORM trades into the dict shape `tax_report` consumes.
 
     BUY → contributes to `buy_lots_history`. Cost-per-unit is the gross
@@ -342,8 +342,8 @@ def _project_trades(
     DIVIDEND / SPLIT rows but we already filtered those upstream) are
     skipped.
     """
-    buys: list[dict] = []
-    sells: list[dict] = []
+    buys: list[dict[str, Any]] = []
+    sells: list[dict[str, Any]] = []
     for t in trades:
         if t.quantity is None or t.price is None:
             continue
@@ -377,7 +377,7 @@ def _project_trades(
 
 def _project_trades_for_wash_sale(
     trades: list[PortfolioTrade],
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Project ORM trades into the dict shape `wash_sale_detector` consumes.
 
     Detector keys: ``id``, ``trade_date``, ``symbol``, ``market``,
@@ -385,7 +385,7 @@ def _project_trades_for_wash_sale(
     auditing). DIVIDEND / SPLIT rows are filtered out upstream so we
     can safely include every action the caller passed in.
     """
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for t in trades:
         if t.quantity is None or t.price is None:
             continue

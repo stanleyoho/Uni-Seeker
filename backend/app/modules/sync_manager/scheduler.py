@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -194,12 +195,12 @@ class SyncScheduler:
 
         return "\n".join(lines)
 
-    async def get_status(self, db: AsyncSession) -> list[dict]:
+    async def get_status(self, db: AsyncSession) -> list[dict[str, Any]]:
         """Return the current sync state for every dataset."""
         q = await db.execute(select(SyncState).where(SyncState.stock_id.is_(None)))
         states = q.scalars().all()
 
-        rows: list[dict] = []
+        rows: list[dict[str, Any]] = []
         state_map = {s.dataset: s for s in states}
         for name in _TASK_ORDER:
             s = state_map.get(name)

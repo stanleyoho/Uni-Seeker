@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSON
@@ -22,10 +23,10 @@ class BacktestResultRecord(Base):
     )
     symbol: Mapped[str] = mapped_column(String(50), index=True)
     strategy_name: Mapped[str] = mapped_column(String(200))
-    strategy_params: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    metrics_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    equity_curve: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    trade_log: Mapped[dict] = mapped_column(JSON, default_factory=dict)
+    strategy_params: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    metrics_json: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    equity_curve: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    trade_log: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default_factory=list)
     composite_mode: Mapped[str | None] = mapped_column(String(20), default=None)
 
     # Backtest metadata

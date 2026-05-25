@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import asdict
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -43,7 +43,9 @@ _CHIP_STRATEGIES = {
 }
 
 
-async def _fetch_chip_data(symbol: str, start_date: str, end_date: str) -> dict[str, list[dict]]:
+async def _fetch_chip_data(
+    symbol: str, start_date: str, end_date: str
+) -> dict[str, list[dict[str, Any]]]:
     """Fetch institutional + margin + shareholding data from FinMind."""
     data_id = symbol.replace(".TW", "")
     client = FinMindClient(token=settings.finmind_api_token, base_url=settings.finmind_api_url)
@@ -227,7 +229,7 @@ _AUTO_DISCOVERY_TIMEOUT = 120  # 2 minutes
 async def run_auto_discovery(
     req: AutoDiscoveryRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Run automatic strategy discovery for a stock.
 
     Tests all technical strategies, optimises parameters for the top performers,

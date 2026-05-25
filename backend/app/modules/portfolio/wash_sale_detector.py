@@ -176,7 +176,7 @@ def _to_decimal(v: Any) -> Decimal:
     raise TypeError(f"wash_sale_detector expects Decimal/int/str numerics, got {type(v).__name__}")
 
 
-def _buy_trades_only(trades: list[dict]) -> list[dict]:
+def _buy_trades_only(trades: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Project the trade log into the BUY rows we use as replacement
     candidates. Sorted by (trade_date ASC, id ASC) for deterministic
     FIFO consumption."""
@@ -188,7 +188,7 @@ def _buy_trades_only(trades: list[dict]) -> list[dict]:
 
 
 def detect_wash_sales(
-    trades: list[dict],
+    trades: list[dict[str, Any]],
     matches: list[TaxLotMatch],
 ) -> WashSaleResult:
     """Detect §1091 wash sales in a (trades, matches) corpus.
@@ -220,7 +220,7 @@ def detect_wash_sales(
           claimed its share.
     """
     # ── Index BUY trades by (symbol, market) for fast lookup ──────────
-    buy_pool_by_symbol: dict[tuple[str, str], list[dict]] = {}
+    buy_pool_by_symbol: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for buy in _buy_trades_only(trades):
         key = (buy["symbol"], buy["market"])
         buy_pool_by_symbol.setdefault(key, []).append(

@@ -178,8 +178,8 @@ class BacktestJobWorker:
         strategy_name: str,
         strategy_params: dict[str, Any],
         metrics: Any,
-        equity_curve: list,
-        trade_log: list,
+        equity_curve: list[Any],
+        trade_log: list[Any],
         composite_mode: str | None = None,
     ) -> BacktestResultRecord:
         """Create a BacktestResultRecord and add it to the session."""
@@ -258,7 +258,7 @@ class BacktestJobWorker:
         prices = await self._fetch_prices(db, symbol)
 
         registry = create_default_registry()
-        strategy_params_map: dict[str, dict] = config.get("strategy_params", {})
+        strategy_params_map: dict[str, dict[str, Any]] = config.get("strategy_params", {})
         mode = config.get("mode", "all")
 
         sub_strategies = []
@@ -377,7 +377,7 @@ class BacktestJobWorker:
         db: AsyncSession,
     ) -> None:
         registry = create_default_registry()
-        strategy_params_map: dict[str, dict] = config.get("strategy_params", {})
+        strategy_params_map: dict[str, dict[str, Any]] = config.get("strategy_params", {})
 
         # Build allocations and fetch prices for each symbol
         allocations: list[PortfolioAllocation] = []

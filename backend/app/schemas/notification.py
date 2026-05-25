@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
@@ -27,7 +28,7 @@ class NotificationRuleResponse(BaseModel):
     name: str
     rule_type: str
     symbol: str
-    conditions: list[dict] | dict  # backward compatible
+    conditions: list[dict[str, Any]] | dict[str, Any]  # backward compatible
     condition_logic: str
     channels: list[str]
     is_active: bool

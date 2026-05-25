@@ -18,7 +18,7 @@ row idempotently via `F13SubscriptionService.subscribe(cik=...)`.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -60,7 +60,7 @@ class F13FilerSearchService:
         self._filer_repo = F13FilerRepo(db)
         self._edgar = edgar_client
 
-    async def search_filers(self, query: str, limit: int = 20) -> list[dict]:
+    async def search_filers(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """Returns a list of `{cik, name, legal_name, is_locally_known}`.
 
         Args:
@@ -81,7 +81,7 @@ class F13FilerSearchService:
         # --- local layer -----------------------------------------------
         local_rows = await self._filer_repo.search_by_name(query, limit=limit)
         local_ciks: set[str] = {row.cik for row in local_rows}
-        merged: list[dict] = [
+        merged: list[dict[str, Any]] = [
             {
                 "cik": row.cik,
                 "name": row.name,

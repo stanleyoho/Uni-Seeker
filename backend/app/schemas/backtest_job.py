@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -13,7 +15,7 @@ class JobEnqueueRequest(BaseModel):
     mode: str = "majority"
     params: dict[str, object] = {}
     strategy_params: dict[str, dict[str, object]] = {}
-    param_grid: dict[str, list] | None = None
+    param_grid: dict[str, list[Any]] | None = None
     initial_capital: float = 1_000_000
     position_size: float = 0.95
     stop_loss: float | None = None
@@ -51,7 +53,7 @@ class BacktestHistoryItem(BaseModel):
     job_id: int
     symbol: str
     strategy_name: str
-    strategy_params: dict
+    strategy_params: dict[str, Any]
     total_return: float
     annualized_return: float
     max_drawdown: float

@@ -14,6 +14,7 @@ unit tests) keep using ``from app.obs._sentry_filters import ...``.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from observability_core._sentry_filters import (
     build_before_send as _core_build_before_send,
@@ -36,7 +37,7 @@ class ExpectedDriftAlertError(Exception):
     """
 
 
-def build_before_send() -> Callable[[dict, dict], dict | None]:
+def build_before_send() -> Callable[[dict[str, Any], dict[str, Any]], dict[str, Any] | None]:
     """Construct the Sentry ``before_send`` callback with Uni-Seeker policy.
 
     Drops:
@@ -47,22 +48,26 @@ def build_before_send() -> Callable[[dict, dict], dict | None]:
 
     Returns event unchanged when not filtered; returns None to drop.
     """
-    return _core_build_before_send(
-        drop_exception_classes=(ExpectedDriftAlertError,),
+    callback: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any] | None] = (
+        _core_build_before_send(
+            drop_exception_classes=(ExpectedDriftAlertError,),
+        )
     )
+    return callback
 
 
-def build_traces_sampler(baseline: float = 0.1) -> Callable[[dict], float]:
+def build_traces_sampler(baseline: float = 0.1) -> Callable[[dict[str, Any]], float]:
     """Construct the Sentry ``traces_sampler`` callback with Uni-Seeker policy.
 
     - ``/health``, ``/metrics``, ``/ready`` → 0% (package default)
     - ``/api/v1/billing/webhook`` → 100% (Uni-Seeker override)
     - otherwise → ``baseline``
     """
-    return _core_build_traces_sampler(
+    sampler: Callable[[dict[str, Any]], float] = _core_build_traces_sampler(
         baseline=baseline,
         full_sample_paths=_FULL_SAMPLE_PATHS,
     )
+    return sampler
 
 
 __all__ = [

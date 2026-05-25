@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from app.models.price import StockPrice
 from app.modules.backtester.metrics import BacktestMetrics, calculate_metrics
@@ -42,7 +43,7 @@ class BacktestEngine:
         strategy: Strategy,
         prices: list[StockPrice],
         symbol: str = "",
-        chip_data: dict[str, list[dict]] | None = None,
+        chip_data: dict[str, list[dict[str, Any]]] | None = None,
     ) -> BacktestResult:
         if not prices:
             portfolio = Portfolio(initial_capital=self._config.initial_capital)
@@ -60,7 +61,7 @@ class BacktestEngine:
         buy_price: float = 0.0
 
         # Build date-indexed chip data for O(1) lookup
-        _chip_by_date: dict[str, dict[str, list[dict]]] = {}
+        _chip_by_date: dict[str, dict[str, list[dict[str, Any]]]] = {}
         if chip_data:
             for key, records in chip_data.items():
                 for rec in records:

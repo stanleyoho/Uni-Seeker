@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -28,9 +30,9 @@ class PortfolioMetricsResponse(BaseModel):
 
 class PortfolioBacktestResponse(BaseModel):
     portfolio_metrics: PortfolioMetricsResponse
-    individual_metrics: dict[str, dict]
+    individual_metrics: dict[str, dict[str, Any]]
     portfolio_equity_curve: list[float]
     individual_equity_curves: dict[str, list[float]]
-    trade_log: list[dict]
-    rebalance_log: list[dict]
+    trade_log: list[dict[str, Any]]
+    rebalance_log: list[dict[str, Any]]
     allocations: list[PortfolioAllocationInput]

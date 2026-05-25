@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSON
@@ -29,8 +30,8 @@ class BacktestJob(Base):
         index=True,
     )  # pending, running, completed, failed, cancelled
     priority: Mapped[int] = mapped_column(Integer, default=0)
-    config_json: Mapped[dict] = mapped_column(JSON, default_factory=dict)
-    result_json: Mapped[dict | None] = mapped_column(JSON, default=None)
+    config_json: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
     error_message: Mapped[str | None] = mapped_column(String(1000), default=None)
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[datetime | None] = mapped_column(

@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
@@ -22,7 +24,7 @@ class PriceVolumeIndicator:
             return self._multi_period_change(closes, params)
         return IndicatorResult(name=self.name, values={})
 
-    def _volume_ratio(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _volume_ratio(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """Today's volume / N-day average volume."""
         volumes: list[int] = list(params.get("volumes", []))
         period = int(params.get("period", 5))
@@ -38,7 +40,7 @@ class PriceVolumeIndicator:
 
         return IndicatorResult(name=self.name, values={"volume_ratio": ratio})
 
-    def _volume_surge(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _volume_surge(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """Detect volume surges: volume > N * average volume."""
         volumes: list[int] = list(params.get("volumes", []))
         period = int(params.get("period", 20))
@@ -57,7 +59,7 @@ class PriceVolumeIndicator:
 
         return IndicatorResult(name=self.name, values={"volume_surge": surge})
 
-    def _amplitude(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _amplitude(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """Daily amplitude: (high - low) / previous close * 100."""
         highs: list[float] = list(params.get("highs", []))
         lows: list[float] = list(params.get("lows", []))
@@ -73,7 +75,7 @@ class PriceVolumeIndicator:
 
         return IndicatorResult(name=self.name, values={"amplitude": amp})
 
-    def _new_high_low(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _new_high_low(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """Detect N-day new high or low. Returns 1 (new high), -1 (new low), 0 (neither)."""
         period = int(params.get("period", 20))
         n = len(closes)
@@ -93,7 +95,7 @@ class PriceVolumeIndicator:
 
         return IndicatorResult(name=self.name, values={"new_high_low": signal})
 
-    def _multi_period_change(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _multi_period_change(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """Price change % over multiple periods (5, 20, 60, 120, 240 days)."""
         periods = [5, 20, 60, 120, 240]
         n = len(closes)

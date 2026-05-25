@@ -1,3 +1,5 @@
+from typing import Any
+
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +12,7 @@ from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 logger = structlog.get_logger()
 
 
-async def run_valuation_sync(db: AsyncSession, limit: int = 100) -> dict:
+async def run_valuation_sync(db: AsyncSession, limit: int = 100) -> dict[str, Any]:
     """Run price estimation models for all active stocks."""
     logger.info("start_valuation_sync", limit=limit)
 

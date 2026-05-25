@@ -8,6 +8,7 @@ the T3 stub.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,7 +68,7 @@ async def submit_kyc(
 @router.get("/risky-demo", include_in_schema=False)
 async def risky_demo(
     user: User = Depends(require_risk_tolerance("moderate")),  # noqa: B008
-) -> dict:
+) -> dict[str, Any]:
     """Placeholder endpoint demonstrating the require_risk_tolerance guard.
 
     Real high-risk signal endpoints (NBA Pro, crypto whale alerts) live in
