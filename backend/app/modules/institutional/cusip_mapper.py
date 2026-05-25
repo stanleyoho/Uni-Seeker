@@ -464,7 +464,7 @@ async def batch_resolve_cusips_with_figi(
     # Apply EXACT hits; collect misses for layer 2.
     miss_idx: list[int] = []
     miss_cusips: list[str] = []
-    for pos, cusip in zip(live_idx, live_cusips):
+    for pos, cusip in zip(live_idx, live_cusips, strict=False):
         if cusip in exact_map:
             sid, sname = exact_map[cusip]
             out[pos] = CusipMatchFigi(
@@ -511,7 +511,7 @@ async def batch_resolve_cusips_with_figi(
 
     # Apply FIGI hits; collect remaining misses for layer 3 (NAME_LIKE).
     name_like_idx: list[int] = []
-    for pos, cusip in zip(miss_idx, miss_cusips):
+    for pos, cusip in zip(miss_idx, miss_cusips, strict=False):
         ticker = cusip_to_ticker.get(cusip)
         if ticker and ticker in ticker_to_stock:
             sid, sname = ticker_to_stock[ticker]

@@ -128,10 +128,7 @@ def daily_change(qty: Decimal, last_price: Decimal, prev_close: Decimal) -> Dail
     """
     delta_per_share = last_price - prev_close
     delta_total = delta_per_share * qty
-    if prev_close == _ZERO:
-        delta_pct = _ZERO
-    else:
-        delta_pct = delta_per_share / prev_close
+    delta_pct = _ZERO if prev_close == _ZERO else delta_per_share / prev_close
     return DailyChange(
         last_price=last_price,
         prev_close=prev_close,
@@ -173,10 +170,7 @@ def summarize(
         total_daily += (last_price - prev_close) * qty
 
     gain_simple = total_value - total_cost
-    if total_cost == _ZERO:
-        gain_simple_pct = _ZERO
-    else:
-        gain_simple_pct = gain_simple / total_cost
+    gain_simple_pct = _ZERO if total_cost == _ZERO else gain_simple / total_cost
 
     return PortfolioSummary(
         total_cost=total_cost,

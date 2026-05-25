@@ -299,7 +299,7 @@ async def _resolve_and_apply(
     still_unmapped = 0
     processed = len(rows)
 
-    for holding_row, match in zip(rows, matches):
+    for holding_row, match in zip(rows, matches, strict=False):
         if match.stock_id is None:
             still_unmapped += 1
             continue
@@ -365,7 +365,7 @@ async def _resolve_and_apply_with_figi(
     still_unmapped = 0
     processed = len(rows)
 
-    for holding_row, match in zip(rows, matches):
+    for holding_row, match in zip(rows, matches, strict=False):
         if match.stock_id is None:
             still_unmapped += 1
             continue

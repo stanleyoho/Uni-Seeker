@@ -246,10 +246,7 @@ def _apply_round_down_cil(
 
     # new_cost_per_unit at raw (untruncated) multiplier so the per-share basis
     # matches the would-be invariant. Equivalent to old_cost / multiplier.
-    if raw_new_qty == _ZERO:
-        new_cost_per_unit = _ZERO
-    else:
-        new_cost_per_unit = (old_qty * old_cost) / raw_new_qty
+    new_cost_per_unit = _ZERO if raw_new_qty == _ZERO else old_qty * old_cost / raw_new_qty
 
     cil = fractional * market_price
     return kept_qty, new_cost_per_unit, cil

@@ -260,7 +260,7 @@ class OpenFigiClient:
             chunk = live_cusips[start : start + self._batch_size]
             chunk_positions = live_positions[start : start + self._batch_size]
             chunk_results = await self._post_mapping_chunk(chunk)
-            for pos, mapping in zip(chunk_positions, chunk_results):
+            for pos, mapping in zip(chunk_positions, chunk_results, strict=False):
                 results[pos] = mapping
 
         # All positions must be filled by now.
@@ -290,7 +290,7 @@ class OpenFigiClient:
             return [_empty_mapping(c, error="bad_payload") for c in cusips]
 
         out: list[FigiMapping] = []
-        for cusip, row in zip(cusips, payload):
+        for cusip, row in zip(cusips, payload, strict=False):
             if not isinstance(row, dict):
                 out.append(_empty_mapping(cusip, error="bad_row"))
                 continue

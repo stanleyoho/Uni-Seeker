@@ -301,7 +301,7 @@ class GridSearchEngine:
             return [{}]
         keys = list(param_grid.keys())
         values = [param_grid[k] for k in keys]
-        return [dict(zip(keys, combo)) for combo in itertools.product(*values)]
+        return [dict(zip(keys, combo, strict=False)) for combo in itertools.product(*values)]
 
     def _evaluate_combination(
         self,
