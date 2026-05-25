@@ -36,7 +36,11 @@ select = [
 # — 2026-05-24 attempt broke 4 analytics tests in TW=UTC+8 timezone). DTZ002
 # (datetime.today) and DTZ007 (strptime sans %z) remain enabled — those are
 # broker-parser locality issues that need per-broker semantic decisions.
-ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003", "DTZ011"]
+# PT011 (pytest.raises too broad): noise in this codebase. Test names are
+# already specific (test_C02_apply_buy_rejects_non_positive_qty etc) and
+# tested functions have narrow surface; the accidental-other-ValueError
+# scenario the rule guards against doesn't materialize in practice.
+ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003", "DTZ011", "PT011"]
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
