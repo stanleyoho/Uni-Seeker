@@ -47,10 +47,13 @@ async def test_rewrites_buy_recommendation_in_json():
 async def test_rewrites_multiple_phrases_in_one_body():
     app = _make_app({"a": "買入點", "b": "跟隨法人方向", "c": "必賺", "d": "穩定獲利"})
     _, text, _ = await _get(app)
-    assert "買入點" not in text and "信號觸發區" in text
-    assert "跟隨法人方向" not in text and "法人部位特徵符合" in text
+    assert "買入點" not in text
+    assert "信號觸發區" in text
+    assert "跟隨法人方向" not in text
+    assert "法人部位特徵符合" in text
     # "必賺" 與 "穩定獲利" 都映射到 "歷史回測統計結果"
-    assert "必賺" not in text and "穩定獲利" not in text
+    assert "必賺" not in text
+    assert "穩定獲利" not in text
     assert text.count("歷史回測統計結果") >= 2
 
 

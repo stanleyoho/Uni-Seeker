@@ -289,8 +289,10 @@ def test_T13_multi_lot_split():
         ]
     )
     lots = engine.process_split(ratio=Decimal("2"))
-    assert lots[0].remaining_qty == Decimal("200") and lots[0].cost_per_unit == Decimal("50")
-    assert lots[1].remaining_qty == Decimal("100") and lots[1].cost_per_unit == Decimal("60")
+    assert lots[0].remaining_qty == Decimal("200")
+    assert lots[0].cost_per_unit == Decimal("50")
+    assert lots[1].remaining_qty == Decimal("100")
+    assert lots[1].cost_per_unit == Decimal("60")
 
 
 # T14: Dividend does not touch lots (fifo_engine has no process_dividend)

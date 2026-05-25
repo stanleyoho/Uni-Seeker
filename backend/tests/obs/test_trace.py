@@ -81,5 +81,6 @@ async def test_fastapi_middleware_generates_when_missing(monkeypatch):
         r = await ac.get("/probe")
     assert r.status_code == 200
     generated = r.headers.get("X-Request-Id")
-    assert generated and len(generated) >= 32
+    assert generated
+    assert len(generated) >= 32
     assert r.json()["trace_id"] == generated

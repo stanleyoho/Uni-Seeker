@@ -222,8 +222,10 @@ def test_T13_multi_symbol_isolation():
     assert len(matches) == 2
     matches.sort(key=lambda m: m.symbol)
     a, b = matches
-    assert a.symbol == "A" and a.gain_loss == Decimal("500")
-    assert b.symbol == "B" and b.gain_loss == Decimal("500")
+    assert a.symbol == "A"
+    assert a.gain_loss == Decimal("500")
+    assert b.symbol == "B"
+    assert b.gain_loss == Decimal("500")
 
 
 # ── summarize_by_year ─────────────────────────────────────────────────

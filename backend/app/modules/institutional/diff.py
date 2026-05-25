@@ -183,7 +183,8 @@ def _classify(
             curr_value_usd=None,
             delta_value_usd=-prev.value_usd,
         )
-    assert prev is not None and curr is not None  # for type-checker
+    assert prev is not None  # for type-checker
+    assert curr is not None
 
     delta_shares = curr.shares - prev.shares
     delta_value = curr.value_usd - prev.value_usd
