@@ -19,7 +19,7 @@ Tier gating uses the standard 双保险 pattern (spec §9):
     before the service even runs.
   - Inside ``RebalancingService.preview_rebalance`` the same flag is
     re-asserted; if the dependency were ever forgotten, this raises
-    ``TierFeatureUnavailable`` which we translate to 403 with the
+    ``TierFeatureUnavailableError`` which we translate to 403 with the
     standard ``feature_unavailable:rebalancing`` detail string.
 
 Out of scope for the Phase 2 execute endpoint (Stanley 2026-05-24):
@@ -59,10 +59,10 @@ from app.schemas.holdings.rebalance import (
     SuggestedTradeResponse,
 )
 from app.services.portfolio.exceptions import (
-    InsufficientShares,
-    PortfolioAccountNotFound,
-    TierFeatureUnavailable,
-    TierLimitExceeded,
+    PortfolioInsufficientSharesError,
+    PortfolioAccountNotFoundError,
+    TierFeatureUnavailableError,
+    TierLimitExceededError,
 )
 from app.services.portfolio.rebalancing_service import RebalancingService
 from app.services.portfolio.trade_service import PortfolioTradeService
@@ -103,7 +103,7 @@ async def preview_rebalance(
             account_id=body.account_id,
             min_trade_value=body.min_trade_value,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         # Defensive: should be caught by the dependency above. Keep the
         # translation so a future refactor (e.g. swapping the dep out)
         # still returns the right status.
@@ -111,7 +111,7 @@ async def preview_rebalance(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
         ) from exc
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -165,7 +165,7 @@ async def execute_rebalance(
 
     Per-trade independent commit:
         Each suggested trade is its own try-block. If the trade-write
-        layer rejects one row (e.g. ``InsufficientShares`` because the
+        layer rejects one row (e.g. ``PortfolioInsufficientSharesError`` because the
         live position drifted since the snapshot was taken), it lands in
         ``failed`` and the next row continues. The endpoint returns 200
         with a per-row summary; the client decides how to react.
@@ -184,13 +184,13 @@ async def execute_rebalance(
             account_id=body.account_id,
             min_trade_value=body.min_trade_value,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         # Defensive — the dependency above should already 403.
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
         ) from exc
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -258,7 +258,7 @@ async def execute_rebalance(
             )
             await db.commit()
             await db.refresh(persisted)
-        except InsufficientShares as exc:
+        except PortfolioInsufficientSharesError as exc:
             await db.rollback()
             failed.append(
                 FailedTrade(
@@ -270,7 +270,7 @@ async def execute_rebalance(
                 )
             )
             continue
-        except TierLimitExceeded as exc:
+        except TierLimitExceededError as exc:
             # Trade-month quota or positions quota tripped mid-batch.
             # Surface as failed and stop — subsequent rows would hit the
             # same wall.

@@ -49,7 +49,7 @@ from app.repositories.portfolio import (
     PortfolioAccountRepo,
     PortfolioTradeRepo,
 )
-from app.services.portfolio.exceptions import TierFeatureUnavailable
+from app.services.portfolio.exceptions import TierFeatureUnavailableError
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,7 +110,7 @@ class TaxReportService:
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "tax_export"):
-            raise TierFeatureUnavailable(feature="tax_export")
+            raise TierFeatureUnavailableError(feature="tax_export")
 
     # ── public API ─────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ class TaxReportService:
             zero rows).
 
         Raises:
-            TierFeatureUnavailable: caller's tier lacks `tax_export`.
+            TierFeatureUnavailableError: caller's tier lacks `tax_export`.
         """
         self._assert_tax_export_feature()
 
@@ -180,7 +180,7 @@ class TaxReportService:
             (adjusted_matches, adjustments, summary_by_year)
 
         Raises:
-            TierFeatureUnavailable: caller's tier lacks ``tax_export``.
+            TierFeatureUnavailableError: caller's tier lacks ``tax_export``.
         """
         self._assert_tax_export_feature()
 

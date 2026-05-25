@@ -224,7 +224,7 @@ async def test_export_trades_free_user_403_feature_unavailable(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     """FREE tier lacks tax_export — service raises
-    TierFeatureUnavailable → endpoint maps to 403."""
+    TierFeatureUnavailableError → endpoint maps to 403."""
     user = await _mk_user(db_session, "exp_t2@x.tw", tier=UserTier.FREE)
     aid = await _create_account_via_api(client, user)
     await _seed_buy(client, user, aid)

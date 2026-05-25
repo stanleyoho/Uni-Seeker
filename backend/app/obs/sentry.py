@@ -1,7 +1,7 @@
 """Sentry SDK init helper — thin wrapper over observability-core.
 
 Translates Uni-Seeker's repo-specific filter policy (Stripe 4xx drop +
-``ExpectedDriftAlert`` drop + ``/api/v1/billing/webhook`` full sample)
+``ExpectedDriftAlertError`` drop + ``/api/v1/billing/webhook`` full sample)
 to generic kwargs of :func:`observability_core.sentry.init_sentry`,
 preserving the existing call-site contract
 (``from app.obs.sentry import init_sentry`` with the same kwargs).
@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from observability_core.sentry import init_sentry as _core_init_sentry
 
-from app.obs._sentry_filters import ExpectedDriftAlert
+from app.obs._sentry_filters import ExpectedDriftAlertError
 
 if TYPE_CHECKING:
     from sentry_sdk.integrations import Integration
@@ -43,7 +43,7 @@ def init_sentry(
     Wraps :func:`observability_core.sentry.init_sentry` with Uni-Seeker's
     filter policy:
 
-    - ``drop_exception_classes=(ExpectedDriftAlert,)`` — drift alerts are
+    - ``drop_exception_classes=(ExpectedDriftAlertError,)`` — drift alerts are
       a notification channel, not a bug, and must never reach Sentry.
     - ``full_sample_paths=("/api/v1/billing/webhook",)`` — Stripe webhook
       is sensitive enough to always be fully traced.
@@ -61,6 +61,6 @@ def init_sentry(
         traces_sample_rate=traces_sample_rate,
         profiles_sample_rate=profiles_sample_rate,
         extra_integrations=extra_integrations,
-        drop_exception_classes=(ExpectedDriftAlert,),
+        drop_exception_classes=(ExpectedDriftAlertError,),
         full_sample_paths=_FULL_SAMPLE_PATHS,
     )

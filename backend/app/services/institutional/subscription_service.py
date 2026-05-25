@@ -35,9 +35,9 @@ from app.repositories.institutional import (
 )
 from app.services.audit import log_audit_event
 from app.services.institutional.exceptions import (
-    F13FilerNotFound,
-    F13SubscriptionExists,
-    F13TierLimitExceeded,
+    F13FilerNotFoundError,
+    F13SubscriptionExistsError,
+    F13TierLimitExceededError,
 )
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class F13SubscriptionService:
     # ── tier guards (spec §9 service-level second line) ─────────────────
 
     async def _assert_filer_quota(self, delta: int = 1) -> None:
-        """Raise `F13TierLimitExceeded` if adding `delta` more subscriptions
+        """Raise `F13TierLimitExceededError` if adding `delta` more subscriptions
         would push the user over `max_tracked_filers` for their tier.
 
         `delta` defaults to 1 (single-subscribe path). For bulk_subscribe,
@@ -92,7 +92,7 @@ class F13SubscriptionService:
             return  # PRO / unlimited
         current = await self._sub_repo.count_by_user(self._user.id)
         if current + delta > limit:
-            raise F13TierLimitExceeded(
+            raise F13TierLimitExceededError(
                 limit_key="max_tracked_filers",
                 current=current,
                 limit=limit,
@@ -109,7 +109,7 @@ class F13SubscriptionService:
         """Subscribe the current user to a filer.
 
         `cik_or_filer_id` polymorphism:
-          - `int` → existing filer id; raises `F13FilerNotFound` if not.
+          - `int` → existing filer id; raises `F13FilerNotFoundError` if not.
           - `str` → CIK string; we `get_or_create_by_cik` with the
             supplied `name`. `name` is required in the str branch
             because a new filer row cannot be created without one
@@ -122,16 +122,16 @@ class F13SubscriptionService:
           4. INSERT + audit log.
 
         Raises:
-            F13FilerNotFound      — int filer_id missing.
+            F13FilerNotFoundError      — int filer_id missing.
             ValueError            — str CIK supplied without name.
-            F13TierLimitExceeded  — quota exhausted.
-            F13SubscriptionExists — already subscribed.
+            F13TierLimitExceededError  — quota exhausted.
+            F13SubscriptionExistsError — already subscribed.
         """
         # Step 1: resolve filer (creating on-demand for str CIK)
         if isinstance(cik_or_filer_id, int):
             filer = await self._filer_repo.get_by_id(cik_or_filer_id)
             if filer is None:
-                raise F13FilerNotFound(f"filer_id={cik_or_filer_id} not found")
+                raise F13FilerNotFoundError(f"filer_id={cik_or_filer_id} not found")
         else:
             if not name:
                 raise ValueError("name is required when subscribing by CIK string")
@@ -146,7 +146,7 @@ class F13SubscriptionService:
 
         # Step 3: duplicate check (clean 409 instead of DB IntegrityError)
         if await self._sub_repo.is_subscribed(self._user.id, filer.id):
-            raise F13SubscriptionExists(filer_id=filer.id)
+            raise F13SubscriptionExistsError(filer_id=filer.id)
 
         # Step 4: INSERT + audit
         await self._sub_repo.subscribe(user_id=self._user.id, filer_id=filer.id)
@@ -164,7 +164,7 @@ class F13SubscriptionService:
         """Remove the (user, filer) subscription.
 
         Raises:
-            F13FilerNotFound — when the user was not subscribed to this
+            F13FilerNotFoundError — when the user was not subscribed to this
                 filer (same 404/403 collapse as portfolio module). We
                 still issue an audit log because the attempt is
                 noteworthy from a security perspective, but only on the
@@ -173,7 +173,7 @@ class F13SubscriptionService:
         """
         deleted = await self._sub_repo.unsubscribe(user_id=self._user.id, filer_id=filer_id)
         if not deleted:
-            raise F13FilerNotFound(f"subscription to filer_id={filer_id} not found")
+            raise F13FilerNotFoundError(f"subscription to filer_id={filer_id} not found")
         await log_audit_event(
             self._db,
             action="f13_filer_unsubscribed",
@@ -207,7 +207,7 @@ class F13SubscriptionService:
              candidates to insert.
           4. **Atomic quota pre-check**: project
              `current_subscriptions + len(new_unique_ciks) > limit` and
-             raise `F13TierLimitExceeded` before any INSERT lands. The
+             raise `F13TierLimitExceededError` before any INSERT lands. The
              whole batch is rejected; the API layer returns 403.
           5. For each candidate:
              a. Resolve filer row via `get_or_create_by_cik`. If `name`

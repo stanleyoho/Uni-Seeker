@@ -38,11 +38,11 @@ from app.services.portfolio import (
     PortfolioTradeService,
 )
 from app.services.portfolio.exceptions import (
-    InsufficientShares,
-    PortfolioAccountNotFound,
-    PortfolioTradeNotFound,
-    TierFeatureUnavailable,
-    TierLimitExceeded,
+    PortfolioInsufficientSharesError,
+    PortfolioAccountNotFoundError,
+    PortfolioTradeNotFoundError,
+    TierFeatureUnavailableError,
+    TierLimitExceededError,
 )
 
 if TYPE_CHECKING:
@@ -132,11 +132,11 @@ async def test_account_service_create_writes_audit(
 async def test_account_service_free_quota_enforced(
     db_session: AsyncSession,
 ) -> None:
-    """BASIC tier: max_accounts=3 → 4th create raises TierLimitExceeded.
+    """BASIC tier: max_accounts=3 → 4th create raises TierLimitExceededError.
 
     We test BASIC (not FREE) because FREE additionally has
     `multi_account=false`, which would short-circuit the 2nd create
-    via TierFeatureUnavailable *before* the numeric quota path runs.
+    via TierFeatureUnavailableError *before* the numeric quota path runs.
     The dedicated feature-flag test covers that case separately.
     """
     user = await _mk_user(db_session, "as2@x.com", "as2", tier=UserTier.BASIC)
@@ -149,7 +149,7 @@ async def test_account_service_free_quota_enforced(
             await svc.create_account(name=f"a{n}", market=Market.TW_TWSE)
         await db_session.commit()
 
-        with pytest.raises(TierLimitExceeded) as exc:
+        with pytest.raises(TierLimitExceededError) as exc:
             await svc.create_account(name="fourth", market=Market.TW_TWSE)
         assert exc.value.limit_key == "max_accounts"
         assert exc.value.limit == 3
@@ -171,7 +171,7 @@ async def test_account_service_multi_account_feature_gates_free(
         s.enable_monetization = True
         await svc.create_account(name="first", market=Market.TW_TWSE)
         await db_session.commit()
-        with pytest.raises(TierFeatureUnavailable) as exc:
+        with pytest.raises(TierFeatureUnavailableError) as exc:
             await svc.create_account(name="second", market=Market.TW_TWSE)
         assert exc.value.feature == "multi_account"
 
@@ -179,7 +179,7 @@ async def test_account_service_multi_account_feature_gates_free(
 async def test_account_service_get_other_users_account_raises(
     db_session: AsyncSession,
 ) -> None:
-    """User B's get_account(A's id) raises PortfolioAccountNotFound."""
+    """User B's get_account(A's id) raises PortfolioAccountNotFoundError."""
     a = await _mk_user(db_session, "as4a@x.com", "as4a")
     b = await _mk_user(db_session, "as4b@x.com", "as4b")
     svc_a = PortfolioAccountService(db_session, a)
@@ -188,7 +188,7 @@ async def test_account_service_get_other_users_account_raises(
     acc_a = await svc_a.create_account(name="A's", market=Market.TW_TWSE)
     await db_session.commit()
 
-    with pytest.raises(PortfolioAccountNotFound):
+    with pytest.raises(PortfolioAccountNotFoundError):
         await svc_b.get_account(acc_a.id)
     # B's list is empty even though A's row exists.
     assert await svc_b.list_accounts() == []
@@ -220,7 +220,7 @@ async def test_account_service_delete_cascades_trades_and_positions(
     await db_session.commit()
 
     # Re-fetching raises NotFound; positions / lots are gone via cascade.
-    with pytest.raises(PortfolioAccountNotFound):
+    with pytest.raises(PortfolioAccountNotFoundError):
         await acc_svc.get_account(acc.id)
     # Audit log carries the delete event.
     assert await _count_audit(db_session, "portfolio_account_deleted", user.id) == 1
@@ -347,7 +347,7 @@ async def test_trade_service_sell_insufficient_shares_raises(
     )
     await db_session.commit()
 
-    with pytest.raises(InsufficientShares):
+    with pytest.raises(PortfolioInsufficientSharesError):
         await svc.record_trade(
             account_id=acc_id,
             action="SELL",
@@ -423,7 +423,7 @@ async def test_trade_service_monthly_trade_quota_enforced(
         patch.object(svc._trade_repo, "count_by_user_this_month", return_value=30),
     ):
         s.enable_monetization = True
-        with pytest.raises(TierLimitExceeded) as exc:
+        with pytest.raises(TierLimitExceededError) as exc:
             await svc.record_trade(
                 account_id=acc_id,
                 action="BUY",
@@ -573,7 +573,7 @@ async def test_trade_service_cross_user_trade_rejected(
     await db_session.commit()
 
     # B cannot record trade on A's account.
-    with pytest.raises(PortfolioAccountNotFound):
+    with pytest.raises(PortfolioAccountNotFoundError):
         await svc_b.record_trade(
             account_id=acc_a,
             action="BUY",
@@ -584,9 +584,9 @@ async def test_trade_service_cross_user_trade_rejected(
             trade_date=date(2026, 5, 2),
         )
     # B cannot patch / delete A's trade.
-    with pytest.raises(PortfolioTradeNotFound):
+    with pytest.raises(PortfolioTradeNotFoundError):
         await svc_b.update_trade(t.id, price=Decimal("999"))
-    with pytest.raises(PortfolioTradeNotFound):
+    with pytest.raises(PortfolioTradeNotFoundError):
         await svc_b.delete_trade(t.id)
 
 

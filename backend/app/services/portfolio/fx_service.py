@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 __all__ = [
-    "FxRateUnavailable",
+    "FxRateUnavailableError",
     "FxService",
 ]
 
@@ -53,7 +53,7 @@ logger = get_logger("services.portfolio.fx")
 _SPOT_STALENESS = timedelta(days=1)
 
 
-class FxRateUnavailable(Exception):
+class FxRateUnavailableError(Exception):
     """Raised when no rate could be obtained from cache or fetcher."""
 
     def __init__(self, base: str, quote: str) -> None:
@@ -93,7 +93,7 @@ class FxService:
         2. Try DB (`fx_rates`) for the requested date (or most recent row
            within `_SPOT_STALENESS` when `as_of` is None).
         3. On miss/stale → delegate to `_fetcher`, then UPSERT.
-        4. Raise `FxRateUnavailable` if both fail.
+        4. Raise `FxRateUnavailableError` if both fail.
         """
         base = base.upper()
         quote = quote.upper()
@@ -113,7 +113,7 @@ class FxService:
                 quote=quote,
                 error=str(exc),
             )
-            raise FxRateUnavailable(base=base, quote=quote) from exc
+            raise FxRateUnavailableError(base=base, quote=quote) from exc
 
         # Persist for future hits. Use the requested date when given;
         # otherwise today (so the "spot" row is keyed deterministically).
@@ -145,7 +145,7 @@ class FxService:
 
         The base currency itself maps to ``Decimal("1")``. Currencies for
         which neither cache nor fetcher yields a rate raise
-        `FxRateUnavailable` (we never silently drop — see module docstring).
+        `FxRateUnavailableError` (we never silently drop — see module docstring).
 
         Args:
             currencies: ISO codes present in the user's positions.

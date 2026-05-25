@@ -1,8 +1,8 @@
 """Sentry event filter primitives — thin wrapper over observability-core.
 
-Hosts Uni-Seeker's repo-specific ``ExpectedDriftAlert`` exception class
+Hosts Uni-Seeker's repo-specific ``ExpectedDriftAlertError`` exception class
 and re-exports the package's filter builders with Uni-Seeker defaults
-pre-applied (Stripe 4xx drop + ``ExpectedDriftAlert`` drop +
+pre-applied (Stripe 4xx drop + ``ExpectedDriftAlertError`` drop +
 ``/api/v1/billing/webhook`` full sample, on top of the package's own
 zero-sample defaults for ``/health`` ``/metrics`` ``/ready``).
 
@@ -26,7 +26,7 @@ from observability_core._sentry_filters import (
 _FULL_SAMPLE_PATHS = frozenset({"/api/v1/billing/webhook"})
 
 
-class ExpectedDriftAlert(Exception):
+class ExpectedDriftAlertError(Exception):
     """Raised intentionally by drift detection to fan out an alert.
 
     Sentry should not record it — Alertmanager / TG / Slack handle it.
@@ -42,13 +42,13 @@ def build_before_send() -> Callable[[dict, dict], dict | None]:
     Drops:
     - Stripe 4xx (package default — InvalidRequestError, CardError,
       AuthenticationError, PermissionError, IdempotencyError)
-    - any ``ExpectedDriftAlert`` (and subclasses)
+    - any ``ExpectedDriftAlertError`` (and subclasses)
     - any other exception with HTTP status 400 <= s < 500
 
     Returns event unchanged when not filtered; returns None to drop.
     """
     return _core_build_before_send(
-        drop_exception_classes=(ExpectedDriftAlert,),
+        drop_exception_classes=(ExpectedDriftAlertError,),
     )
 
 
@@ -66,7 +66,7 @@ def build_traces_sampler(baseline: float = 0.1) -> Callable[[dict], float]:
 
 
 __all__ = [
-    "ExpectedDriftAlert",
+    "ExpectedDriftAlertError",
     "build_before_send",
     "build_traces_sampler",
 ]

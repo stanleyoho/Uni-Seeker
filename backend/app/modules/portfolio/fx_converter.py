@@ -19,7 +19,7 @@ Edge-case contract:
   - `rate is None`               → raises ValueError (programmer error;
                                     caller should not pass None)
   - empty amounts dict           → Decimal("0")
-  - missing rate for a currency  → FxRateMissing (KeyError subclass)
+  - missing rate for a currency  → FxRateMissingError (KeyError subclass)
   - amount currency == base      → no rate lookup needed, added as-is
 """
 
@@ -28,7 +28,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 __all__ = [
-    "FxRateMissing",
+    "FxRateMissingError",
     "convert",
     "convert_dict",
     "convert_to_base",
@@ -38,12 +38,12 @@ _ZERO = Decimal("0")
 _ONE = Decimal("1")
 
 
-class FxRateMissing(KeyError):
+class FxRateMissingError(KeyError):
     """Raised when no rate is available for one of the supplied currencies.
 
     Inherits from KeyError so callers that already handle dict.get-style
     misses can catch with `except KeyError` if they want generic handling,
-    while still being able to special-case via `isinstance(exc, FxRateMissing)`.
+    while still being able to special-case via `isinstance(exc, FxRateMissingError)`.
     """
 
     def __init__(self, currency: str, base: str) -> None:
@@ -94,7 +94,7 @@ def convert_to_base(
         Total in `base_currency` as Decimal.
 
     Raises:
-        FxRateMissing: when a non-base currency in `amounts_by_currency`
+        FxRateMissingError: when a non-base currency in `amounts_by_currency`
             has no entry in `rates_to_base`.
 
     Edge cases:
@@ -116,7 +116,7 @@ def convert_to_base(
             continue
         rate = rates_to_base.get(ccy_u)
         if rate is None:
-            raise FxRateMissing(currency=ccy_u, base=base)
+            raise FxRateMissingError(currency=ccy_u, base=base)
         total += amount * rate
     return total
 
@@ -138,7 +138,7 @@ def convert_dict(
         values converted to `base_currency`.
 
     Raises:
-        FxRateMissing: same as `convert_to_base`.
+        FxRateMissingError: same as `convert_to_base`.
     """
     base = base_currency.upper()
     out: dict[str, Decimal] = {}
@@ -151,6 +151,6 @@ def convert_dict(
             continue
         rate = rates_to_base.get(ccy_u)
         if rate is None:
-            raise FxRateMissing(currency=ccy_u, base=base)
+            raise FxRateMissingError(currency=ccy_u, base=base)
         out[ccy_u] = amount * rate
     return out

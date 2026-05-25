@@ -8,7 +8,7 @@ browser triggers a download instead of rendering in-page.
 Tier guard
 ----------
 We do NOT use the dependency-layer ``tier_guard(feature='tax_export')``
-here. The service raises ``TierFeatureUnavailable`` from inside every
+here. The service raises ``TierFeatureUnavailableError`` from inside every
 ``export_*`` method (service-level second line — spec §9 雙保險). We
 catch it here and emit ``403 feature_unavailable:tax_export``. This
 matches the dividend endpoint pattern when only the service-level
@@ -29,7 +29,7 @@ from app.api.deps import get_db
 from app.api.v1.holdings import _detail as detail
 from app.auth import require_auth
 from app.services.portfolio import CsvExportService, TaxReportService
-from app.services.portfolio.exceptions import TierFeatureUnavailable
+from app.services.portfolio.exceptions import TierFeatureUnavailableError
 
 router = APIRouter(prefix="/exports", tags=["holdings.exports"])
 
@@ -54,7 +54,7 @@ def _disposition(prefix: str) -> dict[str, str]:
     return {"Content-Disposition": (f'attachment; filename="{prefix}-{_today_iso()}.csv"')}
 
 
-def _translate_tier(exc: TierFeatureUnavailable) -> HTTPException:
+def _translate_tier(exc: TierFeatureUnavailableError) -> HTTPException:
     """Map the service-layer tier exception → 403 with the canonical
     detail string. Single helper keeps the four endpoints DRY."""
     return HTTPException(
@@ -83,7 +83,7 @@ async def export_trades(
             date_from=date_from,
             date_to=date_to,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,
@@ -106,7 +106,7 @@ async def export_positions(
     service = CsvExportService(db, user)  # type: ignore[arg-type]
     try:
         csv_bytes = await service.export_positions(account_id=account_id)
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,
@@ -136,7 +136,7 @@ async def export_dividends(
             date_from=date_from,
             date_to=date_to,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,
@@ -159,7 +159,7 @@ async def export_summary(
     service = CsvExportService(db, user)  # type: ignore[arg-type]
     try:
         csv_bytes = await service.export_summary()
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,
@@ -186,7 +186,7 @@ async def export_form_8949(
     """Export Form 8949-style matched buy-sell pairs as CSV.
 
     Tier: ``tax_export`` (PRO only). Service-level guard raises
-    `TierFeatureUnavailable`; translated to 403 here.
+    `TierFeatureUnavailableError`; translated to 403 here.
 
     Query params:
         * ``account_id`` — scope to a single owned account.
@@ -200,7 +200,7 @@ async def export_form_8949(
             tax_year=tax_year,
             apply_wash_sales=apply_wash_sales,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,
@@ -227,7 +227,7 @@ async def export_schedule_d(
             account_id=account_id,
             tax_year=tax_year,
         )
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise _translate_tier(exc) from exc
     return Response(
         content=csv_bytes,

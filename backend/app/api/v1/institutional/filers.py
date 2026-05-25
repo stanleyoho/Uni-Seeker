@@ -45,14 +45,14 @@ from app.schemas.institutional.subscription import (
 )
 from app.services.institutional import (
     F13EdgarError,
-    F13FilerNotFound,
+    F13FilerNotFoundError,
     F13FilerSearchService,
     F13FilingService,
-    F13RefreshInFlight,
-    F13SubscriptionExists,
+    F13RefreshInFlightError,
+    F13SubscriptionExistsError,
     F13SubscriptionService,
-    F13TierFeatureUnavailable,
-    F13TierLimitExceeded,
+    F13TierFeatureUnavailableError,
+    F13TierLimitExceededError,
 )
 
 router = APIRouter(prefix="/filers", tags=["institutional.filers"])
@@ -68,15 +68,15 @@ EdgarDep = Annotated[EdgarClient, Depends(get_edgar_client)]
 def _translate_tier_exc(exc: Exception) -> HTTPException:
     """Map service-layer tier domain exceptions to HTTP 403.
 
-    Both `F13TierLimitExceeded` and `F13TierFeatureUnavailable` are
+    Both `F13TierLimitExceededError` and `F13TierFeatureUnavailableError` are
     403; the detail string is the contract the frontend asserts on.
     """
-    if isinstance(exc, F13TierLimitExceeded):
+    if isinstance(exc, F13TierLimitExceededError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         )
-    if isinstance(exc, F13TierFeatureUnavailable):
+    if isinstance(exc, F13TierFeatureUnavailableError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -139,14 +139,14 @@ async def subscribe_filer(
             name=body.name,
             legal_name=body.legal_name,
         )
-    except (F13TierLimitExceeded, F13TierFeatureUnavailable) as exc:
+    except (F13TierLimitExceededError, F13TierFeatureUnavailableError) as exc:
         raise _translate_tier_exc(exc) from exc
-    except F13SubscriptionExists as exc:
+    except F13SubscriptionExistsError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=detail.F13_SUBSCRIPTION_EXISTS,
         ) from exc
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
@@ -201,13 +201,13 @@ async def bulk_subscribe_filers(
         result = await svc.bulk_subscribe(
             items=[item.model_dump() for item in req.items],
         )
-    except (F13TierLimitExceeded, F13TierFeatureUnavailable) as exc:
+    except (F13TierLimitExceededError, F13TierFeatureUnavailableError) as exc:
         # Tier check fires BEFORE any INSERT — no rollback needed.
         # Calling db.rollback() here would expire other ORM rows
         # (e.g. the requesting user) and break callers that hold
         # references across the call boundary.
         raise _translate_tier_exc(exc) from exc
-    except F13SubscriptionExists as exc:
+    except F13SubscriptionExistsError as exc:
         # Race: a parallel single-subscribe slipped a row in between
         # the service's de-dup check and the INSERT. Roll back partial
         # batch state and return 409.
@@ -288,7 +288,7 @@ async def get_filer(
 
     "Not subscribed" collapses to 404 by convention (information
     hiding) — same shape as the portfolio module's
-    `PortfolioAccountNotFound`.
+    `PortfolioAccountNotFoundError`.
     """
     svc = F13SubscriptionService(db, user)  # type: ignore[arg-type]
     if not await svc.get_subscription_status(filer_id):
@@ -323,7 +323,7 @@ async def unsubscribe_filer(
     svc = F13SubscriptionService(db, user)  # type: ignore[arg-type]
     try:
         await svc.unsubscribe(filer_id)
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
@@ -379,19 +379,19 @@ async def refresh_filer(
     """Refresh the latest N (≤4) 13F filings on-demand (Q1 + Q8).
 
     Anti-concurrency: a second simultaneous refresh on the same filer
-    raises `F13RefreshInFlight` which we translate to 429. EDGAR
+    raises `F13RefreshInFlightError` which we translate to 429. EDGAR
     failures (after retries) become 502 with the upstream status
     preserved on a best-effort basis.
     """
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
         result = await svc.refresh_filer(filer_id=filer_id, max_quarters=max_quarters)
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
         ) from exc
-    except F13RefreshInFlight as exc:
+    except F13RefreshInFlightError as exc:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=detail.F13_REFRESH_IN_FLIGHT,

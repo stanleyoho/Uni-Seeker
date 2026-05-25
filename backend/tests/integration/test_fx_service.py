@@ -17,7 +17,7 @@ import pytest
 from app.models.journal import FXRate
 from app.modules.portfolio.fx_fetcher import FxFetchError, YFinanceFxFetcher
 from app.services.portfolio.fx_service import (
-    FxRateUnavailable,
+    FxRateUnavailableError,
     FxService,
 )
 
@@ -118,12 +118,12 @@ async def test_fx_service_same_currency_short_circuit(
 async def test_fx_service_unavailable_raises(
     db_session: AsyncSession,
 ) -> None:
-    """Cache miss + fetcher failure → FxRateUnavailable."""
+    """Cache miss + fetcher failure → FxRateUnavailableError."""
     fetcher = _MockFxFetcher(
         fail_pairs={("EUR", "TWD")},
     )
     svc = FxService(db_session, fetcher)
-    with pytest.raises(FxRateUnavailable) as exc:
+    with pytest.raises(FxRateUnavailableError) as exc:
         await svc.get_rate("EUR", "TWD")
     assert exc.value.base == "EUR"
     assert exc.value.quote == "TWD"

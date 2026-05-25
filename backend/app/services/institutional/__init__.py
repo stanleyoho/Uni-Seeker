@@ -18,7 +18,7 @@ Tier enforcement (spec §9 double guard):
 - Endpoint `tier_guard(...)` is the first line (Batch C).
 - Service-level assertions (`_assert_filer_quota`,
   `_assert_feature`) are the second line — they raise
-  `F13TierLimitExceeded` / `F13TierFeatureUnavailable` domain
+  `F13TierLimitExceededError` / `F13TierFeatureUnavailableError` domain
   exceptions for the API layer to translate to HTTP 403.
 """
 
@@ -27,13 +27,13 @@ from app.services.institutional.cross_stock_service import (
 )
 from app.services.institutional.exceptions import (
     F13EdgarError,
-    F13FilerNotFound,
-    F13FilingNotFound,
-    F13RefreshInFlight,
+    F13FilerNotFoundError,
+    F13FilingNotFoundError,
+    F13RefreshInFlightError,
     F13ServiceError,
-    F13SubscriptionExists,
-    F13TierFeatureUnavailable,
-    F13TierLimitExceeded,
+    F13SubscriptionExistsError,
+    F13TierFeatureUnavailableError,
+    F13TierLimitExceededError,
 )
 from app.services.institutional.filer_search_service import (
     F13FilerSearchService,
@@ -51,15 +51,15 @@ __all__ = [
     "F13CrossStockService",
     # exceptions
     "F13EdgarError",
-    "F13FilerNotFound",
+    "F13FilerNotFoundError",
     "F13FilerSearchService",
-    "F13FilingNotFound",
+    "F13FilingNotFoundError",
     "F13FilingService",
     "F13NotificationService",
-    "F13RefreshInFlight",
+    "F13RefreshInFlightError",
     "F13ServiceError",
-    "F13SubscriptionExists",
+    "F13SubscriptionExistsError",
     "F13SubscriptionService",
-    "F13TierFeatureUnavailable",
-    "F13TierLimitExceeded",
+    "F13TierFeatureUnavailableError",
+    "F13TierLimitExceededError",
 ]

@@ -28,7 +28,7 @@ from app.repositories.portfolio import (
     PortfolioPositionRepo,
 )
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
+    PortfolioAccountNotFoundError,
 )
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class PortfolioPositionService:
         if pos is None:
             # Returning a synthetic "empty" object would confuse the
             # API layer; raise 404 instead.
-            raise PortfolioAccountNotFound(
+            raise PortfolioAccountNotFoundError(
                 f"position {symbol}/{market} on account {account_id} not found"
             )
         enriched = await self._enrich_with_pnl([pos])
@@ -121,7 +121,7 @@ class PortfolioPositionService:
     async def _require_owned_account(self, account_id: int) -> None:
         account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
 
     async def _enrich_with_pnl(self, positions: list[PortfolioPosition]) -> list[PositionWithPnL]:
         """Batch-fetch quotes for the distinct symbols, then compose

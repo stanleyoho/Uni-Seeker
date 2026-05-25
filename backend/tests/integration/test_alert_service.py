@@ -13,11 +13,11 @@ from app.models.enums import UserTier
 from app.models.user import User
 from app.modules.portfolio.live_price_fetcher import PriceQuote
 from app.services.alerts.alert_service import (
-    AlertRuleNotFound,
+    AlertRuleNotFoundError,
     AlertService,
-    InvalidAlertRule,
+    InvalidAlertRuleError,
 )
-from app.services.portfolio.exceptions import TierLimitExceeded
+from app.services.portfolio.exceptions import TierLimitExceededError
 
 
 class _MockFetcher:
@@ -81,7 +81,7 @@ async def test_create_rule_rejects_position_without_symbol(
 ) -> None:
     user = await _mk_user(db_session, "s2@test.com")
     service = AlertService(db_session, user)
-    with pytest.raises(InvalidAlertRule) as exc:
+    with pytest.raises(InvalidAlertRuleError) as exc:
         await service.create_rule(
             name="bad",
             rule_type="POSITION_PRICE_DROP",
@@ -99,7 +99,7 @@ async def test_create_rule_rejects_portfolio_with_pct(
 ) -> None:
     user = await _mk_user(db_session, "s3@test.com")
     service = AlertService(db_session, user)
-    with pytest.raises(InvalidAlertRule) as exc:
+    with pytest.raises(InvalidAlertRuleError) as exc:
         await service.create_rule(
             name="bad",
             rule_type="PORTFOLIO_VALUE_ABOVE",
@@ -117,7 +117,7 @@ async def test_create_rule_rejects_negative_threshold_for_price_drop(
 ) -> None:
     user = await _mk_user(db_session, "s4@test.com")
     service = AlertService(db_session, user)
-    with pytest.raises(InvalidAlertRule):
+    with pytest.raises(InvalidAlertRuleError):
         await service.create_rule(
             name="bad",
             rule_type="POSITION_PRICE_DROP",
@@ -148,7 +148,7 @@ async def test_quota_enforced_when_monetization_on(
                 threshold_type="ABSOLUTE",
             )
         await db_session.commit()
-        with pytest.raises(TierLimitExceeded) as exc:
+        with pytest.raises(TierLimitExceededError) as exc:
             await service.create_rule(
                 name="over",
                 rule_type="PORTFOLIO_VALUE_ABOVE",
@@ -184,7 +184,7 @@ async def test_delete_rule_not_found_raises(
 ) -> None:
     user = await _mk_user(db_session, "d1@test.com")
     service = AlertService(db_session, user)
-    with pytest.raises(AlertRuleNotFound):
+    with pytest.raises(AlertRuleNotFoundError):
         await service.delete_rule(999999)
 
 

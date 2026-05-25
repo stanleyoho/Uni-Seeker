@@ -31,13 +31,13 @@ from app.schemas.holdings.alert import (
     AlertRuleUpdateRequest,
 )
 from app.services.alerts.alert_service import (
-    AlertRuleNotFound,
+    AlertRuleNotFoundError,
     AlertService,
-    InvalidAlertRule,
+    InvalidAlertRuleError,
 )
 from app.services.portfolio.exceptions import (
-    TierFeatureUnavailable,
-    TierLimitExceeded,
+    TierFeatureUnavailableError,
+    TierLimitExceededError,
 )
 
 router = APIRouter(prefix="/alerts", tags=["holdings.alerts"])
@@ -48,12 +48,12 @@ FetcherDep = Annotated[LivePriceFetcher, Depends(get_live_price_fetcher)]
 
 
 def _translate_tier_exc(exc: Exception) -> HTTPException:
-    if isinstance(exc, TierLimitExceeded):
+    if isinstance(exc, TierLimitExceededError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         )
-    if isinstance(exc, TierFeatureUnavailable):
+    if isinstance(exc, TierFeatureUnavailableError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -89,12 +89,12 @@ async def create_alert_rule(
             symbol=body.symbol,
             market=body.market,
         )
-    except InvalidAlertRule as exc:
+    except InvalidAlertRuleError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{detail.INVALID_ALERT_RULE}:{exc.code}",
         ) from exc
-    except (TierLimitExceeded, TierFeatureUnavailable) as exc:
+    except (TierLimitExceededError, TierFeatureUnavailableError) as exc:
         raise _translate_tier_exc(exc) from exc
     await db.commit()
     await db.refresh(rule)
@@ -122,12 +122,12 @@ async def update_alert_rule(
     patch = body.model_dump(exclude_unset=True)
     try:
         rule = await service.update_rule(rule_id, **patch)
-    except AlertRuleNotFound as exc:
+    except AlertRuleNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ALERT_RULE_NOT_FOUND,
         ) from exc
-    except InvalidAlertRule as exc:
+    except InvalidAlertRuleError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{detail.INVALID_ALERT_RULE}:{exc.code}",
@@ -146,7 +146,7 @@ async def delete_alert_rule(
     service = AlertService(db, user)  # type: ignore[arg-type]
     try:
         await service.delete_rule(rule_id)
-    except AlertRuleNotFound as exc:
+    except AlertRuleNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ALERT_RULE_NOT_FOUND,
@@ -175,7 +175,7 @@ async def evaluate_alert_rule(
     service = AlertService(db, user)  # type: ignore[arg-type]
     try:
         result = await service.evaluate_one(rule_id, fetcher)
-    except AlertRuleNotFound as exc:
+    except AlertRuleNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ALERT_RULE_NOT_FOUND,

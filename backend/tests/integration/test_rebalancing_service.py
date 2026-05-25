@@ -7,8 +7,8 @@ layer (which is shared boilerplate already exercised in
 
 Coverage (6 cases):
   RS01 preview happy path (Pro user) — suggested trades emitted
-  RS02 tier free → TierFeatureUnavailable raised
-  RS03 tier basic → TierFeatureUnavailable raised
+  RS02 tier free → TierFeatureUnavailableError raised
+  RS03 tier basic → TierFeatureUnavailableError raised
   RS04 account_id filter scopes positions correctly
   RS05 audit log row written with the right action + metadata
   RS06 live_price_fetcher is invoked with the union of position symbols
@@ -29,7 +29,7 @@ from app.models.enums import Market, UserTier
 from app.models.user import User
 from app.modules.portfolio.live_price_fetcher import LivePriceFetcher, PriceQuote
 from app.services.portfolio.account_service import PortfolioAccountService
-from app.services.portfolio.exceptions import TierFeatureUnavailable
+from app.services.portfolio.exceptions import TierFeatureUnavailableError
 from app.services.portfolio.rebalancing_service import RebalancingService
 from app.services.portfolio.trade_service import PortfolioTradeService
 
@@ -150,14 +150,14 @@ async def test_RS01_preview_happy_path_pro_user(
 async def test_RS02_tier_free_raises_feature_unavailable(
     db_session: AsyncSession,
 ) -> None:
-    """FREE user → TierFeatureUnavailable (translates to 403 in API)."""
+    """FREE user → TierFeatureUnavailableError (translates to 403 in API)."""
     user = await _mk_user(db_session, "rb2@x.com", "rb2", tier=UserTier.FREE)
     fetcher = MockLivePriceFetcher()
     svc = RebalancingService(db_session, user, fetcher)
 
     with patch("app.services.portfolio.rebalancing_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(TierFeatureUnavailable) as exc:
+        with pytest.raises(TierFeatureUnavailableError) as exc:
             await svc.preview_rebalance(targets=[])
         assert exc.value.feature == "rebalancing"
 
@@ -173,7 +173,7 @@ async def test_RS03_tier_basic_raises_feature_unavailable(
 
     with patch("app.services.portfolio.rebalancing_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(TierFeatureUnavailable) as exc:
+        with pytest.raises(TierFeatureUnavailableError) as exc:
             await svc.preview_rebalance(targets=[])
         assert exc.value.feature == "rebalancing"
 

@@ -11,7 +11,7 @@ from decimal import Decimal
 import pytest
 
 from app.modules.portfolio.fx_converter import (
-    FxRateMissing,
+    FxRateMissingError,
     convert,
     convert_dict,
     convert_to_base,
@@ -68,10 +68,10 @@ def test_convert_to_base_empty_returns_zero():
 
 
 def test_convert_to_base_missing_rate_raises():
-    """Currency not in rates and not equal to base → FxRateMissing."""
+    """Currency not in rates and not equal to base → FxRateMissingError."""
     amounts = {"EUR": Decimal("50")}
     rates = {"USD": Decimal("30")}  # No EUR rate.
-    with pytest.raises(FxRateMissing) as excinfo:
+    with pytest.raises(FxRateMissingError) as excinfo:
         convert_to_base(amounts, rates, "TWD")
     assert excinfo.value.currency == "EUR"
     assert excinfo.value.base == "TWD"
@@ -107,6 +107,6 @@ def test_convert_dict_returns_per_currency_in_base():
 
 
 def test_convert_dict_missing_rate_raises():
-    """Non-base currency without rate → FxRateMissing."""
-    with pytest.raises(FxRateMissing):
+    """Non-base currency without rate → FxRateMissingError."""
+    with pytest.raises(FxRateMissingError):
         convert_dict({"GBP": Decimal("10")}, {}, "TWD")

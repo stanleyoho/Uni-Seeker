@@ -19,7 +19,7 @@ relies on subscription gating alone.
 Refresh anti-concurrency: a single process-local `asyncio.Lock` per
 filer_id keeps two simultaneous refresh requests on the same filer
 from racing. Lock acquisition is non-blocking; a busy filer raises
-`F13RefreshInFlight` so the API layer can return 429 immediately. The
+`F13RefreshInFlightError` so the API layer can return 429 immediately. The
 lock dictionary lives at class scope because we want the lock identity
 to survive across request-scoped service instances within the same
 process.
@@ -57,9 +57,9 @@ from app.repositories.institutional import (
 from app.services.audit import log_audit_event
 from app.services.institutional.exceptions import (
     F13EdgarError,
-    F13FilerNotFound,
-    F13FilingNotFound,
-    F13RefreshInFlight,
+    F13FilerNotFoundError,
+    F13FilingNotFoundError,
+    F13RefreshInFlightError,
 )
 
 if TYPE_CHECKING:
@@ -102,20 +102,20 @@ class F13FilingService:
     async def _require_filer(self, filer_id: int):
         filer = await self._filer_repo.get_by_id(filer_id)
         if filer is None:
-            raise F13FilerNotFound(f"filer_id={filer_id} not found")
+            raise F13FilerNotFoundError(f"filer_id={filer_id} not found")
         return filer
 
     async def _require_subscribed(self, filer_id: int) -> None:
         """Per spec §6.2: filings/holdings are gated by subscription.
 
         We collapse "filer doesn't exist" and "not subscribed" into the
-        same `F13FilerNotFound` to avoid leaking existence (same
+        same `F13FilerNotFoundError` to avoid leaking existence (same
         information-hiding convention as portfolio module's
-        `PortfolioAccountNotFound`).
+        `PortfolioAccountNotFoundError`).
         """
         if not await self._sub_repo.is_subscribed(self._user.id, filer_id):
             # Whether the filer exists or not is intentionally indistinguishable
-            raise F13FilerNotFound(f"filer_id={filer_id} not accessible")
+            raise F13FilerNotFoundError(f"filer_id={filer_id} not accessible")
 
     # ── reads ──────────────────────────────────────────────────────────
 
@@ -139,8 +139,8 @@ class F13FilingService:
                       13F-HR/A exist for the same quarter).
 
         Raises:
-            F13FilerNotFound — caller not subscribed.
-            F13FilingNotFound — period exists but no filing is loaded
+            F13FilerNotFoundError — caller not subscribed.
+            F13FilingNotFoundError — period exists but no filing is loaded
                 (caller should hit refresh first), or ISO date doesn't
                 match any stored filing.
             ValueError — malformed `period` string.
@@ -158,7 +158,7 @@ class F13FilingService:
             filing = await self._filing_repo.get_at_period(filer_id, target)
 
         if filing is None:
-            raise F13FilingNotFound(f"no filing for filer_id={filer_id} period={period}")
+            raise F13FilingNotFoundError(f"no filing for filer_id={filer_id} period={period}")
         holdings = await self._holding_repo.list_by_filing(filing.id)
         return filing, holdings
 
@@ -178,14 +178,14 @@ class F13FilingService:
         directly.
 
         Raises:
-            F13FilerNotFound  — caller not subscribed.
-            F13FilingNotFound — either period has no stored filing.
+            F13FilerNotFoundError  — caller not subscribed.
+            F13FilingNotFoundError — either period has no stored filing.
         """
         await self._require_subscribed(filer_id)
         prev_filing = await self._filing_repo.get_at_period(filer_id, from_date)
         curr_filing = await self._filing_repo.get_at_period(filer_id, to_date)
         if prev_filing is None or curr_filing is None:
-            raise F13FilingNotFound(
+            raise F13FilingNotFoundError(
                 f"missing filing(s) for diff: filer_id={filer_id} from={from_date} to={to_date}"
             )
         prev_rows = await self._holding_repo.list_by_filing(prev_filing.id)
@@ -249,7 +249,7 @@ class F13FilingService:
                 filings count). Defaults to 20.
 
         Raises:
-            F13FilerNotFound: caller has neither a subscription nor
+            F13FilerNotFoundError: caller has neither a subscription nor
                 the Pro feature flag for this filer.
         """
         # Step 1: access control — subscription OR Pro feature bypass.
@@ -261,10 +261,10 @@ class F13FilingService:
                 self._user.tier, "institutional_ownership_panel"
             )
             if not pro_bypass:
-                raise F13FilerNotFound(f"filer_id={filer_id} not accessible")
+                raise F13FilerNotFoundError(f"filer_id={filer_id} not accessible")
             # Pro bypass still needs the filer to exist so we don't
             # return a phantom timeline. Re-use `_require_filer` —
-            # raises `F13FilerNotFound` when missing.
+            # raises `F13FilerNotFoundError` when missing.
             await self._require_filer(filer_id)
 
         # Step 2: resolve the window.
@@ -390,7 +390,7 @@ class F13FilingService:
           6. Audit log + return counts.
 
         Anti-concurrency: process-local asyncio lock per filer_id. A
-        second concurrent caller raises `F13RefreshInFlight`. We do
+        second concurrent caller raises `F13RefreshInFlightError`. We do
         NOT use the DB updated_at timestamp as a rate limiter here
         because (a) it requires a writable session for the timestamp
         bump even on a no-op refresh, (b) the spec only asked for
@@ -400,8 +400,8 @@ class F13FilingService:
             dict {filings_added: int, holdings_added: int}.
 
         Raises:
-            F13FilerNotFound    — filer missing or user not subscribed.
-            F13RefreshInFlight  — another coroutine is refreshing.
+            F13FilerNotFoundError    — filer missing or user not subscribed.
+            F13RefreshInFlightError  — another coroutine is refreshing.
             F13EdgarError       — EDGAR fetch failed after retries.
         """
         # Step 1: access control
@@ -411,7 +411,7 @@ class F13FilingService:
         # Step 2: acquire lock non-blockingly
         lock = await self._get_lock(filer_id)
         if lock.locked():
-            raise F13RefreshInFlight(filer_id=filer_id)
+            raise F13RefreshInFlightError(filer_id=filer_id)
         async with lock:
             return await self._do_refresh(filer, max_quarters)
 

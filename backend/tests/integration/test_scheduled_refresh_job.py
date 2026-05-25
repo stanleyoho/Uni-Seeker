@@ -11,7 +11,7 @@ Cases:
   S03 Filer refreshed within skip window is *skipped*, not refreshed.
   S04 Refresh delegates the EDGAR fetch through F13FilingService
       (asserted via MockEdgarClient call counters).
-  S05 F13RefreshInFlight (lock held by manual refresh) is counted as
+  S05 F13RefreshInFlightError (lock held by manual refresh) is counted as
       `skipped`, not `errors`.
   S06 The aggregate stats dict reports every documented key.
   S07 BASIC weekly skip window is 6 days (so a filer with
@@ -306,7 +306,7 @@ async def test_refresh_calls_edgar_via_filing_service(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# S05: F13RefreshInFlight is counted as `skipped`, not `errors`
+# S05: F13RefreshInFlightError is counted as `skipped`, not `errors`
 # ═════════════════════════════════════════════════════════════════════════════
 
 

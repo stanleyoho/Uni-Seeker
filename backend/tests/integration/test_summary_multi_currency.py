@@ -9,7 +9,7 @@ Asserts:
   - single-currency fast path (no FX calls, no tier check)
   - empty portfolio short-circuit
   - rate snapshot exposed for transparency
-  - missing-rate failure propagates as FxRateUnavailable
+  - missing-rate failure propagates as FxRateUnavailableError
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ from app.modules.portfolio.fx_fetcher import FxFetchError, YFinanceFxFetcher
 from app.modules.portfolio.live_price_fetcher import LivePriceFetcher, PriceQuote
 from app.repositories.portfolio import PortfolioAccountRepo, PortfolioPositionRepo
 from app.services.portfolio import PortfolioSummaryService
-from app.services.portfolio.exceptions import TierFeatureUnavailable
-from app.services.portfolio.fx_service import FxRateUnavailable, FxService
+from app.services.portfolio.exceptions import TierFeatureUnavailableError
+from app.services.portfolio.fx_service import FxRateUnavailableError, FxService
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -200,7 +200,7 @@ async def test_multi_currency_aggregates_usd_and_twd(
 async def test_multi_currency_tier_gate_blocks_free(
     db_session: AsyncSession,
 ) -> None:
-    """FREE tier without multi_currency_summary → TierFeatureUnavailable
+    """FREE tier without multi_currency_summary → TierFeatureUnavailableError
     when positions span >1 currency."""
     user = await _mk_user(db_session, "mc2@x.com", "mc2", tier=UserTier.FREE)
     await _seed_account_and_position(
@@ -240,7 +240,7 @@ async def test_multi_currency_tier_gate_blocks_free(
 
     with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(TierFeatureUnavailable) as exc:
+        with pytest.raises(TierFeatureUnavailableError) as exc:
             await svc.get_user_summary_multi_currency(base_currency="TWD")
         assert exc.value.feature == "multi_currency_summary"
 
@@ -307,7 +307,7 @@ async def test_multi_currency_empty_portfolio_returns_zero(
 async def test_multi_currency_missing_rate_raises(
     db_session: AsyncSession,
 ) -> None:
-    """If FX rate cannot be obtained → FxRateUnavailable propagates."""
+    """If FX rate cannot be obtained → FxRateUnavailableError propagates."""
     user = await _mk_user(db_session, "mc5@x.com", "mc5", tier=UserTier.PRO)
     await _seed_account_and_position(
         db_session,
@@ -349,7 +349,7 @@ async def test_multi_currency_missing_rate_raises(
 
     with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = False
-        with pytest.raises(FxRateUnavailable):
+        with pytest.raises(FxRateUnavailableError):
             await svc.get_user_summary_multi_currency(base_currency="TWD")
 
 

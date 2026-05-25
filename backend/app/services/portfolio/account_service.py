@@ -16,9 +16,9 @@ from app.modules.billing.tier_limits import get_limit, has_feature
 from app.repositories.portfolio import PortfolioAccountRepo
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
-    TierFeatureUnavailable,
-    TierLimitExceeded,
+    PortfolioAccountNotFoundError,
+    TierFeatureUnavailableError,
+    TierLimitExceededError,
 )
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ class PortfolioAccountService:
     # ── tier guards (spec §9 service-level second line) ─────────────────
 
     async def _assert_account_quota(self) -> None:
-        """Raise `TierLimitExceeded` if creating one more account would
+        """Raise `TierLimitExceededError` if creating one more account would
         push the user over `max_accounts` for their tier.
 
         Bypassed when `enable_monetization=False` (dev/test parity with
@@ -62,7 +62,7 @@ class PortfolioAccountService:
             return  # PRO / unlimited
         current = await self._repo.count_by_user(self._user.id)
         if current >= limit:
-            raise TierLimitExceeded(limit_key="max_accounts", current=current, limit=limit)
+            raise TierLimitExceededError(limit_key="max_accounts", current=current, limit=limit)
 
     async def _assert_multi_account_feature(self) -> None:
         """For non-first accounts the user must have the
@@ -79,7 +79,7 @@ class PortfolioAccountService:
         if existing == 0:
             return
         if not has_feature(self._user.tier, "multi_account"):
-            raise TierFeatureUnavailable(feature="multi_account")
+            raise TierFeatureUnavailableError(feature="multi_account")
 
     # ── public API ──────────────────────────────────────────────────────
 
@@ -99,8 +99,8 @@ class PortfolioAccountService:
         3. INSERT + audit log
 
         Raises:
-            TierFeatureUnavailable: multi_account gated.
-            TierLimitExceeded:      max_accounts reached.
+            TierFeatureUnavailableError: multi_account gated.
+            TierLimitExceededError:      max_accounts reached.
         """
         await self._assert_multi_account_feature()
         await self._assert_account_quota()
@@ -133,17 +133,17 @@ class PortfolioAccountService:
         return await self._repo.list_by_user(self._user.id)
 
     async def get_account(self, account_id: int) -> PortfolioAccount:
-        """Fetch one owned account or raise `PortfolioAccountNotFound`."""
+        """Fetch one owned account or raise `PortfolioAccountNotFoundError`."""
         account = await self._repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
         return account
 
     async def update_account(self, account_id: int, **fields: Any) -> PortfolioAccount:
         """Patch allowed fields on an owned account.
 
         Raises:
-            PortfolioAccountNotFound: row missing or not owned.
+            PortfolioAccountNotFoundError: row missing or not owned.
         """
         # Capture before-state for audit log (best-effort — repo update
         # is atomic regardless).
@@ -157,7 +157,7 @@ class PortfolioAccountService:
         updated = await self._repo.update(account_id, user_id=self._user.id, **fields)
         if updated is None:
             # Race: deleted between fetch and update.
-            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_account_updated",
@@ -179,13 +179,13 @@ class PortfolioAccountService:
         positions via FK ON DELETE CASCADE.
 
         Raises:
-            PortfolioAccountNotFound: row missing or not owned.
+            PortfolioAccountNotFoundError: row missing or not owned.
         """
         # Confirm ownership first so we can audit-log the right row id.
         await self.get_account(account_id)
         deleted = await self._repo.delete(account_id, user_id=self._user.id)
         if not deleted:
-            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
         await log_audit_event(
             self._db,
             action="portfolio_account_deleted",

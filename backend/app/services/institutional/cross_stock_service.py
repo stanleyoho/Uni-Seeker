@@ -7,7 +7,7 @@ Answers "which filers hold this stock and how have their positions
 changed?" — the inverse of `F13FilingService`'s per-filer surface.
 
 Tier gating: this is a **Pro-only** feature. Lower tiers raise
-`F13TierFeatureUnavailable` immediately, well before any DB query is
+`F13TierFeatureUnavailableError` immediately, well before any DB query is
 issued — this keeps free-tier traffic from contributing to the JOIN
 load.
 
@@ -32,7 +32,7 @@ from app.models.stock import Stock
 from app.modules.billing.tier_limits import has_feature
 from app.repositories.institutional import F13HoldingRepo
 from app.services.institutional.exceptions import (
-    F13TierFeatureUnavailable,
+    F13TierFeatureUnavailableError,
 )
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class F13CrossStockService:
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "institutional_ownership_panel"):
-            raise F13TierFeatureUnavailable(feature="institutional_ownership_panel")
+            raise F13TierFeatureUnavailableError(feature="institutional_ownership_panel")
 
     # ── public API ──────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ class F13CrossStockService:
         first-seen-wins semantics.
 
         Raises:
-            F13TierFeatureUnavailable — non-Pro tier.
+            F13TierFeatureUnavailableError — non-Pro tier.
         """
         self._assert_feature()
 

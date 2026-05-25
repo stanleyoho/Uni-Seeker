@@ -515,7 +515,7 @@ async def test_trades_monthly_quota_blocks_with_403(
 
     Patch the service-level counter to fake "30 already used" so we
     don't need to insert 30 real rows. With monetization on, the
-    service-level second line raises `TierLimitExceeded` and the API
+    service-level second line raises `TierLimitExceededError` and the API
     translates to 403.
     """
     user = await _mk_user(db_session, "tr8@x.tw", tier=UserTier.FREE)

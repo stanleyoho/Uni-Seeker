@@ -20,7 +20,7 @@ We treat the whole batch as **one logical unit**:
 3. If every row passed, replay them through `PortfolioTradeService.
    record_trade` in chronological CSV order. Tier checks fire on every
    call; if the batch would blow the monthly quota, the very first row
-   raises `TierLimitExceeded` BEFORE any partial write commits.
+   raises `TierLimitExceededError` BEFORE any partial write commits.
 
 Backward-compatibility
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -53,9 +53,9 @@ from app.modules.portfolio.broker_parsers.base import (
 )
 from app.schemas.holdings.import_csv import ImportResult, ImportResultRow
 from app.services.portfolio.exceptions import (
-    InsufficientShares,
-    PortfolioAccountNotFound,
-    TierLimitExceeded,
+    PortfolioInsufficientSharesError,
+    PortfolioAccountNotFoundError,
+    TierLimitExceededError,
 )
 from app.services.portfolio.trade_service import PortfolioTradeService
 
@@ -126,8 +126,8 @@ class CsvImportService:
         Raises:
             ValueError: header missing / malformed / unknown broker_key
                 → API maps to 422.
-            PortfolioAccountNotFound: account missing/not owned → 404.
-            TierLimitExceeded: monthly trades quota would be exceeded
+            PortfolioAccountNotFoundError: account missing/not owned → 404.
+            TierLimitExceededError: monthly trades quota would be exceeded
                 by the batch → 403. Pre-checked before any write.
         """
         parser = self._pick_parser(broker_key, csv_content)
@@ -259,7 +259,7 @@ class CsvImportService:
             return
         current = await self._trade_service._trade_repo.count_by_user_this_month(self._user.id)
         if current + batch_size > limit:
-            raise TierLimitExceeded(
+            raise TierLimitExceededError(
                 limit_key="max_trades_per_month",
                 current=current,
                 limit=limit,
@@ -314,7 +314,7 @@ def _row_to_result(row: ParsedRow, error: str) -> ImportResultRow:
 
 __all__ = [
     "CsvImportService",
-    "InsufficientShares",
-    "PortfolioAccountNotFound",
-    "TierLimitExceeded",
+    "PortfolioInsufficientSharesError",
+    "PortfolioAccountNotFoundError",
+    "TierLimitExceededError",
 ]
