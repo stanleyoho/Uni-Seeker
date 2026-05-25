@@ -1,6 +1,6 @@
 """Financial metrics API."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -17,7 +17,7 @@ async def get_metrics(
     symbol: str,
     db: Annotated[AsyncSession, Depends(get_db)],
     limit: int = Query(default=8, ge=1, le=40),
-):
+) -> list[dict[str, Any]]:
     """Get financial metrics history for a stock."""
     stock = await get_stock_or_404(db, symbol)
     stmt = (

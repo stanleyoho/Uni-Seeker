@@ -13,10 +13,10 @@ from app.models.valuation import StockValuation
 class IndustryAggregator:
     """Calculates and stores aggregate metrics for each industry."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def aggregate_all_industries(self, period: str):
+    async def aggregate_all_industries(self, period: str) -> None:
         """Aggregate metrics for all active industries for a given period."""
         result = await self.session.execute(select(Industry))
         industries = result.scalars().all()
@@ -26,7 +26,7 @@ class IndustryAggregator:
 
         await self.session.commit()
 
-    async def aggregate_industry(self, industry_id: int, period: str):
+    async def aggregate_industry(self, industry_id: int, period: str) -> None:
         """Calculate and store median metrics for a single industry."""
         # Get active stocks in this industry
         stock_ids_query = select(Stock.id).where(

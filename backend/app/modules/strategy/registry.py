@@ -17,7 +17,8 @@ class StrategyRegistry:
             available = ", ".join(self._strategies)
             raise KeyError(f"Strategy '{key}' not found. Available: {available}")
         merged = {**self._defaults[key], **params}
-        return self._strategies[key](**merged)
+        strategy: Strategy = self._strategies[key](**merged)
+        return strategy
 
     def list_keys(self) -> list[str]:
         return list(self._strategies.keys())

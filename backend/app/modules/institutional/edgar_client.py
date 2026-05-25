@@ -375,7 +375,8 @@ class EdgarClient:
     async def _get_json(self, url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         response = await self._request_with_retry("GET", url, params=params)
         # SEC sometimes responds JSON with text/plain content-type — call .json() directly.
-        return response.json()
+        data: dict[str, Any] = response.json()
+        return data
 
     async def _request_with_retry(
         self,

@@ -39,10 +39,10 @@ def _stock_signal_to_response(s: StockSignal) -> StockSignalResponse:
         score=s.score,
         signals=[
             SignalDetail(
-                strategy=sig["strategy"],  # type: ignore[arg-type]
-                action=sig["action"],  # type: ignore[arg-type]
-                strength=sig["strength"],  # type: ignore[arg-type]
-                reason=sig["reason"],  # type: ignore[arg-type]
+                strategy=sig["strategy"],
+                action=sig["action"],
+                strength=sig["strength"],
+                reason=sig["reason"],
             )
             for sig in s.signals
         ],
@@ -89,7 +89,7 @@ async def _fetch_stocks_closes(
     stocks_data: list[dict[str, object]] = []
     for entry in grouped.values():
         closes_list = entry["closes"]  # type: ignore[assignment]
-        entry["closes"] = closes_list[-lookback:]  # type: ignore[index]
+        entry["closes"] = closes_list[-lookback:]
         stocks_data.append(entry)
 
     return stocks_data

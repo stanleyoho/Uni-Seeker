@@ -279,7 +279,7 @@ class YFinanceFxFetcher(FxFetcher):
             return None, None
 
     @staticmethod
-    def _coerce_as_of(idx) -> datetime:
+    def _coerce_as_of(idx: object) -> datetime:
         """Best-effort conversion of a pandas Timestamp / datetime / date.
 
         Mirrors `YFinanceLivePriceFetcher._coerce_as_of` for symmetry; the

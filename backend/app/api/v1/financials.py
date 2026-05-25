@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.modules.financial_analysis.earnings_calendar import EarningsCalendarService
+from app.modules.financial_analysis.base import FinancialData
 from app.modules.financial_analysis.finmind_tw_provider import FinMindTWFinancialProvider
 from app.modules.financial_analysis.ratios import calculate_ratios
 from app.modules.financial_analysis.scorer import calculate_health_score
@@ -32,7 +33,7 @@ def _is_tw_stock(symbol: str) -> bool:
     return symbol.isdigit()
 
 
-async def _fetch_financial_data(symbol: str, db: AsyncSession):
+async def _fetch_financial_data(symbol: str, db: AsyncSession) -> FinancialData:
     """
     Fetch financial data with DB-first strategy for TW stocks.
 
@@ -49,7 +50,7 @@ async def _fetch_financial_data(symbol: str, db: AsyncSession):
         return await SECEdgarFinancialProvider().fetch_financials(symbol)
 
 
-def _build_full_response(data, symbol: str) -> FullAnalysisResponse:
+def _build_full_response(data: FinancialData, symbol: str) -> FullAnalysisResponse:
     ratios_list = calculate_ratios(data)
     health_scores = [calculate_health_score(r) for r in ratios_list]
 

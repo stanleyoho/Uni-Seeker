@@ -139,7 +139,8 @@ class SECEdgarFinancialProvider:
         async with httpx.AsyncClient(headers={"User-Agent": _USER_AGENT}) as client:
             resp = await client.get(url, timeout=30)
             resp.raise_for_status()
-        return resp.json()
+        data: dict[str, Any] = resp.json()
+        return data
 
     # ------------------------------------------------------------------ #
     # Statement extraction                                                 #

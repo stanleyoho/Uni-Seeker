@@ -60,10 +60,10 @@ def _register_block_counter() -> Counter:
         # the existing Counter so call sites can still `.labels(...).inc()`.
         # `_names_to_collectors` is private API but stable in prometheus_client
         # 0.20.x and the only documented mechanism for this scenario.
-        existing = REGISTRY._names_to_collectors.get(name)  # type: ignore[attr-defined]
+        existing = REGISTRY._names_to_collectors.get(name)
         if existing is None:
             # Defensive: name suffix variants (_total) are sometimes the key.
-            existing = REGISTRY._names_to_collectors.get(f"{name}_total")  # type: ignore[attr-defined]
+            existing = REGISTRY._names_to_collectors.get(f"{name}_total")
         if existing is None:
             raise
         return existing  # type: ignore[return-value]
@@ -144,7 +144,8 @@ class AllTierLimits(BaseModel):
     pro: TierConfig
 
     def for_tier(self, tier: UserTier) -> TierConfig:
-        return getattr(self, tier.value)
+        result: TierConfig = getattr(self, tier.value)
+        return result
 
 
 # ── Loader ──────────────────────────────────────────────────────────────────

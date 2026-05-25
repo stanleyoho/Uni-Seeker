@@ -25,7 +25,7 @@ helper `_open_session_via_overrides_or_default` that respects it.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING
 
@@ -67,7 +67,7 @@ async def _session_scope() -> AsyncIterator[AsyncSession]:
             await gen.__anext__()
 
 
-async def _safe_count(coro_factory) -> int:
+async def _safe_count(coro_factory: Callable[[], Awaitable[int]]) -> int:
     """Run a count query and swallow any session / event-loop error.
 
     Rationale: `tier_guard` is the FIRST line of defence (spec §9 雙保險).
@@ -81,7 +81,7 @@ async def _safe_count(coro_factory) -> int:
     try:
         return await coro_factory()
     except Exception:  # pragma: no cover - defensive isolation
-        return 0
+        return 0  # type: ignore[no-any-return]
 
 
 async def account_count_provider(*, user: User) -> int:

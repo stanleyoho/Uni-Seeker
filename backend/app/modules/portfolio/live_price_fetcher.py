@@ -24,7 +24,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import Any, Protocol
 
 import structlog
 
@@ -85,11 +85,11 @@ class DailyCloseLivePriceFetcher:
     fetchers, even though the SQLAlchemy session call here is sync.
     """
 
-    def __init__(self, db_session_factory) -> None:
+    def __init__(self, db_session_factory: Any) -> None:
         """Inject a callable that returns a Session-like context manager.
 
-        We intentionally type this loosely — the only operations used are
-        `with session_factory() as s: s.execute(...).all()`, so any
+        We intentionally type this loosely (Any) — the only operations
+        used are `with session_factory() as s: s.execute(...).all()`, so any
         SQLAlchemy `sessionmaker` / test double satisfies it.
         """
         self._db_factory = db_session_factory
@@ -116,7 +116,7 @@ class DailyCloseLivePriceFetcher:
         return result
 
     @staticmethod
-    def _fetch_latest_two(session, stock_id: str):
+    def _fetch_latest_two(session: Any, stock_id: str) -> list[Any]:
         """Return up to 2 most-recent `stock_prices` rows for `stock_id`.
 
         Each row must expose `.close` and `.date` (or `.as_of`). The query
@@ -131,7 +131,7 @@ class DailyCloseLivePriceFetcher:
         return list(session.execute(stmt, {"sid": stock_id}).all())
 
     @staticmethod
-    def _coerce_as_of(row) -> datetime:
+    def _coerce_as_of(row: Any) -> datetime:
         """Normalize the row's date column to a datetime.
 
         Phase 1 stock_prices uses Date (no time component); we lift it to
@@ -305,7 +305,7 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
             return None
 
     @staticmethod
-    def _coerce_as_of(idx) -> datetime:
+    def _coerce_as_of(idx: object) -> datetime:
         """Best-effort conversion of a pandas Timestamp / datetime / date."""
         if isinstance(idx, datetime):
             return idx
@@ -336,7 +336,7 @@ class CachedDailyCloseLivePriceFetcher(TTLCacheMixin):
     Delegates the cache-miss path to a `DailyCloseLivePriceFetcher` instance.
     """
 
-    def __init__(self, db_session_factory, ttl_seconds: int = 300) -> None:
+    def __init__(self, db_session_factory: Any, ttl_seconds: int = 300) -> None:
         super().__init__(ttl_seconds=ttl_seconds)
         self._inner = DailyCloseLivePriceFetcher(db_session_factory)
 

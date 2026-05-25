@@ -92,5 +92,18 @@ plugins = ["pydantic.mypy"]
 exclude = ["alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["redis.*", "apscheduler.*", "telegram.*", "yfinance.*"]
+module = [
+    "redis.*",
+    "apscheduler.*",
+    "telegram.*",
+    "yfinance.*",
+    # Internal packages that don't ship `py.typed` yet — track per-package
+    # adoption and remove the override once they publish py.typed.
+    "observability_core.*",
+    "prediction_engine.*",
+    # Third-party without stubs in this lockfile. pandas-stubs and
+    # types-PyYAML could become dev deps later; until then ignore.
+    "pandas.*",
+    "yaml",
+]
 ignore_missing_imports = true
