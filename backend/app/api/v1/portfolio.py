@@ -95,9 +95,9 @@ async def run_portfolio_backtest(
     rebalance = RebalanceConfig(mode=req.rebalance_mode)
     if req.rebalance_config:
         if "period_days" in req.rebalance_config:
-            rebalance.period_days = int(req.rebalance_config["period_days"])
+            rebalance.period_days = int(req.rebalance_config["period_days"])  # type: ignore[call-overload]
         if "threshold_pct" in req.rebalance_config:
-            rebalance.threshold_pct = float(req.rebalance_config["threshold_pct"])
+            rebalance.threshold_pct = float(req.rebalance_config["threshold_pct"])  # type: ignore[arg-type]
 
     config = PortfolioBacktestConfig(
         initial_capital=req.initial_capital,

@@ -62,7 +62,7 @@ class DCFEstimator:
         projection_years = 5
 
         # 4. Two-Stage DCF Calculation
-        pv_fcf = 0
+        pv_fcf = 0.0
         fcf_projection = current_fcf
         for t in range(1, projection_years + 1):
             fcf_projection *= 1 + growth_rate

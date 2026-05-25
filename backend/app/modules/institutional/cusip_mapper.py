@@ -500,14 +500,16 @@ async def batch_resolve_cusips_with_figi(
     ticker_to_stock: dict[str, tuple[int, str | None]] = {}
     if cusip_to_ticker:
         tickers = list(set(cusip_to_ticker.values()))
-        rows = (
+        # Rename to `symbol_rows` so mypy doesn't conflate the Row-tuple
+        # type with the earlier `rows` (different column set / nullability).
+        symbol_rows = (
             await db.execute(
                 select(Stock.id, Stock.name, Stock.symbol).where(Stock.symbol.in_(tickers))
             )
         ).all()
-        for row in rows:
-            if row.symbol:
-                ticker_to_stock[row.symbol] = (int(row.id), row.name)
+        for srow in symbol_rows:
+            if srow.symbol:
+                ticker_to_stock[srow.symbol] = (int(srow.id), srow.name)
 
     # Apply FIGI hits; collect remaining misses for layer 3 (NAME_LIKE).
     name_like_idx: list[int] = []

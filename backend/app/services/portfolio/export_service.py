@@ -242,6 +242,7 @@ class CsvExportService:
             total_cost = p.total_cost
             latest_rows = price_map.get(p.symbol, [])
             last_price = latest_rows[0].close if latest_rows else None
+            market_value: Decimal | None
             if last_price is not None and qty > Decimal("0"):
                 market_value = last_price * qty
                 avg_for_calc = avg if avg is not None else Decimal("0")
@@ -409,9 +410,7 @@ class CsvExportService:
             offset += page_size
         return out
 
-    async def _collect_dividends_for_account(
-        self, account_id: int
-    ) -> list[PortfolioDividend]:
+    async def _collect_dividends_for_account(self, account_id: int) -> list[PortfolioDividend]:
         """Same pattern for dividends. Each repo page caps at 500."""
         page_size = 500
         offset = 0

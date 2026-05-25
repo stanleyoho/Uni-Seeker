@@ -63,7 +63,7 @@ class ScreenerEngine:
                             indicator_values[target_key] = float(v)
                             break
 
-            if conditions.evaluate(indicator_values):
+            if conditions.evaluate(indicator_values):  # type: ignore[arg-type]
                 results.append(ScreenResult(symbol=symbol, indicator_values=indicator_values))
 
         if sort_by and results:

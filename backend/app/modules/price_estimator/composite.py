@@ -99,9 +99,7 @@ class CompositeEstimator:
         # sum() return type Decimal (default int start otherwise widens to
         # Decimal | int and pollutes downstream arithmetic).
         total_conf = sum((r.confidence for r, _ in valid_results), Decimal(0))
-        comp_fair = (
-            sum((fp * r.confidence for r, fp in valid_results), Decimal(0)) / total_conf
-        )
+        comp_fair = sum((fp * r.confidence for r, fp in valid_results), Decimal(0)) / total_conf
         comp_cheap = (
             sum(((r.cheap_price or fp) * r.confidence for r, fp in valid_results), Decimal(0))
             / total_conf
