@@ -110,7 +110,7 @@ async def run_portfolio_backtest(
             ),
             timeout=30,
         )
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=504,
             detail="Portfolio backtest timed out after 30 seconds",

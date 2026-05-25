@@ -62,7 +62,7 @@ class IndustryAggregator:
         )
         valuations = (await self.session.execute(val_query)).scalars().all()
 
-        def get_median(values: List[Optional[float]]) -> Optional[float]:
+        def get_median(values: list[float | None]) -> float | None:
             clean_values = [v for v in values if v is not None]
             if not clean_values:
                 return None

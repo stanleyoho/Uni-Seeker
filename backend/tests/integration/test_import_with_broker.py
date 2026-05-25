@@ -81,39 +81,39 @@ async def _trade_count(db: AsyncSession, user_id: int) -> int:
 
 
 _IB = (
-    "Statement,Header,Field Name,Field Value\n"
-    "Trades,Header,DataDiscriminator,Asset Category,Symbol,Date/Time,Quantity,T. Price,Comm/Fee,Currency,OrderID\n"
-    "Trades,Data,Order,Stocks,NVDA,2026-04-15;09:35:11,100,500.00,-1.00,USD,O111\n"
-    "Trades,Data,Order,Stocks,NVDA,2026-04-16;10:00:00,-50,510.00,-1.00,USD,O112\n"
-).encode("utf-8")
+    b"Statement,Header,Field Name,Field Value\n"
+    b"Trades,Header,DataDiscriminator,Asset Category,Symbol,Date/Time,Quantity,T. Price,Comm/Fee,Currency,OrderID\n"
+    b"Trades,Data,Order,Stocks,NVDA,2026-04-15;09:35:11,100,500.00,-1.00,USD,O111\n"
+    b"Trades,Data,Order,Stocks,NVDA,2026-04-16;10:00:00,-50,510.00,-1.00,USD,O112\n"
+)
 
 
 _YUANTA = (
     "交易日期,股票代號,股票名稱,交易類別,股數,價格,手續費,交易稅\n"
     "2026/04/15,2330,台積電,買進,1000,580,150,0\n"
     "2026/04/20,2330,台積電,賣出,500,600,90,180\n"
-).encode("utf-8")
+).encode()
 
 
 _FUBON = (
     "日期,代號,名稱,委託類別,股數,單價,手續費,證交稅\n"
     "2026/04/15,2330,台積電,B,1000,580,150,0\n"
     "2026/04/16,2454,聯發科,S,200,1000,90,300\n"
-).encode("utf-8")
+).encode()
 
 
 _SCHWAB = (
-    "Date,Action,Symbol,Description,Quantity,Price,Fees & Comm,Amount\n"
-    "04/15/2026,Buy,NVDA,NVIDIA CORP,100,500.00,$0.00,$50000.00\n"
-    "04/16/2026,Sell,NVDA,NVIDIA CORP,50,510.00,$0.00,$25500.00\n"
-).encode("utf-8")
+    b"Date,Action,Symbol,Description,Quantity,Price,Fees & Comm,Amount\n"
+    b"04/15/2026,Buy,NVDA,NVIDIA CORP,100,500.00,$0.00,$50000.00\n"
+    b"04/16/2026,Sell,NVDA,NVIDIA CORP,50,510.00,$0.00,$25500.00\n"
+)
 
 
 _FIDELITY = (
-    "Run Date,Action,Symbol,Description,Type,Quantity,Price ($),Commission ($),Fees ($),Amount ($)\n"
-    "04/15/2026,YOU BOUGHT,NVDA,NVIDIA CORP,Cash,100,500.00,0.00,0.00,-50000.00\n"
-    "04/16/2026,YOU SOLD,NVDA,NVIDIA CORP,Cash,50,510.00,0.00,0.00,25500.00\n"
-).encode("utf-8")
+    b"Run Date,Action,Symbol,Description,Type,Quantity,Price ($),Commission ($),Fees ($),Amount ($)\n"
+    b"04/15/2026,YOU BOUGHT,NVDA,NVIDIA CORP,Cash,100,500.00,0.00,0.00,-50000.00\n"
+    b"04/16/2026,YOU SOLD,NVDA,NVIDIA CORP,Cash,50,510.00,0.00,0.00,25500.00\n"
+)
 
 
 # ── tests ───────────────────────────────────────────────────────────────────

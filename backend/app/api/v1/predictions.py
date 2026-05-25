@@ -27,7 +27,7 @@ class SavePredictionRequest(BaseModel):
     model_version: str = Field(..., min_length=1, max_length=50)
     prediction_value: float = Field(..., ge=0.0, le=1.0)
     confidence: float = Field(..., ge=0.0, le=1.0)
-    shap_values: Optional[dict[str, float]] = None
+    shap_values: dict[str, float] | None = None
 
 
 class SavePredictionResponse(BaseModel):
@@ -41,16 +41,16 @@ class ResolvePredictionRequest(BaseModel):
 class ResolvePredictionResponse(BaseModel):
     prediction_id: int
     is_resolved: bool
-    error: Optional[float]
-    is_correct: Optional[bool]
+    error: float | None
+    is_correct: bool | None
 
 
 class PerformanceResponse(BaseModel):
     total: int
     correct: int
-    accuracy: Optional[float]
-    avg_confidence: Optional[float]
-    avg_error: Optional[float]
+    accuracy: float | None
+    avg_confidence: float | None
+    avg_error: float | None
 
 
 # ── Sync engine cache for prediction_engine's SQLite DB ──────────────────────

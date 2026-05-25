@@ -155,7 +155,7 @@ async def run_backtest(
             ),
             timeout=_BACKTEST_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Backtest timed out after {_BACKTEST_TIMEOUT_SECONDS} seconds",
@@ -207,7 +207,7 @@ async def run_composite_backtest(
             ),
             timeout=_BACKTEST_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Composite backtest timed out after {_BACKTEST_TIMEOUT_SECONDS} seconds",
@@ -249,7 +249,7 @@ async def run_auto_discovery(
             ),
             timeout=_AUTO_DISCOVERY_TIMEOUT,
         )
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Auto discovery timed out after {_AUTO_DISCOVERY_TIMEOUT} seconds",

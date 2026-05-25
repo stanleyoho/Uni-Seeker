@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine

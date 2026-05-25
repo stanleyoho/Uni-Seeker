@@ -33,11 +33,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from enum import Enum
-from typing import Mapping
+from enum import Enum, StrEnum
+from collections.abc import Mapping
 
 
-class RuleType(str, Enum):
+class RuleType(StrEnum):
     POSITION_PRICE_DROP = "POSITION_PRICE_DROP"
     POSITION_PRICE_RISE = "POSITION_PRICE_RISE"
     PORTFOLIO_VALUE_ABOVE = "PORTFOLIO_VALUE_ABOVE"
@@ -46,7 +46,7 @@ class RuleType(str, Enum):
     POSITION_PNL_PCT_BELOW = "POSITION_PNL_PCT_BELOW"
 
 
-class ThresholdType(str, Enum):
+class ThresholdType(StrEnum):
     PCT = "PCT"
     ABSOLUTE = "ABSOLUTE"
 

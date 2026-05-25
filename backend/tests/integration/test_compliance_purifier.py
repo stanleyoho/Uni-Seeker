@@ -61,7 +61,7 @@ async def test_rewrites_multiple_phrases_in_one_body():
 async def test_pass_through_for_non_textual_content():
     """Binary / unknown content type bodies must NOT be touched."""
     # application/octet-stream 含「建議買入」字串 → 必須保留
-    app = _make_app("建議買入".encode("utf-8"), media_type="application/octet-stream")
+    app = _make_app("建議買入".encode(), media_type="application/octet-stream")
     _, text, _ = await _get(app)
     assert "建議買入" in text
 

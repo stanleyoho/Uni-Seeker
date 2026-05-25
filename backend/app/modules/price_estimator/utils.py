@@ -13,7 +13,7 @@ logger = structlog.get_logger()
 
 class ValuationUtils:
     @staticmethod
-    def calculate_cagr(values: List[float]) -> float:
+    def calculate_cagr(values: list[float]) -> float:
         """Calculate Compound Annual Growth Rate."""
         if not values or len(values) < 2 or values[0] <= 0 or values[-1] <= 0:
             return 0.05  # Default conservative growth
@@ -75,7 +75,7 @@ class ValuationUtils:
         return float(round(wacc, 3))
 
     @staticmethod
-    def clean_outliers(values: List[float]) -> List[float]:
+    def clean_outliers(values: list[float]) -> list[float]:
         """Remove extreme outliers using Interquartile Range."""
         if len(values) < 4:
             return values
