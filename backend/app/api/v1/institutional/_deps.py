@@ -119,7 +119,7 @@ async def tracked_filers_count_provider(*, user: User) -> int:
     Bypass / fallback semantics: returns 0 on any error (per
     `_safe_count`) so the dependency layer can never produce a 500.
     The service layer's `_assert_filer_quota` re-checks against the
-    request session and raises `F13TierLimitExceeded` if the quota is
+    request session and raises `F13TierLimitExceededError` if the quota is
     actually exhausted.
     """
 

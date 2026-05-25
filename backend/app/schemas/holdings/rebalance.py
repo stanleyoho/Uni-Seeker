@@ -178,7 +178,7 @@ class SkippedTrade(BaseModel):
 
 class FailedTrade(BaseModel):
     """A suggested trade that the planner produced but the trade-write
-    pipeline rejected (e.g. ``InsufficientShares`` on a SELL whose stale
+    pipeline rejected (e.g. ``InsufficientSharesError`` on a SELL whose stale
     snapshot disagrees with the live lot total).
 
     ``error_code`` matches the canonical ``_detail`` strings (e.g.

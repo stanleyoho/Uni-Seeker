@@ -4,7 +4,7 @@ Spec: docs/superpowers/plans/2026-05-22-institutional-13f-tracking-design.md
 §5.5 (cross-stock view) + §8 (`institutional_ownership_panel` Pro-only).
 
 Tier guard is service-side only (not declarative): the service's
-`_assert_feature` raises `F13TierFeatureUnavailable` which we map to
+`_assert_feature` raises `F13TierFeatureUnavailableError` which we map to
 403. We keep the second-line guard in the service because the count-
 based dep-layer `tier_guard` factory is over-engineered for a simple
 feature flag and would conflict with the count_provider contract.
@@ -28,7 +28,7 @@ from app.schemas.institutional.cross_stock import (
 )
 from app.services.institutional import (
     F13CrossStockService,
-    F13TierFeatureUnavailable,
+    F13TierFeatureUnavailableError,
 )
 
 router = APIRouter(prefix="/stocks", tags=["institutional.stocks"])
@@ -56,7 +56,7 @@ async def get_institutional_for_stock(
     svc = F13CrossStockService(db, user)  # type: ignore[arg-type]
     try:
         holders = await svc.get_institutional_holders_for_stock(symbol=symbol, limit=limit)
-    except F13TierFeatureUnavailable as exc:
+    except F13TierFeatureUnavailableError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),

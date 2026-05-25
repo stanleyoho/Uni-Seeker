@@ -41,11 +41,11 @@ from app.services.portfolio import (
     PortfolioTradeService,
 )
 from app.services.portfolio.dividend_service import (
-    PortfolioDividendNotFound,
+    PortfolioDividendNotFoundError,
 )
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
-    TierFeatureUnavailable,
+    PortfolioAccountNotFoundError,
+    TierFeatureUnavailableError,
 )
 
 if TYPE_CHECKING:
@@ -412,7 +412,7 @@ async def test_record_stock_dividend_preserves_lot_total_cost_invariant(
 async def test_record_dividend_tier_blocked_free_user(
     db_session: AsyncSession,
 ) -> None:
-    """FREE tier: dividends feature is false → TierFeatureUnavailable."""
+    """FREE tier: dividends feature is false → TierFeatureUnavailableError."""
     user = await _mk_user(db_session, "s4@x.com", "s4", tier=UserTier.FREE)
     acc_id = await _seed_account(db_session, user)
     # Need a real position for the CASH path to mean something, but the
@@ -420,7 +420,7 @@ async def test_record_dividend_tier_blocked_free_user(
     svc = PortfolioDividendService(db_session, user)
     with patch("app.services.portfolio.dividend_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(TierFeatureUnavailable) as exc:
+        with pytest.raises(TierFeatureUnavailableError) as exc:
             await svc.record_dividend(
                 account_id=acc_id,
                 symbol="2330",
@@ -484,10 +484,10 @@ async def test_record_dividend_pro_user_passes(
 async def test_record_dividend_unknown_account_raises_404(
     db_session: AsyncSession,
 ) -> None:
-    """Recording against a non-existent account id → PortfolioAccountNotFound."""
+    """Recording against a non-existent account id → PortfolioAccountNotFoundError."""
     user = await _mk_user(db_session, "s7@x.com", "s7")
     svc = PortfolioDividendService(db_session, user)
-    with pytest.raises(PortfolioAccountNotFound):
+    with pytest.raises(PortfolioAccountNotFoundError):
         await svc.record_dividend(
             account_id=999_999,
             symbol="2330",
@@ -524,7 +524,7 @@ async def test_record_dividend_cross_user_rejected(
     await db_session.commit()
 
     # Attack 1: B records dividend on A's account.
-    with pytest.raises(PortfolioAccountNotFound):
+    with pytest.raises(PortfolioAccountNotFoundError):
         await svc_b.record_dividend(
             account_id=acc_a,
             symbol="2330",
@@ -535,10 +535,10 @@ async def test_record_dividend_cross_user_rejected(
             quantity_at_record=Decimal("100"),
         )
     # Attack 2: B reads A's dividend.
-    with pytest.raises(PortfolioDividendNotFound):
+    with pytest.raises(PortfolioDividendNotFoundError):
         await svc_b.get_dividend(row.id)
     # Attack 3: B deletes A's dividend.
-    with pytest.raises(PortfolioDividendNotFound):
+    with pytest.raises(PortfolioDividendNotFoundError):
         await svc_b.delete_dividend(row.id)
 
     # A's row still intact.
@@ -642,7 +642,7 @@ async def test_delete_dividend_simple_delete_no_rebuild(
     await db_session.commit()
 
     # Row is gone.
-    with pytest.raises(PortfolioDividendNotFound):
+    with pytest.raises(PortfolioDividendNotFoundError):
         await svc.get_dividend(row.id)
 
     # Position's realized_pnl is unchanged (no rebuild).

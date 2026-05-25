@@ -42,14 +42,14 @@ from app.repositories.institutional import (
 )
 from app.services.institutional import (
     F13CrossStockService,
-    F13FilerNotFound,
+    F13FilerNotFoundError,
     F13FilerSearchService,
     F13FilingService,
-    F13RefreshInFlight,
-    F13SubscriptionExists,
+    F13RefreshInFlightError,
+    F13SubscriptionExistsError,
     F13SubscriptionService,
-    F13TierFeatureUnavailable,
-    F13TierLimitExceeded,
+    F13TierFeatureUnavailableError,
+    F13TierLimitExceededError,
 )
 
 if TYPE_CHECKING:
@@ -212,7 +212,7 @@ async def test_subscribe_happy_path_creates_filer_and_sub(
     assert filer.name == "Acme LP"
 
     # 2nd attempt to same filer (different name ignored) raises 409.
-    with pytest.raises(F13SubscriptionExists) as exc:
+    with pytest.raises(F13SubscriptionExistsError) as exc:
         await svc.subscribe(cik_or_filer_id="0001234567", name="Acme LP")
     assert exc.value.filer_id == filer.id
 
@@ -223,7 +223,7 @@ async def test_subscribe_happy_path_creates_filer_and_sub(
 async def test_subscribe_free_tier_quota_blocks_second(
     db_session: AsyncSession,
 ) -> None:
-    """FREE.max_tracked_filers = 1 → 2nd subscribe raises TierLimitExceeded."""
+    """FREE.max_tracked_filers = 1 → 2nd subscribe raises TierLimitExceededError."""
     user = await _mk_user(db_session, "ss2@x.com", "ss2", tier=UserTier.FREE)
     svc = F13SubscriptionService(db_session, user)
 
@@ -233,7 +233,7 @@ async def test_subscribe_free_tier_quota_blocks_second(
         await svc.subscribe(cik_or_filer_id="0001111111", name="Filer One")
         await db_session.commit()
 
-        with pytest.raises(F13TierLimitExceeded) as exc:
+        with pytest.raises(F13TierLimitExceededError) as exc:
             await svc.subscribe(cik_or_filer_id="0002222222", name="Filer Two")
         assert exc.value.limit_key == "max_tracked_filers"
         assert exc.value.limit == 1
@@ -242,11 +242,11 @@ async def test_subscribe_free_tier_quota_blocks_second(
 async def test_subscribe_by_int_filer_id_404(
     db_session: AsyncSession,
 ) -> None:
-    """Passing int that doesn't exist raises F13FilerNotFound."""
+    """Passing int that doesn't exist raises F13FilerNotFoundError."""
     user = await _mk_user(db_session, "ss3@x.com", "ss3")
     svc = F13SubscriptionService(db_session, user)
 
-    with pytest.raises(F13FilerNotFound):
+    with pytest.raises(F13FilerNotFoundError):
         await svc.subscribe(cik_or_filer_id=999999)
 
 
@@ -264,7 +264,7 @@ async def test_unsubscribe_happy_then_missing(
     assert await _count_audit(db_session, "f13_filer_unsubscribed", user.id) == 1
 
     # Second unsubscribe raises.
-    with pytest.raises(F13FilerNotFound):
+    with pytest.raises(F13FilerNotFoundError):
         await svc.unsubscribe(filer.id)
 
 
@@ -465,7 +465,7 @@ async def test_refresh_concurrent_raises_in_flight(
     lock = await svc._get_lock(filer.id)
     await lock.acquire()
     try:
-        with pytest.raises(F13RefreshInFlight) as exc:
+        with pytest.raises(F13RefreshInFlightError) as exc:
             await svc.refresh_filer(filer.id)
         assert exc.value.filer_id == filer.id
     finally:
@@ -506,7 +506,7 @@ async def test_list_filings_requires_subscription(
     assert len(rows) == 1
 
     # User B is not subscribed — must NOT see the filing.
-    with pytest.raises(F13FilerNotFound):
+    with pytest.raises(F13FilerNotFoundError):
         await svc_b.list_filings_for_filer(filer.id)
 
 
@@ -600,7 +600,7 @@ async def test_cross_stock_free_tier_blocked(
     svc = F13CrossStockService(db_session, user)
     with patch("app.services.institutional.cross_stock_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(F13TierFeatureUnavailable) as exc:
+        with pytest.raises(F13TierFeatureUnavailableError) as exc:
             await svc.get_institutional_holders_for_stock("AAPL")
         assert exc.value.feature == "institutional_ownership_panel"
 

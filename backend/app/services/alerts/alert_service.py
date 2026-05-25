@@ -41,7 +41,7 @@ from app.repositories.alerts.alert_repo import AlertRuleRepo
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
     PortfolioServiceError,
-    TierLimitExceeded,
+    TierLimitExceededError,
 )
 
 if TYPE_CHECKING:
@@ -54,11 +54,11 @@ if TYPE_CHECKING:
 logger = get_logger(component="alert_service")
 
 
-class AlertRuleNotFound(PortfolioServiceError):
+class AlertRuleNotFoundError(PortfolioServiceError):
     """Rule id not present OR not owned by the requesting user."""
 
 
-class InvalidAlertRule(PortfolioServiceError):
+class InvalidAlertRuleError(PortfolioServiceError):
     """User-supplied input fails domain validation.
 
     ``code`` is a short snake_case identifier the API layer surfaces
@@ -123,7 +123,7 @@ class AlertService:
             if limit is not None:
                 current = await self._repo.count_by_user(self._user.id)
                 if current >= limit:
-                    raise TierLimitExceeded(
+                    raise TierLimitExceededError(
                         limit_key="max_alert_rules",
                         current=current,
                         limit=limit,
@@ -160,7 +160,7 @@ class AlertService:
     async def get_rule(self, rule_id: int) -> AlertRule:
         rule = await self._repo.get(rule_id, user_id=self._user.id)
         if rule is None:
-            raise AlertRuleNotFound(f"rule {rule_id}")
+            raise AlertRuleNotFoundError(f"rule {rule_id}")
         return rule
 
     async def update_rule(
@@ -178,24 +178,24 @@ class AlertService:
         patch = {k: v for k, v in fields.items() if k in allowed and v is not None}
 
         if "status" in patch and patch["status"] not in ALERT_STATUSES:
-            raise InvalidAlertRule("invalid_status")
+            raise InvalidAlertRuleError("invalid_status")
         if "threshold_type" in patch and patch["threshold_type"] not in ALERT_THRESHOLD_TYPES:
-            raise InvalidAlertRule("invalid_threshold_type")
+            raise InvalidAlertRuleError("invalid_threshold_type")
         if "name" in patch:
             name_val = str(patch["name"]).strip()
             if not name_val or len(name_val) > 100:
-                raise InvalidAlertRule("invalid_name")
+                raise InvalidAlertRuleError("invalid_name")
             patch["name"] = name_val
 
         updated = await self._repo.update(rule_id, user_id=self._user.id, **patch)
         if updated is None:
-            raise AlertRuleNotFound(f"rule {rule_id}")
+            raise AlertRuleNotFoundError(f"rule {rule_id}")
         return updated
 
     async def delete_rule(self, rule_id: int) -> None:
         removed = await self._repo.delete(rule_id, user_id=self._user.id)
         if not removed:
-            raise AlertRuleNotFound(f"rule {rule_id}")
+            raise AlertRuleNotFoundError(f"rule {rule_id}")
         await log_audit_event(
             self._db,
             action="alert_rule_deleted",
@@ -358,25 +358,25 @@ class AlertService:
         market: str | None,
     ) -> None:
         if not name or len(name) > 100:
-            raise InvalidAlertRule("invalid_name")
+            raise InvalidAlertRuleError("invalid_name")
         if rule_type not in ALERT_RULE_TYPES:
-            raise InvalidAlertRule("invalid_rule_type")
+            raise InvalidAlertRuleError("invalid_rule_type")
         if threshold_type not in ALERT_THRESHOLD_TYPES:
-            raise InvalidAlertRule("invalid_threshold_type")
+            raise InvalidAlertRuleError("invalid_threshold_type")
 
         # Scope consistency: matches the DB CHECK constraint.
         if rule_type in _POSITION_RULES:
             if not symbol or not market:
-                raise InvalidAlertRule("missing_symbol_market")
+                raise InvalidAlertRuleError("missing_symbol_market")
         elif rule_type in _PORTFOLIO_RULES:
             if symbol is not None or market is not None:
-                raise InvalidAlertRule("symbol_not_allowed_for_portfolio_rule")
+                raise InvalidAlertRuleError("symbol_not_allowed_for_portfolio_rule")
             if threshold_type != "ABSOLUTE":
-                raise InvalidAlertRule("portfolio_rule_requires_absolute")
+                raise InvalidAlertRuleError("portfolio_rule_requires_absolute")
 
         # PNL rules: PCT only (DB CHECK doesn't know this).
         if rule_type in _PNL_RULES and threshold_type != "PCT":
-            raise InvalidAlertRule("pnl_rule_requires_pct")
+            raise InvalidAlertRuleError("pnl_rule_requires_pct")
 
         # Sign rules — PRICE_DROP / PRICE_RISE / VALUE_* must be positive.
         # PNL_PCT_BELOW accepts negatives (stop-loss style).
@@ -384,7 +384,7 @@ class AlertService:
             pass
         else:
             if threshold_value <= 0:
-                raise InvalidAlertRule("threshold_must_be_positive")
+                raise InvalidAlertRuleError("threshold_must_be_positive")
 
     async def _build_context(
         self,
@@ -458,7 +458,7 @@ class AlertService:
 
 
 __all__ = [
-    "AlertRuleNotFound",
+    "AlertRuleNotFoundError",
     "AlertService",
-    "InvalidAlertRule",
+    "InvalidAlertRuleError",
 ]

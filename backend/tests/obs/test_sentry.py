@@ -4,7 +4,7 @@ Since 2026-05-24 Stage 2 migration ``app.obs.sentry.init_sentry`` is a
 thin wrapper over ``observability_core.sentry.init_sentry``. Patches
 target the package's ``sentry_sdk`` symbol since that is where the real
 init call now lives. The filter-policy assertions still exercise
-Uni-Seeker-specific kwargs (Stripe webhook full-sample, ExpectedDriftAlert
+Uni-Seeker-specific kwargs (Stripe webhook full-sample, ExpectedDriftAlertError
 drop) via ``app.obs._sentry_filters``.
 """
 
@@ -106,12 +106,12 @@ def test_before_send_keeps_stripe_5xx():
 
 
 def test_before_send_drops_expected_drift_alert():
-    """ExpectedDriftAlert is a notification channel, not a bug."""
-    from app.obs._sentry_filters import ExpectedDriftAlert, build_before_send
+    """ExpectedDriftAlertError is a notification channel, not a bug."""
+    from app.obs._sentry_filters import ExpectedDriftAlertError, build_before_send
 
     bs = build_before_send()
-    err = ExpectedDriftAlert("orange drift on nba")
-    event = {"exception": {"values": [{"type": "ExpectedDriftAlert"}]}}
+    err = ExpectedDriftAlertError("orange drift on nba")
+    event = {"exception": {"values": [{"type": "ExpectedDriftAlertError"}]}}
     hint = {"exc_info": (type(err), err, None)}
     assert bs(event, hint) is None
 

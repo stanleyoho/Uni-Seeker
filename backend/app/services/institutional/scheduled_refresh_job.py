@@ -33,7 +33,7 @@ Anti-coupling contract:
   ``weekly_basic_refresh`` take the session + client as parameters so
   tests can inject a ``MockEdgarClient`` against the shared
   ``db_session`` fixture without touching the scheduler module.
-- ``F13RefreshInFlight`` (raised by ``F13FilingService.refresh_filer``
+- ``F13RefreshInFlightError`` (raised by ``F13FilingService.refresh_filer``
   when a manual refresh holds the per-filer lock) is caught and counted
   as ``skipped`` — losing the race to a user request is the *correct*
   outcome, not an error.
@@ -54,8 +54,8 @@ from app.models.user import User
 from app.modules.institutional.edgar_client import EdgarClient
 from app.services.institutional.exceptions import (
     F13EdgarError,
-    F13FilerNotFound,
-    F13RefreshInFlight,
+    F13FilerNotFoundError,
+    F13RefreshInFlightError,
 )
 from app.services.institutional.filing_service import F13FilingService
 
@@ -209,7 +209,7 @@ async def refresh_for_tier(
 
             try:
                 result_counts = await service.refresh_filer(filer.id)
-            except F13RefreshInFlight:
+            except F13RefreshInFlightError:
                 # User-driven manual refresh already holds the lock —
                 # losing the race is the correct outcome.
                 skipped += 1
@@ -219,7 +219,7 @@ async def refresh_for_tier(
                     cik=filer.cik,
                 )
                 continue
-            except F13FilerNotFound:
+            except F13FilerNotFoundError:
                 # Filer deleted between SELECT and refresh (very rare).
                 skipped += 1
                 continue

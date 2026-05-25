@@ -13,7 +13,7 @@ class PortfolioServiceError(Exception):
     """Base class for all portfolio service-level domain errors."""
 
 
-class PortfolioAccountNotFound(PortfolioServiceError):
+class PortfolioAccountNotFoundError(PortfolioServiceError):
     """Account id does not exist OR is not owned by the requesting user.
 
     Service layer collapses 404 and 403 to the same signal on purpose —
@@ -22,12 +22,12 @@ class PortfolioAccountNotFound(PortfolioServiceError):
     """
 
 
-class PortfolioTradeNotFound(PortfolioServiceError):
+class PortfolioTradeNotFoundError(PortfolioServiceError):
     """Trade id does not exist OR its parent account is not owned by
     the requesting user. Same 404/403 collapse as above."""
 
 
-class TierLimitExceeded(PortfolioServiceError):
+class TierLimitExceededError(PortfolioServiceError):
     """User's tier numeric quota would be exceeded by this operation.
 
     `limit_key` is the YAML key (e.g. ``max_accounts``,
@@ -43,7 +43,7 @@ class TierLimitExceeded(PortfolioServiceError):
         super().__init__(f"tier limit '{limit_key}' exceeded: {current} >= {limit}")
 
 
-class TierFeatureUnavailable(PortfolioServiceError):
+class TierFeatureUnavailableError(PortfolioServiceError):
     """User's tier does not have the requested boolean feature flag.
 
     API layer translates to 403 with ``detail = "feature_unavailable:{feature}"``.
@@ -54,19 +54,20 @@ class TierFeatureUnavailable(PortfolioServiceError):
         super().__init__(f"tier feature '{feature}' is unavailable")
 
 
-class InsufficientShares(PortfolioServiceError):
+class PortfolioInsufficientSharesError(PortfolioServiceError):
     """SELL trade quantity exceeds the open-lot total for the symbol.
 
     Wraps `app.modules.trade_journal.fifo_engine.InsufficientSharesError`
     so the API layer can catch a single portfolio-namespaced exception
-    type without importing the trade journal module."""
+    type without importing the trade journal module. Distinct name avoids
+    a same-symbol collision when callers import both at module scope."""
 
 
 __all__ = [
-    "InsufficientShares",
-    "PortfolioAccountNotFound",
+    "PortfolioAccountNotFoundError",
+    "PortfolioInsufficientSharesError",
     "PortfolioServiceError",
-    "PortfolioTradeNotFound",
-    "TierFeatureUnavailable",
-    "TierLimitExceeded",
+    "PortfolioTradeNotFoundError",
+    "TierFeatureUnavailableError",
+    "TierLimitExceededError",
 ]

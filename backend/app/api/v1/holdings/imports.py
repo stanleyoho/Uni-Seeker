@@ -47,9 +47,9 @@ from app.schemas.holdings.import_csv import (
 )
 from app.services.portfolio import CsvImportService
 from app.services.portfolio.exceptions import (
-    InsufficientShares,
-    PortfolioAccountNotFound,
-    TierLimitExceeded,
+    PortfolioInsufficientSharesError,
+    PortfolioAccountNotFoundError,
+    TierLimitExceededError,
 )
 
 router = APIRouter(prefix="/imports", tags=["holdings.imports"])
@@ -172,17 +172,17 @@ async def import_csv(
             broker_key=broker_key,
             dry_run=dry_run,
         )
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
         ) from exc
-    except TierLimitExceeded as exc:
+    except TierLimitExceededError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         ) from exc
-    except InsufficientShares as exc:
+    except PortfolioInsufficientSharesError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,

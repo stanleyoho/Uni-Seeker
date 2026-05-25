@@ -27,7 +27,7 @@ from app.services.portfolio import (
     PortfolioPositionService,
     PositionWithPnL,
 )
-from app.services.portfolio.exceptions import PortfolioAccountNotFound
+from app.services.portfolio.exceptions import PortfolioAccountNotFoundError
 
 router = APIRouter()
 
@@ -79,7 +79,7 @@ async def list_positions(
     service = PortfolioPositionService(db, user, fetcher)  # type: ignore[arg-type]
     try:
         rows = await service.list_positions(account_id=account_id)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -109,7 +109,7 @@ async def get_position(
     service = PortfolioPositionService(db, user, fetcher)  # type: ignore[arg-type]
     try:
         row = await service.get_position(account_id, symbol, market=market)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,

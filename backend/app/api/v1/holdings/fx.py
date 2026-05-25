@@ -21,7 +21,7 @@ from pydantic import BaseModel, field_serializer
 
 from app.api.v1.holdings._deps import get_fx_service
 from app.auth import require_auth
-from app.services.portfolio.fx_service import FxRateUnavailable, FxService
+from app.services.portfolio.fx_service import FxRateUnavailableError, FxService
 
 router = APIRouter(prefix="/fx", tags=["holdings.fx"])
 
@@ -73,7 +73,7 @@ async def get_fx_rate(
 
     try:
         rate = await fx.get_rate(base_u, quote_u, as_of=as_of)
-    except FxRateUnavailable as exc:
+    except FxRateUnavailableError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"fx_rate_unavailable:{base_u}_{quote_u}",

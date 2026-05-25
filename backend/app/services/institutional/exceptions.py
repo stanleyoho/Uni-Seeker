@@ -20,25 +20,25 @@ class F13ServiceError(Exception):
     """Base class for all institutional / 13F service-level domain errors."""
 
 
-class F13FilerNotFound(F13ServiceError):
+class F13FilerNotFoundError(F13ServiceError):
     """Filer id does not exist in `f13_filers`.
 
     Distinct from "filer exists but the user is not subscribed" — that
-    case is also surfaced as `F13FilerNotFound` from the service layer
+    case is also surfaced as `F13FilerNotFoundError` from the service layer
     on purpose, because leaking "exists but not yours" is itself
     information disclosure (same convention as
-    `PortfolioAccountNotFound`). API layer translates to 404.
+    `PortfolioAccountNotFoundError`). API layer translates to 404.
     """
 
 
-class F13FilingNotFound(F13ServiceError):
+class F13FilingNotFoundError(F13ServiceError):
     """Filing id / period does not exist (or filer not accessible).
 
-    Same 404/403 collapse as `F13FilerNotFound`. API layer → 404.
+    Same 404/403 collapse as `F13FilerNotFoundError`. API layer → 404.
     """
 
 
-class F13SubscriptionExists(F13ServiceError):
+class F13SubscriptionExistsError(F13ServiceError):
     """A subscription for (user_id, filer_id) already exists.
 
     The UNIQUE constraint on (user_id, filer_id) would catch a duplicate
@@ -53,7 +53,7 @@ class F13SubscriptionExists(F13ServiceError):
         super().__init__(f"already subscribed to filer_id={filer_id}")
 
 
-class F13RefreshInFlight(F13ServiceError):
+class F13RefreshInFlightError(F13ServiceError):
     """Concurrent refresh attempted on the same filer.
 
     Service-side anti-concurrency. We hold a process-local
@@ -81,10 +81,10 @@ class F13EdgarError(F13ServiceError):
         super().__init__(message)
 
 
-class F13TierFeatureUnavailable(F13ServiceError):
+class F13TierFeatureUnavailableError(F13ServiceError):
     """User's tier does not have the requested boolean feature flag.
 
-    Distinct from the portfolio module's `TierFeatureUnavailable` so
+    Distinct from the portfolio module's `TierFeatureUnavailableError` so
     each module's API layer can attach its own error-detail prefix
     without cross-module imports. Keep `feature` attribute name in
     parity for shared exception handlers in Batch C.
@@ -95,10 +95,10 @@ class F13TierFeatureUnavailable(F13ServiceError):
         super().__init__(f"tier feature '{feature}' is unavailable")
 
 
-class F13TierLimitExceeded(F13ServiceError):
+class F13TierLimitExceededError(F13ServiceError):
     """User's tier numeric quota would be exceeded by this operation.
 
-    Mirrors `app.services.portfolio.exceptions.TierLimitExceeded` so
+    Mirrors `app.services.portfolio.exceptions.TierLimitExceededError` so
     the cross-module API exception handler (Batch C) can treat both
     families uniformly when convenient.
     """
@@ -112,11 +112,11 @@ class F13TierLimitExceeded(F13ServiceError):
 
 __all__ = [
     "F13EdgarError",
-    "F13FilerNotFound",
-    "F13FilingNotFound",
-    "F13RefreshInFlight",
+    "F13FilerNotFoundError",
+    "F13FilingNotFoundError",
+    "F13RefreshInFlightError",
     "F13ServiceError",
-    "F13SubscriptionExists",
-    "F13TierFeatureUnavailable",
-    "F13TierLimitExceeded",
+    "F13SubscriptionExistsError",
+    "F13TierFeatureUnavailableError",
+    "F13TierLimitExceededError",
 ]

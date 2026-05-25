@@ -2,7 +2,7 @@
 
 Spec: docs/superpowers/plans/2026-05-22-institutional-13f-tracking-design.md
 §5.3 + §5.4 (diff). Access control: every read is gated on subscription
-status by the service (raises `F13FilerNotFound` when not subscribed).
+status by the service (raises `F13FilerNotFoundError` when not subscribed).
 """
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ from app.schemas.institutional.filing import (
     F13HoldingsAtPeriodResponse,
 )
 from app.services.institutional import (
-    F13FilerNotFound,
-    F13FilingNotFound,
+    F13FilerNotFoundError,
+    F13FilingNotFoundError,
     F13FilingService,
 )
 
@@ -60,7 +60,7 @@ async def list_filings(
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
         filings = await svc.list_filings_for_filer(filer_id, limit=limit, offset=offset)
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
@@ -86,12 +86,12 @@ async def get_holdings(
     svc = F13FilingService(db, user, edgar)  # type: ignore[arg-type]
     try:
         filing, holdings = await svc.get_holdings_at_period(filer_id=filer_id, period=period)
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
         ) from exc
-    except F13FilingNotFound as exc:
+    except F13FilingNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILING_NOT_FOUND,
@@ -130,12 +130,12 @@ async def get_diff(
         _, _, changes = await svc.compute_diff(
             filer_id=filer_id, from_date=from_date, to_date=to_date
         )
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,
         ) from exc
-    except F13FilingNotFound as exc:
+    except F13FilingNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILING_NOT_FOUND,
@@ -196,7 +196,7 @@ async def get_holding_history(
             to_date=to_date,
             limit=limit,
         )
-    except F13FilerNotFound as exc:
+    except F13FilerNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.F13_FILER_NOT_FOUND,

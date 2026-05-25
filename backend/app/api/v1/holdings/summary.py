@@ -32,10 +32,10 @@ from app.repositories.portfolio import (
 from app.schemas.holdings.summary import SummaryResponse
 from app.services.portfolio import PortfolioSummaryService
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
-    TierFeatureUnavailable,
+    PortfolioAccountNotFoundError,
+    TierFeatureUnavailableError,
 )
-from app.services.portfolio.fx_service import FxRateUnavailable, FxService
+from app.services.portfolio.fx_service import FxRateUnavailableError, FxService
 
 router = APIRouter()
 
@@ -137,12 +137,12 @@ async def get_user_summary(
     service = PortfolioSummaryService(db, user, fetcher, fx_service=fx)  # type: ignore[arg-type]
     try:
         multi = await service.get_user_summary_multi_currency(base_currency=base_u)
-    except TierFeatureUnavailable as exc:
+    except TierFeatureUnavailableError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
         ) from exc
-    except FxRateUnavailable as exc:
+    except FxRateUnavailableError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"fx_rate_unavailable:{exc.base}_{exc.quote}",
@@ -198,7 +198,7 @@ async def get_account_summary(
     service = PortfolioSummaryService(db, user, fetcher)  # type: ignore[arg-type]
     try:
         summary = await service.get_account_summary(account_id)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,

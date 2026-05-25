@@ -1,13 +1,13 @@
 """Alert-rule services (UNI-ALERT-001)."""
 
 from app.services.alerts.alert_service import (
-    AlertRuleNotFound,
+    AlertRuleNotFoundError,
     AlertService,
-    InvalidAlertRule,
+    InvalidAlertRuleError,
 )
 
 __all__ = [
-    "AlertRuleNotFound",
+    "AlertRuleNotFoundError",
     "AlertService",
-    "InvalidAlertRule",
+    "InvalidAlertRuleError",
 ]

@@ -25,9 +25,9 @@ from app.schemas.holdings.account import (
 )
 from app.services.portfolio import PortfolioAccountService
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
-    TierFeatureUnavailable,
-    TierLimitExceeded,
+    PortfolioAccountNotFoundError,
+    TierFeatureUnavailableError,
+    TierLimitExceededError,
 )
 
 router = APIRouter()
@@ -42,15 +42,15 @@ UserDep = Annotated[object, Depends(require_auth)]
 def _translate_tier_exc(exc: Exception) -> HTTPException:
     """Map service-layer tier domain exceptions to HTTP 403.
 
-    Both `TierLimitExceeded` and `TierFeatureUnavailable` are 403; the
+    Both `TierLimitExceededError` and `TierFeatureUnavailableError` are 403; the
     detail string is the contract the frontend asserts on.
     """
-    if isinstance(exc, TierLimitExceeded):
+    if isinstance(exc, TierLimitExceededError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         )
-    if isinstance(exc, TierFeatureUnavailable):
+    if isinstance(exc, TierFeatureUnavailableError):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -94,8 +94,8 @@ async def create_account(
          (`multi_account=false`) OR is over `max_accounts`.
       2. `PortfolioAccountService.create_account` re-checks both
          conditions; if a programmer ever forgets the dependency, the
-         service still raises `TierFeatureUnavailable` /
-         `TierLimitExceeded` which we translate to 403 here.
+         service still raises `TierFeatureUnavailableError` /
+         `TierLimitExceededError` which we translate to 403 here.
     """
     service = PortfolioAccountService(db, user)  # type: ignore[arg-type]
     try:
@@ -106,7 +106,7 @@ async def create_account(
             currency=body.currency,
             description=body.description,
         )
-    except (TierLimitExceeded, TierFeatureUnavailable) as exc:
+    except (TierLimitExceededError, TierFeatureUnavailableError) as exc:
         raise _translate_tier_exc(exc) from exc
     await db.commit()
     await db.refresh(account)
@@ -140,7 +140,7 @@ async def get_account(
     service = PortfolioAccountService(db, user)  # type: ignore[arg-type]
     try:
         account = await service.get_account(account_id)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -164,7 +164,7 @@ async def update_account(
     patch = body.model_dump(exclude_unset=True)
     try:
         updated = await service.update_account(account_id, **patch)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -188,7 +188,7 @@ async def delete_account(
     service = PortfolioAccountService(db, user)  # type: ignore[arg-type]
     try:
         await service.delete_account(account_id)
-    except PortfolioAccountNotFound as exc:
+    except PortfolioAccountNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
