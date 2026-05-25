@@ -134,8 +134,10 @@ class MACDCrossoverStrategy:
 
         macd_line: list[float | None] = [None] * n
         for i in range(n):
-            if fast_ema[i] is not None and slow_ema[i] is not None:
-                macd_line[i] = fast_ema[i] - slow_ema[i]
+            fast_v = fast_ema[i]
+            slow_v = slow_ema[i]
+            if fast_v is not None and slow_v is not None:
+                macd_line[i] = fast_v - slow_v
 
         macd_start = self._slow - 1
         macd_data = [v for v in macd_line[macd_start:] if v is not None]
