@@ -24,7 +24,7 @@ class StrategyRegistry:
         return list(self._strategies.keys())
 
     def list_info(self) -> list[dict[str, object]]:
-        result = []
+        result: list[dict[str, object]] = []
         for key, cls in self._strategies.items():
             instance = cls(**self._defaults[key])
             config: StrategyConfig = instance.config

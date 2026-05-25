@@ -127,7 +127,7 @@ def create_app() -> FastAPI:
             from app.cache import get_redis
 
             r = await get_redis()
-            await r.ping()
+            await r.ping()  # type: ignore[misc]  # redis async client typed as Awaitable[bool] | bool
             status["services"]["redis"] = "ok"
         except Exception:
             status["services"]["redis"] = "error"
@@ -145,4 +145,4 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+app = create_app()  # type: ignore[assignment]  # line 15 `import app.obs.metrics` binds `app` to the package; this reassigns to the FastAPI instance — intended.

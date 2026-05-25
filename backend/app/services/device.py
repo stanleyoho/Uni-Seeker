@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +26,10 @@ from app.services.audit import log_audit_event
 class _RequestLike(Protocol):
     """Minimal protocol so unit tests can pass SimpleNamespace."""
 
-    headers: dict[str, str] | object  # FastAPI uses Headers (case-insensitive Mapping)
+    # `headers` is typed Any because FastAPI exposes a Headers (case-insensitive
+    # Mapping with .get) while tests pass SimpleNamespace dicts — both quack
+    # right at runtime but a precise Union confuses mypy on .get() access.
+    headers: Any  # noqa: ANN401
     client: object
 
 

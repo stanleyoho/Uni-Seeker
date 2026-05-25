@@ -37,7 +37,8 @@ class NotificationRuleResponse(BaseModel):
     @classmethod
     def parse_channels(cls, v: object) -> list[str]:
         if isinstance(v, str):
-            return json.loads(v)
+            result: list[str] = json.loads(v)
+            return result
         return v  # type: ignore[return-value]
 
     model_config = {"from_attributes": True}

@@ -8,6 +8,8 @@ Outbound: echoes the trace_id back as ``X-Request-Id``.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -18,7 +20,11 @@ _HEADER = "x-request-id"
 
 
 class TraceIdMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         trace_id = request.headers.get(_HEADER) or new_trace_id()
         with trace_context(trace_id):
             response = await call_next(request)
