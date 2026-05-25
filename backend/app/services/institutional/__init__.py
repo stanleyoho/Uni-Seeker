@@ -49,17 +49,17 @@ from app.services.institutional.subscription_service import (
 __all__ = [
     # services
     "F13CrossStockService",
-    "F13FilerSearchService",
-    "F13FilingService",
-    "F13NotificationService",
-    "F13SubscriptionService",
     # exceptions
     "F13EdgarError",
     "F13FilerNotFound",
+    "F13FilerSearchService",
     "F13FilingNotFound",
+    "F13FilingService",
+    "F13NotificationService",
     "F13RefreshInFlight",
     "F13ServiceError",
     "F13SubscriptionExists",
+    "F13SubscriptionService",
     "F13TierFeatureUnavailable",
     "F13TierLimitExceeded",
 ]
