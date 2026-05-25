@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, StrEnum
 
 from app.modules.institutional.parser import ParsedHolding
 
@@ -43,7 +43,7 @@ __all__ = [
 _ZERO = Decimal("0")
 
 
-class ChangeType(str, Enum):
+class ChangeType(StrEnum):
     """5-way classification per spec §7.2.
 
     Inherits from ``str`` so it serializes cleanly via FastAPI/Pydantic

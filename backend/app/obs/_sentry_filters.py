@@ -13,7 +13,7 @@ unit tests) keep using ``from app.obs._sentry_filters import ...``.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from observability_core._sentry_filters import (
     build_before_send as _core_build_before_send,

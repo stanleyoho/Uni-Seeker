@@ -92,7 +92,7 @@ class BacktestJobWorker:
                     timeout=_POLL_INTERVAL,
                 )
                 break  # shutdown was signalled
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # normal — continue polling
 
     async def _execute_job(self, job: BacktestJob, db: AsyncSession) -> None:

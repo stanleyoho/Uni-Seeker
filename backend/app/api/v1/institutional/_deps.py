@@ -30,7 +30,8 @@ Architectural notes:
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING
+from collections.abc import AsyncIterator
 
 from app.api.deps import get_db
 from app.modules.institutional.edgar_client import EdgarClient

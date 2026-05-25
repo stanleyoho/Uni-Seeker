@@ -3,20 +3,20 @@ import enum
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 
-class Market(str, enum.Enum):
+class Market(enum.StrEnum):
     TW_TWSE = "TW_TWSE"
     TW_TPEX = "TW_TPEX"
     US_NYSE = "US_NYSE"
     US_NASDAQ = "US_NASDAQ"
 
 
-class UserTier(str, enum.Enum):
+class UserTier(enum.StrEnum):
     FREE = "free"
     BASIC = "basic"
     PRO = "pro"
 
 
-class NotificationStatus(str, enum.Enum):
+class NotificationStatus(enum.StrEnum):
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"

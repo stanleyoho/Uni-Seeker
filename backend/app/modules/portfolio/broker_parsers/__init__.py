@@ -16,7 +16,7 @@ order and the first hit wins. We list broker-specific parsers BEFORE
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from app.modules.portfolio.broker_parsers.base import (
     ACTION_BUY,
