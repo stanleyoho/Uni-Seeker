@@ -146,7 +146,7 @@ async def create_rule(
         name=req.name,
         rule_type=req.rule_type,
         symbol=req.symbol,
-        conditions=[c.model_dump() for c in req.conditions],
+        conditions=[c.model_dump() for c in req.conditions],  # type: ignore[arg-type]
         condition_logic=req.condition_logic,
         channels=json.dumps(req.channels),
     )

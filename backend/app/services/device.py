@@ -29,7 +29,7 @@ class _RequestLike(Protocol):
     # `headers` is typed Any because FastAPI exposes a Headers (case-insensitive
     # Mapping with .get) while tests pass SimpleNamespace dicts — both quack
     # right at runtime but a precise Union confuses mypy on .get() access.
-    headers: Any  # noqa: ANN401
+    headers: Any
     client: object
 
 

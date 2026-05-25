@@ -185,16 +185,17 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
 
     if body.members:
         requested_ids = {m.account_id for m in body.members}
-        found_ids = {
-            row.id
-            for row in (
+        # `.scalars()` on a single-column select returns plain ints, so the
+        # set-comprehension element is the id itself (not a Row with .id).
+        found_ids = set(
+            (
                 await db.execute(
                     select(TradeAccount.id).where(TradeAccount.id.in_(list(requested_ids)))
                 )
             )
             .scalars()
             .all()
-        }
+        )
         missing = requested_ids - found_ids
         if missing:
             raise HTTPException(

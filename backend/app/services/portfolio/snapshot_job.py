@@ -38,6 +38,13 @@ from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING, TypedDict
 
+from sqlalchemy import select
+
+from app.db.models.portfolio.account import PortfolioAccount
+from app.repositories.portfolio.account_repo import PortfolioAccountRepo
+from app.repositories.portfolio.position_repo import PortfolioPositionRepo
+from app.repositories.portfolio.snapshot_repo import HoldingsSnapshotRepo
+
 
 class _PositionTotals(TypedDict):
     """Per-account aggregate snapshot. Strongly typed because the dict
@@ -50,12 +57,6 @@ class _PositionTotals(TypedDict):
     realized_pnl_cum: Decimal
     position_count: int
 
-from sqlalchemy import select
-
-from app.db.models.portfolio.account import PortfolioAccount
-from app.repositories.portfolio.account_repo import PortfolioAccountRepo
-from app.repositories.portfolio.position_repo import PortfolioPositionRepo
-from app.repositories.portfolio.snapshot_repo import HoldingsSnapshotRepo
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession

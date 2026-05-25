@@ -52,7 +52,7 @@ class StripeService:
     def handle_webhook(self, payload: bytes, signature: str) -> WebhookResult:
         """處理 Stripe webhook 事件，驗證簽名並解析關鍵欄位。"""
         try:
-            event = stripe.Webhook.construct_event(payload, signature, self._webhook_secret)
+            event = stripe.Webhook.construct_event(payload, signature, self._webhook_secret)  # type: ignore[no-untyped-call]
         except stripe.error.SignatureVerificationError as exc:
             raise ValueError("Invalid webhook signature") from exc
 

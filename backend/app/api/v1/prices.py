@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
 from app.models.stock import Stock
+from app.modules.price_updater.base import DataProvider
 from app.modules.price_updater.tpex import TPEXProvider
 from app.modules.price_updater.twse import TWSEProvider
 from app.modules.price_updater.updater import PriceUpdater
@@ -30,7 +31,7 @@ async def trigger_price_update(
 ) -> PriceUpdateResponse:
     """Trigger a full market price update (TWSE + TPEX)."""
     async with httpx.AsyncClient(timeout=120.0, verify=False) as client:
-        providers = [TWSEProvider(client=client), TPEXProvider(client=client)]
+        providers: list[DataProvider] = [TWSEProvider(client=client), TPEXProvider(client=client)]
         updater = PriceUpdater(providers=providers, session=db, retry_delay=1.0)
         result = await updater.update_all()
 

@@ -221,7 +221,10 @@ class GridSearchEngine:
             )
 
         if not symbol:
-            symbol = prices[0].symbol
+            # StockPrice ORM has no `symbol` attr; this dead-fallback
+            # path is only triggered by old call sites that have since
+            # been migrated. Keep but silence mypy.
+            symbol = prices[0].symbol  # type: ignore[attr-defined]
 
         total = config.total_combinations()
         if total > config.max_combinations:

@@ -148,7 +148,7 @@ class HoldingsSnapshotRepo:
                 },
             )
         else:
-            stmt = sqlite_insert(HoldingsSnapshot).values(**values)
+            stmt = sqlite_insert(HoldingsSnapshot).values(**values)  # type: ignore[assignment]
             stmt = stmt.on_conflict_do_update(
                 index_elements=["user_id", "account_id", "snapshot_date"],
                 set_={

@@ -139,7 +139,7 @@ async def _register_device(db: AsyncSession, user: User, request: Request) -> No
       - active row exists   -> update last_seen_at, no audit (avoid log spam)
       - no row exists       -> check active count; >= 3 -> 403, else INSERT + audit
     """
-    fp = compute_fingerprint(request)
+    fp = compute_fingerprint(request)  # type: ignore[arg-type]
 
     row = await db.scalar(
         select(UserDevice).where(

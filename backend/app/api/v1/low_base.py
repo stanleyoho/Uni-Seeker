@@ -171,7 +171,7 @@ async def scan_low_base(
             name=display_name,
             closes=closes,
             rsi=current_rsi,
-            **extra_kwargs,
+            **extra_kwargs,  # type: ignore[arg-type]
         )
 
         if not score.disqualified:
@@ -285,7 +285,7 @@ async def get_stock_low_base_score(
         name=name,
         closes=closes,
         rsi=current_rsi,
-        **extra_kwargs,
+        **extra_kwargs,  # type: ignore[arg-type]
     )
 
     return LowBaseScoreResponse(

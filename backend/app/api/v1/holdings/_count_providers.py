@@ -52,10 +52,9 @@ async def _session_scope() -> AsyncIterator[AsyncSession]:
     lazily here avoids a circular import at module load.
     """
     try:
-        # noqa: PLC0415 — local import to break circular dependency.
         # type-checker: `app` is reassigned in main.py:148 to the FastAPI
         # instance via `# type: ignore[assignment]`; mypy can't see that.
-        from app.main import app as _app  # type: ignore[attr-defined]  # noqa: PLC0415
+        from app.main import app as _app  # type: ignore[attr-defined]
 
         override = _app.dependency_overrides.get(get_db)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover - defensive

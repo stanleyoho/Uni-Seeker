@@ -82,7 +82,7 @@ async def _session_scope() -> AsyncIterator[AsyncSession]:
     """
     try:
         # Local import + type:ignore — see _count_providers for full rationale.
-        from app.main import app as _app  # type: ignore[attr-defined]  # noqa: PLC0415
+        from app.main import app as _app  # type: ignore[attr-defined]
 
         override = _app.dependency_overrides.get(get_db)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover - defensive

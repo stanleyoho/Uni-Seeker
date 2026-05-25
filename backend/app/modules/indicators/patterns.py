@@ -81,12 +81,7 @@ class PatternIndicator:
             short_prev = self._sma(closes, short_p, i - 1)
             long_prev = self._sma(closes, long_p, i - 1)
 
-            if (
-                short_now is None
-                or long_now is None
-                or short_prev is None
-                or long_prev is None
-            ):
+            if short_now is None or long_now is None or short_prev is None or long_prev is None:
                 cross[i] = 0
                 continue
 

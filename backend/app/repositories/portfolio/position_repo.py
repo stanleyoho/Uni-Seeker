@@ -77,7 +77,10 @@ class PortfolioPositionRepo:
             )
         else:
             # SQLite (tests) — same `on_conflict_do_update` shape.
-            stmt = sqlite_insert(PortfolioPosition).values(**values)
+            # (sqlite_insert and pg_insert return different dialect-
+            # specific Insert subclasses; mypy cannot unify them on the
+            # same `stmt` local, so the assignment carries a noqa.)
+            stmt = sqlite_insert(PortfolioPosition).values(**values)  # type: ignore[assignment]
             stmt = stmt.on_conflict_do_update(
                 index_elements=["account_id", "symbol", "market"],
                 set_={
