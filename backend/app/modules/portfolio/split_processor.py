@@ -44,7 +44,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 from app.modules.portfolio.cost_basis import Lot
 

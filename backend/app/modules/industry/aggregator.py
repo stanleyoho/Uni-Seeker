@@ -1,5 +1,4 @@
 import statistics
-from typing import List, Optional
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession

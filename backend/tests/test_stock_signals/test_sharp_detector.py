@@ -2,7 +2,6 @@
 
 from datetime import date
 
-
 from app.modules.stock_signals.sharp_detector import (
     StockSharpDetector,
     StockSharpSignal,
