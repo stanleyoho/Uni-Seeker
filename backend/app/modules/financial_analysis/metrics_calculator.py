@@ -37,7 +37,7 @@ def deaccumulate(
 
     # Income statement and cash flow items need deaccumulation
     # Balance sheet items (Assets, Liabilities, Equity) are point-in-time
-    POINT_IN_TIME = {
+    point_in_time = {
         "TotalAssets",
         "CurrentAssets",
         "NonCurrentAssets",
@@ -54,7 +54,7 @@ def deaccumulate(
 
     result = {}
     for key, val in current_cum.items():
-        if key in POINT_IN_TIME:
+        if key in point_in_time:
             result[key] = val
         else:
             prev_val = prev_cum.get(key, 0)

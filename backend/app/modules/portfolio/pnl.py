@@ -101,11 +101,8 @@ def unrealized(qty: Decimal, avg_cost: Decimal, last_price: Decimal) -> Unrealiz
 
     pnl = (last_price - avg_cost) * qty
     total_cost = avg_cost * qty
-    if total_cost == _ZERO:
-        # avg_cost == 0 (e.g. free shares) → pct undefined
-        pct = _ZERO
-    else:
-        pct = pnl / total_cost
+    # avg_cost == 0 (e.g. free shares) → pct undefined
+    pct = _ZERO if total_cost == _ZERO else pnl / total_cost
     return UnrealizedPnL(
         qty=qty,
         avg_cost=avg_cost,

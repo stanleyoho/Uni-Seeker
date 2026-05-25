@@ -169,7 +169,7 @@ class GenericCsvParser:
             trade_date=trade_date,
             note=note_s or None,
             currency="USD",  # service overrides via market if needed
-            raw_row={k: v for k, v in zip(REQUIRED_HEADER, cols, strict=False)},
+            raw_row=dict(zip(REQUIRED_HEADER, cols, strict=False)),
             error=error,
         )
 

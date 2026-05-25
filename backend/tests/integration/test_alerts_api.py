@@ -87,9 +87,9 @@ async def test_post_alert_creates(
     # Decimal(24,8) round-trips with full precision — accept both
     # "10" and "10.00000000" so the schema's str(Decimal) behaviour
     # remains a free choice.
-    from decimal import Decimal as _D
+    from decimal import Decimal
 
-    assert _D(body["threshold_value"]) == _D("10")
+    assert Decimal(body["threshold_value"]) == Decimal("10")
     assert body["status"] == "ACTIVE"
 
 

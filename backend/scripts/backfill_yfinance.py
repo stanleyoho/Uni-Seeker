@@ -54,7 +54,7 @@ async def backfill_stock(symbol_no_suffix: str, start_date: str):
         result = await db.execute(select(Stock).where(Stock.symbol == f"{symbol_no_suffix}.TW"))
         stock = result.scalar_one_or_none()
         if stock is None:
-            print(f"NOT IN DB")
+            print("NOT IN DB")
             return 0
 
         count = 0

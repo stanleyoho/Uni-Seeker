@@ -30,7 +30,7 @@ from __future__ import annotations
 import asyncio
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import structlog
 
@@ -80,8 +80,8 @@ class F13FilingService:
     # cleanly to 429 instead of racing on the DB. Dict mutation itself
     # is protected by `_locks_guard` because asyncio.Lock() construction
     # must not race when two coroutines first ask for the same key.
-    _locks: dict[int, asyncio.Lock] = {}
-    _locks_guard: asyncio.Lock = asyncio.Lock()
+    _locks: ClassVar[dict[int, asyncio.Lock]] = {}
+    _locks_guard: ClassVar[asyncio.Lock] = asyncio.Lock()
 
     def __init__(
         self,

@@ -44,19 +44,32 @@ ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003", "DTZ0
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
-# E501 (line-too-long) ignored in alembic/scripts/tests — generated DDL,
-# long URL/CLI strings in scripts, and fixture data + module docstrings
-# in tests are intentionally readable as single lines.
-"tests/**/*.py" = ["S101", "ANN", "ARG", "PLR2004", "DTZ", "T20", "E501"]
+# Rule additions:
+# - E501 in alembic/scripts/tests: generated DDL, long URL/CLI strings,
+#   fixture data + module docstrings are intentionally one-line.
+# - N811 in alembic: PgEnum alias from sqlalchemy.dialects.postgresql.ENUM
+#   is the SQLAlchemy convention.
+# - W291 in alembic: generated migration headers may have trailing space.
+# - B017 / PT012 / RUF059 / E741 / PT006 / B008 in tests: test-specific
+#   patterns (assert blind exception is intentional; loop tuple unpack;
+#   parametrize style; require_tier in default arg).
+# - SIM117 in test_institutional_bulk_subscribe.py: nested-with that
+#   wraps a pytest.raises is test orchestration style.
+"tests/**/*.py" = [
+    "S101", "ANN", "ARG", "PLR2004", "DTZ", "T20", "E501",
+    "B017", "PT012", "RUF059", "E741", "PT006", "B008",
+]
 "**/__init__.py" = ["F401"]  # re-exports intentional
 "**/conftest.py" = ["DTZ"]
 "scripts/**" = ["T20", "E501"]
-"alembic/**" = ["DTZ", "T20", "E501"]
+"alembic/**" = ["DTZ", "T20", "E501", "N811", "W291"]
 # Test files that monkey-patch SQLAlchemy's SQLiteTypeCompiler BEFORE importing
 # app modules — that ordering is the patch's whole point, so post-patch
 # imports are by-design E402 violations.
 "tests/conftest.py" = ["E402"]
 "tests/integration/test_journal_api.py" = ["E402"]
+# SQLAlchemy upstream uses PgEnum as a PEP-recommended alias for ENUM.
+"app/models/enums.py" = ["N811"]
 
 [lint.isort]
 known-first-party = ["app"]

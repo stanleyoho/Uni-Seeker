@@ -127,9 +127,12 @@ class PortfolioSummaryService:
             buckets.setdefault(ccy, []).append(p)
 
         # Tier gate: only when truly multi-currency.
-        if len(buckets) > 1 and settings.enable_monetization:
-            if not has_feature(self._user.tier, "multi_currency_summary"):
-                raise TierFeatureUnavailable(feature="multi_currency_summary")
+        if (
+            len(buckets) > 1
+            and settings.enable_monetization
+            and not has_feature(self._user.tier, "multi_currency_summary")
+        ):
+            raise TierFeatureUnavailable(feature="multi_currency_summary")
 
         # Single-currency fast path → no FX involved.
         if len(buckets) == 1 and base in buckets:

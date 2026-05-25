@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Protocol
 
@@ -141,9 +141,9 @@ class DailyCloseLivePriceFetcher:
         if isinstance(d, datetime):
             return d
         if d is None:
-            return datetime.min.replace(tzinfo=timezone.utc)
+            return datetime.min.replace(tzinfo=UTC)
         # date → datetime at midnight UTC (callers treat as as-of timestamp)
-        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+        return datetime(d.year, d.month, d.day, tzinfo=UTC)
 
 
 # ───────────────────────── Phase 2 — intraday + TTL cache ─────────────────────────
@@ -322,8 +322,8 @@ class YFinanceLivePriceFetcher(TTLCacheMixin):
         month = getattr(idx, "month", None)
         day = getattr(idx, "day", None)
         if year and month and day:
-            return datetime(year, month, day, tzinfo=timezone.utc)
-        return datetime.min.replace(tzinfo=timezone.utc)
+            return datetime(year, month, day, tzinfo=UTC)
+        return datetime.min.replace(tzinfo=UTC)
 
 
 class CachedDailyCloseLivePriceFetcher(TTLCacheMixin):

@@ -294,10 +294,7 @@ def compute_max_drawdown(navs: list[Decimal]) -> tuple[Decimal, Decimal]:
             peak = nav
             continue
         dd_abs = nav - peak  # ≤ 0
-        if peak == _ZERO:
-            dd_pct = _ZERO
-        else:
-            dd_pct = dd_abs / peak  # ≤ 0
+        dd_pct = _ZERO if peak == _ZERO else dd_abs / peak  # ≤ 0
         if dd_abs < max_dd_abs:
             max_dd_abs = dd_abs
         if dd_pct < max_dd_pct:

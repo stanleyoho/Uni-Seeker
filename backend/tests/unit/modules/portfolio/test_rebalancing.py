@@ -262,7 +262,7 @@ def test_R09_final_allocation_pct_after_trades():
 
 def test_R10_invalid_target_sum_not_100_raises():
     targets = [_tgt("A", "50"), _tgt("B", "30")]  # sum = 80
-    with pytest.raises(ValueError, match="sum.*100"):
+    with pytest.raises(ValueError, match=r"sum.*100"):
         validate_targets(targets)
 
 

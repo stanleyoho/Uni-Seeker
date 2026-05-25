@@ -14,7 +14,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from app.models.price import StockPrice
 from app.modules.backtester.engine import BacktestConfig, BacktestEngine
@@ -148,7 +148,7 @@ def _compute_score(item: AutoDiscoveryResultItem) -> float:
 class AutoDiscoveryEngine:
     """Automatically discovers the best trading strategy for a stock."""
 
-    _TECHNICAL_STRATEGIES = [
+    _TECHNICAL_STRATEGIES: ClassVar[list[str]] = [
         "ma_crossover",
         "rsi_oversold",
         "macd_crossover",

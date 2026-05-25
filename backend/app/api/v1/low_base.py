@@ -99,7 +99,7 @@ async def scan_low_base(
     inst_start = (today - timedelta(days=10)).isoformat()
     inst_end = today.isoformat()
 
-    for stock_id, symbol, name, count in stock_rows:
+    for stock_id, symbol, name, _count in stock_rows:
         # Fetch prices
         price_query = (
             select(StockPrice)

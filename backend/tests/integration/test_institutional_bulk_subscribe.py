@@ -316,26 +316,28 @@ async def test_bulk_subscribe_atomic_on_failure(
             notify_on_new_filing=notify_on_new_filing,
         )
 
-    with patch.object(RealRepo, "subscribe", flaky_subscribe):
-        # Either Starlette returns 500 OR the test client re-raises
-        # (possibly wrapped in an ExceptionGroup / surfaced as a
-        # downstream SQLAlchemy MissingGreenlet during error rendering).
-        # The atomic contract is "no commit happened" regardless of how
-        # the failure surfaces to the caller.
-        with pytest.raises(BaseException):
-            resp = await client.post(
-                BULK_URL,
-                headers=_auth(user),
-                json={
-                    "items": [
-                        {"cik": "0007000001", "name": "First"},
-                        {"cik": "0007000002", "name": "Second"},
-                        {"cik": "0007000003", "name": "Third"},
-                    ],
-                },
-            )
-            # If Starlette did render a 500 we still expect server-error.
-            assert resp.status_code >= 500, resp.text
+    # Either Starlette returns 500 OR the test client re-raises
+    # (possibly wrapped in an ExceptionGroup / surfaced as a
+    # downstream SQLAlchemy MissingGreenlet during error rendering).
+    # The atomic contract is "no commit happened" regardless of how
+    # the failure surfaces to the caller.
+    with (
+        patch.object(RealRepo, "subscribe", flaky_subscribe),
+        pytest.raises(BaseException),
+    ):
+        resp = await client.post(
+            BULK_URL,
+            headers=_auth(user),
+            json={
+                "items": [
+                    {"cik": "0007000001", "name": "First"},
+                    {"cik": "0007000002", "name": "Second"},
+                    {"cik": "0007000003", "name": "Third"},
+                ],
+            },
+        )
+        # If Starlette did render a 500 we still expect server-error.
+        assert resp.status_code >= 500, resp.text
 
     # Atomic rollback: the endpoint never called `await db.commit()`.
     # In test mode the shared AsyncSession sees its own uncommitted

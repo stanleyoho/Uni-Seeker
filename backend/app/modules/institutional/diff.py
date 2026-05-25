@@ -189,13 +189,10 @@ def _classify(
     delta_shares = curr.shares - prev.shares
     delta_value = curr.value_usd - prev.value_usd
 
-    delta_pct: Decimal | None
-    if prev.shares == _ZERO:
-        # Was holding via PRN-only rows, now has shares — treat as INCREASED
-        # but pct is undefined.
-        delta_pct = None
-    else:
-        delta_pct = (curr.shares - prev.shares) / prev.shares
+    # Was holding via PRN-only rows, now has shares — pct undefined.
+    delta_pct: Decimal | None = (
+        None if prev.shares == _ZERO else (curr.shares - prev.shares) / prev.shares
+    )
 
     if delta_shares > _ZERO:
         change_type = ChangeType.INCREASED

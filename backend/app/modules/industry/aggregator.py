@@ -30,7 +30,7 @@ class IndustryAggregator:
         """Calculate and store median metrics for a single industry."""
         # Get active stocks in this industry
         stock_ids_query = select(Stock.id).where(
-            Stock.industry_id == industry_id, Stock.is_active == True
+            Stock.industry_id == industry_id, Stock.is_active.is_(True)
         )
         stock_ids_result = await self.session.execute(stock_ids_query)
         stock_ids = stock_ids_result.scalars().all()

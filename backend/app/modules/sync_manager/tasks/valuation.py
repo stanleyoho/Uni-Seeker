@@ -15,7 +15,7 @@ async def run_valuation_sync(db: AsyncSession, limit: int = 100) -> dict:
     logger.info("start_valuation_sync", limit=limit)
 
     # 1. Fetch stocks to estimate
-    stmt = select(Stock.id).where(Stock.is_active == True).limit(limit)
+    stmt = select(Stock.id).where(Stock.is_active.is_(True)).limit(limit)
     result = await db.execute(stmt)
     stock_ids = [row[0] for row in result.all()]
 
