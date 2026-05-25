@@ -176,8 +176,9 @@ def _enable_monetization(monkeypatch):
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("_enable_monetization")
 async def test_free_user_at_10_items_cannot_add_11th(
-    _enable_monetization, client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession
 ):
     u = await _make_user(db_session, "cap@x.tw", "cap", tier=UserTier.FREE)
     stocks = [await _make_stock(db_session, f"CAP{i:02d}.TW", f"cap{i}") for i in range(11)]
@@ -195,8 +196,9 @@ async def test_free_user_at_10_items_cannot_add_11th(
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("_enable_monetization")
 async def test_pro_user_can_exceed_10(
-    _enable_monetization, client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession
 ):
     u = await _make_user(db_session, "pro@x.tw", "pro", tier=UserTier.PRO)
     for i in range(12):
