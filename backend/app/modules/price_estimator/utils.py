@@ -31,7 +31,7 @@ class ValuationUtils:
         stmt = (
             select(FinancialMetrics.eps)
             .where(FinancialMetrics.stock_id == stock_id)
-            .where(FinancialMetrics.eps is not None)
+            .where(FinancialMetrics.eps.is_not(None))
             .order_by(FinancialMetrics.period.asc())
             .limit(12)  # Last 3 years
         )
