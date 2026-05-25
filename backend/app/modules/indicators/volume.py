@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
 class VolumeIndicator:
     name = "VOL"
 
-    def calculate(self, closes: list[float], **params: object) -> IndicatorResult:
+    def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         volumes: list[int] = list(params.get("volumes", []))
         indicator_type = str(params.get("indicator_type", "OBV"))
         period = int(params.get("period", 5))
