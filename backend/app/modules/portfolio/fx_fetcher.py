@@ -26,7 +26,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import structlog
@@ -301,5 +301,5 @@ class YFinanceFxFetcher(FxFetcher):
         month = getattr(idx, "month", None)
         day = getattr(idx, "day", None)
         if year and month and day:
-            return datetime(year, month, day, tzinfo=timezone.utc)
-        return datetime.now(timezone.utc)
+            return datetime(year, month, day, tzinfo=UTC)
+        return datetime.now(UTC)

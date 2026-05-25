@@ -323,8 +323,12 @@ class BacktestJobWorker:
         # to call async update_progress via the running event loop.
         asyncio.get_running_loop()
 
+        _progress_tasks: set[asyncio.Future[None]] = set()
+
         def sync_progress(pct: int) -> None:
-            asyncio.ensure_future(_progress_callback(pct))
+            task = asyncio.ensure_future(_progress_callback(pct))
+            _progress_tasks.add(task)
+            task.add_done_callback(_progress_tasks.discard)
 
         result = GridSearchEngine(registry).run(
             grid_config,

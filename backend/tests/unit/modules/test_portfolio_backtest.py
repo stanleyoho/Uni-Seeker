@@ -101,7 +101,7 @@ class TestValidation:
             PortfolioAllocation(symbol="A", weight=0.3, strategy=AlwaysHoldStrategy()),
             PortfolioAllocation(symbol="B", weight=0.3, strategy=AlwaysHoldStrategy()),
         ]
-        with pytest.raises(ValueError, match="weights must sum to 1.0"):
+        with pytest.raises(ValueError, match=r"weights must sum to 1\.0"):
             engine.run(allocs, {"A": _make_prices([100]), "B": _make_prices([100])})
 
     def test_negative_weight_raises(self) -> None:

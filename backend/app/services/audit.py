@@ -13,6 +13,7 @@ Semantics:
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 import sentry_sdk
@@ -71,7 +72,9 @@ async def log_audit_event(
     # "business event → log → DB row → trace → metric → alert" chain.
     # PII-safe: only carry the structural fields; before_state / after_state
     # / metadata may include user-identifiable info and are NOT propagated.
-    try:
+    # Breadcrumb is best-effort; never let it break audit row writing
+    # because the audit_log row write already succeeded.
+    with contextlib.suppress(Exception):
         sentry_sdk.add_breadcrumb(
             category="audit",
             message=action,
@@ -83,8 +86,4 @@ async def log_audit_event(
                 "resource_id": resource_id,
             },
         )
-    except Exception:
-        # Breadcrumb is best-effort; never let it break audit row writing.
-        # We deliberately swallow because audit_log row write already succeeded.
-        pass
     return log

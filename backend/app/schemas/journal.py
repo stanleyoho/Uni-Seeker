@@ -55,9 +55,8 @@ class TradeCreate(BaseModel):
                 raise ValueError(f"price is required for {self.action}")
             if self.quantity is None:
                 raise ValueError(f"quantity is required for {self.action}")
-        if self.action == "SPLIT":
-            if self.split_ratio is None:
-                raise ValueError("split_ratio is required for SPLIT")
+        if self.action == "SPLIT" and self.split_ratio is None:
+            raise ValueError("split_ratio is required for SPLIT")
         return self
 
 

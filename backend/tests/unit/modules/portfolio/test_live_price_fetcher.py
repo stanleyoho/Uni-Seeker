@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from app.modules.portfolio.live_price_fetcher import (
@@ -109,7 +109,7 @@ def test_L01_known_stock_returns_quote():
     assert quote.stock_id == "2330.TW"
     assert quote.last_price == Decimal("600")
     assert quote.prev_close == Decimal("590")
-    assert quote.as_of == datetime(2026, 5, 19, tzinfo=timezone.utc)
+    assert quote.as_of == datetime(2026, 5, 19, tzinfo=UTC)
 
 
 # L02 — prev_close is the second-most-recent (already asserted in L01;

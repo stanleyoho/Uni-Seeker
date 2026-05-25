@@ -175,7 +175,7 @@ class F13NotificationService:
             # Run the diagnostic counters so the audit log is useful.
             await self._count_skips(filer_id, result)
 
-        for sub, user in rows:
+        for _sub, user in rows:
             for filing in new_filings:
                 # Pre-rendered TG text so we preserve the existing
                 # message template; email title + body are derived

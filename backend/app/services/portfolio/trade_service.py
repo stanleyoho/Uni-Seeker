@@ -48,8 +48,8 @@ from app.repositories.portfolio import (
 )
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFound,
     InsufficientShares,
+    PortfolioAccountNotFound,
     PortfolioTradeNotFound,
     TierLimitExceeded,
 )
