@@ -27,10 +27,13 @@ def create_default_registry() -> StrategyRegistry:
     registry.register("bias_reversal", BiasReversalStrategy)
     registry.register("rsi_bias_combo", RSIBiasComboStrategy)
 
-    # Chip-data (籌碼面) strategies
-    registry.register("institutional_follow", lambda **kw: InstitutionalFollowStrategy(**kw))
-    registry.register("margin_divergence", lambda **kw: MarginDivergenceStrategy(**kw))
-    registry.register("foreign_trust_sync", lambda **kw: ForeignTrustSyncStrategy(**kw))
-    registry.register("ownership_concentration", lambda **kw: OwnershipConcentrationStrategy(**kw))
-    registry.register("margin_overleverage", lambda **kw: MarginOverleverageStrategy(**kw))
+    # Chip-data (籌碼面) strategies — register the classes directly. The
+    # earlier `lambda **kw: Cls(**kw)` indirection was equivalent and
+    # tripped mypy because StrategyRegistry.register expects `type` not
+    # `Callable`.
+    registry.register("institutional_follow", InstitutionalFollowStrategy)
+    registry.register("margin_divergence", MarginDivergenceStrategy)
+    registry.register("foreign_trust_sync", ForeignTrustSyncStrategy)
+    registry.register("ownership_concentration", OwnershipConcentrationStrategy)
+    registry.register("margin_overleverage", MarginOverleverageStrategy)
     return registry

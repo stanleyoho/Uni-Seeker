@@ -36,7 +36,19 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
+
+
+class _PositionTotals(TypedDict):
+    """Per-account aggregate snapshot. Strongly typed because the dict
+    flows through to `HoldingsSnapshotRepo.upsert` whose columns require
+    distinct `Decimal` vs `int` types."""
+
+    total_value: Decimal
+    total_cost: Decimal
+    total_unrealized_pnl: Decimal
+    realized_pnl_cum: Decimal
+    position_count: int
 
 from sqlalchemy import select
 
@@ -184,7 +196,7 @@ async def take_daily_snapshot_for_all_active_users(
 async def _aggregate_positions(
     positions: list[PortfolioPosition],
     fetcher: LivePriceFetcher,
-) -> dict[str, Decimal | int]:
+) -> _PositionTotals:
     """Sum positions into per-account totals + count open positions.
 
     `position_count` is the number of *open* positions (qty > 0),

@@ -19,7 +19,7 @@ class PEBandEstimator:
         pe_query = (
             select(StockValuation.pe_ratio)
             .where(StockValuation.stock_id == stock_id)
-            .where(StockValuation.pe_ratio is not None)
+            .where(StockValuation.pe_ratio.is_not(None))
             .where(StockValuation.pe_ratio > 0)
             .order_by(StockValuation.date.desc())
             .limit(750)
@@ -34,7 +34,7 @@ class PEBandEstimator:
         eps_query = (
             select(FinancialMetrics.eps)
             .where(FinancialMetrics.stock_id == stock_id)
-            .where(FinancialMetrics.eps is not None)
+            .where(FinancialMetrics.eps.is_not(None))
             .order_by(FinancialMetrics.period.desc())
             .limit(4)
         )
@@ -57,9 +57,9 @@ class PEBandEstimator:
         pe_75 = np.percentile(pe_list, 75)
 
         # Calculate stability (std dev / mean)
-        pe_std = np.std(pe_list)
-        pe_mean = np.mean(pe_list)
-        stability = 1 - min(1, pe_std / pe_mean) if pe_mean > 0 else 0
+        pe_std = float(np.std(pe_list))
+        pe_mean = float(np.mean(pe_list))
+        stability = 1 - min(1.0, pe_std / pe_mean) if pe_mean > 0 else 0.0
 
         fair_price = Decimal(str(round(ttm_eps * pe_50, 2)))
         cheap_price = Decimal(str(round(ttm_eps * pe_25, 2)))

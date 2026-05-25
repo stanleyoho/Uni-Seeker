@@ -93,7 +93,7 @@ async def _fetch_prices(
     return prices
 
 
-def _build_response(symbol: str, strategy_name: str, bt_result: object) -> BacktestResponse:
+def _build_response(symbol: str, strategy_name: str, bt_result: Any) -> BacktestResponse:
     return BacktestResponse(
         symbol=symbol,
         strategy=strategy_name,
