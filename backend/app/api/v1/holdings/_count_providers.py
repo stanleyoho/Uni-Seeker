@@ -52,9 +52,12 @@ async def _session_scope() -> AsyncIterator[AsyncSession]:
     lazily here avoids a circular import at module load.
     """
     try:
-        from app.main import app as _app  # local import: break cycles
+        # noqa: PLC0415 — local import to break circular dependency.
+        # type-checker: `app` is reassigned in main.py:148 to the FastAPI
+        # instance via `# type: ignore[assignment]`; mypy can't see that.
+        from app.main import app as _app  # type: ignore[attr-defined]  # noqa: PLC0415
 
-        override = _app.dependency_overrides.get(get_db)
+        override = _app.dependency_overrides.get(get_db)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover - defensive
         override = None
     gen_fn = override if override is not None else get_db
@@ -81,7 +84,7 @@ async def _safe_count(coro_factory: Callable[[], Awaitable[int]]) -> int:
     try:
         return await coro_factory()
     except Exception:  # pragma: no cover - defensive isolation
-        return 0  # type: ignore[no-any-return]
+        return 0
 
 
 async def account_count_provider(*, user: User) -> int:

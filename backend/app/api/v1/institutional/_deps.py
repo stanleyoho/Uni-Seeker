@@ -81,9 +81,10 @@ async def _session_scope() -> AsyncIterator[AsyncSession]:
     `app.api.v1.holdings._count_providers` for the exact same pattern.
     """
     try:
-        from app.main import app as _app  # local import: break cycles
+        # Local import + type:ignore — see _count_providers for full rationale.
+        from app.main import app as _app  # type: ignore[attr-defined]  # noqa: PLC0415
 
-        override = _app.dependency_overrides.get(get_db)
+        override = _app.dependency_overrides.get(get_db)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover - defensive
         override = None
     gen_fn = override if override is not None else get_db
@@ -109,7 +110,7 @@ async def _safe_count(coro_factory: Callable[[], Awaitable[int]]) -> int:
     try:
         return await coro_factory()
     except Exception:  # pragma: no cover - defensive isolation
-        return 0  # type: ignore[no-any-return]
+        return 0
 
 
 async def tracked_filers_count_provider(*, user: User) -> int:

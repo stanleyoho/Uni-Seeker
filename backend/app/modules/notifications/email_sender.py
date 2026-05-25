@@ -161,8 +161,9 @@ def _send_sync(msg: EmailMessage, cfg: Settings, timeout: float) -> None:
     # ``with`` ensures ``QUIT`` is sent on every exit (clean or raised);
     # smtplib otherwise leaves the relay holding the socket open until
     # its idle timeout.
+    assert cfg.uni_smtp_host is not None, "caller must check uni_smtp_host"
     with smtplib.SMTP(
-        host=cfg.uni_smtp_host,  # narrowed by caller
+        host=cfg.uni_smtp_host,
         port=cfg.uni_smtp_port,
         timeout=timeout,
     ) as smtp:
