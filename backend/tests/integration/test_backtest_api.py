@@ -51,10 +51,7 @@ async def app_with_prices():
 
         for i in range(60):
             d = date(2026, 1, 1) + timedelta(days=i)
-            if i < 30:
-                c = 100.0 - i * 0.5
-            else:
-                c = 85.0 + (i - 30) * 1.0
+            c = 100.0 - i * 0.5 if i < 30 else 85.0 + (i - 30) * 1.0
             session.add(
                 StockPrice(
                     stock_id=stock.id,

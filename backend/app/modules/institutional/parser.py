@@ -230,10 +230,7 @@ def _parse_one_info_table(el: ET.Element) -> ParsedHolding | None:
 
     # PRN rows hold a principal amount, not shares — surface that distinction
     # by setting ``shares = None`` to avoid double-counting.
-    if shrs_type == "PRN":
-        shares_for_field = None
-    else:
-        shares_for_field = shares
+    shares_for_field = None if shrs_type == "PRN" else shares
 
     # Optional fields.
     put_call_raw = _find_text(el, "putCall")
