@@ -13,7 +13,7 @@ class PortfolioServiceError(Exception):
     """Base class for all portfolio service-level domain errors."""
 
 
-class PortfolioAccountNotFoundError(PortfolioServiceError):
+class PortfolioAccountNotFound(PortfolioServiceError):  # noqa: N818
     """Account id does not exist OR is not owned by the requesting user.
 
     Service layer collapses 404 and 403 to the same signal on purpose —
@@ -22,12 +22,12 @@ class PortfolioAccountNotFoundError(PortfolioServiceError):
     """
 
 
-class PortfolioTradeNotFoundError(PortfolioServiceError):
+class PortfolioTradeNotFound(PortfolioServiceError):  # noqa: N818
     """Trade id does not exist OR its parent account is not owned by
     the requesting user. Same 404/403 collapse as above."""
 
 
-class TierLimitExceededError(PortfolioServiceError):
+class TierLimitExceeded(PortfolioServiceError):  # noqa: N818
     """User's tier numeric quota would be exceeded by this operation.
 
     `limit_key` is the YAML key (e.g. ``max_accounts``,
@@ -43,7 +43,7 @@ class TierLimitExceededError(PortfolioServiceError):
         super().__init__(f"tier limit '{limit_key}' exceeded: {current} >= {limit}")
 
 
-class TierFeatureUnavailableError(PortfolioServiceError):
+class TierFeatureUnavailable(PortfolioServiceError):  # noqa: N818
     """User's tier does not have the requested boolean feature flag.
 
     API layer translates to 403 with ``detail = "feature_unavailable:{feature}"``.
@@ -54,20 +54,21 @@ class TierFeatureUnavailableError(PortfolioServiceError):
         super().__init__(f"tier feature '{feature}' is unavailable")
 
 
-class PortfolioInsufficientSharesError(PortfolioServiceError):
+class InsufficientShares(PortfolioServiceError):  # noqa: N818
     """SELL trade quantity exceeds the open-lot total for the symbol.
 
     Wraps `app.modules.trade_journal.fifo_engine.InsufficientSharesError`
     so the API layer can catch a single portfolio-namespaced exception
-    type without importing the trade journal module. Distinct name avoids
-    a same-symbol collision when callers import both at module scope."""
+    type without importing the trade journal module. Original `*Shares`
+    name (no `Error` suffix) preserved as a design choice — portfolio
+    exceptions read as state descriptors. N818 suppressed per-class."""
 
 
 __all__ = [
-    "PortfolioAccountNotFoundError",
-    "PortfolioInsufficientSharesError",
+    "InsufficientShares",
+    "PortfolioAccountNotFound",
     "PortfolioServiceError",
-    "PortfolioTradeNotFoundError",
-    "TierFeatureUnavailableError",
-    "TierLimitExceededError",
+    "PortfolioTradeNotFound",
+    "TierFeatureUnavailable",
+    "TierLimitExceeded",
 ]

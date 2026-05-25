@@ -111,7 +111,7 @@ class F13FilingService:
         We collapse "filer doesn't exist" and "not subscribed" into the
         same `F13FilerNotFoundError` to avoid leaking existence (same
         information-hiding convention as portfolio module's
-        `PortfolioAccountNotFoundError`).
+        `PortfolioAccountNotFound`).
         """
         if not await self._sub_repo.is_subscribed(self._user.id, filer_id):
             # Whether the filer exists or not is intentionally indistinguishable

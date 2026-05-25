@@ -60,8 +60,8 @@ from app.modules.portfolio.analytics import (
 from app.repositories.portfolio.account_repo import PortfolioAccountRepo
 from app.repositories.portfolio.snapshot_repo import HoldingsSnapshotRepo
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 
 if TYPE_CHECKING:
@@ -105,18 +105,18 @@ class AnalyticsService:
         """Compute TWR / Sharpe / max-drawdown over `period`.
 
         Raises:
-            TierFeatureUnavailableError: user's tier lacks the proxy feature.
-            PortfolioAccountNotFoundError: account filter given but not owned.
+            TierFeatureUnavailable: user's tier lacks the proxy feature.
+            PortfolioAccountNotFound: account filter given but not owned.
         """
         # 1) Tier gate (service-level double-check per spec §9).
         if not has_feature(self._user.tier, _TIER_FEATURE):
-            raise TierFeatureUnavailableError(_TIER_FEATURE)
+            raise TierFeatureUnavailable(_TIER_FEATURE)
 
         # 2) Verify account ownership when caller asked to scope.
         if account_id is not None:
             owned = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
             if owned is None:
-                raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+                raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         # 3) Resolve period window.
         date_to = date.today()

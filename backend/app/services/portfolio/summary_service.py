@@ -32,8 +32,8 @@ from app.repositories.portfolio import (
     PortfolioPositionRepo,
 )
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ class PortfolioSummaryService:
         """KPI row for one account. Verifies ownership."""
         account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
         positions = await self._position_repo.list_by_account(account_id)
         return await self._summarize(positions)
 
@@ -105,7 +105,7 @@ class PortfolioSummaryService:
             base totals via `FxService.get_rates_for_currencies`.
 
         Raises:
-            TierFeatureUnavailableError: when multi-currency without the feature.
+            TierFeatureUnavailable: when multi-currency without the feature.
             RuntimeError: when `fx_service` was not injected but we need it.
         """
         base = base_currency.upper()
@@ -129,7 +129,7 @@ class PortfolioSummaryService:
         # Tier gate: only when truly multi-currency.
         if len(buckets) > 1 and settings.enable_monetization:
             if not has_feature(self._user.tier, "multi_currency_summary"):
-                raise TierFeatureUnavailableError(feature="multi_currency_summary")
+                raise TierFeatureUnavailable(feature="multi_currency_summary")
 
         # Single-currency fast path → no FX involved.
         if len(buckets) == 1 and base in buckets:

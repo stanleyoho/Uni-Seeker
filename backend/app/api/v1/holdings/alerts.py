@@ -36,8 +36,8 @@ from app.services.alerts.alert_service import (
     InvalidAlertRuleError,
 )
 from app.services.portfolio.exceptions import (
-    TierFeatureUnavailableError,
-    TierLimitExceededError,
+    TierFeatureUnavailable,
+    TierLimitExceeded,
 )
 
 router = APIRouter(prefix="/alerts", tags=["holdings.alerts"])
@@ -48,12 +48,12 @@ FetcherDep = Annotated[LivePriceFetcher, Depends(get_live_price_fetcher)]
 
 
 def _translate_tier_exc(exc: Exception) -> HTTPException:
-    if isinstance(exc, TierLimitExceededError):
+    if isinstance(exc, TierLimitExceeded):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         )
-    if isinstance(exc, TierFeatureUnavailableError):
+    if isinstance(exc, TierFeatureUnavailable):
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -94,7 +94,7 @@ async def create_alert_rule(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{detail.INVALID_ALERT_RULE}:{exc.code}",
         ) from exc
-    except (TierLimitExceededError, TierFeatureUnavailableError) as exc:
+    except (TierLimitExceeded, TierFeatureUnavailable) as exc:
         raise _translate_tier_exc(exc) from exc
     await db.commit()
     await db.refresh(rule)

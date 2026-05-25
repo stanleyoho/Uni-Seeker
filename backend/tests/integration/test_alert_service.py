@@ -17,7 +17,7 @@ from app.services.alerts.alert_service import (
     AlertService,
     InvalidAlertRuleError,
 )
-from app.services.portfolio.exceptions import TierLimitExceededError
+from app.services.portfolio.exceptions import TierLimitExceeded
 
 
 class _MockFetcher:
@@ -148,7 +148,7 @@ async def test_quota_enforced_when_monetization_on(
                 threshold_type="ABSOLUTE",
             )
         await db_session.commit()
-        with pytest.raises(TierLimitExceededError) as exc:
+        with pytest.raises(TierLimitExceeded) as exc:
             await service.create_rule(
                 name="over",
                 rule_type="PORTFOLIO_VALUE_ABOVE",

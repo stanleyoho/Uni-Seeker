@@ -223,7 +223,7 @@ async def test_subscribe_happy_path_creates_filer_and_sub(
 async def test_subscribe_free_tier_quota_blocks_second(
     db_session: AsyncSession,
 ) -> None:
-    """FREE.max_tracked_filers = 1 → 2nd subscribe raises TierLimitExceededError."""
+    """FREE.max_tracked_filers = 1 → 2nd subscribe raises TierLimitExceeded."""
     user = await _mk_user(db_session, "ss2@x.com", "ss2", tier=UserTier.FREE)
     svc = F13SubscriptionService(db_session, user)
 

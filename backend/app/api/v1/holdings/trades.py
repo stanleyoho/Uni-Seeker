@@ -1,7 +1,7 @@
 """Portfolio trade endpoints — /api/v1/holdings/trades.
 
 Spec §5.4 Table 2 + §9. Same `tier_guard + service-layer second line`
-pattern as `accounts.py`. Adds `PortfolioInsufficientSharesError` → 422 mapping for
+pattern as `accounts.py`. Adds `InsufficientShares` → 422 mapping for
 SELL trades that exceed the open-lot total.
 """
 
@@ -25,10 +25,10 @@ from app.schemas.holdings.trade import (
 )
 from app.services.portfolio import PortfolioTradeService
 from app.services.portfolio.exceptions import (
-    PortfolioInsufficientSharesError,
-    PortfolioAccountNotFoundError,
-    PortfolioTradeNotFoundError,
-    TierLimitExceededError,
+    InsufficientShares,
+    PortfolioAccountNotFound,
+    PortfolioTradeNotFound,
+    TierLimitExceeded,
 )
 
 router = APIRouter()
@@ -81,17 +81,17 @@ async def create_trade(
             trade_date=body.trade_date or date_type.today(),
             note=body.note,
         )
-    except PortfolioAccountNotFoundError as exc:
+    except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
         ) from exc
-    except TierLimitExceededError as exc:
+    except TierLimitExceeded as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.limit_exceeded(exc.limit_key),
         ) from exc
-    except PortfolioInsufficientSharesError as exc:
+    except InsufficientShares as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=detail.INSUFFICIENT_SHARES,
@@ -131,7 +131,7 @@ async def list_trades(
     # account ids instead of a misleading empty list.
     try:
         await service._require_owned_account(account_id)
-    except PortfolioAccountNotFoundError as exc:
+    except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
@@ -158,7 +158,7 @@ async def get_trade(
     service = PortfolioTradeService(db, user)  # type: ignore[arg-type]
     try:
         row = await service._require_owned_trade(trade_id)
-    except PortfolioTradeNotFoundError as exc:
+    except PortfolioTradeNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.TRADE_NOT_FOUND,
@@ -188,12 +188,12 @@ async def update_trade(
         patch["quantity"] = patch.pop("qty")
     try:
         updated = await service.update_trade(trade_id, **patch)
-    except PortfolioTradeNotFoundError as exc:
+    except PortfolioTradeNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.TRADE_NOT_FOUND,
         ) from exc
-    except PortfolioInsufficientSharesError as exc:
+    except InsufficientShares as exc:
         # PATCH put the lot chain into an impossible state (e.g. lowered
         # a historical BUY's qty so a downstream SELL no longer balances).
         raise HTTPException(
@@ -218,12 +218,12 @@ async def delete_trade(
     service = PortfolioTradeService(db, user)  # type: ignore[arg-type]
     try:
         await service.delete_trade(trade_id)
-    except PortfolioTradeNotFoundError as exc:
+    except PortfolioTradeNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.TRADE_NOT_FOUND,
         ) from exc
-    except PortfolioInsufficientSharesError as exc:
+    except InsufficientShares as exc:
         # Should be impossible at delete (a SELL going away can only
         # reduce demand) but keep the branch for completeness.
         raise HTTPException(

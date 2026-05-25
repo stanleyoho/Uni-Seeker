@@ -5,7 +5,7 @@ Phase 5. Spec §11 (TWR / Sharpe extensibility) + Phase 5 brief.
 Single GET that computes TWR / Sharpe / max-drawdown for a period.
 Per spec §9 the tier gate is enforced *both* at the endpoint (via
 `AnalyticsService.compute_period_analytics` raising
-`TierFeatureUnavailableError`) and the dependency layer would normally hook
+`TierFeatureUnavailable`) and the dependency layer would normally hook
 `tier_guard(feature=...)` — for this endpoint we lean on the
 service-level check only because the feature flag is the same one
 already used by `summary` so we keep the response shape consistent
@@ -33,8 +33,8 @@ from app.modules.portfolio.live_price_fetcher import LivePriceFetcher
 from app.schemas.holdings.analytics import AnalyticsResponse
 from app.services.portfolio import AnalyticsService
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 
 router = APIRouter(prefix="/analytics", tags=["holdings.analytics"])
@@ -65,12 +65,12 @@ async def get_analytics(
     service = AnalyticsService(db, user, fetcher)  # type: ignore[arg-type]
     try:
         result = await service.compute_period_analytics(period=period, account_id=account_id)
-    except TierFeatureUnavailableError as exc:
+    except TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
         ) from exc
-    except PortfolioAccountNotFoundError as exc:
+    except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,

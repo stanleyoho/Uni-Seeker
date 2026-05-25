@@ -32,8 +32,8 @@ from app.repositories.portfolio import (
 from app.schemas.holdings.summary import SummaryResponse
 from app.services.portfolio import PortfolioSummaryService
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 from app.services.portfolio.fx_service import FxRateUnavailableError, FxService
 
@@ -137,7 +137,7 @@ async def get_user_summary(
     service = PortfolioSummaryService(db, user, fetcher, fx_service=fx)  # type: ignore[arg-type]
     try:
         multi = await service.get_user_summary_multi_currency(base_currency=base_u)
-    except TierFeatureUnavailableError as exc:
+    except TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -198,7 +198,7 @@ async def get_account_summary(
     service = PortfolioSummaryService(db, user, fetcher)  # type: ignore[arg-type]
     try:
         summary = await service.get_account_summary(account_id)
-    except PortfolioAccountNotFoundError as exc:
+    except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,

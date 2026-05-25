@@ -51,7 +51,7 @@ from app.repositories.portfolio import (
     PortfolioTradeRepo,
 )
 from app.repositories.portfolio.price_lookup_repo import PriceLookupRepo
-from app.services.portfolio.exceptions import TierFeatureUnavailableError
+from app.services.portfolio.exceptions import TierFeatureUnavailable
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,13 +87,13 @@ class CsvExportService:
         """Block when the user's tier lacks ``tax_export``.
 
         Per ``config/tier_limits.yaml`` only PRO ships this feature on;
-        FREE / BASIC raise ``TierFeatureUnavailableError`` which the API layer
+        FREE / BASIC raise ``TierFeatureUnavailable`` which the API layer
         translates to ``403 feature_unavailable:tax_export``.
         """
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "tax_export"):
-            raise TierFeatureUnavailableError(feature="tax_export")
+            raise TierFeatureUnavailable(feature="tax_export")
 
     # ── helpers ────────────────────────────────────────────────────────
 

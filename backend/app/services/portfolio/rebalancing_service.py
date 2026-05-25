@@ -10,7 +10,7 @@ Tier gating (spec §9 双保险):
     request before the service is even constructed.
   - Service-level: ``_assert_feature`` is a second line in case a future
     caller (CLI / batch job) forgets the FastAPI dependency. Raises
-    ``TierFeatureUnavailableError`` which the API layer maps to 403.
+    ``TierFeatureUnavailable`` which the API layer maps to 403.
 
 Audit trail:
   - Every preview emits a ``portfolio.rebalance_previewed`` audit event
@@ -44,8 +44,8 @@ from app.repositories.portfolio import (
 )
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 
 if TYPE_CHECKING:
@@ -80,7 +80,7 @@ class RebalancingService:
     # ── tier guard (spec §9 second line) ────────────────────────────────
 
     def _assert_feature(self) -> None:
-        """Raise TierFeatureUnavailableError if the user can't use rebalancing.
+        """Raise TierFeatureUnavailable if the user can't use rebalancing.
 
         Bypassed when ``settings.enable_monetization`` is False, which is
         the test-mode behaviour everywhere else in the codebase.
@@ -88,14 +88,14 @@ class RebalancingService:
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "rebalancing"):
-            raise TierFeatureUnavailableError(feature="rebalancing")
+            raise TierFeatureUnavailable(feature="rebalancing")
 
     # ── ownership helpers ──────────────────────────────────────────────
 
     async def _require_owned_account(self, account_id: int) -> None:
         account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
     # ── public API ──────────────────────────────────────────────────────
 
@@ -129,8 +129,8 @@ class RebalancingService:
             min_trade_value: Skip-threshold for tiny rebalancing trades.
 
         Raises:
-            TierFeatureUnavailableError: when the user lacks the feature flag.
-            PortfolioAccountNotFoundError: when ``account_id`` is not owned.
+            TierFeatureUnavailable: when the user lacks the feature flag.
+            PortfolioAccountNotFound: when ``account_id`` is not owned.
             ValueError: when ``targets`` fail validation
                 (sum != 100, duplicates, negatives).
         """

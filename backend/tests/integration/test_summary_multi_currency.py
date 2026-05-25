@@ -27,7 +27,7 @@ from app.modules.portfolio.fx_fetcher import FxFetchError, YFinanceFxFetcher
 from app.modules.portfolio.live_price_fetcher import LivePriceFetcher, PriceQuote
 from app.repositories.portfolio import PortfolioAccountRepo, PortfolioPositionRepo
 from app.services.portfolio import PortfolioSummaryService
-from app.services.portfolio.exceptions import TierFeatureUnavailableError
+from app.services.portfolio.exceptions import TierFeatureUnavailable
 from app.services.portfolio.fx_service import FxRateUnavailableError, FxService
 
 if TYPE_CHECKING:
@@ -200,7 +200,7 @@ async def test_multi_currency_aggregates_usd_and_twd(
 async def test_multi_currency_tier_gate_blocks_free(
     db_session: AsyncSession,
 ) -> None:
-    """FREE tier without multi_currency_summary → TierFeatureUnavailableError
+    """FREE tier without multi_currency_summary → TierFeatureUnavailable
     when positions span >1 currency."""
     user = await _mk_user(db_session, "mc2@x.com", "mc2", tier=UserTier.FREE)
     await _seed_account_and_position(
@@ -240,7 +240,7 @@ async def test_multi_currency_tier_gate_blocks_free(
 
     with patch("app.services.portfolio.summary_service.settings") as s:
         s.enable_monetization = True
-        with pytest.raises(TierFeatureUnavailableError) as exc:
+        with pytest.raises(TierFeatureUnavailable) as exc:
             await svc.get_user_summary_multi_currency(base_currency="TWD")
         assert exc.value.feature == "multi_currency_summary"
 

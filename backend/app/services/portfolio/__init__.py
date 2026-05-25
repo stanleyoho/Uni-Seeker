@@ -14,7 +14,7 @@ Anti-coupling guarantees (spec §11):
 Tier enforcement (spec §9):
 - Endpoint guard (`tier_guard(...)` dependency) is the first line.
 - Service-level assertions in `account_service` / `trade_service` are
-  the second line — they raise domain exceptions (`TierLimitExceededError`)
+  the second line — they raise domain exceptions (`TierLimitExceeded`)
   that the API layer converts to `HTTPException(403)`. This guarantees
   that even a programmer who forgets the `Depends(...)` cannot create
   data over a tier quota.
@@ -27,11 +27,11 @@ from app.services.portfolio.dividend_service import (
     PortfolioDividendService,
 )
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
+    PortfolioAccountNotFound,
     PortfolioServiceError,
-    PortfolioTradeNotFoundError,
-    TierFeatureUnavailableError,
-    TierLimitExceededError,
+    PortfolioTradeNotFound,
+    TierFeatureUnavailable,
+    TierLimitExceeded,
 )
 from app.services.portfolio.export_service import CsvExportService
 from app.services.portfolio.import_service import CsvImportService
@@ -47,17 +47,17 @@ __all__ = [
     "AnalyticsService",
     "CsvExportService",
     "CsvImportService",
-    "PortfolioAccountNotFoundError",
+    "PortfolioAccountNotFound",
     "PortfolioAccountService",
     "PortfolioDividendNotFoundError",
     "PortfolioDividendService",
     "PortfolioPositionService",
     "PortfolioServiceError",
     "PortfolioSummaryService",
-    "PortfolioTradeNotFoundError",
+    "PortfolioTradeNotFound",
     "PortfolioTradeService",
     "PositionWithPnL",
     "TaxReportService",
-    "TierFeatureUnavailableError",
-    "TierLimitExceededError",
+    "TierFeatureUnavailable",
+    "TierLimitExceeded",
 ]
