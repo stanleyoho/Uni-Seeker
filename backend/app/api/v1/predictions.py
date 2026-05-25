@@ -7,6 +7,7 @@ enabling Uni-Seeker's stock models to record and evaluate their predictions.
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -167,7 +168,7 @@ async def get_performance(
 
     engine = _get_sync_engine()
 
-    def _query() -> dict:
+    def _query() -> dict[str, Any]:
         with Session(engine) as sess:
             store = PredictionStore(sess)
             return store.get_performance_window(domain=domain, days=days)

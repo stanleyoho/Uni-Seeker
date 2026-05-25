@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 from fastapi import APIRouter, Depends
@@ -48,7 +48,7 @@ async def get_company_info(
 @router.post("/update-info")
 async def update_company_info(
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Fetch TWSE company data and update Stock table industry field."""
     async with httpx.AsyncClient(timeout=60, verify=False) as client:
         provider = TWSECompanyProvider(client=client)

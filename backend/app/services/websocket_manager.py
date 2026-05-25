@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -30,7 +31,7 @@ class ConnectionManager:
         if channel in self._connections:
             self._connections[channel].discard(ws)
 
-    async def broadcast(self, channel: str, data: dict) -> None:
+    async def broadcast(self, channel: str, data: dict[str, Any]) -> None:
         """Broadcast message to all connections in a channel."""
         if channel not in self._connections:
             return

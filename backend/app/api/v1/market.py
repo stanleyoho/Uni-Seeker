@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query
@@ -125,7 +125,7 @@ def _demo_movers() -> MarketMoversResponse:
         ("2454", "聯發科 MediaTek", "TW_TWSE", 1285.0, 45.0, 3.63, 12340000),
     ]
 
-    def _make_movers(data: list) -> list[MarketMover]:
+    def _make_movers(data: list[tuple[Any, ...]]) -> list[MarketMover]:
         return [
             MarketMover(
                 symbol=d[0],
@@ -150,7 +150,7 @@ def _demo_movers() -> MarketMoversResponse:
 # -- Helpers ------------------------------------------------------------------
 
 
-def _to_mover(row: tuple) -> MarketMover:
+def _to_mover(row: Any) -> MarketMover:
     return MarketMover(
         symbol=row.symbol,
         name=row.name or row.symbol,

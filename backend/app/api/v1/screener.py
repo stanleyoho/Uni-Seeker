@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -96,7 +96,7 @@ async def screen_stocks(
 
 
 @router.get("/presets")
-def list_presets() -> list[dict]:
+def list_presets() -> list[dict[str, Any]]:
     """List all available screener presets."""
     from app.modules.screener.presets import PRESETS
 

@@ -6,6 +6,8 @@ passed as keyword arguments from the BacktestEngine.
 
 from __future__ import annotations
 
+from typing import Any
+
 from app.modules.strategy.base import Signal, StrategyConfig
 
 
@@ -23,7 +25,7 @@ class InstitutionalFollowStrategy:
         self._history: list[float] = []  # net buy amounts per day
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        institutional: list[dict] = kwargs.get("institutional", [])  # type: ignore[assignment]
+        institutional: list[dict[str, Any]] = kwargs.get("institutional", [])  # type: ignore[assignment]
 
         # Compute net buy for the investor type on this day
         net_buy = 0.0
@@ -76,7 +78,7 @@ class MarginDivergenceStrategy:
         self._short_history: list[float] = []
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        margin_list: list[dict] = kwargs.get("margin", [])  # type: ignore[assignment]
+        margin_list: list[dict[str, Any]] = kwargs.get("margin", [])  # type: ignore[assignment]
 
         margin_balance = 0.0
         short_balance = 0.0
@@ -132,7 +134,7 @@ class ForeignTrustSyncStrategy:
         self._min_net_buy = min_net_buy
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        institutional: list[dict] = kwargs.get("institutional", [])  # type: ignore[assignment]
+        institutional: list[dict[str, Any]] = kwargs.get("institutional", [])  # type: ignore[assignment]
 
         foreign_net = 0.0
         trust_net = 0.0
@@ -180,7 +182,7 @@ class OwnershipConcentrationStrategy:
         self._ratio_history: list[float] = []
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        shareholding: list[dict] = kwargs.get("shareholding", [])  # type: ignore[assignment]
+        shareholding: list[dict[str, Any]] = kwargs.get("shareholding", [])  # type: ignore[assignment]
 
         ratio = 0.0
         for rec in shareholding:
@@ -240,7 +242,7 @@ class MarginOverleverageStrategy:
         self._buy_threshold = buy_threshold
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        margin_list: list[dict] = kwargs.get("margin", [])  # type: ignore[assignment]
+        margin_list: list[dict[str, Any]] = kwargs.get("margin", [])  # type: ignore[assignment]
 
         utilization = -1.0
         for rec in margin_list:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import bcrypt
 import jwt
@@ -42,9 +43,12 @@ def create_access_token(user_id: int, email: str) -> str:
     return jwt.encode(payload, _get_secret_key(), algorithm=settings.jwt_algorithm)
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str) -> dict[str, Any]:
     try:
-        return jwt.decode(token, _get_secret_key(), algorithms=[settings.jwt_algorithm])
+        decoded: dict[str, Any] = jwt.decode(
+            token, _get_secret_key(), algorithms=[settings.jwt_algorithm]
+        )
+        return decoded
     except jwt.ExpiredSignatureError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired") from e
     except jwt.InvalidTokenError as e:

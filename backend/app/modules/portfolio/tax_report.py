@@ -152,8 +152,8 @@ def _allocate(total_amount: Decimal, matched_qty: Decimal, base_qty: Decimal) ->
 
 
 def compute_matched_pairs(
-    buy_lots_history: list[dict],
-    sell_trades: list[dict],
+    buy_lots_history: list[dict[str, Any]],
+    sell_trades: list[dict[str, Any]],
 ) -> list[TaxLotMatch]:
     """FIFO-match each SELL to the oldest available BUYs.
 
@@ -199,7 +199,7 @@ def compute_matched_pairs(
             (symbol, market) — programmer error upstream.
     """
     # ── Group BUYs into FIFO queues keyed by (symbol, market) ──────────
-    queues: dict[tuple[str, str], deque[dict]] = {}
+    queues: dict[tuple[str, str], deque[dict[str, Any]]] = {}
     for raw in buy_lots_history:
         key = (raw["symbol"], raw["market"])
         queues.setdefault(key, deque())

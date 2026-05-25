@@ -48,7 +48,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 __all__ = [
     "CurrentPosition",
@@ -123,7 +123,7 @@ class RebalanceResult:
     total_portfolio_value: Decimal
     suggested_trades: list[SuggestedTrade]
     final_allocation_pct: dict[str, Decimal]
-    skipped_trades: list[dict] = field(default_factory=list)
+    skipped_trades: list[dict[str, Any]] = field(default_factory=list)
     cash_residual: Decimal = _ZERO
 
 
@@ -213,7 +213,7 @@ def compute_rebalance(
     total_value = sum((p.current_value for p in positions), _ZERO)
 
     suggested: list[SuggestedTrade] = []
-    skipped: list[dict] = []
+    skipped: list[dict[str, Any]] = []
     # Track which keys had a non-skipped trade so we can compute
     # final_allocation_pct based on what the user is actually committing to.
     committed_value: dict[str, Decimal] = {}

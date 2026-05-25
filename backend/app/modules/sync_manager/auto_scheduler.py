@@ -5,6 +5,8 @@ Runs daily after market close and periodic catch-up syncs.
 
 from __future__ import annotations
 
+from typing import Any
+
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -65,7 +67,7 @@ class AutoSyncScheduler:
     def is_running(self) -> bool:
         return self._running
 
-    def get_jobs(self) -> list[dict]:
+    def get_jobs(self) -> list[dict[str, Any]]:
         """Return a summary of all scheduled jobs."""
         return [
             {

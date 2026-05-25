@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -28,7 +29,7 @@ _DATASET_MAP: list[tuple[str, str]] = [
 ]
 
 
-def _pivot_eav(records: list[dict]) -> dict[str, dict[str, float]]:
+def _pivot_eav(records: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
     """Group EAV records by date, return {date: {type: value}}."""
     result: dict[str, dict[str, float]] = {}
     for r in records:

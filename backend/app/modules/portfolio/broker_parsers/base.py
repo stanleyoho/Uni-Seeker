@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date as date_type
 from decimal import Decimal
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 # Canonical action vocabulary used downstream by `PortfolioTradeService.
 # record_trade`. Adapters MUST normalize their broker's vocabulary into
@@ -74,7 +74,7 @@ class ParsedRow:
     trade_date: date_type
     note: str | None = None
     currency: str = "USD"
-    raw_row: dict | None = field(default=None, repr=False)
+    raw_row: dict[str, Any] | None = field(default=None, repr=False)
     error: str | None = None
 
 

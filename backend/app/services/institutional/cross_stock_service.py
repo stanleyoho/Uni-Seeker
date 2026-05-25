@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 
@@ -38,6 +38,9 @@ from app.services.institutional.exceptions import (
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from app.db.models.institutional.filer import F13Filer
+    from app.db.models.institutional.filing import F13Filing
+    from app.db.models.institutional.holding import F13Holding
     from app.models.user import User
 
 
@@ -64,7 +67,9 @@ class F13CrossStockService:
 
     # ── public API ──────────────────────────────────────────────────────
 
-    async def get_institutional_holders_for_stock(self, symbol: str, limit: int = 50) -> list[dict]:
+    async def get_institutional_holders_for_stock(
+        self, symbol: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
         """List institutional holders for `symbol`, latest-per-filer.
 
         Returns a list of dicts with this shape:
@@ -94,7 +99,7 @@ class F13CrossStockService:
         stock_row = await self._db.execute(select(Stock).where(Stock.symbol == symbol))
         stock = stock_row.scalar_one_or_none()
 
-        tuples: list[tuple]
+        tuples: list[tuple[F13Holding, F13Filing, F13Filer]]
         if stock is not None:
             tuples = await self._holding_repo.list_by_stock(stock.id, limit=limit * 4)
             # Fallback to CUSIP if stock has one but no holdings linked yet.
@@ -110,7 +115,7 @@ class F13CrossStockService:
         # Step 2: collapse to one row per filer (most recent wins).
         # `tuples` is already ordered by period_end DESC inside the repo;
         # OrderedDict insertion-order preserves that for us.
-        by_filer: OrderedDict[int, dict] = OrderedDict()
+        by_filer: OrderedDict[int, dict[str, Any]] = OrderedDict()
         for holding, filing, filer in tuples:
             if filer.id in by_filer:
                 continue

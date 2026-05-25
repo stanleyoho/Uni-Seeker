@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.modules.indicators.base import IndicatorResult
 
 
@@ -26,7 +28,7 @@ class PatternIndicator:
             return None
         return sum(data[idx - period + 1 : idx + 1]) / period
 
-    def _ma_alignment(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _ma_alignment(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """
         Detect MA alignment pattern (多頭排列 / 空頭排列).
         Returns: 2=strong bullish, 1=bullish, 0=neutral, -1=bearish, -2=strong bearish
@@ -58,7 +60,7 @@ class PatternIndicator:
 
         return IndicatorResult(name=self.name, values={"ma_alignment": alignment})
 
-    def _ma_crossover(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _ma_crossover(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """
         Detect MA crossover (黃金交叉 / 死亡交叉).
         Returns: 1=golden cross, -1=death cross, 0=no cross
@@ -90,7 +92,7 @@ class PatternIndicator:
 
         return IndicatorResult(name=self.name, values={"ma_crossover": cross})
 
-    def _kd_signal(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _kd_signal(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """
         KD signal: golden/death cross + overbought/oversold.
         Returns: 2=oversold+golden, 1=golden, -1=death, -2=overbought+death, 0=neutral
@@ -134,7 +136,7 @@ class PatternIndicator:
 
         return IndicatorResult(name=self.name, values={"kd_signal": signal})
 
-    def _rsi_divergence(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _rsi_divergence(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """
         RSI divergence detection (背離).
         Bullish divergence: price makes new low but RSI doesn't.
@@ -176,7 +178,7 @@ class PatternIndicator:
 
         return IndicatorResult(name=self.name, values={"rsi_divergence": divergence})
 
-    def _macd_signal(self, closes: list[float], params: dict) -> IndicatorResult:
+    def _macd_signal(self, closes: list[float], params: dict[str, Any]) -> IndicatorResult:
         """
         MACD signal detection.
         Returns: 2=histogram turning positive from negative (strong buy),

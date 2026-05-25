@@ -56,6 +56,8 @@ from app.services.portfolio.exceptions import TierFeatureUnavailable
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from app.db.models.portfolio.dividend import PortfolioDividend
+    from app.db.models.portfolio.trade import PortfolioTrade
     from app.models.user import User
 
 
@@ -157,7 +159,7 @@ class CsvExportService:
         # walk every owned account. Phase 1 user volumes (BASIC cap 200
         # trades/month, PRO unlimited but bounded by reality) keep this
         # well under a thousand rows for any realistic export.
-        trades_all: list = []
+        trades_all: list[PortfolioTrade] = []
         if account_id is not None:
             if account_id not in name_map:
                 # Cross-user / unknown — return empty CSV with header so
@@ -385,13 +387,13 @@ class CsvExportService:
 
     # ── private collectors (pagination wrappers) ───────────────────────
 
-    async def _collect_trades_for_account(self, account_id: int) -> list:
+    async def _collect_trades_for_account(self, account_id: int) -> list[PortfolioTrade]:
         """Paginate through every trade on the account. Same loop
         pattern as ``PortfolioTradeService._list_all_trades_for_position``
         — repo caps each page at 500 which keeps memory bounded."""
         page_size = 500
         offset = 0
-        out: list = []
+        out: list[PortfolioTrade] = []
         while True:
             page = await self._trade_repo.list_by_account(
                 account_id=account_id,
@@ -407,11 +409,13 @@ class CsvExportService:
             offset += page_size
         return out
 
-    async def _collect_dividends_for_account(self, account_id: int) -> list:
+    async def _collect_dividends_for_account(
+        self, account_id: int
+    ) -> list[PortfolioDividend]:
         """Same pattern for dividends. Each repo page caps at 500."""
         page_size = 500
         offset = 0
-        out: list = []
+        out: list[PortfolioDividend] = []
         while True:
             page = await self._dividend_repo.list_by_account(
                 account_id=account_id,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -169,7 +169,7 @@ async def get_ratios(symbol: str, db: DbSession) -> list[FinancialRatiosResponse
 
 
 @router.get("/{symbol}/calendar")
-async def get_earnings_calendar(symbol: str, db: DbSession) -> list[dict]:
+async def get_earnings_calendar(symbol: str, db: DbSession) -> list[dict[str, Any]]:
     """Return upcoming earnings filing events for a Taiwan stock.
 
     Shows the next 2 expected quarterly report deadlines and whether

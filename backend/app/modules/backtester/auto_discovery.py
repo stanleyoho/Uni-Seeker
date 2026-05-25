@@ -28,7 +28,7 @@ logger = get_logger(component="backtester")
 # Parameter grids per strategy (Phase 2)
 # ---------------------------------------------------------------------------
 
-_AUTO_GRIDS: dict[str, dict[str, list]] = {
+_AUTO_GRIDS: dict[str, dict[str, list[Any]]] = {
     "rsi_oversold": {"rsi_buy": [20, 25, 30, 35], "rsi_sell": [65, 70, 75, 80]},
     "macd_crossover": {"macd_fast": [8, 12], "macd_slow": [21, 26], "macd_signal": [7, 9]},
     "bollinger_bounce": {"bb_period": [15, 20, 25], "bb_std": [1.5, 2.0, 2.5]},
