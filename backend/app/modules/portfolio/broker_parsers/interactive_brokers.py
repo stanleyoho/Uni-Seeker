@@ -130,7 +130,7 @@ class InteractiveBrokersParser:
         # because the trade log is daily granularity.
         date_part = date_s.split(";")[0].split(" ")[0]
         try:
-            trade_date: date_type = datetime.strptime(date_part, "%Y-%m-%d").date()
+            trade_date: date_type = datetime.strptime(date_part, "%Y-%m-%d").date()  # noqa: DTZ007
         except ValueError:
             return ParsedRow(
                 row_index=row_index,

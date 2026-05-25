@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from app.modules.portfolio.broker_parsers.base import (
@@ -98,20 +98,20 @@ class FubonParser:
                 price=Decimal("0"),
                 fee=Decimal("0"),
                 tax=Decimal("0"),
-                trade_date=datetime.today().date(),
+                trade_date=date.today(),
                 currency="TWD",
                 raw_row=dict(zip(header, raw, strict=False)),
                 error="invalid_action",
             )
 
-        trade_date = datetime.today().date()
+        trade_date = date.today()
         err: str | None = None
         try:
             normalised = date_s.replace("-", "/")
             parts = normalised.split("/")
             if len(parts) == 3 and len(parts[0]) <= 3:
                 parts[0] = str(int(parts[0]) + 1911)
-            trade_date = datetime.strptime("/".join(parts), "%Y/%m/%d").date()
+            trade_date = datetime.strptime("/".join(parts), "%Y/%m/%d").date()  # noqa: DTZ007
         except (ValueError, IndexError):
             err = "invalid_trade_date"
 
