@@ -128,7 +128,7 @@ async def run_backtest(
             req.strategy, **{k: v for k, v in req.params.items() if v is not None}
         )
     except KeyError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     prices = await _fetch_prices(db, req.symbol, req.start_date, req.end_date)
 
@@ -155,11 +155,11 @@ async def run_backtest(
             ),
             timeout=_BACKTEST_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Backtest timed out after {_BACKTEST_TIMEOUT_SECONDS} seconds",
-        )
+        ) from e
 
     return _build_response(req.symbol, req.strategy, bt_result)
 
@@ -185,7 +185,7 @@ async def run_composite_backtest(
         try:
             sub_strategies.append(_registry.get(key, **params))
         except KeyError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     composite = CompositeStrategy(strategies=sub_strategies, mode=req.mode)
     prices = await _fetch_prices(db, req.symbol, req.start_date, req.end_date)
@@ -207,11 +207,11 @@ async def run_composite_backtest(
             ),
             timeout=_BACKTEST_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Composite backtest timed out after {_BACKTEST_TIMEOUT_SECONDS} seconds",
-        )
+        ) from e
 
     strategy_name = f"composite({'+'.join(req.strategies)}, {req.mode})"
     return _build_response(req.symbol, strategy_name, bt_result)
@@ -249,10 +249,10 @@ async def run_auto_discovery(
             ),
             timeout=_AUTO_DISCOVERY_TIMEOUT,
         )
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         raise HTTPException(
             status_code=408,
             detail=f"Auto discovery timed out after {_AUTO_DISCOVERY_TIMEOUT} seconds",
-        )
+        ) from e
 
     return asdict(result)

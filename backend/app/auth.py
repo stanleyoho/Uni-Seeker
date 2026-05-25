@@ -45,10 +45,10 @@ def create_access_token(user_id: int, email: str) -> str:
 def decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, _get_secret_key(), algorithms=[settings.jwt_algorithm])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except jwt.ExpiredSignatureError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired") from e
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from e
 
 
 async def get_current_user(

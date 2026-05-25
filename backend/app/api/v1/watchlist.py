@@ -135,12 +135,12 @@ async def add_to_watchlist(
     db.add(item)
     try:
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="watchlist_already_exists",
-        )
+        ) from e
 
     await log_audit_event(
         db,
@@ -295,7 +295,7 @@ async def bulk_add_to_watchlist(
         db.add(item)
         try:
             await db.flush()
-        except IntegrityError:
+        except IntegrityError as bulk_race:
             # Race with a concurrent single-add. Treat as duplicate, not
             # error. The flush' rollback is implicit in SQLAlchemy 2.x but
             # we still need to clear the pending state via a savepoint
@@ -313,7 +313,7 @@ async def bulk_add_to_watchlist(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="watchlist_bulk_race",
-            )
+            ) from bulk_race
 
         await log_audit_event(
             db,

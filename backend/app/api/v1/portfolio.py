@@ -79,7 +79,7 @@ async def run_portfolio_backtest(
                 alloc.strategy, **{k: v for k, v in alloc.params.items() if v is not None}
             )
         except KeyError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
         allocations.append(
             PortfolioAllocation(
@@ -110,11 +110,11 @@ async def run_portfolio_backtest(
             ),
             timeout=30,
         )
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         raise HTTPException(
             status_code=504,
             detail="Portfolio backtest timed out after 30 seconds",
-        )
+        ) from e
 
     # Convert trade log to serializable dicts
     trade_log_dicts = [
