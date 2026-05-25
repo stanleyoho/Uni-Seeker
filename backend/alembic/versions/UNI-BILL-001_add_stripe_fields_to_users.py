@@ -7,16 +7,16 @@ Create Date: 2026-05-11
 Note: revision identifier uses underscores; alembic 1.18+ rejects hyphen.
 Filename keeps hyphens for human readability of the BILL series.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
-
 revision: str = "UNI_BILL_001"
-down_revision: Union[str, None] = "e900cd627d8a"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "e900cd627d8a"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

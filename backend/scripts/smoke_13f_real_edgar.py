@@ -35,7 +35,6 @@ from app.modules.institutional.parser import (
     summarize_filing,
 )
 
-
 # ───────────────────────── known filer list ─────────────────────────
 
 # Hardcoded CIKs come from SEC EDGAR's public submissions index.
@@ -86,7 +85,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
         if not filer.get("cik"):
             try:
                 hits = await client.search_filers_by_name(filer["name"], limit=10)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["status"] = "fail"
                 result["errors"].append(f"search_error: {exc.__class__.__name__}: {exc}")
                 return result
@@ -105,7 +104,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
             filings: list[FilingMetadata] = await client.list_filings_for_filer(
                 result["cik"], max_count=4
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             result["status"] = "fail"
             result["errors"].append(
                 f"list_filings_error: {exc.__class__.__name__}: {exc}"
@@ -130,7 +129,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                     f"fetch_transient_{filing.accession_number}: {exc}"
                 )
                 continue
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["errors"].append(
                     f"fetch_error_{filing.accession_number}: "
                     f"{exc.__class__.__name__}: {exc}"
@@ -152,7 +151,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                     f"(form={filing.form_type}, url={filing.raw_xml_url}): {exc}"
                 )
                 continue
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["errors"].append(
                     f"parse_unexpected_{filing.accession_number}: "
                     f"{exc.__class__.__name__}: {exc}"
@@ -193,7 +192,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                         1 for c in changes if c.change_type.value == "UNCHANGED"
                     ),
                 }
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["errors"].append(
                     f"diff_error: {exc.__class__.__name__}: {exc}"
                 )
@@ -208,7 +207,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
             result["status"] = "pass"
         return result
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         result["status"] = "fail"
         result["errors"].append(
             f"top_level: {exc.__class__.__name__}: {exc}\n"

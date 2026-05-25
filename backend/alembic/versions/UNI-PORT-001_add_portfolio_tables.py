@@ -14,16 +14,17 @@ Creates the four Phase 1 tables for the Portfolio Tracker module
 Phase 3 (portfolio_dividends) and Phase 4+ (holdings_snapshots) are
 intentionally deferred — they will get their own migrations.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
+from alembic import op
+
 revision: str = "UNI_PORT_001"
-down_revision: Union[str, None] = "UNI_WATCH_001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_WATCH_001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # `market_enum` already exists in the DB (created by the 3NF schema

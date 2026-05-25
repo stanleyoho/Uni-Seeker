@@ -16,17 +16,17 @@ This migration:
 - Converts data types: revenue FLOAT->NUMERIC, tier->enum, market->enum
 - Creates composite indexes for performance
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision: str = "b3a1c9d2e4f5"
-down_revision: Union[str, None] = "0ef449ae0f1a"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0ef449ae0f1a"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # ---------- Enum definitions ----------

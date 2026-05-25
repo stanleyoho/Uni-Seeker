@@ -44,16 +44,17 @@ Indices
   Postgres uses btree which is order-agnostic for single-key range
   scans; we don't bother with explicit DESC.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
+from alembic import op
+
 revision: str = "UNI_PORT_002"
-down_revision: Union[str, None] = "UNI_PORT_001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_PORT_001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # Reuse the existing `market_enum` Postgres type (created by the 3NF

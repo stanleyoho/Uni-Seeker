@@ -23,15 +23,16 @@ user-wide row coexists with per-account rows on the same date. The
 daily snapshot job's UPSERT keeps "one user-wide row per day" true in
 practice.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "UNI_PORT_003"
-down_revision: Union[str, None] = "UNI_PORT_002"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_PORT_002"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

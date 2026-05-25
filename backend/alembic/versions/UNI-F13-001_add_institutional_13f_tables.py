@@ -23,15 +23,16 @@ Decisions baked in (per Stanley):
   Q5  tier limits enforced in service layer, not DB
   Q8  backfill 4 quarters handled by Batch A2 ingester, not migration
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "UNI_F13_001"
-down_revision: Union[str, None] = "UNI_PORT_003"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_PORT_003"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

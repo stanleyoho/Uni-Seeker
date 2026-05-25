@@ -17,16 +17,16 @@ Telegram chat IDs are signed 64-bit integers (negative for groups), but
 we store as VARCHAR(64) to remain forward-compatible with usernames
 (``@user`` form) the bot API accepts equally well.
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
-
 revision: str = "UNI_F13_002"
-down_revision: Union[str, None] = "UNI_F13_001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_F13_001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

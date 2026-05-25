@@ -4,15 +4,16 @@ Revision ID: UNI_WATCH_001
 Revises: UNI_COMP_001
 Create Date: 2026-05-18
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "UNI_WATCH_001"
-down_revision: Union[str, None] = "UNI_COMP_001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "UNI_COMP_001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
