@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from app.modules.portfolio.broker_parsers.base import (
@@ -103,7 +103,7 @@ class FidelityParser:
                 price=Decimal("0"),
                 fee=Decimal("0"),
                 tax=Decimal("0"),
-                trade_date=datetime.today().date(),
+                trade_date=date.today(),
                 currency="USD",
                 raw_row=dict(zip(header, raw, strict=False)),
                 error="dividend_actions_not_supported",
@@ -118,19 +118,19 @@ class FidelityParser:
                 price=Decimal("0"),
                 fee=Decimal("0"),
                 tax=Decimal("0"),
-                trade_date=datetime.today().date(),
+                trade_date=date.today(),
                 currency="USD",
                 raw_row=dict(zip(header, raw, strict=False)),
                 error="invalid_action",
             )
 
-        trade_date = datetime.today().date()
+        trade_date = date.today()
         err: str | None = None
         try:
-            trade_date = datetime.strptime(date_s, "%m/%d/%Y").date()
+            trade_date = datetime.strptime(date_s, "%m/%d/%Y").date()  # noqa: DTZ007
         except ValueError:
             try:
-                trade_date = datetime.strptime(date_s, "%Y-%m-%d").date()
+                trade_date = datetime.strptime(date_s, "%Y-%m-%d").date()  # noqa: DTZ007
             except ValueError:
                 err = "invalid_trade_date"
 

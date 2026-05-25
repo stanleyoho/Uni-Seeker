@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 import httpx
@@ -532,11 +532,11 @@ def _parse_datetime(s: str) -> datetime:
     Some other endpoints emit full timestamps — handled via fromisoformat.
     """
     if not s:
-        return datetime.min
+        return datetime.min.replace(tzinfo=timezone.utc)
     try:
         if "T" in s or " " in s:
             return datetime.fromisoformat(s.replace("Z", "+00:00"))
         d = date.fromisoformat(s)
-        return datetime(d.year, d.month, d.day)
+        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     except ValueError:
-        return datetime.min
+        return datetime.min.replace(tzinfo=timezone.utc)
