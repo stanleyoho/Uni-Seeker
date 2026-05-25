@@ -65,9 +65,7 @@ def _mock_fetcher(client: AsyncClient):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_mock_fetcher")
-async def test_post_alert_creates(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_post_alert_creates(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "api1@x.tw")
     r = await client.post(
         "/api/v1/holdings/alerts",
@@ -205,9 +203,7 @@ async def test_patch_alert_404_for_other_user(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_mock_fetcher")
-async def test_delete_alert(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_delete_alert(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "api6@x.tw")
     create = await client.post(
         "/api/v1/holdings/alerts",
@@ -230,9 +226,7 @@ async def test_delete_alert(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_mock_fetcher")
-async def test_evaluate_now_returns_result(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_evaluate_now_returns_result(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "api7@x.tw")
     create = await client.post(
         "/api/v1/holdings/alerts",

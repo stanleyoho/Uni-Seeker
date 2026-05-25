@@ -103,8 +103,7 @@ class MarginDivergenceStrategy:
                 action="BUY",
                 symbol="",
                 reason=(
-                    f"Margin down {margin_trend:.0f}, short up "
-                    f"{short_trend:.0f} (retail bearish)"
+                    f"Margin down {margin_trend:.0f}, short up {short_trend:.0f} (retail bearish)"
                 ),
                 strength=max(strength, 0.5),
             )
@@ -272,8 +271,7 @@ class MarginOverleverageStrategy:
                 action="BUY",
                 symbol="",
                 reason=(
-                    f"Margin utilization {utilization:.1f}% < "
-                    f"{self._buy_threshold}% (deleveraged)"
+                    f"Margin utilization {utilization:.1f}% < {self._buy_threshold}% (deleveraged)"
                 ),
                 strength=max(strength, 0.5),
             )
