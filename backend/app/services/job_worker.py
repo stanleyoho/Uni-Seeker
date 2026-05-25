@@ -23,6 +23,7 @@ from app.modules.strategy import create_default_registry
 from app.modules.strategy.composite import CompositeStrategy
 from app.obs.logging import get_logger
 from app.services.job_queue import BacktestJobQueue
+import contextlib
 
 logger = get_logger(component="job_worker")
 
@@ -61,10 +62,8 @@ class BacktestJobWorker:
             return
         self._shutdown.set()
         self._task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await self._task
-        except asyncio.CancelledError:
-            pass
         self._task = None
         logger.info("BacktestJobWorker stopped")
 
@@ -322,7 +321,7 @@ class BacktestJobWorker:
 
         # GridSearchEngine.run is synchronous; wrap progress callback
         # to call async update_progress via the running event loop.
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
 
         def sync_progress(pct: int) -> None:
             asyncio.ensure_future(_progress_callback(pct))

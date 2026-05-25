@@ -73,15 +73,15 @@ def _div_kwargs(account_id: int, **overrides) -> dict:
     """Minimal required-field kwargs for a CASH dividend. Override any
     field with **overrides to test edge cases without re-listing the
     common 6 required columns each time."""
-    base = dict(
-        account_id=account_id,
-        symbol="2330.TW",
-        market=Market.TW_TWSE,
-        dividend_type="CASH",
-        ex_dividend_date=date(2026, 7, 15),
-        amount_per_share=Decimal("4.00"),
-        quantity_at_record=Decimal("1000"),
-    )
+    base = {
+        "account_id": account_id,
+        "symbol": "2330.TW",
+        "market": Market.TW_TWSE,
+        "dividend_type": "CASH",
+        "ex_dividend_date": date(2026, 7, 15),
+        "amount_per_share": Decimal("4.00"),
+        "quantity_at_record": Decimal("1000"),
+    }
     base.update(overrides)
     return base
 

@@ -66,15 +66,15 @@ async def _mk_account(
 
 
 def _snap_kwargs(user_id: int, **overrides) -> dict:
-    base = dict(
-        user_id=user_id,
-        snapshot_date=date(2026, 5, 19),
-        total_value=Decimal("100000.00"),
-        total_cost=Decimal("90000.00"),
-        total_unrealized_pnl=Decimal("10000.00"),
-        realized_pnl_cum=Decimal("0"),
-        position_count=3,
-    )
+    base = {
+        "user_id": user_id,
+        "snapshot_date": date(2026, 5, 19),
+        "total_value": Decimal("100000.00"),
+        "total_cost": Decimal("90000.00"),
+        "total_unrealized_pnl": Decimal("10000.00"),
+        "realized_pnl_cum": Decimal("0"),
+        "position_count": 3,
+    }
     base.update(overrides)
     return base
 

@@ -41,7 +41,7 @@ class PriceVolumeIndicator:
         """Detect volume surges: volume > N * average volume."""
         volumes: list[int] = list(params.get("volumes", []))
         period = int(params.get("period", 20))
-        threshold = float(params.get("threshold", 2.0))
+        float(params.get("threshold", 2.0))
         n = len(volumes)
         surge: list[float | None] = [None] * n
 

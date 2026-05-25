@@ -100,12 +100,12 @@ async def _mk_filing(
 
 
 def _holding_kwargs(filing_id: int, **overrides) -> dict:
-    base = dict(
-        filing_id=filing_id,
-        cusip="037833100",  # AAPL
-        name_of_issuer="APPLE INC",
-        value_usd=Decimal("123456789.00"),
-    )
+    base = {
+        "filing_id": filing_id,
+        "cusip": "037833100",  # AAPL
+        "name_of_issuer": "APPLE INC",
+        "value_usd": Decimal("123456789.00"),
+    }
     base.update(overrides)
     return base
 

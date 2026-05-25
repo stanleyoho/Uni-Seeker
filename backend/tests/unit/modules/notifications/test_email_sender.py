@@ -18,14 +18,14 @@ from app.modules.notifications.email_sender import send_email
 
 def _mk_settings(**overrides) -> Settings:
     """Spin up a Settings instance with SMTP filled in by default."""
-    defaults = dict(
-        uni_smtp_host="smtp.example.com",
-        uni_smtp_port=587,
-        uni_smtp_user="bot@example.com",
-        uni_smtp_password="secret",
-        uni_smtp_from_addr="bot@example.com",
-        uni_smtp_use_tls=True,
-    )
+    defaults = {
+        "uni_smtp_host": "smtp.example.com",
+        "uni_smtp_port": 587,
+        "uni_smtp_user": "bot@example.com",
+        "uni_smtp_password": "secret",
+        "uni_smtp_from_addr": "bot@example.com",
+        "uni_smtp_use_tls": True,
+    }
     defaults.update(overrides)
     return Settings(**defaults)
 
