@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 from app.modules.institutional.parser import ParsedHolding
 

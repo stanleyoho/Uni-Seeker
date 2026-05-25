@@ -7,7 +7,6 @@ enabling Uni-Seeker's stock models to record and evaluate their predictions.
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field

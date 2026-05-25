@@ -2,7 +2,6 @@
 
 from types import SimpleNamespace
 
-
 from app.services.device import compute_fingerprint
 
 

@@ -31,10 +31,10 @@ to encode stop-loss-style "fire if I'm down more than 10%".
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
-from enum import Enum, StrEnum
-from collections.abc import Mapping
+from enum import StrEnum
 
 
 class RuleType(StrEnum):
