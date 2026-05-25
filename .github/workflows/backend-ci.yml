@@ -76,6 +76,10 @@ jobs:
         env:
           UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_test
           UNI_REDIS_URL: redis://localhost:6379/0
+          # CI-only secret — never use in production. `app.auth.jwt`
+          # raises RuntimeError if unset, which gates pytest before
+          # the first auth-touching test even loads.
+          UNI_JWT_SECRET_KEY: ci-test-secret-do-not-use-in-prod
         run: pytest --cov-report=xml
 
       - name: Upload coverage
