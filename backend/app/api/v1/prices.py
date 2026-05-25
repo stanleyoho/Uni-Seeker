@@ -66,7 +66,7 @@ async def backfill_prices(
                 await updater._persist_stocks(prices)
                 total_saved += len(prices)
         except Exception as e:
-            errors.append(f"{symbol}: {str(e)}")
+            errors.append(f"{symbol}: {e!s}")
         # Small delay to avoid rate limiting
         await asyncio.sleep(0.5)
 
@@ -105,7 +105,7 @@ async def backfill_tw_popular(
                 total_saved += len(prices)
             await asyncio.sleep(0.5)
         except Exception as e:
-            errors.append(f"{symbol}: {str(e)}")
+            errors.append(f"{symbol}: {e!s}")
 
     return BackfillResponse(
         total_symbols=len(symbols),

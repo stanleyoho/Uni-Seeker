@@ -127,7 +127,7 @@ async def get_full_analysis(symbol: str, db: DbSession) -> FullAnalysisResponse:
     try:
         data = await _fetch_financial_data(symbol, db)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch financials: {str(e)}") from e
+        raise HTTPException(status_code=502, detail=f"Failed to fetch financials: {e!s}") from e
 
     if not data.income_statements:
         raise HTTPException(status_code=404, detail=f"No financial data for '{symbol}'")
@@ -141,7 +141,7 @@ async def get_ratios(symbol: str, db: DbSession) -> list[FinancialRatiosResponse
     try:
         data = await _fetch_financial_data(symbol, db)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch financials: {str(e)}") from e
+        raise HTTPException(status_code=502, detail=f"Failed to fetch financials: {e!s}") from e
 
     if not data.income_statements:
         raise HTTPException(status_code=404, detail=f"No financial data for '{symbol}'")

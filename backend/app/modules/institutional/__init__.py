@@ -40,6 +40,8 @@ from app.modules.institutional.parser import (
 )
 
 __all__ = [
+    # diff
+    "ChangeType",
     # edgar_client
     "EdgarClient",
     "EdgarRateLimiter",
@@ -48,13 +50,11 @@ __all__ = [
     "FilingMetadata",
     # parser
     "FilingSummary",
-    "ParsedHolding",
+    "HoldingChange",
     "ParseError",
+    "ParsedHolding",
+    "compute_diff",
     "is_valid_cusip",
     "parse_infotable_xml",
     "summarize_filing",
-    # diff
-    "ChangeType",
-    "HoldingChange",
-    "compute_diff",
 ]
