@@ -65,6 +65,7 @@ from app.services.institutional.exceptions import (
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from app.db.models.institutional.filer import F13Filer
     from app.db.models.institutional.filing import F13Filing
     from app.db.models.institutional.holding import F13Holding
     from app.models.user import User
@@ -99,7 +100,7 @@ class F13FilingService:
 
     # ── access control helpers ─────────────────────────────────────────
 
-    async def _require_filer(self, filer_id: int):
+    async def _require_filer(self, filer_id: int) -> F13Filer:
         filer = await self._filer_repo.get_by_id(filer_id)
         if filer is None:
             raise F13FilerNotFoundError(f"filer_id={filer_id} not found")
@@ -415,7 +416,7 @@ class F13FilingService:
         async with lock:
             return await self._do_refresh(filer, max_quarters)
 
-    async def _do_refresh(self, filer, max_quarters: int) -> dict[str, int]:
+    async def _do_refresh(self, filer: F13Filer, max_quarters: int) -> dict[str, int]:
         """Inner refresh body — runs under the per-filer lock."""
         # Step 3: list filings on EDGAR
         try:
@@ -658,7 +659,7 @@ def _classify_history_point(
     return ("UNCHANGED", delta, pct)
 
 
-def _orm_holding_to_parsed(row) -> ParsedHolding:
+def _orm_holding_to_parsed(row: F13Holding) -> ParsedHolding:
     """Translate an ORM `F13Holding` row into a `ParsedHolding`
     dataclass so the pure diff engine can consume it without coupling
     to SQLAlchemy. Keep this here, not in the domain module (spec

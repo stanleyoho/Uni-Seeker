@@ -45,7 +45,9 @@ def _result_to_history_item(rec: BacktestResultRecord) -> BacktestHistoryItem:
     """Convert a BacktestResultRecord ORM instance to the history item schema."""
     metrics = rec.metrics_json or {}
     trade_log = None
-    if rec.trade_log:
+    # `rec.trade_log` is typed `list[...] | dict[...]` (union accommodates
+    # legacy {} placeholder rows) — only the list shape carries entries.
+    if isinstance(rec.trade_log, list) and rec.trade_log:
         from app.schemas.backtest_job import TradeLogEntry
 
         trade_log = [

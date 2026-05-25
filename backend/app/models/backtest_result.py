@@ -25,8 +25,15 @@ class BacktestResultRecord(Base):
     strategy_name: Mapped[str] = mapped_column(String(200))
     strategy_params: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
     metrics_json: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
-    equity_curve: Mapped[dict[str, Any]] = mapped_column(JSON, default_factory=dict)
-    trade_log: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default_factory=list)
+    # equity_curve historically holds either a raw list[float] (single backtest)
+    # or a dict {"curve": [...]} wrapper (portfolio backtest). Keep the union so
+    # both writers type-check.
+    equity_curve: Mapped[list[float] | dict[str, Any]] = mapped_column(JSON, default_factory=dict)
+    # trade_log is normally a list of trade-row dicts; some grid-search rows
+    # also stash an empty {} placeholder, so the column accepts either shape.
+    trade_log: Mapped[list[dict[str, Any]] | dict[str, Any]] = mapped_column(
+        JSON, default_factory=list
+    )
     composite_mode: Mapped[str | None] = mapped_column(String(20), default=None)
 
     # Backtest metadata

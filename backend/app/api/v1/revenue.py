@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -73,9 +74,9 @@ async def update_tw_revenue(db: AsyncSession = Depends(get_db)) -> dict[str, Any
             MonthlyRevenue(
                 stock_id=stock.id,
                 period=rec.period,
-                revenue=rec.revenue,
-                mom_growth=rec.mom_growth,
-                yoy_growth=rec.yoy_growth,
+                revenue=Decimal(str(rec.revenue)),
+                mom_growth=None if rec.mom_growth is None else Decimal(str(rec.mom_growth)),
+                yoy_growth=None if rec.yoy_growth is None else Decimal(str(rec.yoy_growth)),
                 currency=rec.currency,
             )
         )

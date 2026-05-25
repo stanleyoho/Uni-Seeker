@@ -32,6 +32,7 @@ Returns a dict with counters; caller commits the outer transaction.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select, update
@@ -188,7 +189,7 @@ async def backfill_stocks_from_filings(
     for sid, cusip in seen.items():
         upd = update(Stock).where(Stock.id == sid, Stock.cusip.is_(None)).values(cusip=cusip)
         res = await db.execute(upd)
-        if res.rowcount:
+        if res.rowcount:  # type: ignore[attr-defined]
             updated += 1
 
     logger.info(
@@ -277,7 +278,7 @@ async def backfill_cusips_global_with_figi(
 
 async def _resolve_and_apply(
     db: AsyncSession,
-    rows: list[Any],
+    rows: Sequence[Any],
     scope: str,
 ) -> dict[str, int]:
     """Common path for filer-scoped and global backfill.
@@ -314,7 +315,7 @@ async def _resolve_and_apply(
             .values(stock_id=match.stock_id)
         )
         res = await db.execute(upd)
-        if not res.rowcount:
+        if not res.rowcount:  # type: ignore[attr-defined]
             # Concurrent writer beat us — treat as already-mapped.
             continue
         if match.match_confidence == _EXACT:
@@ -337,7 +338,7 @@ async def _resolve_and_apply(
 
 async def _resolve_and_apply_with_figi(
     db: AsyncSession,
-    rows: list[Any],
+    rows: Sequence[Any],
     scope: str,
     figi_client: OpenFigiClient | None,
 ) -> dict[str, int]:
@@ -378,7 +379,7 @@ async def _resolve_and_apply_with_figi(
             .values(stock_id=match.stock_id)
         )
         res = await db.execute(upd)
-        if not res.rowcount:
+        if not res.rowcount:  # type: ignore[attr-defined]
             continue
         if match.match_confidence == _EXACT:
             exact_matches += 1
@@ -454,7 +455,7 @@ async def _upgrade_namelike_to_exact(
             .values(stock_id=int(row.exact_stock_id))
         )
         res = await db.execute(upd)
-        if res.rowcount:
+        if res.rowcount:  # type: ignore[attr-defined]
             upgraded += 1
 
     if upgraded:
