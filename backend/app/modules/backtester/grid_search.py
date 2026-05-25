@@ -226,8 +226,9 @@ class GridSearchEngine:
         total = config.total_combinations()
         if total > config.max_combinations:
             raise ValueError(
-                f"Grid search has {total:,} combinations, exceeding limit of {config.max_combinations:,}. "
-                f"Reduce param_grid or increase max_combinations."
+                f"Grid search has {total:,} combinations, exceeding limit "
+                f"of {config.max_combinations:,}. Reduce param_grid or "
+                f"increase max_combinations."
             )
 
         combos = self._generate_combinations(config.param_grid)

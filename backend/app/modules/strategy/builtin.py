@@ -220,7 +220,8 @@ class BollingerBounceStrategy:
 
 
 class BiasReversalStrategy:
-    """Buy when negative bias exceeds threshold (oversold), sell when positive bias exceeds threshold."""
+    """Buy when negative bias exceeds threshold (oversold), sell when
+    positive bias exceeds threshold."""
 
     def __init__(
         self, period: int = 20, buy_threshold: float = -5.0, sell_threshold: float = 5.0
@@ -266,7 +267,8 @@ class BiasReversalStrategy:
 
 
 class RSIBiasComboStrategy:
-    """Buy when RSI oversold AND negative bias both confirm. Double confirmation for higher accuracy."""
+    """Buy when RSI oversold AND negative bias both confirm. Double
+    confirmation for higher accuracy."""
 
     def __init__(
         self,

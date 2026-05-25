@@ -31,7 +31,8 @@ class FIFOResult:
 
 
 class FIFOEngine:
-    """Stateful FIFO engine. Stateful within a single call chain; instantiate once per trade operation.
+    """Stateful FIFO engine. Stateful within a single call chain;
+    instantiate once per trade operation.
     open_lots must be sorted by lot_id ASC (oldest first).
     """
 

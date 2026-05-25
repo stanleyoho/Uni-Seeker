@@ -2,7 +2,8 @@ from app.modules.indicators.base import IndicatorResult
 
 
 class PriceVolumeIndicator:
-    """Derived price-volume indicators: volume ratio, surge, amplitude, new high/low, multi-period change."""
+    """Derived price-volume indicators: volume ratio, surge, amplitude,
+    new high/low, multi-period change."""
 
     name = "PV"
 

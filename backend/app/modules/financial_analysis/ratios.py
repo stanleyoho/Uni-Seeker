@@ -85,7 +85,8 @@ def calculate_ratios(data: FinancialData) -> list[FinancialRatios]:
             receivable_turnover=_safe_div(total_revenue, receivables),
         )
 
-        # YoY growth: compare with statement from same period type, 4 periods back (quarterly) or 1 back (annual)
+        # YoY growth: compare with statement from same period type, 4 periods
+        # back (quarterly) or 1 back (annual)
         compare_idx = i + (4 if income.period_type == "quarterly" else 1)
         if compare_idx < len(data.income_statements):
             prev = data.income_statements[compare_idx].data

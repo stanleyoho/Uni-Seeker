@@ -44,7 +44,10 @@ async def _fetch_prices_for_symbol(
     if len(prices) < 20:
         raise HTTPException(
             status_code=400,
-            detail=f"Insufficient data for '{symbol}': need at least 20 data points, got {len(prices)}",
+            detail=(
+                f"Insufficient data for '{symbol}': need at least 20 "
+                f"data points, got {len(prices)}"
+            ),
         )
     return prices
 
