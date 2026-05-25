@@ -231,7 +231,7 @@ class HoldingsSnapshotRepo:
         )
         result = await self.db.execute(stmt)
         await self.db.flush()
-        return int(result.rowcount or 0)
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
     # ── internals ───────────────────────────────────────────────────────
 

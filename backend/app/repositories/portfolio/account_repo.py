@@ -104,7 +104,7 @@ class PortfolioAccountRepo:
             )
         )
         await self.db.flush()
-        return (result.rowcount or 0) > 0
+        return (result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
     async def count_by_user(self, user_id: int) -> int:
         """Number of accounts owned by `user_id` — for tier quota checks

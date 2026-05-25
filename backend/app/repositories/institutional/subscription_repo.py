@@ -70,7 +70,7 @@ class F13UserSubscriptionRepo:
             )
         )
         await self.db.flush()
-        return (result.rowcount or 0) > 0
+        return (result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
     async def list_by_user(self, user_id: int) -> list[F13UserSubscription]:
         """All subscriptions owned by `user_id`, with `filer` eager-loaded.

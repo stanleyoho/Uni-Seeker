@@ -144,7 +144,7 @@ class AlertRuleRepo:
             )
         )
         await self.db.flush()
-        return (result.rowcount or 0) > 0
+        return (result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
     async def count_by_user(self, user_id: int) -> int:
         result = await self.db.execute(

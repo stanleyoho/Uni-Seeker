@@ -119,7 +119,7 @@ class BacktestJobQueue:
         )
         result = await db.execute(stmt)
         await db.flush()
-        cancelled = bool(result.rowcount > 0)
+        cancelled = bool(result.rowcount > 0)  # type: ignore[attr-defined]
         if cancelled:
             logger.info("Cancelled backtest job id=%s", job_id)
         return cancelled

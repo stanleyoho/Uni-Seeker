@@ -23,7 +23,7 @@ class DDMEstimator:
         yield_query = (
             select(StockValuation.dividend_yield)
             .where(StockValuation.stock_id == stock_id)
-            .where(StockValuation.dividend_yield is not None)
+            .where(StockValuation.dividend_yield.is_not(None))
             .order_by(StockValuation.date.desc())
             .limit(1)
         )
