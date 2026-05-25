@@ -83,7 +83,10 @@ async def _fetch_prices(
     if len(prices) < MIN_DATA_POINTS:
         raise HTTPException(
             status_code=400,
-            detail=f"Insufficient data for '{symbol}': need at least {MIN_DATA_POINTS} data points, got {len(prices)}",
+            detail=(
+                f"Insufficient data for '{symbol}': need at least "
+                f"{MIN_DATA_POINTS} data points, got {len(prices)}"
+            ),
         )
     return prices
 

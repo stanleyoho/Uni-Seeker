@@ -327,7 +327,10 @@ class AutoDiscoveryEngine:
             # Generate all param combinations
             param_names = list(grid.keys())
             param_values = [grid[k] for k in param_names]
-            combos = [dict(zip(param_names, combo, strict=False)) for combo in itertools.product(*param_values)]
+            combos = [
+                dict(zip(param_names, combo, strict=False))
+                for combo in itertools.product(*param_values)
+            ]
             total_tested += len(combos)
 
             best_item: AutoDiscoveryResultItem | None = None

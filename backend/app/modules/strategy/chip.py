@@ -62,7 +62,8 @@ class InstitutionalFollowStrategy:
 
 
 class MarginDivergenceStrategy:
-    """Contrarian: Buy when margin balance decreases AND short selling increases (retail bearish)."""
+    """Contrarian: Buy when margin balance decreases AND short selling
+    increases (retail bearish)."""
 
     def __init__(self, lookback: int = 5) -> None:
         self.config = StrategyConfig(
@@ -101,7 +102,10 @@ class MarginDivergenceStrategy:
             return Signal(
                 action="BUY",
                 symbol="",
-                reason=f"Margin down {margin_trend:.0f}, short up {short_trend:.0f} (retail bearish)",
+                reason=(
+                    f"Margin down {margin_trend:.0f}, short up "
+                    f"{short_trend:.0f} (retail bearish)"
+                ),
                 strength=max(strength, 0.5),
             )
         # Retail FOMO = danger
@@ -202,7 +206,10 @@ class OwnershipConcentrationStrategy:
             return Signal(
                 action="BUY",
                 symbol="",
-                reason=f"Foreign ownership ratio increasing {self._days} days ({recent[0]:.2f}% -> {recent[-1]:.2f}%)",
+                reason=(
+                    f"Foreign ownership ratio increasing {self._days} days "
+                    f"({recent[0]:.2f}% -> {recent[-1]:.2f}%)"
+                ),
                 strength=max(strength, 0.5),
             )
         elif decreasing:
@@ -211,7 +218,10 @@ class OwnershipConcentrationStrategy:
             return Signal(
                 action="SELL",
                 symbol="",
-                reason=f"Foreign ownership ratio decreasing {self._days} days ({recent[0]:.2f}% -> {recent[-1]:.2f}%)",
+                reason=(
+                    f"Foreign ownership ratio decreasing {self._days} days "
+                    f"({recent[0]:.2f}% -> {recent[-1]:.2f}%)"
+                ),
                 strength=max(strength, 0.5),
             )
 
@@ -250,7 +260,10 @@ class MarginOverleverageStrategy:
             return Signal(
                 action="SELL",
                 symbol="",
-                reason=f"Margin utilization {utilization:.1f}% > {self._sell_threshold}% (overleveraged)",
+                reason=(
+                    f"Margin utilization {utilization:.1f}% > "
+                    f"{self._sell_threshold}% (overleveraged)"
+                ),
                 strength=max(strength, 0.5),
             )
         elif utilization < self._buy_threshold:
@@ -258,7 +271,10 @@ class MarginOverleverageStrategy:
             return Signal(
                 action="BUY",
                 symbol="",
-                reason=f"Margin utilization {utilization:.1f}% < {self._buy_threshold}% (deleveraged)",
+                reason=(
+                    f"Margin utilization {utilization:.1f}% < "
+                    f"{self._buy_threshold}% (deleveraged)"
+                ),
                 strength=max(strength, 0.5),
             )
 
