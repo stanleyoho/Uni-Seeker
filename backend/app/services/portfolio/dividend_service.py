@@ -15,7 +15,7 @@ Tier enforcement (spec §9 双保险):
 - Endpoint guard (`tier_guard(feature="dividends")`) is the first line.
 - This service is the second line — `has_feature(tier, "dividends")` is
   asserted at the top of every `record_dividend` / mutation; FREE tier
-  raises `TierFeatureUnavailableError` even if the API guard is bypassed.
+  raises `TierFeatureUnavailable` even if the API guard is bypassed.
 
 Phase 2 MVP simplifications (documented for follow-up):
 - `update_dividend` only allows `note` / `pay_date` / `withholding_tax`.
@@ -59,9 +59,9 @@ from app.repositories.portfolio import (
 )
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
+    PortfolioAccountNotFound,
     PortfolioServiceError,
-    TierFeatureUnavailableError,
+    TierFeatureUnavailable,
 )
 
 if TYPE_CHECKING:
@@ -107,12 +107,12 @@ class PortfolioDividendService:
         if not settings.enable_monetization:
             return
         if not has_feature(self._user.tier, "dividends"):
-            raise TierFeatureUnavailableError(feature="dividends")
+            raise TierFeatureUnavailable(feature="dividends")
 
     async def _require_owned_account(self, account_id: int) -> None:
         account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
     async def _require_owned_dividend(self, dividend_id: int) -> PortfolioDividend:
         row = await self._dividend_repo.get_by_id(dividend_id, user_id=self._user.id)
@@ -159,8 +159,8 @@ class PortfolioDividendService:
         Raises:
             ValueError: invalid `dividend_type`, missing required field
                 for the chosen type, or non-positive `quantity_at_record`.
-            PortfolioAccountNotFoundError: account missing or not owned.
-            TierFeatureUnavailableError: tier lacks `dividends` feature.
+            PortfolioAccountNotFound: account missing or not owned.
+            TierFeatureUnavailable: tier lacks `dividends` feature.
         """
         # Input validation -------------------------------------------------
         if dividend_type not in _VALID_DIVIDEND_TYPES:
@@ -347,7 +347,7 @@ class PortfolioDividendService:
             note=note,
         )
         if dividend is None:  # pragma: no cover — guarded above
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         await self._accrue_realized_pnl(
             account_id=account_id,
@@ -468,7 +468,7 @@ class PortfolioDividendService:
             note=full_note,
         )
         if dividend is None:  # pragma: no cover — guarded above
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         # Re-derive position from scaled lots.
         await self._reupsert_position_from_lots(

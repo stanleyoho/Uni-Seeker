@@ -7,7 +7,7 @@ as `accounts.py` / `trades.py`:
   spec §9 雙保險. Blocks FREE tier at the FastAPI dependency layer with
   ``403 feature_unavailable:dividends`` BEFORE the service is touched.
 - Service-level guard: `PortfolioDividendService._assert_dividends_feature`
-  is the second line — it raises `TierFeatureUnavailableError` if a programmer
+  is the second line — it raises `TierFeatureUnavailable` if a programmer
   ever forgets the dependency. We translate to the same 403 detail
   string so the frontend contract is identical regardless of which
   guard fires.
@@ -47,8 +47,8 @@ from app.schemas.holdings.dividend import (
 from app.services.portfolio import PortfolioDividendService
 from app.services.portfolio.dividend_service import PortfolioDividendNotFoundError
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    TierFeatureUnavailableError,
+    PortfolioAccountNotFound,
+    TierFeatureUnavailable,
 )
 
 router = APIRouter()
@@ -100,12 +100,12 @@ async def create_dividend(
             withholding_tax=body.withholding_tax,
             note=body.note,
         )
-    except PortfolioAccountNotFoundError as exc:
+    except PortfolioAccountNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.ACCOUNT_NOT_FOUND,
         ) from exc
-    except TierFeatureUnavailableError as exc:
+    except TierFeatureUnavailable as exc:
         # Defensive: the dependency-layer guard should have caught this
         # already. Keep the branch so the contract is total when
         # `enable_monetization` toggling diverges between layers.
@@ -207,7 +207,7 @@ async def update_dividend(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.DIVIDEND_NOT_FOUND,
         ) from exc
-    except TierFeatureUnavailableError as exc:
+    except TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),
@@ -246,7 +246,7 @@ async def delete_dividend(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail.DIVIDEND_NOT_FOUND,
         ) from exc
-    except TierFeatureUnavailableError as exc:
+    except TierFeatureUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail.feature_unavailable(exc.feature),

@@ -27,7 +27,7 @@ class F13FilerNotFoundError(F13ServiceError):
     case is also surfaced as `F13FilerNotFoundError` from the service layer
     on purpose, because leaking "exists but not yours" is itself
     information disclosure (same convention as
-    `PortfolioAccountNotFoundError`). API layer translates to 404.
+    `PortfolioAccountNotFound`). API layer translates to 404.
     """
 
 
@@ -84,7 +84,7 @@ class F13EdgarError(F13ServiceError):
 class F13TierFeatureUnavailableError(F13ServiceError):
     """User's tier does not have the requested boolean feature flag.
 
-    Distinct from the portfolio module's `TierFeatureUnavailableError` so
+    Distinct from the portfolio module's `TierFeatureUnavailable` so
     each module's API layer can attach its own error-detail prefix
     without cross-module imports. Keep `feature` attribute name in
     parity for shared exception handlers in Batch C.
@@ -98,7 +98,7 @@ class F13TierFeatureUnavailableError(F13ServiceError):
 class F13TierLimitExceededError(F13ServiceError):
     """User's tier numeric quota would be exceeded by this operation.
 
-    Mirrors `app.services.portfolio.exceptions.TierLimitExceededError` so
+    Mirrors `app.services.portfolio.exceptions.TierLimitExceeded` so
     the cross-module API exception handler (Batch C) can treat both
     families uniformly when convenient.
     """

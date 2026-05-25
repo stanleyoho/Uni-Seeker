@@ -288,7 +288,7 @@ async def get_filer(
 
     "Not subscribed" collapses to 404 by convention (information
     hiding) — same shape as the portfolio module's
-    `PortfolioAccountNotFoundError`.
+    `PortfolioAccountNotFound`.
     """
     svc = F13SubscriptionService(db, user)  # type: ignore[arg-type]
     if not await svc.get_subscription_status(filer_id):

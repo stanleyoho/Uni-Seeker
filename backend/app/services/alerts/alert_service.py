@@ -41,7 +41,7 @@ from app.repositories.alerts.alert_repo import AlertRuleRepo
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
     PortfolioServiceError,
-    TierLimitExceededError,
+    TierLimitExceeded,
 )
 
 if TYPE_CHECKING:
@@ -123,7 +123,7 @@ class AlertService:
             if limit is not None:
                 current = await self._repo.count_by_user(self._user.id)
                 if current >= limit:
-                    raise TierLimitExceededError(
+                    raise TierLimitExceeded(
                         limit_key="max_alert_rules",
                         current=current,
                         limit=limit,

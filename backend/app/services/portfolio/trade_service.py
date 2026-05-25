@@ -48,10 +48,10 @@ from app.repositories.portfolio import (
 )
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
-    PortfolioAccountNotFoundError,
-    PortfolioInsufficientSharesError,
-    PortfolioTradeNotFoundError,
-    TierLimitExceededError,
+    PortfolioAccountNotFound,
+    InsufficientShares,
+    PortfolioTradeNotFound,
+    TierLimitExceeded,
 )
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class PortfolioTradeService:
             return
         current = await self._trade_repo.count_by_user_this_month(self._user.id)
         if current >= limit:
-            raise TierLimitExceededError(
+            raise TierLimitExceeded(
                 limit_key="max_trades_per_month",
                 current=current,
                 limit=limit,
@@ -117,19 +117,19 @@ class PortfolioTradeService:
             return
         current = await self._position_repo.count_by_user(self._user.id)
         if current >= limit:
-            raise TierLimitExceededError(limit_key="max_positions", current=current, limit=limit)
+            raise TierLimitExceeded(limit_key="max_positions", current=current, limit=limit)
 
     # ── ownership helpers ──────────────────────────────────────────────
 
     async def _require_owned_account(self, account_id: int) -> None:
         account = await self._account_repo.get_by_id(account_id, user_id=self._user.id)
         if account is None:
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
     async def _require_owned_trade(self, trade_id: int) -> PortfolioTrade:
         trade = await self._trade_repo.get_by_id(trade_id, user_id=self._user.id)
         if trade is None:
-            raise PortfolioTradeNotFoundError(f"trade {trade_id} not found or not owned")
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
         return trade
 
     # ── public API ──────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ class PortfolioTradeService:
           6. Audit log.
 
         Raises:
-            PortfolioAccountNotFoundError, TierLimitExceededError, PortfolioInsufficientSharesError,
+            PortfolioAccountNotFound, TierLimitExceeded, InsufficientShares,
             ValueError (on invalid action / non-positive qty).
         """
         if action not in (_BUY, _SELL):
@@ -190,7 +190,7 @@ class PortfolioTradeService:
         # repo returns None only on wrong owner — already guarded above,
         # but keep a defensive branch.
         if trade is None:  # pragma: no cover
-            raise PortfolioAccountNotFoundError(f"account {account_id} not found or not owned")
+            raise PortfolioAccountNotFound(f"account {account_id} not found or not owned")
 
         if action == _BUY:
             await self._apply_buy_side(
@@ -254,7 +254,7 @@ class PortfolioTradeService:
 
         updated = await self._trade_repo.update(trade_id, user_id=self._user.id, **fields)
         if updated is None:  # pragma: no cover
-            raise PortfolioTradeNotFoundError(f"trade {trade_id} not found or not owned")
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
 
         # Wipe lots tied to this specific trade — they will be rebuilt
         # by the chronological replay.
@@ -300,7 +300,7 @@ class PortfolioTradeService:
 
         deleted = await self._trade_repo.delete(trade_id, user_id=self._user.id)
         if not deleted:  # pragma: no cover
-            raise PortfolioTradeNotFoundError(f"trade {trade_id} not found or not owned")
+            raise PortfolioTradeNotFound(f"trade {trade_id} not found or not owned")
         # Lots are cascaded by FK on portfolio_trades.id, but to be
         # safe against any future change to the FK we explicitly wipe
         # by trade_id too (idempotent).
@@ -384,7 +384,7 @@ class PortfolioTradeService:
                 )
             )
         except InsufficientSharesError as exc:
-            raise PortfolioInsufficientSharesError(str(exc)) from exc
+            raise InsufficientShares(str(exc)) from exc
 
         # Persist lot consumption in one bulk UPDATE.
         bulk: list[tuple[int, Decimal, bool]] = [
@@ -520,7 +520,7 @@ class PortfolioTradeService:
                     # Replay invariant violated: this means the user
                     # PATCHed history into an impossible state. Surface
                     # as domain error so the API layer can 422 back.
-                    raise PortfolioInsufficientSharesError(f"rebuild replay: {exc}") from exc
+                    raise InsufficientShares(f"rebuild replay: {exc}") from exc
                 accumulated_realized += sell.realized_pnl
                 # Mutate in_memory_lots in place to match what
                 # apply_sell returned.

@@ -76,7 +76,7 @@ async def _safe_count(coro_factory) -> int:
     block legitimate writes. Instead we return 0 here so the dependency
     layer is a no-op, and the service layer's mandatory second line
     re-checks against the real request session and raises
-    `TierLimitExceededError` if the quota is actually exhausted.
+    `TierLimitExceeded` if the quota is actually exhausted.
     """
     try:
         return await coro_factory()
