@@ -138,9 +138,7 @@ async def test_bulk_add_hits_free_tier_limit_returns_403(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_enable_monetization")
-async def test_pro_tier_no_limit_on_bulk(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_pro_tier_no_limit_on_bulk(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "bulkpro@x.tw", "bulkpro", tier=UserTier.PRO)
     syms = [f"PRO{i:02d}.TW" for i in range(15)]
     for s in syms:
