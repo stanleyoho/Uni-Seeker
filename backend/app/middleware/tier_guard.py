@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 from fastapi import Depends, HTTPException, status
 
 from app.auth import require_auth
@@ -16,7 +18,7 @@ _TIER_RANK: dict[UserTier, int] = {
 }
 
 
-def require_tier(min_tier: UserTier):
+def require_tier(min_tier: UserTier) -> Callable[..., Awaitable[User]]:
     """
     FastAPI dependency factory.
 
@@ -61,7 +63,7 @@ _RISK_RANK: dict[str, int] = {
 }
 
 
-def require_risk_tolerance(min_level: str):
+def require_risk_tolerance(min_level: str) -> Callable[..., Awaitable[User]]:
     """FastAPI dependency factory: gate access by user.risk_tolerance.
 
     Args:

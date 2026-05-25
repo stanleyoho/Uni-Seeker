@@ -58,7 +58,7 @@ class PerformanceResponse(BaseModel):
 _PE_ENGINE = None
 
 
-def _get_sync_engine():
+def _get_sync_engine() -> Any:
     """Return (and lazily build) a sync SQLAlchemy engine for prediction_engine."""
     global _PE_ENGINE
     if _PE_ENGINE is None:
@@ -96,7 +96,7 @@ async def save_prediction(req: SavePredictionRequest) -> SavePredictionResponse:
                 shap_values=req.shap_values,
             )
             sess.commit()
-            return pid
+            return int(pid)
 
     loop = asyncio.get_running_loop()
     pid = await loop.run_in_executor(None, _save)
@@ -152,8 +152,8 @@ async def resolve_prediction(
     return ResolvePredictionResponse(
         prediction_id=prediction_id,
         is_resolved=True,
-        error=result["error"],  # type: ignore[arg-type]
-        is_correct=result["is_correct"],  # type: ignore[arg-type]
+        error=result["error"],
+        is_correct=result["is_correct"],
     )
 
 
@@ -171,7 +171,8 @@ async def get_performance(
     def _query() -> dict[str, Any]:
         with Session(engine) as sess:
             store = PredictionStore(sess)
-            return store.get_performance_window(domain=domain, days=days)
+            result: dict[str, Any] = store.get_performance_window(domain=domain, days=days)
+            return result
 
     loop = asyncio.get_running_loop()
     stats = await loop.run_in_executor(None, _query)

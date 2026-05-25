@@ -181,7 +181,7 @@ async def evaluate_alert_rule(
             detail=detail.ALERT_RULE_NOT_FOUND,
         ) from exc
     await db.commit()
-    return AlertEvaluationResponse(**result)  # type: ignore[arg-type]
+    return AlertEvaluationResponse(**result)
 
 
 __all__ = ["router"]

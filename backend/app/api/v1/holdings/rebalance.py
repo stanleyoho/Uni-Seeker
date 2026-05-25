@@ -129,7 +129,7 @@ async def preview_rebalance(
         suggested_trades=[
             SuggestedTradeResponse(
                 symbol=t.symbol,
-                market=t.market,  # type: ignore[arg-type]  # str → Market via use_enum_values
+                market=t.market,  # str → Market via use_enum_values
                 action=t.action,
                 qty=t.qty,
                 estimated_price=t.estimated_price,

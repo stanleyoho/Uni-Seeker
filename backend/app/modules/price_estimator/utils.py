@@ -21,7 +21,7 @@ class ValuationUtils:
         try:
             cagr = (values[-1] / values[0]) ** (1 / n) - 1
             # Clamp growth between 2% and 15% to be realistic
-            return max(0.02, min(0.15, cagr))
+            return float(max(0.02, min(0.15, cagr)))
         except Exception:
             return 0.05
 

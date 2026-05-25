@@ -54,13 +54,15 @@ def init_sentry(
 
     Returns True if init succeeded, False if skipped (no DSN, or ENV=test).
     """
-    return _core_init_sentry(
-        service=service,
-        environment=environment,
-        release=release,
-        traces_sample_rate=traces_sample_rate,
-        profiles_sample_rate=profiles_sample_rate,
-        extra_integrations=extra_integrations,
-        drop_exception_classes=(ExpectedDriftAlertError,),
-        full_sample_paths=_FULL_SAMPLE_PATHS,
+    return bool(
+        _core_init_sentry(
+            service=service,
+            environment=environment,
+            release=release,
+            traces_sample_rate=traces_sample_rate,
+            profiles_sample_rate=profiles_sample_rate,
+            extra_integrations=extra_integrations,
+            drop_exception_classes=(ExpectedDriftAlertError,),
+            full_sample_paths=_FULL_SAMPLE_PATHS,
+        )
     )

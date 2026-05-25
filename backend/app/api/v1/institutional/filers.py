@@ -297,7 +297,7 @@ async def get_filer(
             detail=detail.F13_FILER_NOT_FOUND,
         )
     # Subscribed → fetch through the repo path the service holds.
-    filer = await svc._filer_repo.get_by_id(filer_id)  # type: ignore[attr-defined]
+    filer = await svc._filer_repo.get_by_id(filer_id)
     if filer is None:  # pragma: no cover - subscribed but row missing == invariant violation
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -16,18 +16,18 @@ def evaluate_condition(condition: Condition, indicator_values: dict[str, float |
         return False
     match condition.op:
         case "<":
-            return actual < condition.value
+            return bool(actual < condition.value)
         case ">":
-            return actual > condition.value
+            return bool(actual > condition.value)
         case "<=":
-            return actual <= condition.value
+            return bool(actual <= condition.value)
         case ">=":
-            return actual >= condition.value
+            return bool(actual >= condition.value)
         case "==":
-            return actual == condition.value
+            return bool(actual == condition.value)
         case "between":
             low, high = condition.value
-            return low <= actual <= high
+            return bool(low <= actual <= high)
         case _:
             return False
 
