@@ -16,7 +16,13 @@ from app.modules.financial_analysis.finmind_tw_provider import (
 
 
 def _row(date: str, origin_name: str, value: float) -> dict[str, object]:
-    return {"date": date, "stock_id": "2330", "type": "X", "origin_name": origin_name, "value": value}
+    return {
+        "date": date,
+        "stock_id": "2330",
+        "type": "X",
+        "origin_name": origin_name,
+        "value": value,
+    }
 
 
 # ── _parse_statements ────────────────────────────────────────────────────
@@ -94,9 +100,7 @@ def test_parse_statements_returns_sorted_desc() -> None:
 def test_parse_statements_caps_at_20_periods() -> None:
     """sorted_dates[:20] cap — 25 periods → only top 20 returned."""
     provider = FinMindTWFinancialProvider()
-    rows = [
-        _row(f"{2010 + i}-03-31", "營業收入合計", 1000.0 + i) for i in range(25)
-    ]
+    rows = [_row(f"{2010 + i}-03-31", "營業收入合計", 1000.0 + i) for i in range(25)]
     stmts = provider._parse_statements(rows, _INCOME_MAP)
     assert len(stmts) == 20
 

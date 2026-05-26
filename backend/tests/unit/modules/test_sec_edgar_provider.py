@@ -24,7 +24,6 @@ from app.modules.financial_analysis.sec_edgar_provider import (
     _cik_cache,
 )
 
-
 # ─────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────
@@ -333,9 +332,7 @@ def test_extract_statements_sorts_descending_and_caps_at_20() -> None:
     # Build 25 distinct quarterly periods.
     entries = []
     for year in range(2000, 2025):
-        entries.append(
-            {"frame": f"CY{year}Q1", "end": f"{year}-03-31", "val": float(year)}
-        )
+        entries.append({"frame": f"CY{year}Q1", "end": f"{year}-03-31", "val": float(year)})
     gaap = {"NetIncomeLoss": {"units": {"USD": entries}}}
 
     out = provider._extract_statements(

@@ -13,7 +13,6 @@ from app.models.enums import Market
 from app.models.industry import Industry
 from app.models.stock import Stock
 
-
 # ── GET /company/{symbol} ─────────────────────────────────────────────────
 
 
@@ -22,9 +21,7 @@ async def test_get_company_unknown_symbol_404(client: AsyncClient) -> None:
     assert resp.status_code == 404
 
 
-async def test_get_company_without_industry(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_company_without_industry(client: AsyncClient, db_session: AsyncSession) -> None:
     """Stock with no industry_id → response has industry=''."""
     s = Stock(symbol="2330", name="TSMC", market=Market.TW_TWSE)
     db_session.add(s)
@@ -39,9 +36,7 @@ async def test_get_company_without_industry(
     assert data["industry"] == ""
 
 
-async def test_get_company_with_industry(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_company_with_industry(client: AsyncClient, db_session: AsyncSession) -> None:
     """Stock with industry_id → response includes joined industry name."""
     ind = Industry(name="Semiconductor")
     db_session.add(ind)
@@ -72,17 +67,25 @@ async def test_update_info_creates_industry_and_updates_stock(
     await db_session.commit()
 
     fake_companies = [
-        type("Co", (), {
-            "symbol": "2330",
-            "short_name": "TSMC",
-            "industry_name": "Semiconductor",
-        })(),
+        type(
+            "Co",
+            (),
+            {
+                "symbol": "2330",
+                "short_name": "TSMC",
+                "industry_name": "Semiconductor",
+            },
+        )(),
         # 9999 doesn't exist in Stock — skipped
-        type("Co", (), {
-            "symbol": "9999",
-            "short_name": "Phantom",
-            "industry_name": "Ghost",
-        })(),
+        type(
+            "Co",
+            (),
+            {
+                "symbol": "9999",
+                "short_name": "Phantom",
+                "industry_name": "Ghost",
+            },
+        )(),
     ]
 
     with patch("app.api.v1.company.TWSECompanyProvider") as prov_cls:
@@ -111,16 +114,24 @@ async def test_update_info_reuses_existing_industry(
     await db_session.commit()
 
     fake_companies = [
-        type("Co", (), {
-            "symbol": "2330",
-            "short_name": "TSMC",
-            "industry_name": "Semiconductor",
-        })(),
-        type("Co", (), {
-            "symbol": "2454",
-            "short_name": "MediaTek",
-            "industry_name": "Semiconductor",
-        })(),
+        type(
+            "Co",
+            (),
+            {
+                "symbol": "2330",
+                "short_name": "TSMC",
+                "industry_name": "Semiconductor",
+            },
+        )(),
+        type(
+            "Co",
+            (),
+            {
+                "symbol": "2454",
+                "short_name": "MediaTek",
+                "industry_name": "Semiconductor",
+            },
+        )(),
     ]
 
     with patch("app.api.v1.company.TWSECompanyProvider") as prov_cls:
@@ -131,6 +142,7 @@ async def test_update_info_reuses_existing_industry(
     assert resp.json()["updated"] == 2
     # Both stocks point at the existing Industry row (no new row created)
     from sqlalchemy import select
+
     rows = (await db_session.execute(select(Industry))).scalars().all()
     semi_rows = [r for r in rows if r.name == "Semiconductor"]
     assert len(semi_rows) == 1

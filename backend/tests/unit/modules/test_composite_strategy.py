@@ -22,21 +22,17 @@ class _StubStrategy:
 
 
 def test_composite_requires_at_least_one_strategy() -> None:
-    try:
+    import pytest
+
+    with pytest.raises(ValueError, match="at least one"):
         CompositeStrategy(strategies=[])
-    except ValueError as exc:
-        assert "at least one" in str(exc)
-    else:
-        raise AssertionError("expected ValueError")
 
 
 def test_composite_rejects_invalid_mode() -> None:
-    try:
+    import pytest
+
+    with pytest.raises(ValueError, match="Invalid mode"):
         CompositeStrategy(strategies=[_StubStrategy("BUY")], mode="weird")
-    except ValueError as exc:
-        assert "Invalid mode" in str(exc)
-    else:
-        raise AssertionError("expected ValueError")
 
 
 def test_composite_default_mode_is_majority() -> None:
@@ -45,9 +41,7 @@ def test_composite_default_mode_is_majority() -> None:
 
 
 def test_composite_custom_name_used() -> None:
-    cs = CompositeStrategy(
-        strategies=[_StubStrategy("BUY")], mode="all", name="CustomName"
-    )
+    cs = CompositeStrategy(strategies=[_StubStrategy("BUY")], mode="all", name="CustomName")
     assert cs.config.name == "CustomName"
 
 
@@ -83,9 +77,7 @@ def test_all_mode_unanimous_sell() -> None:
 
 
 def test_all_mode_no_consensus_holds() -> None:
-    cs = CompositeStrategy(
-        strategies=[_StubStrategy("BUY"), _StubStrategy("SELL")], mode="all"
-    )
+    cs = CompositeStrategy(strategies=[_StubStrategy("BUY"), _StubStrategy("SELL")], mode="all")
     sig = cs.evaluate([1.0])
     assert sig.action == "HOLD"
     assert "No consensus" in sig.reason
@@ -137,9 +129,7 @@ def test_any_mode_falls_back_to_sell() -> None:
 
 
 def test_any_mode_all_hold_returns_hold() -> None:
-    cs = CompositeStrategy(
-        strategies=[_StubStrategy("HOLD"), _StubStrategy("HOLD")], mode="any"
-    )
+    cs = CompositeStrategy(strategies=[_StubStrategy("HOLD"), _StubStrategy("HOLD")], mode="any")
     sig = cs.evaluate([1.0])
     assert sig.action == "HOLD"
     assert "All HOLD" in sig.reason
