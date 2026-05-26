@@ -16,12 +16,12 @@ def _make_stmt(
     revenue_values: list[float] | None = None,
 ) -> pd.DataFrame:
     if columns is None:
-        columns = pd.DatetimeIndex(
-            [pd.Timestamp("2026-03-31"), pd.Timestamp("2025-12-31")]
-        )
+        columns = pd.DatetimeIndex([pd.Timestamp("2026-03-31"), pd.Timestamp("2025-12-31")])
     if revenue_values is None:
         revenue_values = [1_200_000.0, 1_100_000.0]
-    return pd.DataFrame({c: [v] for c, v in zip(columns, revenue_values, strict=True)}, index=[revenue_key])
+    return pd.DataFrame(
+        {c: [v] for c, v in zip(columns, revenue_values, strict=True)}, index=[revenue_key]
+    )
 
 
 def test_fetch_sync_extracts_quarterly_revenue() -> None:

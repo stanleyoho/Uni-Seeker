@@ -124,7 +124,7 @@ async def test_heatmap_top_n_caps_stocks_per_sector(
     semi = await _mk_industry(db_session, "Semiconductor")
     d = date(2026, 5, 1)
     # 4 stocks with varying change_percent
-    for i, (sym, chg) in enumerate([("A", 1.0), ("B", 5.0), ("C", -3.0), ("D", 0.5)]):
+    for sym, chg in [("A", 1.0), ("B", 5.0), ("C", -3.0), ("D", 0.5)]:
         s = await _mk_stock(db_session, sym, sym, semi.id)
         await _mk_price(db_session, s.id, d, close=100.0, change_pct=chg)
 
@@ -138,9 +138,7 @@ async def test_heatmap_top_n_caps_stocks_per_sector(
     assert top_syms == ["B", "C"]
 
 
-async def test_heatmap_market_filter(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_heatmap_market_filter(client: AsyncClient, db_session: AsyncSession) -> None:
     """market_filter=TW_TWSE excludes other-market stocks even if they have
     industry_id + change_percent."""
     semi = await _mk_industry(db_session, "Semiconductor")
