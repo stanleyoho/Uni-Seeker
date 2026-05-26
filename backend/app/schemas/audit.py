@@ -57,6 +57,13 @@ class AuditLogEntry(BaseModel):
     created_at: datetime = Field(
         description="UTC timestamp the event was recorded.",
     )
+    # DRIFT-DEMO-DELETE-ME: deliberately add a field without regen'ing
+    # the frontend schema.d.ts. The schema-gate workflow should detect
+    # the drift and fail this PR.
+    drift_demo_field: str = Field(
+        default="demo",
+        description="E2E-1 drift demo field — DELETE before merging.",
+    )
 
     @classmethod
     def from_orm_row(cls, row: AuditLog) -> AuditLogEntry:
