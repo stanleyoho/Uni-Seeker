@@ -8,6 +8,8 @@ import { IndicatorPanel } from "./components/indicator-panel";
 import { ValuationPanel } from "./components/valuation-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
+
+type I18nMessages = ReturnType<typeof useI18n>["t"];
 import { StatCard } from "@/components/ui/stat-card";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { ScoreBar } from "@/components/ui/score-bar";
@@ -24,7 +26,7 @@ const TIMEFRAMES = [
   { key: "500", label: "2Y" },
 ];
 
-function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any> }) {
+function MarginPanel({ margin, t }: { margin: MarginData; t: I18nMessages }) {
   const s = t.stock;
   return (
     <GlassPanel title={s.margin}>
@@ -84,7 +86,7 @@ function MarginPanel({ margin, t }: { margin: MarginData; t: Record<string, any>
   );
 }
 
-function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<string, any> }) {
+function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: I18nMessages }) {
   const formatRevenue = (v: number | string) => {
     const val = typeof v === "string" ? parseFloat(v) : v;
     if (isNaN(val)) return "-";

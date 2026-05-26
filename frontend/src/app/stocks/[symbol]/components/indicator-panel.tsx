@@ -2,14 +2,17 @@
 
 import { useState, useMemo, useCallback } from "react";
 import type { StockPrice } from "@/lib/api-client";
+import { useI18n } from "@/i18n/context";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+type I18nMessages = ReturnType<typeof useI18n>["t"];
+
 interface IndicatorPanelProps {
   prices: StockPrice[];
-  t: Record<string, any>;
+  t: I18nMessages;
 }
 
 interface IndicatorConfig {

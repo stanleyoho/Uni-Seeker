@@ -9,7 +9,13 @@ import {
 } from "@/components/stratos/primitives";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { useRunBacktest, useStrategies } from "@/hooks/use-backtest";
-import { runAutoDiscovery } from "@/lib/api-client";
+import {
+  runAutoDiscovery,
+  type AutoDiscoveryResponse,
+  type AutoDiscoveryPhaseRow,
+  type BacktestResult,
+} from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/type-guards";
 import { LoadingSpinner } from "@/components/ui/loading";
 import {
   AreaChart,
@@ -35,9 +41,16 @@ const labelCls =
 /*  BacktestResults — reused from original (manual mode)               */
 /* ------------------------------------------------------------------ */
 
-function BacktestResults({ results }: { results: any }) {
+function BacktestResults({ results }: { results: BacktestResult }) {
   const m = results.metrics;
   if (!m) return null;
+
+  // Backend ships Decimal-as-string for all metric fields -- coerce once.
+  const totalReturn = Number(m.total_return);
+  const maxDrawdown = Number(m.max_drawdown);
+  const sharpe = Number(m.sharpe_ratio);
+  const winRate = Number(m.win_rate);
+  const profitFactor = Number(m.profit_factor);
 
   const kpiData: {
     label: string;
@@ -46,32 +59,30 @@ function BacktestResults({ results }: { results: any }) {
   }[] = [
     {
       label: "Total Return",
-      value: `${m.total_return.toFixed(2)}%`,
-      direction: m.total_return > 0 ? "up" : "down",
+      value: `${totalReturn.toFixed(2)}%`,
+      direction: totalReturn > 0 ? "up" : "down",
     },
     {
       label: "Max Drawdown",
-      value: `${m.max_drawdown.toFixed(2)}%`,
+      value: `${maxDrawdown.toFixed(2)}%`,
       direction: "down",
     },
     {
       label: "Sharpe Ratio",
-      value: m.sharpe_ratio.toFixed(2),
-      direction: m.sharpe_ratio > 1 ? "up" : "flat",
+      value: sharpe.toFixed(2),
+      direction: sharpe > 1 ? "up" : "flat",
     },
     {
       label: "Win Rate",
-      value: `${m.win_rate.toFixed(1)}%`,
-      direction: m.win_rate > 50 ? "up" : "down",
+      value: `${winRate.toFixed(1)}%`,
+      direction: winRate > 50 ? "up" : "down",
     },
   ];
 
-  const chartData = (results.equity_curve || []).map(
-    (val: number, i: number) => ({
-      day: i,
-      equity: Math.round(val),
-    }),
-  );
+  const chartData = (results.equity_curve || []).map((val, i) => ({
+    day: i,
+    equity: Math.round(Number(val)),
+  }));
 
   return (
     <GlassPanel title="BACKTESTING SIMULATION RESULTS">
@@ -96,7 +107,7 @@ function BacktestResults({ results }: { results: any }) {
             PROFIT FACTOR
           </p>
           <p className="text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
-            {m.profit_factor.toFixed(2)}
+            {profitFactor.toFixed(2)}
           </p>
         </div>
         <div className="bg-[var(--bg-secondary)] p-4 border border-[var(--border-subtle)]">
@@ -205,7 +216,7 @@ function BacktestResults({ results }: { results: any }) {
                 </tr>
               </thead>
               <tbody>
-                {results.trades.map((t: any, i: number) => (
+                {results.trades.map((t, i) => (
                   <tr
                     key={i}
                     className="border-b border-[var(--border-subtle)] hover:bg-[var(--card-hover)]"
@@ -244,7 +255,7 @@ function BacktestResults({ results }: { results: any }) {
 /*  AutoDiscoveryResults                                               */
 /* ------------------------------------------------------------------ */
 
-function AutoDiscoveryResults({ data }: { data: any }) {
+function AutoDiscoveryResults({ data }: { data: AutoDiscoveryResponse | null }) {
   if (!data) return null;
 
   const best = data.best_overall;
@@ -255,7 +266,7 @@ function AutoDiscoveryResults({ data }: { data: any }) {
 
   const outperform =
     best && buyHold
-      ? (best.total_return - (buyHold.total_return ?? 0)).toFixed(1)
+      ? ((best.total_return ?? 0) - (buyHold.total_return ?? 0)).toFixed(1)
       : null;
 
   return (
@@ -360,7 +371,7 @@ function PhaseTable({
   phaseNum,
 }: {
   title: string;
-  rows: any[];
+  rows: AutoDiscoveryPhaseRow[];
   phaseNum: number;
 }) {
   if (!rows || rows.length === 0) return null;
@@ -402,7 +413,7 @@ function PhaseTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((r: any, i: number) => {
+            {rows.map((r, i) => {
               const name =
                 r.strategy_name || r.strategy || r.name || "Unknown";
               const params = r.strategy_params || r.params || {};
@@ -565,7 +576,7 @@ export default function BacktestPage() {
 
   // Auto discovery state
   const [autoLoading, setAutoLoading] = useState(false);
-  const [autoResults, setAutoResults] = useState<any>(null);
+  const [autoResults, setAutoResults] = useState<AutoDiscoveryResponse | null>(null);
   const [autoError, setAutoError] = useState<string | null>(null);
 
   // Manual backtest
@@ -601,8 +612,8 @@ export default function BacktestPage() {
         end_date: endDate || null,
       });
       setAutoResults(res);
-    } catch (err: any) {
-      setAutoError(err?.message || "Auto discovery failed");
+    } catch (err: unknown) {
+      setAutoError(getErrorMessage(err) || "Auto discovery failed");
     } finally {
       setAutoLoading(false);
     }
