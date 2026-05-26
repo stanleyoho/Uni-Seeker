@@ -1,0 +1,88 @@
+name: External API Smoke (Nightly)
+
+# Hits REAL upstream services (FinMind public datasets, yfinance, Stripe
+# signature math) to detect silent schema drift before it becomes a prod 500.
+#
+# IMPORTANT: These tests are flakier than unit tests — they depend on external
+# services. A red run does NOT necessarily mean our code broke; it may mean
+# FinMind / Yahoo / Stripe shipped a breaking change, or transient upstream
+# outage. Triage failures via the workflow's Telegram (or job log) output
+# before reaching for a revert.
+
+on:
+  schedule:
+    # 03:00 UTC daily = 11:00 Asia/Taipei. Off-peak for TWSE / Yahoo.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Backend depends on private AAE repo (see backend-ci.yml). The smoke
+      # tests don't actually import AAE modules, but `uv pip install -e .`
+      # resolves the full dep graph, so we still need the deploy key.
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv pip install --system -e ".[dev]"
+
+      - name: Run external API smoke tests
+        id: smoke
+        working-directory: backend
+        env:
+          # JWT secret is required at import time by app.auth.jwt. Smoke tests
+          # don't touch auth, but importing app.modules.billing.stripe_service
+          # transitively pulls the app namespace.
+          UNI_JWT_SECRET_KEY: ci-smoke-secret-do-not-use-in-prod
+          # If this is unset, the Stripe smoke test self-skips. Provide any
+          # non-empty string in repo secrets to enable signature verification.
+          UNI_STRIPE_WEBHOOK_SECRET: ${{ secrets.UNI_STRIPE_WEBHOOK_SECRET }}
+        run: |
+          # Bypass pyproject's `--ignore=tests/external_smoke` and disable
+          # coverage (these tests don't aim to cover app/, they just probe
+          # upstream schemas).
+          uv run pytest tests/external_smoke/ -v \
+            --override-ini="addopts=" \
+            --override-ini="testpaths=tests/external_smoke" \
+            -p no:cacheprovider
+
+      - name: Notify Telegram on failure
+        # Only fire when the smoke step itself failed AND the bot token is set
+        # in repo secrets. If either condition fails we silently skip — CI
+        # will already be red, which is enough signal for a manual check.
+        if: failure() && steps.smoke.outcome == 'failure'
+        env:
+          TG_TOKEN: ${{ secrets.UNI_TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.UNI_TG_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
+            echo "::warning::UNI_TG_BOT_TOKEN or UNI_TG_CHAT_ID not set — skipping Telegram alert."
+            echo "::warning::CI is red. Triage manually: $RUN_URL"
+            exit 0
+          fi
+          MSG="🚨 Uni-Seeker external API smoke FAILED%0A%0AOne of FinMind / yfinance / Stripe drifted (or upstream outage).%0A%0ARun: ${RUN_URL}"
+          curl -sS -X POST \
+            "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT_ID}" \
+            -d "text=${MSG}" \
+            -d "disable_web_page_preview=true" \
+            || echo "::warning::Telegram POST failed; CI still red for manual triage."

@@ -72,6 +72,11 @@ addopts = [
     # app/services/institutional/cusip_backfill_job, and
     # app/api/v1/{backtest,low_base,predictions} where coverage dipped.
     "--cov-fail-under=70",
+    # tests/external_smoke/ hits REAL upstream APIs (FinMind / yfinance /
+    # Stripe sig math). They are flakier than unit tests and only run from
+    # the nightly external-api-smoke.yml workflow. Explicitly excluded from
+    # the regular suite so a TWSE outage can't red backend-ci.
+    "--ignore=tests/external_smoke",
 ]
 markers = [
     "slow: marks tests as slow",
