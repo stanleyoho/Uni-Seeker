@@ -105,3 +105,65 @@ async def test_screen_empty_result(app_with_screener_data) -> None:
         )
         assert resp.status_code == 200
         assert resp.json()["total"] == 0
+
+
+# ── GET /presets + POST /presets/{key} ────────────────────────────────────
+
+
+async def test_list_presets_returns_array(app_with_screener_data) -> None:
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/screener/presets")
+    assert resp.status_code == 200
+    items = resp.json()
+    assert isinstance(items, list)
+    assert len(items) >= 1
+    for p in items:
+        assert "key" in p
+        assert "name_zh" in p
+        assert "sort_by" in p
+
+
+async def test_run_unknown_preset_404(app_with_screener_data) -> None:
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post("/api/v1/screener/presets/no_such_preset")
+    assert resp.status_code == 404
+    assert "not found" in resp.json()["message"]
+
+
+async def test_run_real_preset_returns_response(app_with_screener_data) -> None:
+    """Use the first registered preset against seeded stocks."""
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        presets_resp = await client.get("/api/v1/screener/presets")
+        presets = presets_resp.json()
+        assert presets, "no presets registered — cannot exercise endpoint"
+        first_key = presets[0]["key"]
+
+        resp = await client.post(f"/api/v1/screener/presets/{first_key}?limit=5")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "results" in data
+    assert "total" in data
+    assert len(data["results"]) <= 5
+
+
+async def test_screen_with_market_filter(app_with_screener_data) -> None:
+    """market_filter narrows the result set to the TW_TWSE seeded stocks."""
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/screener/screen",
+            json={
+                "market": "TW_TWSE",
+                "conditions": [
+                    {"indicator": "RSI", "params": {"period": 14}, "op": "<", "value": 100}
+                ],
+                "limit": 50,
+            },
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    # All seeded stocks are TW_TWSE so should pass the filter
+    assert data["total"] >= 1
