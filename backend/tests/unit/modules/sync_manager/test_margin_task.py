@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +54,8 @@ async def test_run_no_active_stocks(db_session: AsyncSession) -> None:
 
 async def test_run_skip_already_up_to_date(db_session: AsyncSession) -> None:
     stock = await _add_stock(db_session)
-    today = datetime.now().date()
+    # Match production: today computed in Asia/Taipei (see sync_manager/tasks/margin.py).
+    today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
     db_session.add(
         SyncState(
             dataset="margin",
