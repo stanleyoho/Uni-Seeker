@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 type Theme = "dark" | "light" | "system";
 
@@ -16,15 +23,48 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
+const THEME_STORAGE_KEY = "uni-seeker-theme";
 
-  useEffect(() => {
-    // Load saved theme
-    const saved = localStorage.getItem("uni-seeker-theme") as Theme | null;
-    if (saved) setThemeState(saved);
-  }, []);
+function readStoredTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  try {
+    const saved = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+    return saved ?? "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+// Subscribe to other tabs writing the same key (and to our own
+// programmatic writes via the synthetic event below).
+function subscribeStoredTheme(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener("uni-seeker:theme-change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("uni-seeker:theme-change", callback);
+  };
+}
+
+// Server snapshot must match the SSR-rendered HTML to avoid hydration
+// mismatch; the user's saved preference is only applied after the first
+// client-only re-render that `useSyncExternalStore` triggers.
+function getServerSnapshot(): Theme {
+  return "dark";
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // useSyncExternalStore replaces "setState-in-effect to pull from
+  // localStorage" with a single subscription, which is the official
+  // React 19 recommendation cited in the
+  // react-hooks/set-state-in-effect docs.
+  const theme = useSyncExternalStore(
+    subscribeStoredTheme,
+    readStoredTheme,
+    getServerSnapshot,
+  );
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     // Resolve system theme
@@ -50,10 +90,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-theme", resolvedTheme);
   }, [resolvedTheme]);
 
-  const setTheme = (t: Theme) => {
-    setThemeState(t);
-    localStorage.setItem("uni-seeker-theme", t);
-  };
+  const setTheme = useCallback((t: Theme) => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, t);
+    } catch {
+      /* localStorage may be unavailable in private mode */
+    }
+    // Notify our own subscribeStoredTheme listeners (the native
+    // `storage` event only fires for *other* tabs).
+    window.dispatchEvent(new Event("uni-seeker:theme-change"));
+  }, []);
 
   return (
     <ThemeContext value={{ theme, resolvedTheme, setTheme }}>

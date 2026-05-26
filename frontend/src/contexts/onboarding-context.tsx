@@ -84,12 +84,21 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   // commits (we set it synchronously, but React batches state updates).
   const [welcomeHandled, setWelcomeHandled] = useState(false);
 
-  /* -------- Welcome modal trigger: fires when auth resolves -------- */
+  /* -------- Welcome modal trigger: fires when auth resolves --------
+   *
+   * On logout we close the modal and reset the in-session guard. The
+   * rule flags the synchronous setState here, but the alternative
+   * (derive welcomeOpen entirely from auth + localStorage) requires
+   * reading localStorage in render -- impure under react-hooks/purity.
+   * The auth transition is a genuine external-state subscription, just
+   * not via the addEventListener shape the rule recognises.
+   */
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       // Logged out → never show. Reset the in-session guard so a fresh
       // login attempt can trigger the modal again.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- close modal in response to external auth transition (logout)
       setWelcomeOpen(false);
       setWelcomeHandled(false);
       return;

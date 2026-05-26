@@ -31,6 +31,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectCountRef = useRef(0);
   const reconnectTimerRef = useRef<NodeJS.Timeout>(undefined);
+  // Forward-ref so the WebSocket `onclose` handler can invoke `connect`
+  // without referencing the binding before it's declared
+  // (react-hooks/immutability) and without pinning a stale closure.
+  const connectRef = useRef<() => void>(() => {});
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<unknown | null>(null);
 
@@ -62,7 +66,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       if (reconnectCountRef.current < maxReconnects && enabled) {
         reconnectTimerRef.current = setTimeout(() => {
           reconnectCountRef.current++;
-          connect();
+          connectRef.current();
         }, reconnectInterval);
       }
     };
@@ -73,6 +77,12 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
     wsRef.current = ws;
   }, [url, channel, enabled, onMessage, reconnectInterval, maxReconnects]);
+
+  // Keep the indirection target in sync with the latest `connect`
+  // (ref must only be mutated outside render -- react-hooks/refs).
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   useEffect(() => {
     connect();

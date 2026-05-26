@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { type ScreenCondition } from "@/lib/api-client";
 
 const STORAGE_KEY = "uni-seeker-alert-rules";
+const CHANGE_EVENT = "uni-seeker:alert-rules-change";
 
 export interface AlertRule {
   id: string;
@@ -12,51 +13,81 @@ export interface AlertRule {
   is_active: boolean;
 }
 
-function loadRules(): AlertRule[] {
-  if (typeof window === "undefined") return [];
+const EMPTY_RULES: AlertRule[] = [];
+
+// useSyncExternalStore requires getSnapshot to return a referentially
+// stable value when the underlying data hasn't changed; otherwise React
+// will spin in an infinite re-render loop. Cache the parsed result
+// against the raw localStorage string.
+let cachedRaw: string | null = null;
+let cachedRules: AlertRule[] = EMPTY_RULES;
+
+function readRules(): AlertRule[] {
+  if (typeof window === "undefined") return EMPTY_RULES;
+  let raw: string | null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    raw = window.localStorage.getItem(STORAGE_KEY);
   } catch {
-    return [];
+    return EMPTY_RULES;
   }
+  if (raw === cachedRaw) return cachedRules;
+  cachedRaw = raw;
+  if (!raw) {
+    cachedRules = EMPTY_RULES;
+    return cachedRules;
+  }
+  try {
+    cachedRules = JSON.parse(raw) as AlertRule[];
+  } catch {
+    cachedRules = EMPTY_RULES;
+  }
+  return cachedRules;
 }
 
-function saveRules(rules: AlertRule[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rules));
+function subscribeRules(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(CHANGE_EVENT, callback);
+  };
+}
+
+const getServerSnapshot = (): AlertRule[] => EMPTY_RULES;
+
+function writeRules(rules: AlertRule[]) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rules));
+  } catch {
+    /* quota / private mode */
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export function useNotifications() {
-  const [rules, setRules] = useState<AlertRule[]>([]);
-
-  useEffect(() => {
-    setRules(loadRules());
-  }, []);
+  // Drive `rules` from a localStorage subscription rather than
+  // setState-in-effect bootstrap (avoids react-hooks/set-state-in-effect).
+  const rules = useSyncExternalStore(
+    subscribeRules,
+    readRules,
+    getServerSnapshot,
+  );
 
   const addRule = useCallback((rule: AlertRule) => {
-    setRules((prev) => {
-      const next = [...prev, rule];
-      saveRules(next);
-      return next;
-    });
+    writeRules([...readRules(), rule]);
   }, []);
 
   const removeRule = useCallback((id: string) => {
-    setRules((prev) => {
-      const next = prev.filter((r) => r.id !== id);
-      saveRules(next);
-      return next;
-    });
+    writeRules(readRules().filter((r) => r.id !== id));
   }, []);
 
   const toggleRule = useCallback((id: string) => {
-    setRules((prev) => {
-      const next = prev.map((r) =>
-        r.id === id ? { ...r, is_active: !r.is_active } : r
-      );
-      saveRules(next);
-      return next;
-    });
+    writeRules(
+      readRules().map((r) =>
+        r.id === id ? { ...r, is_active: !r.is_active } : r,
+      ),
+    );
   }, []);
 
   return { rules, addRule, removeRule, toggleRule };
