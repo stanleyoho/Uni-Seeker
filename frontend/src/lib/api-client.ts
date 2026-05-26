@@ -502,119 +502,28 @@ export async function fetchValuationEstimates(symbol: string): Promise<Valuation
 }
 
 // ---------------------------------------------------------------------------
-// Journal — Types
+// Journal — Types (generated schemas, E2E-1 W8)
+//
+// Backend journal router (backend/app/api/v1/journal.py) was previously hidden
+// from OpenAPI (include_in_schema=False). W8 flipped that flag so journal
+// endpoints are now part of the contract-gate workflow. Schema names use
+// the `app__schemas__journal__*` qualified form because `AccountResponse`,
+// `PositionResponse` and `TradeResponse` collide with the holdings module's
+// same-named Pydantic classes — FastAPI auto-namespaces to disambiguate.
 // ---------------------------------------------------------------------------
 
-export interface JournalAccount {
-  id: number;
-  name: string;
-  broker: string | null;
-  market: "TW" | "US" | "CRYPTO";
-  currency: string;
-  description: string | null;
-  created_at: string;
-}
-
-export interface JournalPosition {
-  id: number;
-  account_id: number;
-  symbol: string;
-  market: string;
-  currency: string;
-  quantity: string;        // Decimal as string from backend
-  avg_cost_fifo: string | null;
-  total_cost: string | null;
-  realized_pnl: string;
-  is_closed: boolean;
-}
-
-export interface JournalAccountDetail {
-  account: JournalAccount;
-  positions: JournalPosition[];
-}
-
-export interface JournalTrade {
-  id: number;
-  account_id: number;
-  symbol: string;
-  market: string;
-  action: "BUY" | "SELL" | "DIVIDEND" | "SPLIT";
-  date: string;
-  price: string | null;
-  quantity: string | null;
-  fee: string;
-  tax: string;
-  trade_fx_rate: string | null;
-  tags: string[];
-  note: string | null;
-  created_at: string;
-}
-
-export interface JournalTradeListResponse {
-  total: number;
-  items: JournalTrade[];
-}
-
-export interface JournalTradeCreate {
-  symbol: string;
-  market: "TW" | "US" | "CRYPTO";
-  action: "BUY" | "SELL" | "DIVIDEND" | "SPLIT";
-  date: string;
-  price?: string | null;
-  quantity?: string | null;
-  fee?: string;
-  tax?: string;
-  trade_fx_rate?: string | null;
-  tags?: string[];
-  note?: string | null;
-  split_ratio?: string | null;
-}
-
-export interface JournalAccountCreate {
-  name: string;
-  broker?: string | null;
-  market: "TW" | "US" | "CRYPTO";
-  currency: "TWD" | "USD" | "USDT" | "BTC" | "ETH";
-  description?: string | null;
-}
-
-export interface JournalGroupMember {
-  account_id: number;
-  target_weight: string | null;
-  account: JournalAccount;
-}
-
-export interface JournalGroup {
-  id: number;
-  name: string;
-  description: string | null;
-  base_currency: string;
-  members: JournalGroupMember[];
-}
-
-export interface JournalAllocationRule {
-  id: number;
-  symbol: string;
-  target_weight: string;
-  lower_threshold: string;
-  upper_threshold: string;
-  is_active: boolean;
-}
-
-export interface JournalRebalanceAlert {
-  scope: "account" | "group";
-  scope_id: number;
-  scope_name: string;
-  symbol: string;
-  current_weight: string;
-  target_weight: string;
-  deviation: string;    // positive = over, negative = under
-  direction: "over" | "under";
-}
-
-export interface JournalAlertsResponse {
-  alerts: JournalRebalanceAlert[];
-}
+export type JournalAccount = Schemas["app__schemas__journal__AccountResponse"];
+export type JournalPosition = Schemas["app__schemas__journal__PositionResponse"];
+export type JournalAccountDetail = Schemas["AccountDetailResponse"];
+export type JournalTrade = Schemas["app__schemas__journal__TradeResponse"];
+export type JournalTradeListResponse = Schemas["TradeListResponse"];
+export type JournalTradeCreate = Schemas["TradeCreate"];
+export type JournalAccountCreate = Schemas["AccountCreate"];
+export type JournalGroupMember = Schemas["GroupMemberResponse"];
+export type JournalGroup = Schemas["GroupResponse"];
+export type JournalAllocationRule = Schemas["AllocationRuleResponse"];
+export type JournalRebalanceAlert = Schemas["RebalanceAlert"];
+export type JournalAlertsResponse = Schemas["AlertsResponse"];
 
 // ---------------------------------------------------------------------------
 // Journal — API functions
@@ -667,12 +576,9 @@ export async function fetchJournalGroup(id: number): Promise<JournalGroup> {
   return apiFetch<JournalGroup>(`${API_BASE}/journal/groups/${id}`);
 }
 
-export async function createJournalGroup(body: {
-  name: string;
-  description?: string | null;
-  base_currency?: string;
-  members?: { account_id: number; target_weight?: string | null }[];
-}): Promise<JournalGroup> {
+export type JournalGroupCreate = Schemas["GroupCreate"];
+
+export async function createJournalGroup(body: JournalGroupCreate): Promise<JournalGroup> {
   return apiFetch<JournalGroup>(`${API_BASE}/journal/groups`, {
     method: "POST",
     body: JSON.stringify(body),
@@ -788,19 +694,23 @@ export type HoldingDividendType = "CASH" | "STOCK";
 
 // ── Accounts ───────────────────────────────────────────────────────────────
 
-export type HoldingAccount = Schemas["AccountResponse"];
+// NOTE: Holdings' AccountResponse / TradeResponse / PositionResponse collide
+// with the journal module's same-named Pydantic classes (W8 exposed journal
+// to OpenAPI). FastAPI auto-namespaces colliding schemas to their full module
+// path, so we use the qualified holdings name here.
+export type HoldingAccount = Schemas["app__schemas__holdings__account__AccountResponse"];
 export type HoldingAccountCreateRequest = Schemas["AccountCreateRequest"];
 export type HoldingAccountUpdateRequest = Schemas["AccountUpdateRequest"];
 
 // ── Trades ─────────────────────────────────────────────────────────────────
 
-export type HoldingTrade = Schemas["TradeResponse"];
+export type HoldingTrade = Schemas["app__schemas__holdings__trade__TradeResponse"];
 export type HoldingTradeCreateRequest = Schemas["TradeCreateRequest"];
 export type HoldingTradeUpdateRequest = Schemas["TradeUpdateRequest"];
 
 // ── Positions (read-only, derived) ─────────────────────────────────────────
 
-export type HoldingPosition = Schemas["PositionResponse"];
+export type HoldingPosition = Schemas["app__schemas__holdings__position__PositionResponse"];
 export type HoldingPositionListResponse = Schemas["PositionListResponse"];
 
 // ── Summary ────────────────────────────────────────────────────────────────

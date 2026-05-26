@@ -40,17 +40,17 @@ export default function GroupDetailPage() {
           {group.name}
         </h2>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-          基準幣別：{group.base_currency} · {group.members.length} 個帳戶
+          基準幣別：{group.base_currency} · {group.members?.length ?? 0} 個帳戶
         </div>
       </div>
 
       {/* Member Accounts */}
       <GlassPanel title="成員帳戶">
-        {group.members.length === 0 ? (
+        {(group.members?.length ?? 0) === 0 ? (
           <div style={{ fontSize: 13, color: "var(--text-muted)" }}>尚無帳戶成員</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {group.members.map((m) => (
+            {(group.members ?? []).map((m) => (
               <Link key={m.account_id} href={`/journal/accounts/${m.account_id}`}>
                 <div
                   style={{
