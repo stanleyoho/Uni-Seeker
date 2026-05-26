@@ -56,9 +56,18 @@ class StripeService:
         except stripe.error.SignatureVerificationError as exc:
             raise ValueError("Invalid webhook signature") from exc
 
-        event_type: str = event["type"]
-        event_id: str | None = event.get("id")
-        obj = event["data"]["object"]
+        # stripe.Webhook.construct_event returns a `stripe.Event` (StripeObject),
+        # which supports __getitem__/__contains__ but NOT `.get()` in stripe
+        # SDK 15.x — unit tests mock event as plain dict so this had been
+        # silently passing tests while breaking real webhook traffic.
+        # Normalise to dict at the boundary so `.get()` below behaves. The
+        # isinstance check tolerates the existing unit-test mock (which
+        # returns a plain dict from construct_event).
+        event_dict = event if isinstance(event, dict) else event.to_dict_recursive()
+
+        event_type: str = event_dict["type"]
+        event_id: str | None = event_dict.get("id")
+        obj = event_dict["data"]["object"]
 
         if event_type == "checkout.session.completed":
             meta = obj.get("metadata", {})
