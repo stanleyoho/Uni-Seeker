@@ -77,7 +77,7 @@ export function ValuationPanel({ valuation, currentPrice }: ValuationPanelProps)
                 direction={discount >= 0 ? "up" : "down"}
               />
               <p className="mt-3 text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider leading-relaxed">
-                Based on a weighted average of {comp.details.models_used?.join(", ")} models.
+                Based on a weighted average of {(comp.details.models_used as string[] | undefined)?.join(", ")} models.
               </p>
             </div>
             

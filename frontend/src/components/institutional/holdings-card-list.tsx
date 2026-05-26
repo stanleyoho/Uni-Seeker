@@ -79,8 +79,10 @@ const SCROLL_CONTAINER_HEIGHT = "70vh";
 /*  Put/Call badge — shared visual with the desktop table              */
 /* ------------------------------------------------------------------ */
 
-function PutCallBadge({ value }: { value: "PUT" | "CALL" | null }) {
-  if (!value) return null;
+// Backend types F13HoldingResponse.put_call as `string | null` (loose).
+// Render only the known PUT/CALL labels; anything else degrades to null.
+function PutCallBadge({ value }: { value: string | null }) {
+  if (value !== "PUT" && value !== "CALL") return null;
   const color = value === "PUT" ? "var(--stock-down)" : "var(--stock-up)";
   return (
     <span
