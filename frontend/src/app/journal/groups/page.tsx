@@ -19,7 +19,9 @@ function CreateGroupForm({ onDone }: { onDone: () => void }) {
   async function handleCreate() {
     if (!name.trim()) { setError("請輸入群組名稱"); return; }
     try {
-      await createGroup.mutateAsync({ name: name.trim() });
+      // base_currency / members are required on the generated GroupCreate
+      // schema (Pydantic default values are still emitted as required props).
+      await createGroup.mutateAsync({ name: name.trim(), base_currency: "TWD", members: [] });
       onDone();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "建立失敗");
@@ -86,7 +88,7 @@ export default function GroupsPage() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: "var(--foreground)" }}>{g.name}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                      {g.members.length} 個帳戶 · {g.base_currency}
+                      {g.members?.length ?? 0} 個帳戶 · {g.base_currency}
                     </div>
                   </div>
                   <span style={{ color: "var(--text-muted)" }}>→</span>

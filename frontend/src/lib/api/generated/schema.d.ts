@@ -1198,6 +1198,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Accounts */
+        get: operations["list_accounts_api_v1_journal_accounts_get"];
+        put?: never;
+        /** Create Account */
+        post: operations["create_account_api_v1_journal_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Account */
+        get: operations["get_account_api_v1_journal_accounts__account_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/accounts/{account_id}/trades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Trades */
+        get: operations["list_trades_api_v1_journal_accounts__account_id__trades_get"];
+        put?: never;
+        /** Add Trade */
+        post: operations["add_trade_api_v1_journal_accounts__account_id__trades_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Groups */
+        get: operations["list_groups_api_v1_journal_groups_get"];
+        put?: never;
+        /** Create Group */
+        post: operations["create_group_api_v1_journal_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Group */
+        get: operations["get_group_api_v1_journal_groups__group_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/accounts/{account_id}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Account Allocation */
+        post: operations["set_account_allocation_api_v1_journal_accounts__account_id__allocation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alerts
+         * @description Return all triggered rebalance alerts across all accounts.
+         *
+         *     NOTE: Phase 1 uses total_cost as proxy for market value (no live price feed yet).
+         *     Live market prices will be integrated in a future phase.
+         */
+        get: operations["get_alerts_api_v1_journal_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/holdings/accounts": {
         parameters: {
             query?: never;
@@ -2427,6 +2555,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountCreate */
+        AccountCreate: {
+            /** Name */
+            name: string;
+            /** Broker */
+            broker?: string | null;
+            /**
+             * Market
+             * @enum {string}
+             */
+            market: "TW" | "US" | "CRYPTO";
+            /**
+             * Currency
+             * @enum {string}
+             */
+            currency: "TWD" | "USD" | "USDT" | "BTC" | "ETH";
+            /** Description */
+            description?: string | null;
+        };
         /**
          * AccountCreateRequest
          * @description POST /holdings/accounts body.
@@ -2449,27 +2596,11 @@ export interface components {
             /** Description */
             description?: string | null;
         };
-        /**
-         * AccountResponse
-         * @description Account row as exposed by GET / POST / PATCH on /holdings/accounts.
-         */
-        AccountResponse: {
-            /** Id */
-            id: number;
-            /** Name */
-            name: string;
-            market: components["schemas"]["Market"];
-            /** Broker */
-            broker: string | null;
-            /** Currency */
-            currency: string;
-            /** Description */
-            description: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+        /** AccountDetailResponse */
+        AccountDetailResponse: {
+            account: components["schemas"]["app__schemas__journal__AccountResponse"];
+            /** Positions */
+            positions: components["schemas"]["app__schemas__journal__PositionResponse"][];
         };
         /**
          * AccountUpdateRequest
@@ -2594,6 +2725,48 @@ export interface components {
             threshold_value?: number | string | null;
             /** Threshold Type */
             threshold_type?: ("PCT" | "ABSOLUTE") | null;
+        };
+        /** AlertsResponse */
+        AlertsResponse: {
+            /** Alerts */
+            alerts: components["schemas"]["RebalanceAlert"][];
+        };
+        /** AllocationRuleCreate */
+        AllocationRuleCreate: {
+            /** Symbol */
+            symbol: string;
+            /** Target Weight */
+            target_weight: number | string;
+            /**
+             * Lower Threshold
+             * @default 0.03
+             */
+            lower_threshold: number | string;
+            /**
+             * Upper Threshold
+             * @default 0.03
+             */
+            upper_threshold: number | string;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** AllocationRuleResponse */
+        AllocationRuleResponse: {
+            /** Id */
+            id: number;
+            /** Symbol */
+            symbol: string;
+            /** Target Weight */
+            target_weight: string;
+            /** Lower Threshold */
+            lower_threshold: string;
+            /** Upper Threshold */
+            upper_threshold: string;
+            /** Is Active */
+            is_active: boolean;
         };
         /**
          * AnalyticsResponse
@@ -3659,6 +3832,48 @@ export interface components {
             /** As Of */
             as_of: string | null;
         };
+        /** GroupCreate */
+        GroupCreate: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Base Currency
+             * @default TWD
+             */
+            base_currency: string;
+            /** Members */
+            members?: components["schemas"]["GroupMemberInput"][];
+        };
+        /** GroupMemberInput */
+        GroupMemberInput: {
+            /** Account Id */
+            account_id: number;
+            /** Target Weight */
+            target_weight?: number | string | null;
+        };
+        /** GroupMemberResponse */
+        GroupMemberResponse: {
+            /** Account Id */
+            account_id: number;
+            /** Target Weight */
+            target_weight: string | null;
+            account: components["schemas"]["app__schemas__journal__AccountResponse"];
+        };
+        /** GroupResponse */
+        GroupResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Base Currency */
+            base_currency: string;
+            /** Members */
+            members?: components["schemas"]["GroupMemberResponse"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -4372,53 +4587,7 @@ export interface components {
             /** Account Id */
             account_id?: number | null;
             /** Positions */
-            positions: components["schemas"]["PositionResponse"][];
-        };
-        /**
-         * PositionResponse
-         * @description One position row enriched with computed P&L.
-         *
-         *     Spec §7.1 / §7.3:
-         *         unrealized_pnl     = (last_price - avg_cost) * qty
-         *         unrealized_pnl_pct = unrealized_pnl / (avg_cost * qty)
-         *         daily_change       = (last_price - prev_close) * qty
-         *         daily_change_pct   = (last_price - prev_close) / prev_close
-         *
-         *     `last_price` and the four computed fields may be `null` when the
-         *     symbol has no `stock_prices` history (§12 R8 — UI shows "—").
-         */
-        PositionResponse: {
-            /** Account Id */
-            account_id: number;
-            /** Symbol */
-            symbol: string;
-            market: components["schemas"]["Market"];
-            /** Currency */
-            currency: string;
-            /** Qty */
-            qty: string | null;
-            /** Avg Cost */
-            avg_cost: string | null;
-            /** Total Cost */
-            total_cost: string | null;
-            /** Realized Pnl */
-            realized_pnl: string | null;
-            /** Last Price */
-            last_price: string | null;
-            /** Prev Close */
-            prev_close: string | null;
-            /** Price As Of */
-            price_as_of: string | null;
-            /** Unrealized Pnl */
-            unrealized_pnl: string | null;
-            /** Unrealized Pnl Pct */
-            unrealized_pnl_pct: string | null;
-            /** Daily Change */
-            daily_change: string | null;
-            /** Daily Change Pct */
-            daily_change_pct: string | null;
-            /** Is Closed */
-            is_closed: boolean;
+            positions: components["schemas"]["app__schemas__holdings__position__PositionResponse"][];
         };
         /** PriceEstimateBase */
         PriceEstimateBase: {
@@ -4473,6 +4642,31 @@ export interface components {
             remaining: number;
             /** Max Requests */
             max_requests: number;
+        };
+        /** RebalanceAlert */
+        RebalanceAlert: {
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "account" | "group";
+            /** Scope Id */
+            scope_id: number;
+            /** Scope Name */
+            scope_name: string;
+            /** Symbol */
+            symbol: string;
+            /** Current Weight */
+            current_weight: string;
+            /** Target Weight */
+            target_weight: string;
+            /** Deviation */
+            deviation: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "over" | "under";
         };
         /**
          * RebalanceExecuteResponse
@@ -4960,6 +5154,48 @@ export interface components {
              */
             token_type: string;
         };
+        /** TradeCreate */
+        TradeCreate: {
+            /** Symbol */
+            symbol: string;
+            /**
+             * Market
+             * @enum {string}
+             */
+            market: "TW" | "US" | "CRYPTO";
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "BUY" | "SELL" | "DIVIDEND" | "SPLIT";
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Price */
+            price?: number | string | null;
+            /** Quantity */
+            quantity?: number | string | null;
+            /**
+             * Fee
+             * @default 0
+             */
+            fee: number | string;
+            /**
+             * Tax
+             * @default 0
+             */
+            tax: number | string;
+            /** Trade Fx Rate */
+            trade_fx_rate?: number | string | null;
+            /** Tags */
+            tags?: string[];
+            /** Note */
+            note?: string | null;
+            /** Split Ratio */
+            split_ratio?: number | string | null;
+        };
         /**
          * TradeCreateRequest
          * @description POST /holdings/trades body.
@@ -4997,6 +5233,13 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** TradeListResponse */
+        TradeListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["app__schemas__journal__TradeResponse"][];
+        };
         /** TradeLogEntry */
         TradeLogEntry: {
             /** Date */
@@ -5022,50 +5265,6 @@ export interface components {
             shares: number;
             /** Reason */
             reason: string;
-        };
-        /**
-         * TradeResponse
-         * @description Trade row as exposed by GET / POST / PATCH.
-         *
-         *     `quantity` mirrors the ORM column name (the request payload uses
-         *     the shorter ``qty`` for ergonomics — the API endpoint maps one to
-         *     the other when calling the service).
-         */
-        TradeResponse: {
-            /** Id */
-            id: number;
-            /** Account Id */
-            account_id: number;
-            /** Symbol */
-            symbol: string;
-            market: components["schemas"]["Market"];
-            /** Action */
-            action: string;
-            /**
-             * Trade Date
-             * Format: date
-             */
-            trade_date: string;
-            /** Price */
-            price: string | null;
-            /** Quantity */
-            quantity: string | null;
-            /** Fee */
-            fee: string | null;
-            /** Tax */
-            tax: string | null;
-            /** Note */
-            note: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
         };
         /**
          * TradeUpdateRequest
@@ -5204,6 +5403,198 @@ export interface components {
             /** Stock Name */
             stock_name?: string | null;
             /** Created At */
+            created_at: string;
+        };
+        /**
+         * AccountResponse
+         * @description Account row as exposed by GET / POST / PATCH on /holdings/accounts.
+         */
+        app__schemas__holdings__account__AccountResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            market: components["schemas"]["Market"];
+            /** Broker */
+            broker: string | null;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PositionResponse
+         * @description One position row enriched with computed P&L.
+         *
+         *     Spec §7.1 / §7.3:
+         *         unrealized_pnl     = (last_price - avg_cost) * qty
+         *         unrealized_pnl_pct = unrealized_pnl / (avg_cost * qty)
+         *         daily_change       = (last_price - prev_close) * qty
+         *         daily_change_pct   = (last_price - prev_close) / prev_close
+         *
+         *     `last_price` and the four computed fields may be `null` when the
+         *     symbol has no `stock_prices` history (§12 R8 — UI shows "—").
+         */
+        app__schemas__holdings__position__PositionResponse: {
+            /** Account Id */
+            account_id: number;
+            /** Symbol */
+            symbol: string;
+            market: components["schemas"]["Market"];
+            /** Currency */
+            currency: string;
+            /** Qty */
+            qty: string | null;
+            /** Avg Cost */
+            avg_cost: string | null;
+            /** Total Cost */
+            total_cost: string | null;
+            /** Realized Pnl */
+            realized_pnl: string | null;
+            /** Last Price */
+            last_price: string | null;
+            /** Prev Close */
+            prev_close: string | null;
+            /** Price As Of */
+            price_as_of: string | null;
+            /** Unrealized Pnl */
+            unrealized_pnl: string | null;
+            /** Unrealized Pnl Pct */
+            unrealized_pnl_pct: string | null;
+            /** Daily Change */
+            daily_change: string | null;
+            /** Daily Change Pct */
+            daily_change_pct: string | null;
+            /** Is Closed */
+            is_closed: boolean;
+        };
+        /**
+         * TradeResponse
+         * @description Trade row as exposed by GET / POST / PATCH.
+         *
+         *     `quantity` mirrors the ORM column name (the request payload uses
+         *     the shorter ``qty`` for ergonomics — the API endpoint maps one to
+         *     the other when calling the service).
+         */
+        app__schemas__holdings__trade__TradeResponse: {
+            /** Id */
+            id: number;
+            /** Account Id */
+            account_id: number;
+            /** Symbol */
+            symbol: string;
+            market: components["schemas"]["Market"];
+            /** Action */
+            action: string;
+            /**
+             * Trade Date
+             * Format: date
+             */
+            trade_date: string;
+            /** Price */
+            price: string | null;
+            /** Quantity */
+            quantity: string | null;
+            /** Fee */
+            fee: string | null;
+            /** Tax */
+            tax: string | null;
+            /** Note */
+            note: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** AccountResponse */
+        app__schemas__journal__AccountResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Broker */
+            broker: string | null;
+            /** Market */
+            market: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PositionResponse */
+        app__schemas__journal__PositionResponse: {
+            /** Id */
+            id: number;
+            /** Account Id */
+            account_id: number;
+            /** Symbol */
+            symbol: string;
+            /** Market */
+            market: string;
+            /** Currency */
+            currency: string;
+            /** Quantity */
+            quantity: string;
+            /** Avg Cost Fifo */
+            avg_cost_fifo: string | null;
+            /** Total Cost */
+            total_cost: string | null;
+            /** Realized Pnl */
+            realized_pnl: string;
+            /** Is Closed */
+            is_closed: boolean;
+        };
+        /** TradeResponse */
+        app__schemas__journal__TradeResponse: {
+            /** Id */
+            id: number;
+            /** Account Id */
+            account_id: number;
+            /** Symbol */
+            symbol: string;
+            /** Market */
+            market: string;
+            /** Action */
+            action: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Price */
+            price: string | null;
+            /** Quantity */
+            quantity: string | null;
+            /** Fee */
+            fee: string;
+            /** Tax */
+            tax: string;
+            /** Trade Fx Rate */
+            trade_fx_rate: string | null;
+            /** Tags */
+            tags: string[];
+            /** Note */
+            note: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
             created_at: string;
         };
     };
@@ -6996,6 +7387,299 @@ export interface operations {
             };
         };
     };
+    list_accounts_api_v1_journal_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__journal__AccountResponse"][];
+                };
+            };
+        };
+    };
+    create_account_api_v1_journal_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__journal__AccountResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_account_api_v1_journal_accounts__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trades_api_v1_journal_accounts__account_id__trades_get: {
+        parameters: {
+            query?: {
+                symbol?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TradeListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_trade_api_v1_journal_accounts__account_id__trades_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TradeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__schemas__journal__TradeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_groups_api_v1_journal_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupResponse"][];
+                };
+            };
+        };
+    };
+    create_group_api_v1_journal_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_group_api_v1_journal_groups__group_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_account_allocation_api_v1_journal_accounts__account_id__allocation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationRuleCreate"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRuleResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_alerts_api_v1_journal_alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertsResponse"];
+                };
+            };
+        };
+    };
     list_accounts_api_v1_holdings_accounts_get: {
         parameters: {
             query?: never;
@@ -7011,7 +7695,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountResponse"][];
+                    "application/json": components["schemas"]["app__schemas__holdings__account__AccountResponse"][];
                 };
             };
         };
@@ -7035,7 +7719,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__account__AccountResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7066,7 +7750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__account__AccountResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7134,7 +7818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__account__AccountResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7168,7 +7852,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TradeResponse"][];
+                    "application/json": components["schemas"]["app__schemas__holdings__trade__TradeResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -7201,7 +7885,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TradeResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__trade__TradeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7232,7 +7916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TradeResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__trade__TradeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7300,7 +7984,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TradeResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__trade__TradeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7365,7 +8049,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PositionResponse"];
+                    "application/json": components["schemas"]["app__schemas__holdings__position__PositionResponse"];
                 };
             };
             /** @description Validation Error */
