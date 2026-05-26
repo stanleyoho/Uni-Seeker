@@ -90,8 +90,14 @@ export function StratosHeader() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Close mobile menu on route change
+  // Close mobile menu + settings dropdown on route change. The rule
+  // flags the sync setState pair; the documented derive-during-render
+  // alternative requires a ref + same-render setState, which
+  // react-hooks/refs flags in turn. Disable inline with rationale --
+  // pathname is an external (router) transition that we mirror into
+  // local UI state.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse open menus when the router transitions to a new pathname
     setMobileOpen(false);
     setSettingsOpen(false);
   }, [pathname]);

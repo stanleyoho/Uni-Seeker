@@ -42,7 +42,6 @@ import {
   type F13FilerSearchResult,
   type F13Filing,
   type F13HoldingHistory,
-  type F13HoldingsAtPeriod,
   type F13InstitutionalStock,
   type F13RefreshResult,
 } from "@/lib/api-client";

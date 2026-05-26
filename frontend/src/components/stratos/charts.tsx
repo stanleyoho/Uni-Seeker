@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useId, useMemo } from "react";
 import {
   Line,
   Area,
@@ -24,10 +24,10 @@ export function Sparkline({
 }: SparklineProps) {
   const chartData = useMemo(() => data.map((v) => ({ v })), [data]);
 
-  const gradientId = useMemo(
-    () => `spark-${Math.random().toString(36).slice(2, 8)}`,
-    []
-  );
+  // Use React's `useId` for a stable, render-pure unique id (Math.random
+  // is impure and would violate react-hooks/purity under the Compiler).
+  const reactId = useId();
+  const gradientId = `spark-${reactId.replace(/[^a-zA-Z0-9]/g, "")}`;
 
   return (
     <RechartLine width={width} height={height} data={chartData}>

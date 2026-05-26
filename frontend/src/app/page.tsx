@@ -17,7 +17,6 @@ import {
   useHeatmap,
 } from "@/hooks/use-market-data";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { useI18n } from "@/i18n/context";
 import { LoadingSpinner } from "@/components/ui/loading";
 import type {
   MarketIndex,
@@ -309,109 +308,6 @@ function MarketStatusBar() {
 }
 
 // ---------------------------------------------------------------------------
-// Section: Index Cards (full-width 4-column row)
-// ---------------------------------------------------------------------------
-
-function IndexRow({ indices }: { indices: MarketIndex[] }) {
-  const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
-
-  if (majorIndices.length === 0) {
-    return (
-      <GlassPanel title="MARKET INDICES">
-        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-          No index data available
-        </div>
-      </GlassPanel>
-    );
-  }
-
-  return (
-    <div
-      className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-    >
-      {majorIndices.map((idx) => (
-        <IndexCell key={idx.symbol} idx={idx} />
-      ))}
-    </div>
-  );
-}
-
-function IndexCell({ idx }: { idx: MarketIndex }) {
-  const value = parseFloat(idx.value);
-  const changePercent = parseFloat(idx.change_percent);
-  const isUp = changePercent >= 0;
-  const color = isUp ? "var(--stock-up)" : "var(--stock-down)";
-  const trendData = useMemo(() => generateMockTrend(value), [value]);
-  const gradientId = `idx-grad-${idx.symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
-
-  return (
-    <GlassPanel>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: "uppercase",
-          color: "var(--text-muted, #9CA3AF)",
-          letterSpacing: "0.04em",
-          marginBottom: 4,
-        }}
-      >
-        {idx.name}
-      </div>
-      <div
-        style={{
-          fontSize: 28,
-          fontWeight: 700,
-          color: "var(--foreground)",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1.2,
-        }}
-      >
-        {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-      </div>
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color,
-          marginBottom: 6,
-        }}
-      >
-        {isUp ? "\u25B2" : "\u25BC"}{" "}
-        {isUp ? "+" : ""}
-        {changePercent.toFixed(2)}%
-      </div>
-      <div style={{ height: 80 }}>
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          minWidth={0}
-          minHeight={80}
-          initialDimension={{ width: 200, height: 80 }}
-        >
-          <AreaChart data={trendData}>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area
-              type="monotone"
-              dataKey="v"
-              stroke={isUp ? "#10B981" : "#EF4444"}
-              strokeWidth={1.5}
-              fill={`url(#${gradientId})`}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </GlassPanel>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Section: Watchlist Panel
 // ---------------------------------------------------------------------------
 
@@ -453,25 +349,52 @@ function WatchlistPanel() {
   );
 }
 
+// Deterministic pseudo-random generator seeded by symbol. Used purely
+// for placeholder visualisation in the watchlist row -- not for any
+// security-sensitive purpose. Keeps render pure (react-hooks/purity).
+function makeSeededRand(seedStr: string): () => number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h += 0x6d2b79f5;
+    let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function WatchlistRow({
   item,
 }: {
   item: { symbol: string; name: string };
 }) {
   const sparkData = useMemo(() => {
+    const rand = makeSeededRand(`spark:${item.symbol}`);
     const base = 100;
     const data: number[] = [];
     let v = base;
     for (let i = 0; i < 15; i++) {
-      v += (Math.random() - 0.48) * 3;
+      v += (rand() - 0.48) * 3;
       data.push(v);
     }
     return data;
-  }, []);
+  }, [item.symbol]);
 
-  // Mock price/change for display density
-  const mockPrice = useMemo(() => (80 + Math.random() * 820).toFixed(2), []);
-  const mockChange = useMemo(() => ((Math.random() - 0.45) * 8).toFixed(2), []);
+  // Mock price/change for display density -- seeded by symbol so each row
+  // renders the same value across renders (otherwise React Compiler
+  // flags `Math.random` as impure during render).
+  const mockPrice = useMemo(() => {
+    const rand = makeSeededRand(`price:${item.symbol}`);
+    return (80 + rand() * 820).toFixed(2);
+  }, [item.symbol]);
+  const mockChange = useMemo(() => {
+    const rand = makeSeededRand(`change:${item.symbol}`);
+    return ((rand() - 0.45) * 8).toFixed(2);
+  }, [item.symbol]);
   const isUp = parseFloat(mockChange) >= 0;
 
   return (
@@ -829,7 +752,6 @@ function NewsFeedPanel() {
 // ---------------------------------------------------------------------------
 
 export default function HomePage() {
-  const { t } = useI18n();
   const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
   const { data: movers, isLoading: moversLoading } = useMarketMovers();
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();

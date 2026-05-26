@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { useJournalAccounts, useCreateJournalAccount } from "@/hooks/use-journal";
-import type { JournalAccountCreate } from "@/lib/api-client";
 
 const inputCls =
   "w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-sm text-[var(--foreground)] focus:border-[var(--accent-cyan)] outline-none";

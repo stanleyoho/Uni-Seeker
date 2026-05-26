@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { useI18n } from "@/i18n/context";
-import { type LowBaseScore } from "@/lib/api-client";
 import { useLowBaseRanking } from "@/hooks/use-market-data";
 import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primitives";
-import { ScoreBadge } from "@/components/ui/badge";
-import { ScoreBar } from "@/components/ui/score-bar";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { getErrorMessage } from "@/lib/type-guards";
-import { ErrorState, EmptyState } from "@/components/ui/empty-state";
 import { AmbientBackground } from "@/components/stratos/ambient";
 
 function formatPct(v: number | string | null): string {

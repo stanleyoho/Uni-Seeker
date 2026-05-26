@@ -35,7 +35,6 @@ import {
   useUpdateAlertRule,
 } from "@/hooks/use-alerts";
 import type {
-  AlertRule,
   AlertRuleCreateRequest,
   AlertRuleType,
   AlertStatus,
@@ -133,7 +132,10 @@ export default function AlertsPage() {
   const [showForm, setShowForm] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const rules = query.data ?? [];
+  // Wrap in useMemo so the `?? []` fallback returns a referentially
+  // stable empty array; otherwise the sortedRules useMemo below sees a
+  // new dep identity on every render (react-hooks/exhaustive-deps).
+  const rules = useMemo(() => query.data ?? [], [query.data]);
   const sortedRules = useMemo(
     () =>
       [...rules].sort((a, b) => {

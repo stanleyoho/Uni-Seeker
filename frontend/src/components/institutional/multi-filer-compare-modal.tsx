@@ -292,25 +292,32 @@ export function MultiFilerCompareModal({
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [onlyCommon, setOnlyCommon] = useState(false);
 
-  /* When filers load and selection is still empty, auto-pick the top 2 by
-   * AUM so the modal isn't a blank canvas. */
-  useEffect(() => {
-    if (selectedIds.size === 0 && filers.length > 0) {
-      const top2 = [...filers]
-        .sort(
-          (a, b) =>
-            (toDecimal(b.latest_total_value_usd) ?? 0) -
-            (toDecimal(a.latest_total_value_usd) ?? 0),
-        )
-        .slice(0, Math.min(2, filers.length))
-        .map((f) => f.id);
-      setSelectedIds(new Set(top2));
-    }
-  }, [filers, selectedIds.size]);
+  /* When the user has made no explicit picks yet, default to the top 2
+   * filers by AUM so the modal isn't a blank canvas. Derived (not
+   * setState-in-effect) so the rule doesn't fire and we don't pay an
+   * extra render to install the default. */
+  const effectiveSelectedIds = useMemo<Set<number>>(() => {
+    if (selectedIds.size > 0) return selectedIds;
+    if (filers.length === 0) return selectedIds;
+    const top2 = [...filers]
+      .sort(
+        (a, b) =>
+          (toDecimal(b.latest_total_value_usd) ?? 0) -
+          (toDecimal(a.latest_total_value_usd) ?? 0),
+      )
+      .slice(0, Math.min(2, filers.length))
+      .map((f) => f.id);
+    return new Set(top2);
+  }, [filers, selectedIds]);
 
   const toggleFiler = (id: number) => {
+    // If the user has not made any explicit picks yet, materialise the
+    // current derived `effectiveSelectedIds` as the new base before
+    // applying the toggle -- otherwise clicking a derived-default chip
+    // would *add* it again instead of *removing* it.
     setSelectedIds((prev) => {
-      const next = new Set(prev);
+      const base = prev.size === 0 ? effectiveSelectedIds : prev;
+      const next = new Set(base);
       if (next.has(id)) {
         next.delete(id);
       } else if (next.size < MAX_FILERS) {
@@ -321,8 +328,8 @@ export function MultiFilerCompareModal({
   };
 
   const selectedFilers = useMemo(
-    () => filers.filter((f) => selectedIds.has(f.id)),
-    [filers, selectedIds],
+    () => filers.filter((f) => effectiveSelectedIds.has(f.id)),
+    [filers, effectiveSelectedIds],
   );
 
   /* Fan-out filings list per selected filer. */
@@ -467,7 +474,7 @@ export function MultiFilerCompareModal({
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                已選 {selectedIds.size} / {MAX_FILERS}
+                已選 {effectiveSelectedIds.size} / {MAX_FILERS}
               </span>
             </div>
             <ClippedButton variant="cyan-ghost" size="sm" onClick={onClose}>
@@ -500,7 +507,7 @@ export function MultiFilerCompareModal({
               </div>
               <FilerPicker
                 filers={filers}
-                selectedIds={selectedIds}
+                selectedIds={effectiveSelectedIds}
                 onToggle={toggleFiler}
               />
             </div>

@@ -369,8 +369,19 @@ export function InstitutionalHoldingsCardList({
     return { rows: withPct, totalValue: total };
   }, [holdings]);
 
-  /* --- Virtualizer wiring --- */
+  /* --- Virtualizer wiring ---
+   *
+   * TanStack Virtual's API returns functions (getVirtualItems,
+   * measureElement, etc.) that the React Compiler can't safely
+   * memoise. The Compiler therefore skips optimising this component
+   * entirely -- which is fine and well-understood, but
+   * react-hooks/incompatible-library surfaces it as a warning. We
+   * accept the trade-off (component remains correct, just not
+   * Compiler-optimised) and suppress the warning inline so CI stays
+   * clean. Re-evaluate when @tanstack/react-virtual ships a
+   * Compiler-friendly API. */
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual returns un-memoizable functions; the Compiler skipping this component is the documented, accepted behaviour
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,

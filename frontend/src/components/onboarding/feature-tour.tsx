@@ -188,8 +188,12 @@ export function FeatureTour({
   });
   const rafId = useRef<number | null>(null);
 
-  // Reset to step 0 each time the tour opens.
+  // Reset to step 0 each time the tour opens. Sync setState on the
+  // `open` prop transition; deriving stepIndex would require keying
+  // the whole tour component off `open` and remounting on each open,
+  // which is heavier than the single state reset.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset step pointer on parent-driven open transition; remount alternative is more expensive
     if (open) setStepIndex(0);
   }, [open]);
 
@@ -213,8 +217,12 @@ export function FeatureTour({
   }, [open, steps, stepIndex]);
 
   // Recalculate on step change + on resize/scroll. The rAF loop covers
-  // mid-frame layout shifts (lazy charts, accordions, etc.).
+  // mid-frame layout shifts (lazy charts, accordions, etc.). We must
+  // setState (placement) synchronously here because layout effects
+  // run before paint -- this is exactly the use case useLayoutEffect
+  // exists for, even though the rule's heuristic flags it.
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- layout measurement -> setState is the canonical useLayoutEffect pattern; setPlacement runs before paint
     recalculate();
   }, [recalculate]);
 

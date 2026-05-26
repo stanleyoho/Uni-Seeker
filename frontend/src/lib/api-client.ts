@@ -165,6 +165,35 @@ export type BacktestMetrics = Schemas["MetricsResponse"];
 export type TradeRecord = Schemas["TradeRecord"];
 export type BacktestResult = Schemas["BacktestResponse"];
 
+/**
+ * Auto-discovery payload shape.
+ *
+ * The backend OpenAPI schema currently types this endpoint's response as
+ * `Record<string, unknown>`. The fields below are the contract the UI
+ * relies on; if the backend tightens the schema later, regenerate the
+ * generated types and switch to `Schemas["AutoDiscoveryResponse"]`.
+ */
+export interface AutoDiscoveryPhaseRow {
+  strategy_name?: string | null;
+  strategy?: string | null;
+  name?: string | null;
+  strategy_params?: Record<string, unknown> | null;
+  params?: Record<string, unknown> | null;
+  total_return?: number | null;
+  sharpe_ratio?: number | null;
+  win_rate?: number | null;
+  total_trades?: number | null;
+  max_drawdown?: number | null;
+}
+
+export interface AutoDiscoveryResponse {
+  best_overall?: AutoDiscoveryPhaseRow | null;
+  buy_and_hold?: { total_return?: number | null } | null;
+  phase1_results?: AutoDiscoveryPhaseRow[] | null;
+  phase2_results?: AutoDiscoveryPhaseRow[] | null;
+  phase3_results?: AutoDiscoveryPhaseRow[] | null;
+}
+
 // --- Job Queue ---
 
 export type JobEnqueueRequest = Schemas["JobEnqueueRequest"];
@@ -400,11 +429,14 @@ export async function runAutoDiscovery(params: {
   take_profit?: number | null;
   start_date?: string | null;
   end_date?: string | null;
-}): Promise<any> {
-  return apiFetch(`${API_BASE}/backtest/run/auto-discovery`, {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
+}): Promise<AutoDiscoveryResponse> {
+  return apiFetch<AutoDiscoveryResponse>(
+    `${API_BASE}/backtest/run/auto-discovery`,
+    {
+      method: "POST",
+      body: JSON.stringify(params),
+    },
+  );
 }
 
 export async function runBacktest(params: {

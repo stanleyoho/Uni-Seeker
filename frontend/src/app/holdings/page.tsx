@@ -19,7 +19,7 @@
  *     This matches the existing `journal` / `portfolio` pages.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/i18n/context";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
@@ -54,10 +54,37 @@ import {
 // `uni-seeker-` to avoid collision with future Stanley-ecosystem apps
 // sharing the same origin.
 const LS_BASE_CURRENCY = "uni-seeker-base-currency";
+const CURRENCY_CHANGE_EVENT = "uni-seeker:base-currency-change";
 
 function isCurrency(v: string | null): v is Currency {
   return v !== null && (SUPPORTED_CURRENCIES as string[]).includes(v);
 }
+
+function readStoredCurrency(): Currency {
+  if (typeof window === "undefined") return "TWD";
+  try {
+    const saved = window.localStorage.getItem(LS_BASE_CURRENCY);
+    return isCurrency(saved) ? saved : "TWD";
+  } catch {
+    return "TWD";
+  }
+}
+
+function subscribeStoredCurrency(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(CURRENCY_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(CURRENCY_CHANGE_EVENT, callback);
+  };
+}
+
+// SSR snapshot matches the historical default so the first HTML matches
+// the server render even when localStorage already holds a non-TWD
+// value -- the subscription triggers a client-only re-render to apply
+// the saved preference.
+const getServerCurrencySnapshot = (): Currency => "TWD";
 
 // Tier gate — "pro" and above (e.g. "enterprise") get multi-currency.
 // Backend gates with the `multi_currency_summary` feature flag; we
@@ -89,26 +116,27 @@ export default function HoldingsPage() {
   const [accountModalState, setAccountModalState] =
     useState<AccountModalState | null>(null);
 
-  // Base currency for KPIs + summary. Defaults to TWD; we then upgrade
-  // to localStorage on mount so the SSR pass doesn't differ from the
-  // client-side hydration pass (hydration mismatch).
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("TWD");
-  const [currencyHydrated, setCurrencyHydrated] = useState(false);
+  // Base currency for KPIs + summary. Sourced from localStorage via
+  // useSyncExternalStore so the "TWD -> saved value" hydration step
+  // happens without a setState-in-effect bootstrap. SSR snapshot is
+  // "TWD" so we never issue a multi-currency request before the client
+  // takes over (the gate below also checks selectedCurrency !== "TWD").
+  const selectedCurrency = useSyncExternalStore(
+    subscribeStoredCurrency,
+    readStoredCurrency,
+    getServerCurrencySnapshot,
+  );
   const [upsellHint, setUpsellHint] = useState<string | null>(null);
 
-  useEffect(() => {
+  const handleSelectCurrency = useCallback((c: Currency) => {
     if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(LS_BASE_CURRENCY);
-    if (isCurrency(saved)) setSelectedCurrency(saved);
-    setCurrencyHydrated(true);
-  }, []);
-
-  const handleSelectCurrency = (c: Currency) => {
-    setSelectedCurrency(c);
-    if (typeof window !== "undefined") {
+    try {
       window.localStorage.setItem(LS_BASE_CURRENCY, c);
+    } catch {
+      /* quota / private mode */
     }
-  };
+    window.dispatchEvent(new Event(CURRENCY_CHANGE_EVENT));
+  }, []);
 
   const multiCurrencyAvailable = isProTier(user?.tier);
 
@@ -126,10 +154,11 @@ export default function HoldingsPage() {
   // For Pro+ users with a non-TWD selection, send `base_currency=`.
   // For everyone else, fall back to the legacy single-currency call so
   // the backend doesn't 403 us on the multi-currency feature flag.
+  // SSR snapshot is "TWD" so the `!== "TWD"` clause inherently guards
+  // against issuing a multi-currency request before the client store
+  // has resolved -- no extra hydration flag required.
   const useMultiCurrencyCall =
-    currencyHydrated &&
-    multiCurrencyAvailable &&
-    selectedCurrency !== "TWD";
+    multiCurrencyAvailable && selectedCurrency !== "TWD";
   const {
     data: summary,
     isLoading: summaryLoading,

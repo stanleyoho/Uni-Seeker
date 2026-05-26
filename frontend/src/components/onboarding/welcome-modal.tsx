@@ -164,10 +164,11 @@ export function WelcomeModal({
   const primaryButtonRef = useRef<HTMLDivElement>(null);
 
   // Reset to step 0 each time the modal opens. We don't want a user who
-  // dismissed mid-flow last time to land mid-flow again — and the parent
-  // never reopens the modal once `setOnboarded()` is called anyway, so
-  // this only matters for dev/reset cycles.
+  // dismissed mid-flow last time to land mid-flow again -- and the
+  // parent never reopens the modal once `setOnboarded()` is called
+  // anyway, so this only matters for dev/reset cycles.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset step pointer on parent-driven open transition (same justification as feature-tour.tsx)
     if (open) setStepIndex(0);
   }, [open]);
 

@@ -4,9 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/context";
 import { type HeatmapSector } from "@/lib/api-client";
-import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { EmptyState } from "@/components/ui/empty-state";
 import { useHeatmap } from "@/hooks/use-market-data";
 import { GlassPanel } from "@/components/stratos/primitives";
 

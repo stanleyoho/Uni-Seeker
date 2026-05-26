@@ -10,6 +10,7 @@ export const test = base.extend({
         /* swallow — strict cookie modes */
       }
     });
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- `use` is the Playwright fixture callback (test.extend API), not React's use() hook.
     await use(page);
   },
 });

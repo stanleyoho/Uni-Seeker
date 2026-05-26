@@ -23,7 +23,7 @@
  * so navigation stays cheap (cached React-Query keys are reused).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import {
   ClippedButton,
@@ -57,8 +57,11 @@ export default function InstitutionalPage() {
   const viewsLabels = f13.views ?? {};
 
   /* --------------------------- State --------------------------- */
-  const [selectedFilerId, setSelectedFilerId] = useState<number | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("");
+  // Explicit user choices; null/empty = "fall back to the upstream
+  // data's default". Splitting choice from derived value lets us avoid
+  // the setState-in-effect smell of mirroring a query result into state.
+  const [filerIdChoice, setFilerIdChoice] = useState<number | null>(null);
+  const [periodChoice, setPeriodChoice] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -68,31 +71,41 @@ export default function InstitutionalPage() {
   /* --------------------------- Data --------------------------- */
   const { data: filers = [], isLoading: filersLoading } =
     useInstitutionalFilers();
+
+  // Derived: user's pick, or the first filer in the list (or null).
+  const selectedFilerId: number | null =
+    filerIdChoice ?? filers[0]?.id ?? null;
+
   const { data: filings = [] } = useFilings(selectedFilerId);
+
+  // Derived: user's pick, or the most recent filing's period (or "").
+  const selectedPeriod: string =
+    periodChoice || filings[0]?.report_period_end || "";
+
   const { data: holdingsRes, isLoading: holdingsLoading } = useHoldings(
     selectedFilerId,
     selectedPeriod,
   );
 
-  /* Auto-select the first filer once the list resolves. */
-  useEffect(() => {
-    if (selectedFilerId == null && filers.length > 0) {
-      setSelectedFilerId(filers[0].id);
-    }
-  }, [filers, selectedFilerId]);
-
-  /* Default period to the latest filing once we know the list. */
-  useEffect(() => {
-    if (filings.length > 0 && !selectedPeriod) {
-      setSelectedPeriod(filings[0].report_period_end);
-    }
-  }, [filings, selectedPeriod]);
-
-  /* Reset period + symbol whenever the filer changes. */
-  useEffect(() => {
-    setSelectedPeriod("");
+  /* Reset period + symbol whenever the *effective* filer changes. We
+   * mirror this once via a ref so we don't need a setState-in-effect.
+   */
+  const lastFilerIdRef = useRef<number | null>(selectedFilerId);
+  if (lastFilerIdRef.current !== selectedFilerId) {
+    lastFilerIdRef.current = selectedFilerId;
+    // Side-effect: reset the user's transient picks. Doing this in
+    // render is safe because both writes are setState calls that React
+    // schedules; the same-render write is the documented escape hatch
+    // for "reset state when a prop/derived value changes" (see
+    // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
+    setPeriodChoice("");
     setSelectedSymbol("");
-  }, [selectedFilerId]);
+  }
+
+  // Wrapper so children that previously called `setSelectedFilerId`
+  // keep the same external API.
+  const setSelectedFilerId = setFilerIdChoice;
+  const setSelectedPeriod = setPeriodChoice;
 
   /* Diff defaults to (1 quarter ago, current). */
   const [diffFromDate, diffToDate] = useMemo<[string, string]>(() => {
