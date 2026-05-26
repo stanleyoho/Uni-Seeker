@@ -1,21 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useI18n } from "@/i18n/context";
 import { searchStocks, type StockSearchResult } from "@/lib/api-client";
 import { useFinancialAnalysis, usePrices } from "@/hooks/use-market-data";
 import { AmbientBackground } from "@/components/stratos/ambient";
-import { ChangeBadge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { EmptyState } from "@/components/ui/empty-state";
-import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
+import { GlassPanel } from "@/components/stratos/primitives";
 
 /* ------------------------------------------------------------------ */
 /*  CompareStock card                                                  */
 /* ------------------------------------------------------------------ */
 
 function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => void }) {
-  const { t } = useI18n();
   const { data: priceData, isLoading: priceLoading } = usePrices(symbol, 1);
   const { data: financials, isLoading: finLoading } = useFinancialAnalysis(symbol);
 
@@ -135,7 +131,6 @@ function CompareStock({ symbol, onRemove }: { symbol: string; onRemove: () => vo
 }
 
 export default function ComparePage() {
-  const { t } = useI18n();
   const [symbols, setSymbols] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<StockSearchResult[]>([]);

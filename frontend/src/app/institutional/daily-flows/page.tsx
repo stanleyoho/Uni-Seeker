@@ -3,9 +3,7 @@
 import { useState, useMemo } from "react";
 import { useI18n } from "@/i18n/context";
 import { useInstitutional } from "@/hooks/use-market-data";
-import { type InstitutionalData } from "@/lib/api-client";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { getErrorMessage } from "@/lib/type-guards";
 import { GlassPanel, ClippedButton, KpiCard } from "@/components/stratos/primitives";
 
@@ -53,7 +51,7 @@ export default function InstitutionalPage() {
   const [startDate, setStartDate] = useState(defaultRange().start);
   const [endDate, setEndDate] = useState(defaultRange().end);
 
-  const { data, isLoading, error: queryError, refetch } = useInstitutional(
+  const { data, isLoading, error: queryError } = useInstitutional(
     query,
     startDate,
     endDate,

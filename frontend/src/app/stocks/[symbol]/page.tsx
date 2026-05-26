@@ -9,15 +9,11 @@ import { ValuationPanel } from "./components/valuation-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
 import { StatCard } from "@/components/ui/stat-card";
-import { ChangeBadge, Badge } from "@/components/ui/badge";
-import { TabGroup } from "@/components/ui/tab-group";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { ErrorState } from "@/components/ui/empty-state";
 import { ScoreBar } from "@/components/ui/score-bar";
 import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primitives";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation } from "@/hooks/use-market-data";
-import { getErrorMessage } from "@/lib/type-guards";
 import { AmbientBackground } from "@/components/stratos/ambient";
 
 const TIMEFRAMES = [
@@ -105,7 +101,6 @@ function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<stri
     return `${(val * 100).toFixed(1)}%`;
   };
 
-  const latestRevenue = parseFloat(revenue.latest_revenue);
   const yoyGrowth = revenue.yoy_growth != null ? parseFloat(revenue.yoy_growth) : null;
   const qoqGrowth = revenue.qoq_growth != null ? parseFloat(revenue.qoq_growth) : null;
 
@@ -154,7 +149,7 @@ function RevenuePanel({ revenue, t }: { revenue: RevenueAnalysis; t: Record<stri
         </div>
         
         <div className="h-[160px] w-full flex items-end gap-2 px-2 pb-2">
-          {revenue.records.slice(-8).map((rec, i) => {
+          {revenue.records.slice(-8).map((rec) => {
             const records = revenue.records.slice(-8);
             const maxRev = Math.max(...records.map((r) => parseFloat(r.revenue)));
             const currentRev = parseFloat(rec.revenue);
@@ -195,7 +190,7 @@ export default function StockDetailPage() {
   const [activeTab, setActiveTab] = useState("chart");
   const watchlist = useWatchlist();
 
-  const { data: priceData, isLoading: loading, error: priceError } = usePrices(symbol, Number(timeframe));
+  const { data: priceData, isLoading: loading } = usePrices(symbol, Number(timeframe));
   const { data: companyInfo } = useCompanyInfo(symbol);
   const isTWSymbol = symbol.includes(".TW");
   const { data: marginData, isLoading: marginLoading } = useMarginData(symbol, activeTab === "margin" && isTWSymbol);
@@ -203,7 +198,6 @@ export default function StockDetailPage() {
   const { data: valuationData, isLoading: valuationLoading } = useValuation(symbol, activeTab === "valuation");
 
   const prices = priceData?.data ?? [];
-  const error = priceError ? getErrorMessage(priceError) : null;
 
   if (loading && prices.length === 0) {
     return (

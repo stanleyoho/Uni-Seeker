@@ -17,7 +17,6 @@ import {
   useHeatmap,
 } from "@/hooks/use-market-data";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { useI18n } from "@/i18n/context";
 import { LoadingSpinner } from "@/components/ui/loading";
 import type {
   MarketIndex,
@@ -305,109 +304,6 @@ function MarketStatusBar() {
       </div>
       <span>{status.dateStr}</span>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Section: Index Cards (full-width 4-column row)
-// ---------------------------------------------------------------------------
-
-function IndexRow({ indices }: { indices: MarketIndex[] }) {
-  const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
-
-  if (majorIndices.length === 0) {
-    return (
-      <GlassPanel title="MARKET INDICES">
-        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-          No index data available
-        </div>
-      </GlassPanel>
-    );
-  }
-
-  return (
-    <div
-      className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-    >
-      {majorIndices.map((idx) => (
-        <IndexCell key={idx.symbol} idx={idx} />
-      ))}
-    </div>
-  );
-}
-
-function IndexCell({ idx }: { idx: MarketIndex }) {
-  const value = parseFloat(idx.value);
-  const changePercent = parseFloat(idx.change_percent);
-  const isUp = changePercent >= 0;
-  const color = isUp ? "var(--stock-up)" : "var(--stock-down)";
-  const trendData = useMemo(() => generateMockTrend(value), [value]);
-  const gradientId = `idx-grad-${idx.symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
-
-  return (
-    <GlassPanel>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: "uppercase",
-          color: "var(--text-muted, #9CA3AF)",
-          letterSpacing: "0.04em",
-          marginBottom: 4,
-        }}
-      >
-        {idx.name}
-      </div>
-      <div
-        style={{
-          fontSize: 28,
-          fontWeight: 700,
-          color: "var(--foreground)",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1.2,
-        }}
-      >
-        {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-      </div>
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color,
-          marginBottom: 6,
-        }}
-      >
-        {isUp ? "\u25B2" : "\u25BC"}{" "}
-        {isUp ? "+" : ""}
-        {changePercent.toFixed(2)}%
-      </div>
-      <div style={{ height: 80 }}>
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          minWidth={0}
-          minHeight={80}
-          initialDimension={{ width: 200, height: 80 }}
-        >
-          <AreaChart data={trendData}>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={isUp ? "#10B981" : "#EF4444"} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area
-              type="monotone"
-              dataKey="v"
-              stroke={isUp ? "#10B981" : "#EF4444"}
-              strokeWidth={1.5}
-              fill={`url(#${gradientId})`}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </GlassPanel>
   );
 }
 
@@ -829,7 +725,6 @@ function NewsFeedPanel() {
 // ---------------------------------------------------------------------------
 
 export default function HomePage() {
-  const { t } = useI18n();
   const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
   const { data: movers, isLoading: moversLoading } = useMarketMovers();
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();

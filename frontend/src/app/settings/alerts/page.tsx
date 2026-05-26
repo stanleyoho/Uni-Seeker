@@ -35,7 +35,6 @@ import {
   useUpdateAlertRule,
 } from "@/hooks/use-alerts";
 import type {
-  AlertRule,
   AlertRuleCreateRequest,
   AlertRuleType,
   AlertStatus,

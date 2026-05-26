@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ScreenResult } from "@/lib/api-client";
-import { EmptyState } from "@/components/ui/empty-state";
 
 interface ResultsTableProps {
   results: ScreenResult[];
   total: number;
 }
 
-export function ResultsTable({ results, total }: ResultsTableProps) {
+export function ResultsTable({ results }: ResultsTableProps) {
   const router = useRouter();
 
   if (results.length === 0) {

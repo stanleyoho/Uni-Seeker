@@ -133,7 +133,7 @@ export default function JournalDashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              {alerts.map((a, i) => {
+              {alerts.map((a) => {
                 const dev = Number(a.deviation);
                 const isOver = a.direction === "over";
                 return (
