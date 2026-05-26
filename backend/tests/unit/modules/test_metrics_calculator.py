@@ -25,9 +25,7 @@ def test_deaccumulate_q1_returns_current_unchanged() -> None:
 
 def test_deaccumulate_q1_with_prev_still_returns_current() -> None:
     """Q1 branch wins even if prev_cum is supplied."""
-    result = deaccumulate(
-        {"Revenue": 1000.0}, prev_cum={"Revenue": 999.0}, quarter=1
-    )
+    result = deaccumulate({"Revenue": 1000.0}, prev_cum={"Revenue": 999.0}, quarter=1)
     assert result == {"Revenue": 1000.0}
 
 

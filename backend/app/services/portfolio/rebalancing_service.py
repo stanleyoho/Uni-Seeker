@@ -35,6 +35,7 @@ from app.modules.portfolio.live_price_fetcher import LivePriceFetcher
 from app.modules.portfolio.rebalancing import (
     CurrentPosition,
     RebalanceResult,
+    SuggestedTrade,
     TargetAllocation,
     compute_rebalance,
 )
@@ -153,6 +154,9 @@ class RebalancingService:
         # Map ORM rows → domain dataclasses. Missing-quote symbols still
         # produce a CurrentPosition row (so the planner knows they exist)
         # but with last_price=0 → the pure module skips and reports.
+        # ``account_id`` carries through to ``SuggestedTrade.account_id``
+        # so multi-account execute can dispatch each row to its owning
+        # broker account (Phase 3).
         current_positions: list[CurrentPosition] = []
         for p in open_positions:
             qty = p.quantity or _ZERO
@@ -165,6 +169,7 @@ class RebalancingService:
                     qty=qty,
                     last_price=last_price,
                     current_value=qty * last_price,
+                    account_id=p.account_id,
                 )
             )
 
@@ -186,6 +191,24 @@ class RebalancingService:
             targets=target_objs,
             min_trade_value=min_trade_value,
         )
+
+        # ----- account_id fill-in (Phase 3 multi-account dispatch) ---------
+        # When a top-level account_id scopes the preview, every emitted
+        # trade lands in that account — even brand-new BUYs whose pure-
+        # module account_id is None (no source position to derive from).
+        # In aggregate mode (account_id=None) we leave the field as-is so
+        # the API layer can detect unresolvable trades and 422 explicitly.
+        if account_id is not None:
+            result = RebalanceResult(
+                total_portfolio_value=result.total_portfolio_value,
+                suggested_trades=[
+                    _with_account_id(t, account_id) if t.account_id is None else t
+                    for t in result.suggested_trades
+                ],
+                final_allocation_pct=result.final_allocation_pct,
+                skipped_trades=result.skipped_trades,
+                cash_residual=result.cash_residual,
+            )
 
         # ----- audit trail (best-effort; never blocks the preview) -----------
         await log_audit_event(
@@ -212,6 +235,25 @@ class RebalancingService:
 
 
 # ── module-private helpers ──────────────────────────────────────────────
+
+
+def _with_account_id(trade: SuggestedTrade, account_id: int) -> SuggestedTrade:
+    """Return a copy of ``trade`` with ``account_id`` set.
+
+    Used to back-fill brand-new BUYs in single-account scoped previews
+    where the pure module emitted ``account_id=None`` (no source
+    position to derive from). The frozen dataclass forces a copy.
+    """
+    return SuggestedTrade(
+        symbol=trade.symbol,
+        market=trade.market,
+        action=trade.action,
+        qty=trade.qty,
+        estimated_price=trade.estimated_price,
+        estimated_value=trade.estimated_value,
+        rationale=trade.rationale,
+        account_id=account_id,
+    )
 
 
 def _market_to_str(value: Any) -> str:
