@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import type { PortfolioAllocation } from "@/hooks/use-portfolio";
 
 interface AllocationEditorProps {
@@ -23,29 +22,31 @@ export function AllocationEditor({ allocations, onChange, strategies }: Allocati
   const totalWeight = allocations.reduce((sum, a) => sum + a.weight, 0);
   const isValid = Math.abs(totalWeight - 100) < 0.01;
 
-  const addStock = useCallback(() => {
+  // React Compiler memoises these automatically; hand-rolled
+  // useCallback wrappers triggered react-hooks/preserve-manual-memoization
+  // (the Compiler couldn't preserve the manual cache, which means it
+  // bailed out of optimising the whole component). Plain functions
+  // here give the Compiler the freedom to do its job.
+  const addStock = () => {
     if (allocations.length >= MAX_STOCKS) return;
     onChange([
       ...allocations,
       { symbol: "", weight: 0, strategy: strategies[0] || "sma_cross" },
     ]);
-  }, [allocations, onChange, strategies]);
+  };
 
-  const removeStock = useCallback(
-    (index: number) => {
-      onChange(allocations.filter((_, i) => i !== index));
-    },
-    [allocations, onChange],
-  );
+  const removeStock = (index: number) => {
+    onChange(allocations.filter((_, i) => i !== index));
+  };
 
-  const updateAllocation = useCallback(
-    (index: number, patch: Partial<PortfolioAllocation>) => {
-      onChange(allocations.map((a, i) => (i === index ? { ...a, ...patch } : a)));
-    },
-    [allocations, onChange],
-  );
+  const updateAllocation = (
+    index: number,
+    patch: Partial<PortfolioAllocation>,
+  ) => {
+    onChange(allocations.map((a, i) => (i === index ? { ...a, ...patch } : a)));
+  };
 
-  const autoDistribute = useCallback(() => {
+  const autoDistribute = () => {
     if (allocations.length === 0) return;
     const w = Math.floor(100 / allocations.length);
     const remainder = 100 - w * allocations.length;
@@ -55,7 +56,7 @@ export function AllocationEditor({ allocations, onChange, strategies }: Allocati
         weight: w + (i === 0 ? remainder : 0),
       })),
     );
-  }, [allocations, onChange]);
+  };
 
   const inputClass =
     "w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--foreground)] text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-blue)] focus:ring-1 focus:ring-[var(--accent-blue)]/30 transition-all duration-200";
