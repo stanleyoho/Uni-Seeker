@@ -83,23 +83,12 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
 // Interfaces
 // ---------------------------------------------------------------------------
 
-export interface StockPrice {
-  symbol: string;
-  market: string;
-  date: string;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: number;
-  change: string;
-  change_percent: string;
-}
+// Market data + scanner + screener types — sourced from generated OpenAPI
+// schema (E2E-1 wire-up W3). IndicatorResponse stays handwritten because
+// the indicators endpoint returns an inline shape with no named schema.
 
-export interface PriceListResponse {
-  data: StockPrice[];
-  total: number;
-}
+export type StockPrice = Schemas["StockPriceResponse"];
+export type PriceListResponse = Schemas["StockPriceListResponse"];
 
 export interface IndicatorResponse {
   symbol: string;
@@ -109,30 +98,13 @@ export interface IndicatorResponse {
 
 // --- Stock Search ---
 
-export interface StockSearchResult {
-  symbol: string;
-  name: string;
-  market: string;
-}
+export type StockSearchResult = Schemas["StockSearchResult"];
 
 // --- Screener ---
 
-export interface ScreenCondition {
-  indicator: string;
-  params: Record<string, unknown>;
-  op: string;
-  value: unknown;
-}
-
-export interface ScreenResult {
-  symbol: string;
-  indicator_values: Record<string, string>;
-}
-
-export interface ScreenResponse {
-  results: ScreenResult[];
-  total: number;
-}
+export type ScreenCondition = Schemas["ConditionSchema"];
+export type ScreenResult = Schemas["ScreenResultItem"];
+export type ScreenResponse = Schemas["ScreenResponse"];
 
 // --- Notifications ---
 
@@ -228,30 +200,9 @@ export interface MarginData {
 
 // --- Market Overview ---
 
-export interface MarketIndex {
-  symbol: string;
-  name: string;
-  value: string;
-  change: string;
-  change_percent: string;
-}
-
-export interface MarketMover {
-  symbol: string;
-  name: string;
-  market: string;
-  close: string;
-  change: string;
-  change_percent: string;
-  volume: number;
-}
-
-export interface MarketMoversResponse {
-  gainers: MarketMover[];
-  losers: MarketMover[];
-  most_active: MarketMover[];
-  date: string | null;
-}
+export type MarketIndex = Schemas["MarketIndex"];
+export type MarketMover = Schemas["MarketMover"];
+export type MarketMoversResponse = Schemas["MarketMoversResponse"];
 
 // --- Revenue ---
 
@@ -275,26 +226,9 @@ export interface RevenueAnalysis {
 
 // --- Heatmap ---
 
-export interface HeatmapStock {
-  symbol: string;
-  name: string;
-  close: string;
-  change_percent: string;
-  volume: number;
-}
-
-export interface HeatmapSector {
-  industry: string;
-  stock_count: number;
-  avg_change_percent: string;
-  total_volume: number;
-  stocks: HeatmapStock[];
-}
-
-export interface HeatmapResponse {
-  sectors: HeatmapSector[];
-  date: string | null;
-}
+export type HeatmapStock = Schemas["HeatmapStock"];
+export type HeatmapSector = Schemas["HeatmapSector"];
+export type HeatmapResponse = Schemas["HeatmapResponse"];
 
 // --- Low Base ---
 
@@ -459,27 +393,9 @@ export type PortfolioBacktestResponse = Schemas["PortfolioBacktestResponse"];
 
 // --- Scanner ---
 
-export interface SignalDetail {
-  strategy: string;
-  action: string;
-  strength: number;
-  reason: string;
-}
-
-export interface ApiStockSignal {
-  symbol: string;
-  name: string;
-  composite_action: string;
-  score: number;
-  signals: SignalDetail[];
-}
-
-export interface ScanResponse {
-  results: ApiStockSignal[];
-  scan_date: string;
-  total_scanned: number;
-  strategies_used: string[];
-}
+export type SignalDetail = Schemas["SignalDetail"];
+export type ApiStockSignal = Schemas["StockSignalResponse"];
+export type ScanResponse = Schemas["ScanResponse"];
 
 // --- Valuation ---
 
