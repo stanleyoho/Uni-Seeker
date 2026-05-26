@@ -13,7 +13,6 @@ from app.modules.financial_analysis.metrics_calculator import (
     deaccumulate,
 )
 
-
 # ── deaccumulate ───────────────────────────────────────────────────────────
 
 

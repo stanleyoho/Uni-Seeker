@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from app.modules.price_estimator.utils import ValuationUtils
 
-
 # ── calculate_cagr ───────────────────────────────────────────────────────
 
 

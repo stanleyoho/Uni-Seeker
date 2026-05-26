@@ -10,11 +10,8 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock
 
-import pytest
-
 from app.modules.finmind.margin_provider import FinMindMarginProvider
 from app.modules.finmind.stock_provider import FinMindStockProvider
-
 
 # ── FinMindMarginProvider ────────────────────────────────────────────────
 
