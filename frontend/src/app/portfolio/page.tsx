@@ -184,6 +184,7 @@ export default function WatchlistPage() {
     if (migrationStartedRef.current) return;
     if (!hasLegacyWatchlist()) return;
     migrationStartedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time imperative kickoff of a localStorage->API migration; the running flag toggles back to false in the .finally() async callback (which the rule already allows)
     setMigrationRunning(true);
     (async () => {
       try {
@@ -196,20 +197,30 @@ export default function WatchlistPage() {
   }, [user]);
 
   // Trigger price refresh when the set of symbols changes (not on every
-  // array-identity flip from TanStack Query).
+  // array-identity flip from TanStack Query). `loadPrices()` itself
+  // calls setRowData/setPricesLoading inside its useCallback body, so
+  // the rule treats the call as a sync setState. The semantics are
+  // legitimate -- we're subscribing to upstream data change and
+  // mirroring it into a richly-shaped local cache that the async fetch
+  // continues to update -- so disable inline with rationale.
   useEffect(() => {
     if (symbolsKey.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- loadPrices internally setStates; this mirrors upstream watchlist data into our local row cache
       loadPrices();
-    } else {
-      setRowData([]);
-      setPricesLoading(false);
+      return;
     }
+    setRowData([]);
+    setPricesLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey]);
 
   // Drop selections for symbols that no longer exist on the server.
+  // This is a genuine "respond to upstream data change" subscription;
+  // there is no derivation alternative because `selected` is also
+  // mutated by user clicks on the table. Disable inline with rationale.
   useEffect(() => {
     const currentSymbols = new Set(watchlistItems.map((i) => i.symbol));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prune mixed real-state when upstream watchlist removes a symbol; selected is also mutated by user clicks so it must remain real state, not a derivation
     setSelected((prev) => {
       const next = new Set([...prev].filter((s) => currentSymbols.has(s)));
       if (next.size !== prev.size) return next;

@@ -22,9 +22,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
 
-  // Reset state when opening
+  // Reset state when opening. The sync setState calls below are
+  // intentional and correct: opening the palette is a parent-driven
+  // event (via the `open` prop transition false->true) that must wipe
+  // any leftover query/results from a prior open. Restructuring as
+  // derived state would require unmount/remount on every open, which
+  // throws away the inputRef focus that requestAnimationFrame relies on.
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset modal-local state on parent-driven open transition; remount alternative breaks focus management
       setQuery("");
       setResults([]);
       setSelectedIndex(-1);
@@ -36,11 +42,19 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     }
   }, [open]);
 
-  // Debounced search
+  // Debounced search. The empty-query branch clears results sync; the
+  // non-empty branch flips loading=true sync, then setState in the
+  // setTimeout callback (which the rule allows). Both sync paths
+  // legitimately mirror the user's `query` input, but there is no
+  // clean derive-during-render alternative because (a) results have to
+  // be real state to survive across the debounced async callback, and
+  // (b) loading must flip at the moment the debounce window opens, not
+  // at the moment results arrive.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear results when user empties the input; results must remain real state for the async setTimeout path
       setResults([]);
       setLoading(false);
       return;

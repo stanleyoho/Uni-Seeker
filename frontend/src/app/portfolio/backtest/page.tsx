@@ -570,7 +570,7 @@ export default function BacktestPage() {
   const [endDate, setEndDate] = useState("");
 
   // Manual-specific
-  const [strategy, setStrategy] = useState("");
+  const [strategyChoice, setStrategy] = useState("");
   const [stopLoss, setStopLoss] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
 
@@ -590,12 +590,10 @@ export default function BacktestPage() {
   // Strategies list
   const { data: strategies } = useStrategies();
 
-  // Set default strategy when list loads
-  useEffect(() => {
-    if (strategies && strategies.length > 0 && !strategy) {
-      setStrategy(strategies[0].name);
-    }
-  }, [strategies, strategy]);
+  // Derived: user's pick or the first strategy in the loaded list. Avoids
+  // a setState-in-effect bootstrap step (the upstream query already
+  // re-renders us when `strategies` arrives).
+  const strategy = strategyChoice || strategies?.[0]?.name || "";
 
   /* ---- handlers ---- */
 

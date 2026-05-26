@@ -77,20 +77,14 @@ export default function NotificationsSettingsPage() {
   const updateFilerPref = useUpdateFilerPreferences();
 
   // ----- Telegram form state -----
-  const [chatIdInput, setChatIdInput] = useState("");
-  const [chatIdHydrated, setChatIdHydrated] = useState(false);
+  // Draft = null means "use the server value verbatim"; the first
+  // keystroke flips it to a string so the user owns the input. This
+  // derived approach replaces a setState-in-effect bootstrap that
+  // mirrored meQuery.data into local state on hydration.
+  const [chatIdDraft, setChatIdDraft] = useState<string | null>(null);
+  const chatIdInput = chatIdDraft ?? meQuery.data?.telegram_chat_id ?? "";
+  const setChatIdInput = (next: string) => setChatIdDraft(next);
   const [toast, setToast] = useState<Toast | null>(null);
-
-  // Sync the input once the server value lands. We guard with a hydration
-  // flag so the user can keep typing after the initial fill without the
-  // query refetching wiping their unsaved edits.
-  useEffect(() => {
-    if (chatIdHydrated) return;
-    if (meQuery.data) {
-      setChatIdInput(meQuery.data.telegram_chat_id ?? "");
-      setChatIdHydrated(true);
-    }
-  }, [meQuery.data, chatIdHydrated]);
 
   // Auto-dismiss toasts after 3s.
   useEffect(() => {
@@ -185,21 +179,9 @@ export default function NotificationsSettingsPage() {
     [filersQuery.data],
   );
 
-  // Seed missing entries on first filer load.
-  useEffect(() => {
-    if (filers.length === 0) return;
-    setFilerPrefs((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      for (const f of filers) {
-        if (next[f.id] === undefined) {
-          next[f.id] = true;
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [filers]);
+  // Missing entries default to `true` at the read site
+  // (`filerPrefs[f.id] ?? true` -- the one and only consumer), so no
+  // setState-in-effect seeding is required.
 
   const handleToggle = (filerId: number, nextValue: boolean) => {
     // Optimistic flip — revert on error.

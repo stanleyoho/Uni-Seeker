@@ -106,8 +106,12 @@ export function CsvExportDropdown({ selectedAccountId }: CsvExportDropdownProps)
     };
   }, [open]);
 
-  /* Clear any old error when the user re-opens the menu */
+  /* Clear any old error when the user re-opens the menu. The sync
+   * setError(null) is a deliberate state reset on the open->true
+   * transition; deriving error from a session-id state would force a
+   * full remount cycle and lose focus on the menu trigger. */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset error display when menu reopens (parent-driven `open` transition)
     if (open) setError(null);
   }, [open]);
 
