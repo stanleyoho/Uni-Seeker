@@ -57,9 +57,7 @@ async def test_get_revenue_unanalyzable_404(client: AsyncClient) -> None:
 
 async def test_get_revenue_happy_path(client: AsyncClient) -> None:
     """Multi-quarter records → 200 with full analysis payload."""
-    records = [
-        _rec(period=f"2026-Q{q}", revenue=1_000_000 + q * 100_000) for q in range(1, 5)
-    ]
+    records = [_rec(period=f"2026-Q{q}", revenue=1_000_000 + q * 100_000) for q in range(1, 5)]
     with patch("app.api.v1.revenue.YFinanceRevenueProvider") as prov_cls:
         prov_cls.return_value.fetch_revenue = AsyncMock(return_value=records)
         resp = await client.get("/api/v1/revenue/2330")
@@ -88,14 +86,14 @@ async def test_update_tw_no_matching_stocks_stored_zero(
     assert data["stored"] == 0
 
 
-async def test_update_tw_persists_new_record(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_update_tw_persists_new_record(client: AsyncClient, db_session: AsyncSession) -> None:
     """Stock exists + new period → persisted (stored=1)."""
     db_session.add(Stock(symbol="2330", name="TSMC", market=Market.TW_TWSE))
     await db_session.commit()
 
-    fake = [_rec(symbol="2330", period="2026-04", revenue=1_500_000, mom_growth=2.5, yoy_growth=10.0)]
+    fake = [
+        _rec(symbol="2330", period="2026-04", revenue=1_500_000, mom_growth=2.5, yoy_growth=10.0)
+    ]
     with patch("app.api.v1.revenue.TWSERevenueProvider") as prov_cls:
         prov_cls.return_value.fetch_all_revenue = AsyncMock(return_value=fake)
         resp = await client.post("/api/v1/revenue/update-tw")
@@ -104,6 +102,7 @@ async def test_update_tw_persists_new_record(
 
     # Verify row in DB
     from sqlalchemy import select
+
     rows = (await db_session.execute(select(MonthlyRevenue))).scalars().all()
     assert len(rows) == 1
     assert float(rows[0].revenue) == 1_500_000.0
@@ -114,6 +113,7 @@ async def test_update_tw_skips_existing_period(
 ) -> None:
     """If MonthlyRevenue already exists for stock_id + period → skip."""
     from decimal import Decimal
+
     s = Stock(symbol="2330", name="TSMC", market=Market.TW_TWSE)
     db_session.add(s)
     await db_session.commit()
@@ -151,6 +151,7 @@ async def test_update_tw_handles_null_growth_fields(
     assert resp.json()["stored"] == 1
 
     from sqlalchemy import select
+
     row = (await db_session.execute(select(MonthlyRevenue))).scalar_one()
     assert row.mom_growth is None
     assert row.yoy_growth is None

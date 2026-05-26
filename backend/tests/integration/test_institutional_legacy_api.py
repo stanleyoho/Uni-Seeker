@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 from app.api.v1.institutional.legacy import _aggregate
 
-
 # ── _aggregate ─────────────────────────────────────────────────────────────
 
 
@@ -65,7 +64,9 @@ def test_aggregate_sorted_by_date() -> None:
 async def test_endpoint_returns_empty_data_when_provider_empty(client: AsyncClient) -> None:
     with patch("app.api.v1.institutional.legacy.FinMindInstitutionalProvider") as p:
         p.return_value.fetch_institutional = AsyncMock(return_value=[])
-        resp = await client.get("/api/v1/institutional/2330?start_date=2026-05-01&end_date=2026-05-31")
+        resp = await client.get(
+            "/api/v1/institutional/2330?start_date=2026-05-01&end_date=2026-05-31"
+        )
     assert resp.status_code == 200
     assert resp.json() == {"symbol": "2330", "data": []}
 
@@ -93,9 +94,7 @@ async def test_endpoint_aggregates_provider_records(client: AsyncClient) -> None
 async def test_endpoint_502_on_provider_exception(client: AsyncClient) -> None:
     """Provider raise → 502 FinMind error."""
     with patch("app.api.v1.institutional.legacy.FinMindInstitutionalProvider") as p:
-        p.return_value.fetch_institutional = AsyncMock(
-            side_effect=RuntimeError("upstream timeout")
-        )
+        p.return_value.fetch_institutional = AsyncMock(side_effect=RuntimeError("upstream timeout"))
         resp = await client.get(
             "/api/v1/institutional/2330?start_date=2026-05-01&end_date=2026-05-31"
         )
@@ -107,7 +106,5 @@ async def test_endpoint_strips_tw_suffix_for_provider_call(client: AsyncClient) 
     """Symbol `2330.TW` → provider called with `2330` (suffix stripped)."""
     with patch("app.api.v1.institutional.legacy.FinMindInstitutionalProvider") as p:
         p.return_value.fetch_institutional = AsyncMock(return_value=[])
-        await client.get(
-            "/api/v1/institutional/2330.TW?start_date=2026-05-01&end_date=2026-05-31"
-        )
+        await client.get("/api/v1/institutional/2330.TW?start_date=2026-05-01&end_date=2026-05-31")
     assert p.return_value.fetch_institutional.await_args.kwargs["stock_id"] == "2330"
