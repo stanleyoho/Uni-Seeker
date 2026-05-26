@@ -118,15 +118,13 @@ def _create_pg_enums_sync(connection) -> None:  # type: ignore[no-untyped-def]
     """
     from sqlalchemy import text
 
-    connection.execute(text(
-        "CREATE TYPE market_enum AS ENUM ('TW_TWSE', 'TW_TPEX', 'US_NYSE', 'US_NASDAQ')"
-    ))
-    connection.execute(text(
-        "CREATE TYPE user_tier_enum AS ENUM ('free', 'basic', 'pro')"
-    ))
-    connection.execute(text(
-        "CREATE TYPE notification_status_enum AS ENUM ('pending', 'success', 'failed')"
-    ))
+    connection.execute(
+        text("CREATE TYPE market_enum AS ENUM ('TW_TWSE', 'TW_TPEX', 'US_NYSE', 'US_NASDAQ')")
+    )
+    connection.execute(text("CREATE TYPE user_tier_enum AS ENUM ('free', 'basic', 'pro')"))
+    connection.execute(
+        text("CREATE TYPE notification_status_enum AS ENUM ('pending', 'success', 'failed')")
+    )
 
 
 @pytest.fixture

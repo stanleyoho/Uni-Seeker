@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from typing import Any
 from unittest.mock import AsyncMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import select
@@ -101,7 +102,10 @@ async def test_run_no_active_stocks(db_session: AsyncSession) -> None:
 
 async def test_run_skip_up_to_date(db_session: AsyncSession) -> None:
     stock = await _add_stock(db_session)
-    today = datetime.now().date()
+    # Match production sync task: today is computed in Asia/Taipei.
+    # Naive datetime.now() returns local-tz date, which is UTC on CI runners
+    # and Taipei on Stanley's machine — using ZoneInfo aligns both.
+    today = datetime.now(tz=ZoneInfo("Asia/Taipei")).date()
     db_session.add(
         SyncState(
             dataset="financials",
