@@ -182,25 +182,25 @@ export function OverviewTab({ ratios, healthScores, cashFlows }: OverviewTabProp
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         <KpiCard
           label="毛利率"
-          value={formatPct(latest.gross_margin)}
+          value={formatPct(latest.gross_margin ?? null)}
           delta={latest.period}
           direction="flat"
         />
         <KpiCard
           label="淨利率"
-          value={formatPct(latest.net_margin)}
+          value={formatPct(latest.net_margin ?? null)}
           delta={latest.period}
           direction="flat"
         />
         <KpiCard
           label="ROE"
-          value={formatPct(latest.roe)}
+          value={formatPct(latest.roe ?? null)}
           delta={latest.period}
           direction="flat"
         />
         <KpiCard
           label="營收成長率"
-          value={formatPct(latest.revenue_growth)}
+          value={formatPct(latest.revenue_growth ?? null)}
           delta={latest.period}
           direction={growthDir}
         />

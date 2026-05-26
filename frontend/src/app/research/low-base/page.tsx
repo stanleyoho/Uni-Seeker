@@ -152,13 +152,13 @@ export default function LowBasePage() {
                           {row.quality_score}
                         </td>
                         <td className="px-4 py-3 text-right text-[11px] font-bold tabular-nums text-[var(--text-secondary)]">
-                          {formatPct(row.pe_percentile)}
+                          {formatPct(row.pe_percentile ?? null)}
                         </td>
                         <td className="px-4 py-3 text-right text-[11px] font-bold tabular-nums text-[var(--text-secondary)]">
-                          {formatPct(row.ma240_deviation)}
+                          {formatPct(row.ma240_deviation ?? null)}
                         </td>
                         <td className="px-4 py-3 text-right text-[11px] font-bold tabular-nums text-[var(--text-secondary)]">
-                          {formatNum(row.peg)}
+                          {formatNum(row.peg ?? null)}
                         </td>
                       </tr>
                     ))}

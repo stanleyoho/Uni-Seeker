@@ -177,8 +177,10 @@ function SkeletonRow() {
   );
 }
 
-function PutCallBadge({ value }: { value: "PUT" | "CALL" | null }) {
-  if (!value) {
+// Backend types F13HoldingResponse.put_call as `string | null` (loose).
+// Render only the known PUT/CALL labels; anything else degrades to em-dash.
+function PutCallBadge({ value }: { value: string | null }) {
+  if (value !== "PUT" && value !== "CALL") {
     return <span style={{ color: "var(--text-muted)", fontSize: 11 }}>—</span>;
   }
   // PUT  = downside  = TW convention green

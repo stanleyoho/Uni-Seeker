@@ -110,61 +110,17 @@ export type ScreenResponse = Schemas["ScreenResponse"];
 
 export type NotificationRule = Schemas["NotificationRuleResponse"];
 
-// --- Financials ---
+// --- Financials, auth, company, margin — generated schemas (E2E-1 W7) ---
 
-export interface FinancialRatios {
-  symbol: string;
-  period: string;
-  gross_margin: string | null;
-  operating_margin: string | null;
-  net_margin: string | null;
-  roe: string | null;
-  roa: string | null;
-  current_ratio: string | null;
-  debt_ratio: string | null;
-  revenue_growth: string | null;
-  net_income_growth: string | null;
-}
+export type FinancialRatios = Schemas["FinancialRatiosResponse"];
+export type HealthScore = Schemas["HealthScoreResponse"];
+export type FinancialStatement = Schemas["FinancialStatementResponse"];
+export type FullAnalysis = Schemas["FullAnalysisResponse"];
 
-export interface HealthScore {
-  symbol: string;
-  period: string;
-  total_score: string;
-  profitability_score: string;
-  efficiency_score: string;
-  leverage_score: string;
-  growth_score: string;
-}
+export type AuthUser = Schemas["UserResponse"];
 
-export interface FinancialStatement {
-  period: string;
-  period_type: string;
-  data: Record<string, string>;
-}
-
-export interface FullAnalysis {
-  financials: {
-    symbol: string;
-    currency: string;
-    income_statements: FinancialStatement[];
-    balance_sheets: FinancialStatement[];
-    cash_flows: FinancialStatement[];
-  };
-  ratios: FinancialRatios[];
-  health_scores: HealthScore[];
-}
-
-// --- Auth ---
-
-export interface AuthUser {
-  id: number;
-  email: string;
-  username: string;
-  tier: string;
-}
-
-// --- Company Info ---
-
+// CompanyInfo stays handwritten — GET /api/v1/company/{symbol} returns
+// an inline anonymous shape with no named OpenAPI schema.
 export interface CompanyInfo {
   symbol: string;
   name: string;
@@ -172,24 +128,7 @@ export interface CompanyInfo {
   industry: string;
 }
 
-// --- Margin Trading ---
-
-export interface MarginData {
-  symbol: string;
-  name: string;
-  margin_buy: number;
-  margin_sell: number;
-  margin_balance: number;
-  margin_limit: number;
-  margin_usage_pct: number;
-  short_buy: number;
-  short_sell: number;
-  short_balance: number;
-  short_limit: number;
-  short_usage_pct: number;
-  offset: number;
-  margin_short_ratio: number;
-}
+export type MarginData = Schemas["MarginDataResponse"];
 
 // --- Market Overview ---
 
@@ -197,25 +136,10 @@ export type MarketIndex = Schemas["MarketIndex"];
 export type MarketMover = Schemas["MarketMover"];
 export type MarketMoversResponse = Schemas["MarketMoversResponse"];
 
-// --- Revenue ---
+// --- Revenue --- (E2E-1 W7)
 
-export interface RevenueRecord {
-  period: string;
-  revenue: string;
-  currency: string;
-}
-
-export interface RevenueAnalysis {
-  symbol: string;
-  latest_revenue: string;
-  qoq_growth: string | null;
-  yoy_growth: string | null;
-  is_revenue_high: boolean;
-  is_revenue_low: boolean;
-  trend: string;
-  consecutive_growth_quarters: number;
-  records: RevenueRecord[];
-}
+export type RevenueRecord = Schemas["RevenueRecordResponse"];
+export type RevenueAnalysis = Schemas["RevenueAnalysisResponse"];
 
 // --- Heatmap ---
 
@@ -223,47 +147,12 @@ export type HeatmapStock = Schemas["HeatmapStock"];
 export type HeatmapSector = Schemas["HeatmapSector"];
 export type HeatmapResponse = Schemas["HeatmapResponse"];
 
-// --- Low Base ---
+// --- Low Base + Institutional --- (E2E-1 W7)
 
-export interface LowBaseScore {
-  symbol: string;
-  name: string;
-  total_score: string;
-  valuation_score: string;
-  price_position_score: string;
-  quality_score: string;
-  pe_percentile: string | null;
-  ma240_deviation: string | null;
-  peg: string | null;
-  details: Record<string, unknown>;
-}
-
-export interface LowBaseRanking {
-  results: LowBaseScore[];
-  total_scanned: number;
-  total_qualified: number;
-}
-
-// --- Institutional Investors ---
-
-export interface InstitutionalData {
-  date: string;
-  foreign_buy: number;
-  foreign_sell: number;
-  foreign_net: number;
-  trust_buy: number;
-  trust_sell: number;
-  trust_net: number;
-  dealer_buy: number;
-  dealer_sell: number;
-  dealer_net: number;
-  total_net: number;
-}
-
-export interface InstitutionalResponse {
-  symbol: string;
-  data: InstitutionalData[];
-}
+export type LowBaseScore = Schemas["LowBaseScoreResponse"];
+export type LowBaseRanking = Schemas["LowBaseRankingResponse"];
+export type InstitutionalData = Schemas["InstitutionalDayRecord"];
+export type InstitutionalResponse = Schemas["InstitutionalResponse"];
 
 // --- Backtest ---
 
@@ -301,23 +190,10 @@ export type SignalDetail = Schemas["SignalDetail"];
 export type ApiStockSignal = Schemas["StockSignalResponse"];
 export type ScanResponse = Schemas["ScanResponse"];
 
-// --- Valuation ---
+// --- Valuation --- (E2E-1 W7)
 
-export interface PriceEstimate {
-  model_type: string;
-  date: string;
-  cheap_price: string | null;
-  fair_price: string | null;
-  expensive_price: string | null;
-  confidence: string;
-  details: Record<string, any>;
-}
-
-export interface ValuationEstimates {
-  symbol: string;
-  estimates: PriceEstimate[];
-  latest_composite: PriceEstimate | null;
-}
+export type PriceEstimate = Schemas["PriceEstimateBase"];
+export type ValuationEstimates = Schemas["ValuationEstimatesResponse"];
 
 // ---------------------------------------------------------------------------
 // API functions
@@ -1126,12 +1002,7 @@ export async function getAccountHoldingSummary(
  * `app/api/v1/holdings/fx.py`. `rate` is Decimal-as-string. `as_of` is
  * either the requested ISO date or `null` (spot).
  */
-export interface FxRateResponse {
-  base: string;
-  quote: string;
-  rate: string;
-  as_of: string | null;
-}
+export type FxRateResponse = Schemas["FxRateResponse"];
 
 export async function getFxRate(
   base: Currency,
@@ -1442,75 +1313,28 @@ export function downloadBlob(blob: Blob, filename: string): void {
 //   sub-router for search is a POST. We match these path shapes verbatim.
 // ---------------------------------------------------------------------------
 
-export interface F13Filer {
-  id: number;
-  cik: string;
-  name: string;
-  legal_name: string | null;
-  /** Decimal-as-string. May be null until first refresh ingests a filing. */
-  latest_total_value_usd: string | null;
-  latest_options_notional_usd: string | null;
-  /** ISO date (YYYY-MM-DD) of the most recent 13F-HR `report_period_end`. */
-  latest_filing_date: string | null;
-  latest_position_count: number | null;
-  created_at: string;
-}
+// All F13 (13F institutional) wire types — sourced from generated OpenAPI
+// schema (E2E-1 W7). Behaviour docs are in the `/institutional/...` route
+// handlers on the backend; not duplicated here to avoid drift.
 
-export interface F13FilerSearchResult {
-  cik: string;
-  name: string;
-  legal_name: string | null;
-  /** True when the local DB already has this filer (instant subscribe). */
-  is_locally_known: boolean;
-}
+export type F13Filer = Schemas["F13FilerResponse"];
+export type F13FilerSearchResult = Schemas["F13FilerSearchResult"];
+export type F13Filing = Schemas["F13FilingResponse"];
+export type F13Holding = Schemas["F13HoldingResponse"];
+export type F13HoldingsAtPeriod = Schemas["F13HoldingsAtPeriodResponse"];
+export type F13HoldingChange = Schemas["F13HoldingChangeResponse"];
+export type F13Diff = Schemas["F13DiffResponse"];
+export type F13RefreshResult = Schemas["F13RefreshResponse"];
+export type F13HoldingHistoryEntry = Schemas["F13HoldingHistoryEntry"];
+export type F13HoldingHistory = Schemas["F13HoldingHistoryResponse"];
+export type F13InstitutionalHolderForStock = Schemas["F13InstitutionalHolderForStock"];
+export type F13InstitutionalStock = Schemas["F13InstitutionalStockResponse"];
+export type F13SubscriptionResponse = Schemas["F13SubscriptionResponse"];
+export type F13BulkSubscribeRequestItem = Schemas["F13BulkSubscribeRequestItem"];
+export type F13BulkSubscribeError = Schemas["F13BulkSubscribeError"];
+export type F13BulkSubscribeResponse = Schemas["F13BulkSubscribeResponse"];
 
-/**
- * One row of `f13_filings` — the per-quarter snapshot meta.
- *
- * `form_type` is typically "13F-HR" or "13F-HR/A" (amendment); occasionally
- * "13F-NT" once Phase 4+ broadens scope. Kept as `string` so we don't
- * crash on unexpected values.
- */
-export interface F13Filing {
-  id: number;
-  filer_id: number;
-  accession_number: string;
-  form_type: string;
-  /** Quarter-end date (e.g. "2025-12-31"). */
-  report_period_end: string;
-  filed_at: string;
-  total_value_usd: string | null;
-  options_notional_usd: string | null;
-  total_positions: number | null;
-  raw_xml_url: string | null;
-}
-
-/**
- * One row of `f13_holdings`.
- *
- * `stock_symbol` is denormalised by the backend when the CUSIP has been
- * mapped to `stocks.symbol`. Null means the CUSIP is unmapped — render the
- * raw `cusip` + `name_of_issuer` instead.
- */
-export interface F13Holding {
-  id: number;
-  cusip: string;
-  name_of_issuer: string;
-  /** USD market value at quarter-end (already × 1000 from raw 13F units). */
-  value_usd: string;
-  shares: string | null;
-  put_call: "PUT" | "CALL" | null;
-  investment_discretion: string | null;
-  stock_id: number | null;
-  stock_symbol: string | null;
-}
-
-export interface F13HoldingsAtPeriod {
-  filing: F13Filing;
-  holdings: F13Holding[];
-}
-
-/** Backend's diff-engine 5-way classification. */
+/** Backend's diff-engine 5-way classification (kept as named type alias). */
 export type F13ChangeType =
   | "NEW"
   | "INCREASED"
@@ -1518,41 +1342,7 @@ export type F13ChangeType =
   | "EXITED"
   | "UNCHANGED";
 
-export interface F13HoldingChange {
-  cusip: string;
-  name_of_issuer: string;
-  /** Widened from F13ChangeType so cross-stock's loose string still fits. */
-  change_type: F13ChangeType | string;
-  prev_shares: string | null;
-  curr_shares: string | null;
-  delta_shares: string;
-  delta_pct: string | null;
-  prev_value_usd: string | null;
-  curr_value_usd: string | null;
-  delta_value_usd: string;
-}
-
-export interface F13Diff {
-  /** ISO date of the previous period (the `from` query param). */
-  prev_period: string;
-  curr_period: string;
-  changes: F13HoldingChange[];
-}
-
-export interface F13RefreshResult {
-  filings_added: number;
-  holdings_added: number;
-}
-
-/**
- * Round 12 — per-stock multi-quarter timeline for a filer.
- *
- * One entry per quarterly filing in the requested window. `shares` /
- * `value_usd` are `null` when the filer filed that quarter but didn't
- * hold the requested stock; the timeline component renders these as
- * "未持有". `delta_*` follow the NEW / INCREASED / DECREASED / EXITED /
- * UNCHANGED / NOT_HELD classification on the wire.
- */
+/** Round 12 — per-stock multi-quarter timeline classification (one extra: NOT_HELD). */
 export type F13HistoryChangeType =
   | "NEW"
   | "INCREASED"
@@ -1560,86 +1350,6 @@ export type F13HistoryChangeType =
   | "EXITED"
   | "UNCHANGED"
   | "NOT_HELD";
-
-export interface F13HoldingHistoryEntry {
-  filing_id: number;
-  /** ISO date string. */
-  report_period_end: string;
-  form_type: string;
-  shares: string | null;
-  value_usd: string | null;
-  put_call: "PUT" | "CALL" | null;
-  investment_discretion: string | null;
-  delta_shares: string | null;
-  delta_pct: string | null;
-  change_type: F13HistoryChangeType | string;
-}
-
-export interface F13HoldingHistory {
-  filer_id: number;
-  /** CUSIP populated when the holding was found by CUSIP (or via stock JOIN). */
-  cusip: string | null;
-  /** Symbol populated when the holding was mapped to a `stocks` row. */
-  symbol: string | null;
-  /** ASC by `report_period_end` (oldest → newest). */
-  entries: F13HoldingHistoryEntry[];
-}
-
-/** Cross-stock view: one filer-row in the per-stock institutional panel. */
-export interface F13InstitutionalHolderForStock {
-  filer_id: number;
-  filer_name: string;
-  filer_cik: string;
-  latest_shares: string | null;
-  latest_value_usd: string | null;
-  prev_shares: string | null;
-  /** Always present; "UNCHANGED" when prev/current are roughly equal. */
-  change_type: string;
-}
-
-export interface F13InstitutionalStock {
-  symbol: string;
-  stock_id: number | null;
-  holders: F13InstitutionalHolderForStock[];
-}
-
-/** POST /institutional/filers response envelope. */
-export interface F13SubscriptionResponse {
-  filer: F13Filer;
-  subscribed_at: string;
-  notify_on_new_filing: boolean;
-}
-
-// --- Bulk subscribe (POST /institutional/filers/bulk) ---
-
-export interface F13BulkSubscribeRequestItem {
-  /** CIK string (backend pads to 10 digits). */
-  cik: string;
-  /**
-   * Optional display name. When omitted, the backend tries
-   * EdgarClient.get_filer_metadata(cik) to auto-resolve.
-   */
-  name?: string;
-}
-
-export interface F13BulkSubscribeError {
-  cik: string;
-  /** snake_case: `invalid_cik` | `edgar_lookup_failed` | `unknown` */
-  reason: string;
-}
-
-/**
- * Envelope for `POST /institutional/filers/bulk` (201).
- *
- * Quota errors (403 limit_exceeded:max_tracked_filers) short-circuit
- * the whole batch BEFORE any row is inserted; per-row issues land in
- * `errors[]`.
- */
-export interface F13BulkSubscribeResponse {
-  subscribed: F13Filer[];
-  skipped_duplicates: string[];
-  errors: F13BulkSubscribeError[];
-}
 
 // ---------------------------------------------------------------------------
 // Institutional 13F — API functions
@@ -1885,10 +1595,7 @@ export async function updateMeNotifications(
 // from PATCH responses. Backend default is `true`, so a fresh subscription
 // is "notify me" until the user opts out.
 
-export interface F13SubscriptionPreferences {
-  filer_id: number;
-  notify_on_new_filing: boolean;
-}
+export type F13SubscriptionPreferences = Schemas["F13SubscriptionPreferencesResponse"];
 
 export async function updateFilerPreferences(
   filerId: number,
@@ -1918,51 +1625,16 @@ export async function updateFilerPreferences(
 // `final_allocation_pct` arrive as strings; convert with `Number(...)`
 // at the render boundary only.
 
-/** One target row sent to `/holdings/rebalance/preview`. */
-export interface RebalanceTarget {
-  symbol: string;
-  market: HoldingMarket;
-  /** Percentage 0..100 as Decimal-string ("33.333" preserves precision). */
-  target_pct: string;
-}
+// Rebalance preview types — generated OpenAPI schemas (E2E-1 W7).
+// Behaviour docs (Decimal-as-string semantics, composite key for
+// final_allocation_pct, etc.) live in the route handlers; not duplicated
+// here to avoid drift.
 
-export interface RebalanceRequest {
-  targets: RebalanceTarget[];
-  /** Restrict to one account; omit to aggregate across all. */
-  account_id?: number;
-  /** Skip trades below this absolute |delta_value|; defaults server-side to 100. */
-  min_trade_value?: string;
-}
-
-export interface SuggestedTrade {
-  symbol: string;
-  market: HoldingMarket;
-  action: "BUY" | "SELL";
-  qty: string;
-  estimated_price: string;
-  estimated_value: string;
-  /** Human-readable reason — surface as tooltip / secondary text. */
-  rationale: string;
-}
-
-/** Pass-through shape from the backend `skipped_trades` list. */
-export interface SkippedTrade {
-  symbol: string;
-  market: HoldingMarket;
-  target_pct: string;
-  delta_value: string;
-  /** One of: below_min_trade_value | missing_price_for_buy | missing_price_for_sell | exit_below_min_trade_value */
-  reason: string;
-}
-
-export interface RebalanceResponse {
-  total_portfolio_value: string;
-  suggested_trades: SuggestedTrade[];
-  /** Keys are `${symbol}|${market}` per the backend's composite key. */
-  final_allocation_pct: Record<string, string>;
-  skipped_trades: SkippedTrade[];
-  cash_residual: string;
-}
+export type RebalanceTarget = Schemas["RebalanceTarget"];
+export type RebalanceRequest = Schemas["RebalanceRequest"];
+export type SuggestedTrade = Schemas["SuggestedTradeResponse"];
+export type SkippedTrade = Schemas["SkippedTrade"];
+export type RebalanceResponse = Schemas["RebalanceResponse"];
 
 export async function previewRebalance(
   req: RebalanceRequest,
@@ -1987,40 +1659,12 @@ export async function previewRebalance(
 // `account_id` is REQUIRED for execute (preview allows aggregate mode);
 // the backend returns 422 `account_id_required_for_execute` when omitted.
 
-export interface ExecutedRebalanceTrade {
-  symbol: string;
-  market: HoldingMarket;
-  action: "BUY" | "SELL";
-  qty: string;
-  price: string;
-  /** Primary key of the inserted `portfolio_trades` row. */
-  trade_id: number;
-}
+// Rebalance execute types — generated OpenAPI schemas (E2E-1 W7).
 
-export interface SkippedRebalanceTrade {
-  symbol: string;
-  market: HoldingMarket;
-  reason: string;
-  target_pct?: string | null;
-  delta_value?: string | null;
-}
-
-export interface FailedRebalanceTrade {
-  symbol: string;
-  market: HoldingMarket;
-  action: "BUY" | "SELL";
-  /** Canonical `_detail` string — e.g. `insufficient_shares`. */
-  error_code: string;
-  message: string;
-}
-
-export interface RebalanceExecuteResponse {
-  executed: ExecutedRebalanceTrade[];
-  skipped: SkippedRebalanceTrade[];
-  failed: FailedRebalanceTrade[];
-  /** Sum of `qty * price` across `executed` rows (Decimal as string). */
-  total_executed_value: string;
-}
+export type ExecutedRebalanceTrade = Schemas["ExecutedTrade"];
+export type SkippedRebalanceTrade = Schemas["SkippedTrade"];
+export type FailedRebalanceTrade = Schemas["FailedTrade"];
+export type RebalanceExecuteResponse = Schemas["RebalanceExecuteResponse"];
 
 export async function executeRebalance(
   req: RebalanceRequest,

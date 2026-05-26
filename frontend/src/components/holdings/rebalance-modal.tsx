@@ -873,7 +873,11 @@ export function RebalanceModal({
           <div>
             <label className={labelCls}>{tr("suggested_trades")}</label>
             {renderSuggestedTrades(result.suggested_trades)}
-            {renderSkipped(result.skipped_trades)}
+            {/* Asymmetry: RebalanceResponse.skipped_trades is typed as
+                Record<string, unknown>[] on the wire (legacy looseness),
+                while RebalanceExecuteResponse.skipped uses the proper
+                SkippedTrade schema. Runtime shape is the same — cast. */}
+            {renderSkipped(result.skipped_trades as unknown as SkippedTrade[])}
             {renderFinalAlloc(result)}
             {/* Execute button — visible only when we have suggestions AND
                 an account_id (backend 422 without one). Hidden once the
