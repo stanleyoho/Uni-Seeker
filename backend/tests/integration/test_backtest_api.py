@@ -134,3 +134,77 @@ async def test_insufficient_data(app_with_prices) -> None:
         )
         # If stock not found, returns 404
         assert resp.status_code == 404
+
+
+# ── /run/composite ────────────────────────────────────────────────────────
+
+
+async def test_composite_too_few_strategies_400(app_with_prices) -> None:
+    app, headers = app_with_prices
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/backtest/run/composite",
+            json={
+                "symbol": "TEST.TW",
+                "strategies": ["ma_crossover"],
+                "mode": "majority",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 400
+        assert "at least 2" in resp.json()["message"]
+
+
+async def test_composite_invalid_mode_400(app_with_prices) -> None:
+    app, headers = app_with_prices
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/backtest/run/composite",
+            json={
+                "symbol": "TEST.TW",
+                "strategies": ["ma_crossover", "rsi_oversold"],
+                "mode": "weird",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 400
+        assert "Invalid mode" in resp.json()["message"]
+
+
+async def test_composite_unknown_strategy_400(app_with_prices) -> None:
+    app, headers = app_with_prices
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/backtest/run/composite",
+            json={
+                "symbol": "TEST.TW",
+                "strategies": ["ma_crossover", "no_such_strategy"],
+                "mode": "majority",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 400
+
+
+async def test_composite_happy_path(app_with_prices) -> None:
+    app, headers = app_with_prices
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/backtest/run/composite",
+            json={
+                "symbol": "TEST.TW",
+                "strategies": ["ma_crossover", "rsi_oversold"],
+                "mode": "majority",
+                "strategy_params": {"ma_crossover": {"short_period": 5, "long_period": 20}},
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 200, resp.json()
+        data = resp.json()
+        assert "composite" in data["strategy"]
+        assert "metrics" in data
+        assert "equity_curve" in data
