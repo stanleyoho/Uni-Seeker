@@ -1,3 +1,7 @@
+import type { components } from "./api/generated/schema";
+
+type Schemas = components["schemas"];
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 // ---------------------------------------------------------------------------
@@ -445,30 +449,13 @@ export interface JobResultResponse {
 }
 
 // --- Portfolio ---
+// Types sourced from the generated OpenAPI schema (E2E-1 wire-up W2).
+// Drift between backend Pydantic schemas and these aliases is caught
+// by the schema-gate CI workflow.
 
-export interface PortfolioAllocationInput {
-  symbol: string;
-  weight: number;
-  strategy: string;
-  params?: Record<string, unknown>;
-}
-
-export interface PortfolioBacktestRequest {
-  allocations: PortfolioAllocationInput[];
-  rebalance_mode?: string;
-  rebalance_config?: Record<string, unknown>;
-  initial_capital?: number;
-}
-
-export interface PortfolioBacktestResponse {
-  portfolio_metrics: Record<string, number>;
-  individual_metrics: Record<string, Record<string, number>>;
-  portfolio_equity_curve: number[];
-  individual_equity_curves: Record<string, number[]>;
-  trade_log: Record<string, unknown>[];
-  rebalance_log: Record<string, unknown>[];
-  allocations: PortfolioAllocationInput[];
-}
+export type PortfolioAllocationInput = Schemas["PortfolioAllocationInput"];
+export type PortfolioBacktestRequest = Schemas["PortfolioBacktestRequest"];
+export type PortfolioBacktestResponse = Schemas["PortfolioBacktestResponse"];
 
 // --- Scanner ---
 
@@ -1116,120 +1103,38 @@ export async function removeFromWatchlist(symbol: string): Promise<void> {
 //   - DELETE /holdings/dividends/{id} returns 204 (apiFetch handles it).
 // ---------------------------------------------------------------------------
 
-export type HoldingMarket = "TW_TWSE" | "TW_TPEX" | "US_NYSE" | "US_NASDAQ";
+// Types sourced from the generated OpenAPI schema (E2E-1 wire-up W2).
+// Drift between backend Pydantic schemas and these aliases is caught
+// by the schema-gate CI workflow.
+
+export type HoldingMarket = Schemas["Market"];
+
+// Action / dividend-type / currency enums are not separately exposed by the
+// FastAPI schema (they appear inline as plain string fields), so we keep the
+// literal unions here as the canonical frontend type.
 export type HoldingTradeAction = "BUY" | "SELL";
 export type HoldingDividendType = "CASH" | "STOCK";
 
 // ── Accounts ───────────────────────────────────────────────────────────────
 
-export interface HoldingAccount {
-  id: number;
-  name: string;
-  market: HoldingMarket;
-  broker: string | null;
-  currency: string;
-  description: string | null;
-  created_at: string;
-}
-
-export interface HoldingAccountCreateRequest {
-  name: string;
-  market: HoldingMarket;
-  broker?: string | null;
-  currency?: string;
-  description?: string | null;
-}
-
-export interface HoldingAccountUpdateRequest {
-  name?: string;
-  market?: HoldingMarket;
-  broker?: string | null;
-  currency?: string;
-  description?: string | null;
-}
+export type HoldingAccount = Schemas["AccountResponse"];
+export type HoldingAccountCreateRequest = Schemas["AccountCreateRequest"];
+export type HoldingAccountUpdateRequest = Schemas["AccountUpdateRequest"];
 
 // ── Trades ─────────────────────────────────────────────────────────────────
 
-export interface HoldingTrade {
-  id: number;
-  account_id: number;
-  symbol: string;
-  market: HoldingMarket;
-  action: string;            // backend returns the raw string ("BUY"/"SELL")
-  trade_date: string;        // ISO date (YYYY-MM-DD)
-  price: string | null;      // Decimal-as-string
-  quantity: string | null;   // ORM column name in response
-  fee: string;
-  tax: string;
-  note: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface HoldingTradeCreateRequest {
-  account_id: number;
-  action: HoldingTradeAction;
-  symbol: string;
-  market: HoldingMarket;
-  qty: string;               // wire uses `qty` on POST
-  price: string;
-  fee?: string;
-  tax?: string;
-  trade_date?: string | null;
-  note?: string | null;
-}
-
-export interface HoldingTradeUpdateRequest {
-  account_id?: number;
-  action?: HoldingTradeAction;
-  symbol?: string;
-  market?: HoldingMarket;
-  qty?: string;
-  price?: string;
-  fee?: string;
-  tax?: string;
-  trade_date?: string | null;
-  note?: string | null;
-}
+export type HoldingTrade = Schemas["TradeResponse"];
+export type HoldingTradeCreateRequest = Schemas["TradeCreateRequest"];
+export type HoldingTradeUpdateRequest = Schemas["TradeUpdateRequest"];
 
 // ── Positions (read-only, derived) ─────────────────────────────────────────
 
-export interface HoldingPosition {
-  account_id: number;
-  symbol: string;
-  market: HoldingMarket;
-  currency: string;
-  qty: string;
-  avg_cost: string | null;
-  total_cost: string | null;
-  realized_pnl: string;
-  last_price: string | null;
-  prev_close: string | null;
-  price_as_of: string | null;
-  unrealized_pnl: string | null;
-  unrealized_pnl_pct: string | null;
-  daily_change: string | null;
-  daily_change_pct: string | null;
-  is_closed: boolean;
-}
-
-export interface HoldingPositionListResponse {
-  account_id: number | null;
-  positions: HoldingPosition[];
-}
+export type HoldingPosition = Schemas["PositionResponse"];
+export type HoldingPositionListResponse = Schemas["PositionListResponse"];
 
 // ── Summary ────────────────────────────────────────────────────────────────
 
-export interface HoldingSummary {
-  total_cost: string;
-  total_value: string;
-  total_unrealized_pnl: string;
-  total_daily_change: string;
-  gain_simple: string;
-  gain_simple_pct: string;
-  position_count: number;
-  account_count: number;
-}
+export type HoldingSummary = Schemas["SummaryResponse"];
 
 // ── Multi-currency (Phase 4+ / Round 10 Z1) ────────────────────────────────
 
@@ -1250,126 +1155,21 @@ export const SUPPORTED_CURRENCIES: Currency[] = [
   "CNY",
 ];
 
-/**
- * One per-currency slice returned inside `MultiCurrencyHoldingSummary.by_currency`.
- *
- * Wire shape mirrors backend `CurrencyBreakdown` in
- * `app/api/v1/holdings/summary.py` — Decimal-as-string for every numeric.
- */
-export interface CurrencyBreakdown {
-  currency: string;
-  total_cost_native: string;
-  total_value_native: string;
-  total_cost_in_base: string;
-  total_value_in_base: string;
-  rate_to_base: string;
-}
-
-/**
- * Extended summary returned by `GET /holdings/summary?base_currency=...`.
- *
- * Type discriminator: presence of `by_currency` field distinguishes this
- * from the legacy `HoldingSummary` shape. Backend may flag with 403
- * `feature_unavailable:multi_currency_summary` for Free/Basic tiers
- * when positions span > 1 currency, or 503 `fx_rate_unavailable:...`
- * when FX service can't resolve a rate.
- */
-export interface MultiCurrencyHoldingSummary extends HoldingSummary {
-  base_currency: string;
-  by_currency: CurrencyBreakdown[];
-}
+export type CurrencyBreakdown = Schemas["CurrencyBreakdown"];
+export type MultiCurrencyHoldingSummary = Schemas["MultiCurrencySummaryResponse"];
 
 // ── Dividends ──────────────────────────────────────────────────────────────
 
-export interface HoldingDividend {
-  id: number;
-  account_id: number;
-  symbol: string;
-  market: HoldingMarket;
-  dividend_type: string;       // "CASH" | "STOCK" — backend returns raw str
-  ex_dividend_date: string;
-  pay_date: string | null;
-  amount_per_share: string;
-  quantity_at_record: string;
-  currency: string;
-  withholding_tax: string;
-  total_amount: string;        // computed_field
-  net_amount: string;          // computed_field
-  note: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface HoldingDividendCreateRequest {
-  account_id: number;
-  symbol: string;
-  market: HoldingMarket;
-  dividend_type: HoldingDividendType;
-  ex_dividend_date: string;
-  pay_date?: string | null;
-  amount_per_share?: string | null;     // required for CASH
-  quantity_at_record: string;
-  ratio?: string | null;                // required for STOCK
-  currency?: string;
-  withholding_tax?: string;
-  note?: string | null;
-}
-
-export interface HoldingDividendUpdateRequest {
-  note?: string | null;
-  pay_date?: string | null;
-  withholding_tax?: string;
-}
+export type HoldingDividend = Schemas["DividendResponse"];
+export type HoldingDividendCreateRequest = Schemas["DividendCreateRequest"];
+export type HoldingDividendUpdateRequest = Schemas["DividendUpdateRequest"];
 
 // ── CSV Import (Phase 4) ──────────────────────────────────────────────────
 
-/**
- * One row in an ImportResult — successful preview rows have `error=null`,
- * failed rows have `error` populated with a snake_case identifier
- * (e.g. "invalid_action", "dividend_actions_not_supported").
- *
- * All numeric fields are echoed back as strings (not parsed) so the
- * frontend preview table renders the verbatim CSV value.
- */
-export interface ImportResultRow {
-  row_index: number;
-  action: string | null;
-  symbol: string | null;
-  quantity: string | null;
-  price: string | null;
-  trade_date: string | null;
-  error: string | null;
-}
-
-/**
- * Result of a CSV import — same shape for dry-run and commit. When
- * `dry_run=false` the only valid outcomes are
- * `failed_rows == 0 && successful_rows == parsed_rows` (full commit)
- * or `successful_rows == 0` (atomic rollback).
- */
-export interface ImportResult {
-  parsed_rows: number;
-  successful_rows: number;
-  failed_rows: number;
-  errors: ImportResultRow[];
-  dry_run: boolean;
-}
-
-/**
- * One broker adapter exposed by GET /imports/brokers (Round 10).
- *
- * `broker_key` is the stable wire identifier passed back on the import
- * call's `broker_key` query param. `display_name` is the human label
- * rendered in the dropdown.
- */
-export interface BrokerInfo {
-  broker_key: string;
-  display_name: string;
-}
-
-export interface BrokerListResponse {
-  brokers: BrokerInfo[];
-}
+export type ImportResultRow = Schemas["ImportResultRow"];
+export type ImportResult = Schemas["ImportResult"];
+export type BrokerInfo = Schemas["BrokerInfo"];
+export type BrokerListResponse = Schemas["BrokerListResponse"];
 
 // ---------------------------------------------------------------------------
 // Holdings — API functions

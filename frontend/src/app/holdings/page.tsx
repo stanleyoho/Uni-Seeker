@@ -150,7 +150,15 @@ export default function HoldingsPage() {
   };
 
   const accountList: HoldingAccount[] = accounts ?? [];
-  const positions = positionsRes?.positions ?? [];
+  // Wire PositionResponse marks `qty` and `realized_pnl` as nullable
+  // (e.g. fully closed positions). UI's local HoldingPosition expects
+  // non-null strings for display ergonomics; coerce null → "0" at the
+  // boundary so UI doesn't have to null-guard every cell.
+  const positions = (positionsRes?.positions ?? []).map((p) => ({
+    ...p,
+    qty: p.qty ?? "0",
+    realized_pnl: p.realized_pnl ?? "0",
+  }));
 
   const holdingsTitle =
     (t.holdings && (t.holdings as { title?: string }).title) ?? "持倉對賬";

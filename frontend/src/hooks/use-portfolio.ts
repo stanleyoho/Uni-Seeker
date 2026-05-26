@@ -69,17 +69,21 @@ function mapApiResponse(
   const metrics = apiRes.portfolio_metrics;
   const equityCurve = apiRes.portfolio_equity_curve;
 
+  // Backend types individual_metrics as Record<string, Record<string, unknown>>.
+  // Narrow each cell to number with a runtime guard.
+  const asNum = (v: unknown): number => (typeof v === "number" ? v : 0);
+
   // Build stock_metrics from individual_metrics + original allocations
   const stockMetrics: PortfolioStockMetric[] = params.allocations.map((alloc) => {
     const m = apiRes.individual_metrics[alloc.symbol] ?? {};
     return {
       symbol: alloc.symbol,
       weight: alloc.weight,
-      total_return: m.total_return ?? 0,
-      annualized_return: m.annualized_return ?? 0,
-      sharpe_ratio: m.sharpe_ratio ?? 0,
-      win_rate: m.win_rate ?? 0,
-      max_drawdown: m.max_drawdown ?? 0,
+      total_return: asNum(m.total_return),
+      annualized_return: asNum(m.annualized_return),
+      sharpe_ratio: asNum(m.sharpe_ratio),
+      win_rate: asNum(m.win_rate),
+      max_drawdown: asNum(m.max_drawdown),
     };
   });
 
@@ -104,7 +108,8 @@ function mapApiResponse(
     total_return: metrics.total_return ?? 0,
     annualized_return: metrics.annualized_return ?? 0,
     max_drawdown: metrics.max_drawdown ?? 0,
-    sharpe_ratio: metrics.sharpe_ratio ?? 0,
+    // Backend field is `sharpe` (PortfolioMetricsResponse); maps to frontend `sharpe_ratio`.
+    sharpe_ratio: metrics.sharpe ?? 0,
     portfolio_equity: equityCurve,
     stock_equities: apiRes.individual_equity_curves ?? {},
     stock_metrics: stockMetrics,
@@ -129,13 +134,15 @@ export function usePortfolioBacktest() {
 
       try {
         const apiRes = await runPortfolioBacktest({
+          // params is required by PortfolioAllocationInput (Pydantic default {}).
           allocations: params.allocations.map((a) => ({
             symbol: a.symbol,
             weight: a.weight,
             strategy: a.strategy,
+            params: {},
           })),
           rebalance_mode: params.rebalance_mode,
-          rebalance_config: Object.keys(rebalanceConfig).length > 0 ? rebalanceConfig : undefined,
+          rebalance_config: rebalanceConfig,
           initial_capital: params.initial_capital,
         });
         return mapApiResponse(apiRes, params);
