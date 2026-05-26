@@ -1046,7 +1046,7 @@ export interface paths {
          * @description Refresh the latest N (≤4) 13F filings on-demand (Q1 + Q8).
          *
          *     Anti-concurrency: a second simultaneous refresh on the same filer
-         *     raises `F13RefreshInFlight` which we translate to 429. EDGAR
+         *     raises `F13RefreshInFlightError` which we translate to 429. EDGAR
          *     failures (after retries) become 502 with the upstream status
          *     preserved on a best-effort basis.
          */
@@ -1756,6 +1756,68 @@ export interface paths {
          *           (sum != 100, duplicates, negatives, etc.).
          */
         post: operations["preview_rebalance_api_v1_holdings_rebalance_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/holdings/rebalance/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Rebalance
+         * @description Re-compute the rebalance plan and persist every suggested trade.
+         *
+         *     Path c.i (Stanley 拍板 2026-05-24): the server re-computes
+         *     ``suggested_trades`` from the same ``targets`` payload as ``/preview``
+         *     (no client-passed trade list) and then writes each one through the
+         *     same ``PortfolioTradeService.record_trade`` pipeline that backs
+         *     ``POST /holdings/trades``.
+         *
+         *     Per-trade independent commit:
+         *         Each suggested trade is its own try-block. If the trade-write
+         *         layer rejects one row (e.g. ``InsufficientShares`` because the
+         *         live position drifted since the snapshot was taken), it lands in
+         *         ``failed`` and the next row continues. The endpoint returns 200
+         *         with a per-row summary; the client decides how to react.
+         *
+         *     Multi-account dispatch (Phase 3):
+         *         - ``body.account_id`` is now optional. When set, every trade is
+         *           routed to that one account (back-compat with Phase 2 behavior).
+         *         - When omitted (aggregate mode), each trade is routed to the
+         *           account_id carried on the planner-emitted ``SuggestedTrade``.
+         *           That field is derived from the source position the planner
+         *           loaded — by construction it only contains accounts the user
+         *           owns (the planner sources from ``list_by_user``).
+         *         - If the planner produced any trade with ``account_id=None``
+         *           (a brand-new BUY symbol with no source position to derive
+         *           from) AND no top-level scope was given, we 422 the whole
+         *           batch — partial execute of an unroutable plan would silently
+         *           drop work.
+         *         - Defense-in-depth: each unique account_id in the resolved plan
+         *           is re-validated via ``_require_owned_account`` before any
+         *           trade lands; a foreign id surfaces as 404 (consistent with
+         *           the rest of /holdings/*, see spec §9.5).
+         *
+         *     Errors (whole-batch — bubble like preview):
+         *         - 403 ``feature_unavailable:rebalancing`` for non-Pro tiers.
+         *         - 404 ``portfolio_account_not_found`` when ``account_id`` is set
+         *           and not owned, OR when a defense-in-depth re-check on a
+         *           resolved per-trade account_id fails.
+         *         - 422 ``invalid_rebalance_input`` for bad ``targets`` (sum
+         *           mismatch, duplicates, negatives).
+         *         - 422 ``account_unresolved_for_trade`` when aggregate mode
+         *           (top-level ``account_id`` omitted) produces a plan with any
+         *           un-routed BUY — the client must rescope before executing.
+         */
+        post: operations["execute_rebalance_api_v1_holdings_rebalance_execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3058,6 +3120,34 @@ export interface components {
             currency?: string | null;
         };
         /**
+         * ExecutedTrade
+         * @description One suggested trade that was successfully persisted as a real
+         *     ``portfolio_trades`` row.
+         *
+         *     ``trade_id`` is the primary key of the inserted row — the UI can
+         *     deep-link to it via ``GET /holdings/trades/{trade_id}``.
+         *     ``account_id`` (Phase 3) is the broker/portfolio account this trade
+         *     landed in. Always populated post-execute.
+         */
+        ExecutedTrade: {
+            /** Symbol */
+            symbol: string;
+            market: components["schemas"]["Market"];
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "BUY" | "SELL";
+            /** Qty */
+            qty: string;
+            /** Price */
+            price: string;
+            /** Trade Id */
+            trade_id: number;
+            /** Account Id */
+            account_id: number;
+        };
+        /**
          * F13BulkSubscribeError
          * @description Per-row failure inside the bulk-subscribe envelope.
          *
@@ -3418,7 +3508,10 @@ export interface components {
         F13SubscribeRequest: {
             /** Cik */
             cik: string;
-            /** Name */
+            /**
+             * Name
+             * @description Required when the CIK is not yet in the local DB (f13_filers.name is NOT NULL). For known CIKs name is optional. Missing name on an unknown CIK → 422 f13_invalid_input.
+             */
             name?: string | null;
             /** Legal Name */
             legal_name?: string | null;
@@ -3463,6 +3556,34 @@ export interface components {
             subscribed_at: string;
             /** Notify On New Filing */
             notify_on_new_filing: boolean;
+        };
+        /**
+         * FailedTrade
+         * @description A suggested trade that the planner produced but the trade-write
+         *     pipeline rejected (e.g. ``InsufficientSharesError`` on a SELL whose stale
+         *     snapshot disagrees with the live lot total).
+         *
+         *     ``error_code`` matches the canonical ``_detail`` strings (e.g.
+         *     ``insufficient_shares``, ``invalid_trade_input``) so the frontend
+         *     can localise / icon-map identically to the regular trade-create flow.
+         *     ``account_id`` (Phase 3) identifies which account the dispatch was
+         *     targeting; ``None`` for trades that failed before account resolution.
+         */
+        FailedTrade: {
+            /** Symbol */
+            symbol: string;
+            market: components["schemas"]["Market"];
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "BUY" | "SELL";
+            /** Error Code */
+            error_code: string;
+            /** Message */
+            message: string;
+            /** Account Id */
+            account_id?: number | null;
         };
         /** FinancialDataResponse */
         FinancialDataResponse: {
@@ -4354,6 +4475,24 @@ export interface components {
             max_requests: number;
         };
         /**
+         * RebalanceExecuteResponse
+         * @description Full execute response — per-trade independent commit.
+         *
+         *     ``total_executed_value`` is the sum of ``qty * price`` across rows in
+         *     ``executed`` (skipped + failed do NOT count). The UI surfaces it as
+         *     "actually moved $X this rebalance".
+         */
+        RebalanceExecuteResponse: {
+            /** Executed */
+            executed: components["schemas"]["ExecutedTrade"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedTrade"][];
+            /** Failed */
+            failed: components["schemas"]["FailedTrade"][];
+            /** Total Executed Value */
+            total_executed_value: string;
+        };
+        /**
          * RebalanceRequest
          * @description POST body for ``/holdings/rebalance/preview``.
          *
@@ -4594,6 +4733,29 @@ export interface components {
              */
             limit: number;
         };
+        /**
+         * SkippedTrade
+         * @description A suggested trade dropped by the planner BEFORE execution attempt.
+         *
+         *     Mirrors the dict shape emitted by ``compute_rebalance.skipped_trades``
+         *     so the frontend can use one schema for both preview and execute. The
+         *     canonical ``reason`` values today are:
+         *       - ``below_min_trade_value``
+         *       - ``missing_price_for_buy``
+         *       - ``missing_price_for_sell``
+         */
+        SkippedTrade: {
+            /** Symbol */
+            symbol: string;
+            /** Market */
+            market: string;
+            /** Reason */
+            reason: string;
+            /** Target Pct */
+            target_pct?: string | null;
+            /** Delta Value */
+            delta_value?: string | null;
+        };
         /** StockEdgeResponse */
         StockEdgeResponse: {
             /** Stock Id */
@@ -4702,6 +4864,13 @@ export interface components {
          * SuggestedTradeResponse
          * @description One suggested BUY/SELL emitted by the planner. Mirrors
          *     ``app.modules.portfolio.rebalancing.SuggestedTrade``.
+         *
+         *     ``account_id`` (Phase 3) tells the client which broker/portfolio
+         *     account this trade dispatches to when ``execute`` is called. It is
+         *     populated for every trade in single-account previews (echoes the
+         *     request scope) AND for trades sourced from existing positions in
+         *     aggregate previews. It is ``None`` only for brand-new BUYs in
+         *     aggregate mode — the client must scope explicitly before executing.
          */
         SuggestedTradeResponse: {
             /** Symbol */
@@ -4720,6 +4889,8 @@ export interface components {
             estimated_value: string;
             /** Rationale */
             rationale: string;
+            /** Account Id */
+            account_id?: number | null;
         };
         /**
          * SummaryResponse
@@ -5809,7 +5980,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -7760,6 +7933,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RebalanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execute_rebalance_api_v1_holdings_rebalance_execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RebalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RebalanceExecuteResponse"];
                 };
             };
             /** @description Validation Error */
