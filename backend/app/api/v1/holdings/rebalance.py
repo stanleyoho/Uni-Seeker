@@ -135,6 +135,7 @@ async def preview_rebalance(
                 estimated_price=t.estimated_price,
                 estimated_value=t.estimated_value,
                 rationale=t.rationale,
+                account_id=t.account_id,
             )
             for t in result.suggested_trades
         ],
@@ -170,12 +171,34 @@ async def execute_rebalance(
         ``failed`` and the next row continues. The endpoint returns 200
         with a per-row summary; the client decides how to react.
 
+    Multi-account dispatch (Phase 3):
+        - ``body.account_id`` is now optional. When set, every trade is
+          routed to that one account (back-compat with Phase 2 behavior).
+        - When omitted (aggregate mode), each trade is routed to the
+          account_id carried on the planner-emitted ``SuggestedTrade``.
+          That field is derived from the source position the planner
+          loaded — by construction it only contains accounts the user
+          owns (the planner sources from ``list_by_user``).
+        - If the planner produced any trade with ``account_id=None``
+          (a brand-new BUY symbol with no source position to derive
+          from) AND no top-level scope was given, we 422 the whole
+          batch — partial execute of an unroutable plan would silently
+          drop work.
+        - Defense-in-depth: each unique account_id in the resolved plan
+          is re-validated via ``_require_owned_account`` before any
+          trade lands; a foreign id surfaces as 404 (consistent with
+          the rest of /holdings/*, see spec §9.5).
+
     Errors (whole-batch — bubble like preview):
         - 403 ``feature_unavailable:rebalancing`` for non-Pro tiers.
         - 404 ``portfolio_account_not_found`` when ``account_id`` is set
-          and not owned.
+          and not owned, OR when a defense-in-depth re-check on a
+          resolved per-trade account_id fails.
         - 422 ``invalid_rebalance_input`` for bad ``targets`` (sum
           mismatch, duplicates, negatives).
+        - 422 ``account_unresolved_for_trade`` when aggregate mode
+          (top-level ``account_id`` omitted) produces a plan with any
+          un-routed BUY — the client must rescope before executing.
     """
     rebalance_svc = RebalancingService(db, user, fetcher)  # type: ignore[arg-type]
     try:
@@ -201,30 +224,44 @@ async def execute_rebalance(
             detail="invalid_rebalance_input",
         ) from exc
 
-    # ── persist each suggested trade independently ─────────────────────
+    # ── resolve per-trade target accounts (Phase 3) ────────────────────
+    # Pre-flight: if aggregate mode and any suggested trade has no
+    # account_id (brand-new BUY symbol absent from every account), reject
+    # the whole batch with a clear 422. Partial execution would silently
+    # drop those rows — worse UX than a re-scope prompt.
+    unresolved = [f"{t.symbol}|{t.market}" for t in plan.suggested_trades if t.account_id is None]
+    if unresolved and body.account_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="account_unresolved_for_trade",
+        )
+
+    # Defense-in-depth: re-validate every distinct resolved account_id
+    # is owned by the user. The planner sources only from list_by_user,
+    # so this is structurally already true — but the check is cheap and
+    # protects against a future refactor that loosens that invariant.
     trade_svc = PortfolioTradeService(db, user)  # type: ignore[arg-type]
+    distinct_accounts = {t.account_id for t in plan.suggested_trades if t.account_id is not None}
+    for resolved_aid in distinct_accounts:
+        try:
+            await trade_svc._require_owned_account(resolved_aid)
+        except PortfolioAccountNotFound as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=detail.ACCOUNT_NOT_FOUND,
+            ) from exc
+
     executed: list[ExecutedTrade] = []
     failed: list[FailedTrade] = []
     total_executed_value = Decimal("0")
-
-    # Resolve the target account. The trade-create pipeline requires an
-    # account_id per row; if the caller scoped the rebalance to an
-    # account we use it, otherwise we fall back to the position's
-    # current account (which preview already enforced ownership over).
-    # For Phase 2 we require account_id — multi-account execute would
-    # need a per-trade account resolver and is out of scope.
-    target_account_id = body.account_id
-    if target_account_id is None:
-        # Without an explicit account, suggested trades have no canonical
-        # destination. Surface as 422 so the client knows to scope.
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="account_id_required_for_execute",
-        )
-
     today = datetime.now(tz=UTC).date()
 
     for trade in plan.suggested_trades:
+        # Resolve this trade's destination account: per-trade if set
+        # (aggregate mode), else top-level scope (single-account mode).
+        # The pre-flight above guarantees this is always int by here.
+        target_account_id = trade.account_id or body.account_id
+        assert target_account_id is not None
         # Coerce the domain layer's str-market back to the Market enum
         # the trade service expects. The pure module is enum-agnostic so
         # it hands us a string; ``Market(str)`` works because Market is
@@ -241,6 +278,7 @@ async def execute_rebalance(
                     action=trade.action,
                     error_code="invalid_market",
                     message=str(exc),
+                    account_id=target_account_id,
                 )
             )
             continue
@@ -267,13 +305,15 @@ async def execute_rebalance(
                     action=trade.action,
                     error_code=detail.INSUFFICIENT_SHARES,
                     message=str(exc),
+                    account_id=target_account_id,
                 )
             )
             continue
         except TierLimitExceeded as exc:
             # Trade-month quota or positions quota tripped mid-batch.
             # Surface as failed and stop — subsequent rows would hit the
-            # same wall.
+            # same wall. (Multi-account caveat: the cap is per-user, not
+            # per-account, so even other accounts can't bail us out.)
             await db.rollback()
             failed.append(
                 FailedTrade(
@@ -282,6 +322,7 @@ async def execute_rebalance(
                     action=trade.action,
                     error_code=detail.limit_exceeded(exc.limit_key),
                     message=str(exc),
+                    account_id=target_account_id,
                 )
             )
             break
@@ -294,6 +335,7 @@ async def execute_rebalance(
                     action=trade.action,
                     error_code=detail.INVALID_TRADE_INPUT,
                     message=str(exc),
+                    account_id=target_account_id,
                 )
             )
             continue
@@ -306,6 +348,7 @@ async def execute_rebalance(
                 qty=trade.qty,
                 price=trade.estimated_price,
                 trade_id=persisted.id,
+                account_id=target_account_id,
             )
         )
         total_executed_value += trade.qty * trade.estimated_price

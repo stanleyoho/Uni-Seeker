@@ -92,7 +92,15 @@ class RebalanceRequest(BaseModel):
 
 class SuggestedTradeResponse(BaseModel):
     """One suggested BUY/SELL emitted by the planner. Mirrors
-    ``app.modules.portfolio.rebalancing.SuggestedTrade``."""
+    ``app.modules.portfolio.rebalancing.SuggestedTrade``.
+
+    ``account_id`` (Phase 3) tells the client which broker/portfolio
+    account this trade dispatches to when ``execute`` is called. It is
+    populated for every trade in single-account previews (echoes the
+    request scope) AND for trades sourced from existing positions in
+    aggregate previews. It is ``None`` only for brand-new BUYs in
+    aggregate mode — the client must scope explicitly before executing.
+    """
 
     symbol: str
     market: Market
@@ -101,6 +109,7 @@ class SuggestedTradeResponse(BaseModel):
     estimated_price: Decimal
     estimated_value: Decimal
     rationale: str
+    account_id: int | None = None
 
     @field_serializer("qty", "estimated_price", "estimated_value", when_used="json")
     def _serialize_decimal(self, value: Decimal) -> str:
@@ -144,6 +153,8 @@ class ExecutedTrade(BaseModel):
 
     ``trade_id`` is the primary key of the inserted row — the UI can
     deep-link to it via ``GET /holdings/trades/{trade_id}``.
+    ``account_id`` (Phase 3) is the broker/portfolio account this trade
+    landed in. Always populated post-execute.
     """
 
     symbol: str
@@ -152,6 +163,7 @@ class ExecutedTrade(BaseModel):
     qty: Decimal
     price: Decimal
     trade_id: int
+    account_id: int
 
     @field_serializer("qty", "price", when_used="json")
     def _serialize_decimal(self, value: Decimal) -> str:
@@ -184,6 +196,8 @@ class FailedTrade(BaseModel):
     ``error_code`` matches the canonical ``_detail`` strings (e.g.
     ``insufficient_shares``, ``invalid_trade_input``) so the frontend
     can localise / icon-map identically to the regular trade-create flow.
+    ``account_id`` (Phase 3) identifies which account the dispatch was
+    targeting; ``None`` for trades that failed before account resolution.
     """
 
     symbol: str
@@ -191,6 +205,7 @@ class FailedTrade(BaseModel):
     action: Literal["BUY", "SELL"]
     error_code: str
     message: str
+    account_id: int | None = None
 
 
 class RebalanceExecuteResponse(BaseModel):

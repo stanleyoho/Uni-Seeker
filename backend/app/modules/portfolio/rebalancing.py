@@ -72,6 +72,12 @@ class CurrentPosition:
     ``current_value`` is precomputed by the caller (service layer) from
     ``qty × last_price`` so the pure module doesn't have to assume the
     multiplication semantics for fractional shares, splits, etc.
+
+    ``account_id`` is the broker/portfolio-account this position lives
+    under (Phase 3 multi-account dispatch). Optional so old callers /
+    single-account tests can keep passing ``None``; the planner then
+    emits ``None`` on the resulting ``SuggestedTrade.account_id`` and
+    the service layer fills in the top-level scope.
     """
 
     symbol: str
@@ -79,6 +85,7 @@ class CurrentPosition:
     qty: Decimal
     last_price: Decimal
     current_value: Decimal
+    account_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -93,7 +100,19 @@ class TargetAllocation:
 
 @dataclass(frozen=True)
 class SuggestedTrade:
-    """A single proposed trade to move the portfolio toward target."""
+    """A single proposed trade to move the portfolio toward target.
+
+    ``account_id`` (Phase 3 multi-account dispatch) tells the execute
+    pipeline which broker/portfolio-account this trade should land in.
+    Resolution rule:
+      * SELL of an existing position → account_id of that position.
+      * BUY  of a symbol currently held → account_id of the existing
+        position (we add to what we already have).
+      * BUY  of a brand-new symbol → ``None``; the service layer falls
+        back to top-level ``account_id`` if set, else surfaces 422.
+    Single-account preview (top-level ``account_id`` set) keeps every
+    trade routed to that account for backward compatibility.
+    """
 
     symbol: str
     market: str
@@ -102,6 +121,7 @@ class SuggestedTrade:
     estimated_price: Decimal
     estimated_value: Decimal
     rationale: str  # human-readable, surfaced to the UI as a tooltip
+    account_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -247,6 +267,11 @@ def compute_rebalance(
             committed_value[k] = current_value
             continue
 
+        # Carry the owning account from the existing position. None for
+        # brand-new BUYs — the service layer either fills in from the
+        # top-level account_id scope or surfaces 422 in aggregate mode.
+        owning_account = current.account_id if current is not None else None
+
         if delta_value > _ZERO:
             # BUY path needs a price. Use ref_price; if zero, skip.
             if ref_price <= _ZERO:
@@ -275,6 +300,7 @@ def compute_rebalance(
                         f"target {t.target_pct}% (buy to add "
                         f"{_fmt_money(delta_value)})"
                     ),
+                    account_id=owning_account,
                 )
             )
             committed_value[k] = target_value
@@ -308,6 +334,7 @@ def compute_rebalance(
                         f"target {t.target_pct}% (sell to reduce "
                         f"{_fmt_money(sell_value)})"
                     ),
+                    account_id=owning_account,
                 )
             )
             committed_value[k] = target_value
@@ -358,6 +385,7 @@ def compute_rebalance(
                 rationale=(
                     f"exit position (current {_pct_of(p.current_value, total_value)}% → target 0%)"
                 ),
+                account_id=p.account_id,
             )
         )
         # Exited position contributes 0 to committed_value.
