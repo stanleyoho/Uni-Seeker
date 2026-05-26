@@ -200,6 +200,7 @@ async def test_accounts_patch_updates_fields(client: AsyncClient, db_session: As
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_accounts_delete_removes_and_cascades(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -313,6 +314,7 @@ async def test_accounts_cross_user_get_returns_404(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_trades_post_buy_creates_position(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -345,6 +347,7 @@ async def test_trades_post_buy_creates_position(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_trades_post_sell_after_buy_realizes_pnl(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -609,6 +612,7 @@ async def test_trades_cross_user_post_returns_404(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_positions_list_includes_live_pnl(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -726,6 +730,7 @@ async def test_positions_cross_user_list_is_empty(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_summary_user_wide_aggregates_across_accounts(
     client: AsyncClient,
     db_session: AsyncSession,

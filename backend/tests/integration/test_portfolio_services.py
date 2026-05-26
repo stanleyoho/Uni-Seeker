@@ -194,6 +194,7 @@ async def test_account_service_get_other_users_account_raises(
     assert await svc_b.list_accounts() == []
 
 
+@pytest.mark.pg_integration
 async def test_account_service_delete_cascades_trades_and_positions(
     db_session: AsyncSession,
 ) -> None:
@@ -253,6 +254,7 @@ async def _seed_account(db_session: AsyncSession, user: User, name: str = "acc")
     return acc.id
 
 
+@pytest.mark.pg_integration
 async def test_trade_service_buy_creates_lot_and_position(
     db_session: AsyncSession,
 ) -> None:
@@ -284,6 +286,7 @@ async def test_trade_service_buy_creates_lot_and_position(
     assert pos.is_closed is False
 
 
+@pytest.mark.pg_integration
 async def test_trade_service_sell_consumes_fifo_oldest_first(
     db_session: AsyncSession,
 ) -> None:
@@ -359,6 +362,7 @@ async def test_trade_service_sell_insufficient_shares_raises(
         )
 
 
+@pytest.mark.pg_integration
 async def test_trade_service_sell_crosses_multiple_lots(
     db_session: AsyncSession,
 ) -> None:

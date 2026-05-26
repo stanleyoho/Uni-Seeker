@@ -1,0 +1,34 @@
+# E2E-2: Real-Postgres integration test gate.
+#
+# Spin up an ephemeral Postgres 16 just for `pytest -m pg_integration`.
+# Port 5433 (not 5432) on purpose: keeps coexistence with any local
+# dev Postgres a developer is already running on 5432.
+#
+# No named volume — we *want* the DB to be wiped between runs so each
+# `alembic upgrade head` starts from an empty database. Use `tmpfs`
+# for the data dir to keep PG happy without bothering host disk.
+#
+# Usage:
+#   cd backend
+#   docker compose -f docker-compose.test.yml up -d
+#   UNI_TEST_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/uni_seeker_test \
+#     uv run pytest -m pg_integration
+#   docker compose -f docker-compose.test.yml down
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: uni-seeker-pg-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: uni_seeker_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d uni_seeker_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

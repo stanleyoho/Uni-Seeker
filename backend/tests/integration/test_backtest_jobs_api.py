@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 if TYPE_CHECKING:
     from httpx import AsyncClient
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,6 +75,7 @@ async def _mk_result(
 # ── POST /jobs (enqueue) ──────────────────────────────────────────────────
 
 
+@pytest.mark.pg_integration
 async def test_enqueue_single_job_returns_201(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -104,6 +107,7 @@ async def test_queue_status_empty(client: AsyncClient) -> None:
     assert data["jobs"] == []
 
 
+@pytest.mark.pg_integration
 async def test_queue_status_counts_by_status(client: AsyncClient, db_session: AsyncSession) -> None:
     await _mk_job(db_session, "2330", status="pending")
     await _mk_job(db_session, "0050", status="pending")
@@ -124,6 +128,7 @@ async def test_get_job_result_404_when_missing(client: AsyncClient) -> None:
     assert resp.status_code == 404
 
 
+@pytest.mark.pg_integration
 async def test_get_job_result_returns_results_ordered_by_return(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -176,6 +181,7 @@ async def test_history_empty(client: AsyncClient) -> None:
     assert data["results"] == []
 
 
+@pytest.mark.pg_integration
 async def test_history_returns_results_with_total(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -190,6 +196,7 @@ async def test_history_returns_results_with_total(
     assert len(data["results"]) == 2
 
 
+@pytest.mark.pg_integration
 async def test_history_filter_by_symbol(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     await _mk_result(db_session, job.id, symbol="2330")
@@ -234,6 +241,7 @@ async def test_get_result_by_id_404(client: AsyncClient) -> None:
 # ── GET /history/{symbol}/best ────────────────────────────────────────────
 
 
+@pytest.mark.pg_integration
 async def test_best_for_symbol_returns_top10(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     for i in range(12):

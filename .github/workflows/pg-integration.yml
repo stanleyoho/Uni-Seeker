@@ -1,0 +1,88 @@
+name: Postgres Integration
+
+# E2E-2: real-Postgres integration gate. Complements `backend-ci.yml`
+# (which runs the fast sqlite suite) by exercising ~30 critical-path
+# tests against a real Postgres 16 plus `alembic upgrade head`. This
+# is the gate that catches migration regressions, FK constraint
+# misbehavior, JSONB semantic drift, and PG-only SQL (UPSERT, ENUM,
+# partial indexes) that sqlite silently tolerates.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/pg-integration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/pg-integration.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pg-integration:
+    runs-on: ubuntu-latest
+
+    services:
+      # GitHub Actions service container — reuses the same image and
+      # health-check incantation as `backend-ci.yml::test::services::postgres`
+      # so behavior matches the regular CI job byte-for-byte.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: uni_seeker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Phase 8 V.2: AAE workspace packages live behind a deploy key.
+      # Same pattern as backend-ci.yml — see that file for context.
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv pip install --system -e ".[dev]"
+
+      # Sanity check: confirm Alembic can plan migrations against the
+      # service container before the test runner spins up its own engine.
+      # Without this step a broken revision graph would surface only as
+      # an opaque pytest collection error.
+      - name: Alembic upgrade head (sanity)
+        working-directory: backend
+        env:
+          UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_test
+        run: alembic upgrade head
+
+      # Note: the conftest fixture re-runs `alembic upgrade head` per test
+      # against a freshly-dropped schema. That is intentional — each test
+      # validates the full migration chain, not just the cumulative state.
+      - name: Test (pg_integration only)
+        working-directory: backend
+        env:
+          UNI_TEST_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_test
+          UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_test
+          # CI-only secret — never use in prod. Mirrors backend-ci.yml.
+          UNI_JWT_SECRET_KEY: ci-test-secret-do-not-use-in-prod
+        run: pytest -m pg_integration --no-cov -v
