@@ -132,10 +132,14 @@ export default function WatchlistPage() {
       return;
     }
     setPricesLoading(true);
+    // Backend WatchlistItemResponse marks `stock_name` as optional + nullable
+    // (`string | null | undefined`); local WatchlistRowData uses the narrower
+    // `string | null`. Coerce `undefined → null` at this boundary so each
+    // row consumer doesn't have to triple-guard.
     const baseRows: WatchlistRowData[] = watchlistItems.map((item) => ({
       symbol: item.symbol,
       id: item.id,
-      stock_name: item.stock_name,
+      stock_name: item.stock_name ?? null,
       created_at: item.created_at,
       loading: true,
     }));
@@ -148,7 +152,7 @@ export default function WatchlistPage() {
           return {
             symbol: item.symbol,
             id: item.id,
-            stock_name: item.stock_name,
+            stock_name: item.stock_name ?? null,
             created_at: item.created_at,
             price: res.data[0] ?? null,
             loading: false,
@@ -157,7 +161,7 @@ export default function WatchlistPage() {
           return {
             symbol: item.symbol,
             id: item.id,
-            stock_name: item.stock_name,
+            stock_name: item.stock_name ?? null,
             created_at: item.created_at,
             price: null,
             loading: false,

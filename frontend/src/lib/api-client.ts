@@ -831,37 +831,12 @@ export async function fetchJournalAlerts(): Promise<JournalAlertsResponse> {
 // the collection endpoint.
 // ---------------------------------------------------------------------------
 
-export interface WatchlistItem {
-  id: number;
-  symbol: string;
-  /**
-   * Joined from stocks.name on the server (Round 6). May be null if the
-   * stock row was deleted out-of-band — callers should fall back to
-   * `symbol` for display.
-   */
-  stock_name: string | null;
-  created_at: string;
-}
+// Watchlist types — sourced from generated OpenAPI schema (E2E-1 W5).
+// Behavioural docs for the endpoints stay in the api function comments below.
 
-/** Per-symbol failure returned inside a bulk-add response (Round 6). */
-export interface WatchlistBulkAddError {
-  symbol: string;
-  /** snake_case: `stock_not_found` | `invalid_symbol` | `internal_error` */
-  reason: string;
-}
-
-/**
- * Envelope for POST /watchlist/bulk (Round 6).
- *
- * The endpoint NEVER returns 4xx for per-row issues — only quota
- * (403 limit_exceeded:max_watchlist) and validation (422) and auth (401)
- * can short-circuit. Per-row issues land in `errors[]`.
- */
-export interface WatchlistBulkAddResponse {
-  added: WatchlistItem[];
-  skipped_duplicates: string[];
-  errors: WatchlistBulkAddError[];
-}
+export type WatchlistItem = Schemas["WatchlistItemResponse"];
+export type WatchlistBulkAddError = Schemas["WatchlistBulkAddError"];
+export type WatchlistBulkAddResponse = Schemas["WatchlistBulkAddResponse"];
 
 export async function listWatchlist(): Promise<WatchlistItem[]> {
   return apiFetch<WatchlistItem[]>(`${API_BASE}/watchlist/`);
@@ -2162,44 +2137,15 @@ export type AlertRuleType =
 export type AlertStatus = "ACTIVE" | "PAUSED" | "TRIGGERED";
 export type AlertThresholdType = "PCT" | "ABSOLUTE";
 
-export interface AlertRule {
-  id: number;
-  name: string;
-  rule_type: AlertRuleType;
-  symbol: string | null;
-  market: string | null;
-  /** Decimal-as-string per project convention. */
-  threshold_value: string;
-  threshold_type: AlertThresholdType;
-  status: AlertStatus;
-  last_evaluated_at: string | null;
-  last_triggered_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Alert types — sourced from generated OpenAPI schema (E2E-1 W5).
+// AlertRuleType / AlertStatus / AlertThresholdType named enums kept above
+// for callers that want semantic types; they're structurally compatible
+// with the inline enums on AlertRuleResponse.rule_type/status/threshold_type.
 
-export interface AlertRuleCreateRequest {
-  name: string;
-  rule_type: AlertRuleType;
-  threshold_value: string;
-  threshold_type: AlertThresholdType;
-  symbol?: string | null;
-  market?: string | null;
-}
-
-export interface AlertRuleUpdateRequest {
-  name?: string;
-  status?: AlertStatus;
-  threshold_value?: string;
-  threshold_type?: AlertThresholdType;
-}
-
-export interface AlertEvaluationResult {
-  triggered: boolean;
-  actual_value: string;
-  threshold: string;
-  message: string;
-}
+export type AlertRule = Schemas["AlertRuleResponse"];
+export type AlertRuleCreateRequest = Schemas["AlertRuleCreateRequest"];
+export type AlertRuleUpdateRequest = Schemas["AlertRuleUpdateRequest"];
+export type AlertEvaluationResult = Schemas["AlertEvaluationResponse"];
 
 export async function listAlertRules(): Promise<AlertRule[]> {
   return apiFetch<AlertRule[]>(`${API_BASE}/holdings/alerts`);
