@@ -69,6 +69,7 @@ def _enable_monetization(monkeypatch):
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_bulk_add_three_new_symbols(client: AsyncClient, db_session: AsyncSession):
     u = await _make_user(db_session, "bulk1@x.tw", "bulk1")
     await _make_stock(db_session, "2330.TW", "TSMC")
@@ -155,6 +156,7 @@ async def test_pro_tier_no_limit_on_bulk(client: AsyncClient, db_session: AsyncS
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_bulk_add_with_existing_duplicates_reports_skipped(
     client: AsyncClient, db_session: AsyncSession
 ):

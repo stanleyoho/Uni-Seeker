@@ -91,6 +91,7 @@ async def _add_snap(
 # N01 — happy path, 1m period (default), PRO tier
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_N01_happy_path_returns_analytics(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -246,6 +247,7 @@ async def test_N06_unowned_account_404(client: AsyncClient, db_session: AsyncSes
 # N07 — snapshots outside the 1m window are excluded
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_N07_period_boundary_excludes_old_snapshots(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:

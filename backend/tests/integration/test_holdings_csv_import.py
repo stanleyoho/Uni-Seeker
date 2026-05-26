@@ -127,6 +127,7 @@ async def test_dry_run_parses_without_db_write(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_commit_writes_all_rows(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "csv2@x.tw")
     uid = user.id
@@ -308,6 +309,7 @@ async def test_tier_quota_exceeded_returns_403(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_partial_failure_atomic_rollback(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:

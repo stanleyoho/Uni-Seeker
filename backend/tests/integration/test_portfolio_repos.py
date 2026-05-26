@@ -20,6 +20,8 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+import pytest
+
 from app.models.enums import Market, UserTier
 from app.models.price import StockPrice
 from app.models.stock import Stock
@@ -140,6 +142,7 @@ async def test_account_repo_update_persists_fields(
     assert updated.user_id == user.id  # never mutated
 
 
+@pytest.mark.pg_integration
 async def test_account_repo_delete_cascades(db_session: AsyncSession) -> None:
     """Deleting account cascades to trades / lots / positions per FK
     ON DELETE CASCADE. delete() returns True on hit, False on miss."""
@@ -566,6 +569,7 @@ async def test_lot_repo_delete_by_trade(db_session: AsyncSession) -> None:
 # ═════════════════════════════════════════════════════════════════════════════
 
 
+@pytest.mark.pg_integration
 async def test_position_repo_upsert_insert_then_update(
     db_session: AsyncSession,
 ) -> None:
@@ -606,6 +610,7 @@ async def test_position_repo_upsert_insert_then_update(
     assert len(all_rows) == 1
 
 
+@pytest.mark.pg_integration
 async def test_position_repo_list_by_user_joins_accounts(
     db_session: AsyncSession,
 ) -> None:

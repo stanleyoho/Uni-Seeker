@@ -155,6 +155,7 @@ async def _buy(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_RA01_execute_happy_path_writes_two_trades(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -410,6 +411,7 @@ async def test_RA05_execute_aggregate_unresolvable_trade_returns_422(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_RA06_execute_aggregate_two_accounts_dispatches_per_position(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -472,6 +474,7 @@ async def test_RA06_execute_aggregate_two_accounts_dispatches_per_position(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_RA07_execute_aggregate_partial_failure_isolated(
     client: AsyncClient,
     db_session: AsyncSession,

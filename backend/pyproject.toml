@@ -81,6 +81,13 @@ addopts = [
 markers = [
     "slow: marks tests as slow",
     "integration: marks integration tests",
+    # E2E-2: tests in this set MUST be run against a real Postgres 16
+    # (docker-compose.test.yml locally, or `services: postgres` in CI).
+    # The conftest fixture swaps the engine URL based on UNI_TEST_DB_URL.
+    # When the URL points to Postgres, Alembic migrations are applied
+    # instead of Base.metadata.create_all — that is the whole point of
+    # this gate: validate migration correctness end-to-end.
+    "pg_integration: requires real Postgres + Alembic migrations (see .github/workflows/pg-integration.yml)",
 ]
 
 [tool.coverage.run]

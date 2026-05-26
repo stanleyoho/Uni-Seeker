@@ -1,12 +1,42 @@
+"""Test bootstrap and shared fixtures.
+
+Two engine modes are supported, selected by the ``UNI_TEST_DB_URL`` env var:
+
+1. **Default (unset / sqlite URL)** — in-memory SQLite via ``aiosqlite``.
+   The schema is built from ``Base.metadata.create_all``. Fast (~1s engine
+   spin-up), no external services. This is the path the existing ~1500
+   tests still run on, both locally and in the regular ``backend-ci`` job.
+
+2. **pg_integration mode (UNI_TEST_DB_URL starts with postgresql)** — a real
+   Postgres 16 (docker-compose.test.yml locally, ``services: postgres`` in
+   ``.github/workflows/pg-integration.yml`` in CI). The schema is built by
+   running ``alembic upgrade head`` against the engine — that is the entire
+   point of the E2E-2 gate: validate migration correctness, FK enforcement,
+   native ENUM types, JSONB semantics, and UPSERT/partial-index SQL that
+   sqlite cannot exercise.
+
+The mode switch is automatic — no test code change is needed. Tests marked
+``@pytest.mark.pg_integration`` are gated by the CI workflow so they only run
+when a real Postgres is available.
+"""
+
+from __future__ import annotations
+
+import os
 from collections.abc import AsyncGenerator
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler as _SQLiteTypeCompiler
 
 
 # ── Patch SQLite compiler to handle PostgreSQL JSONB ─────────────────────────
+# Production models declare some columns as JSONB (PG-native). SQLite has no
+# JSONB type, so without this patch ``Base.metadata.create_all`` blows up
+# under sqlite. Mapping JSONB → JSON lets the same ORM model serve both
+# dialects in tests; production still gets real JSONB via migrations.
 def _visit_JSONB(self: _SQLiteTypeCompiler, type_: object, **kwargs: object) -> str:  # type: ignore[override]
     return self.visit_JSON(type_, **kwargs)  # type: ignore[arg-type]
 
@@ -22,21 +52,88 @@ from app.main import create_app
 from app.models.base import Base
 from app.models.price import StockPrice
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# ── Engine URL selection ─────────────────────────────────────────────────────
+# UNI_TEST_DB_URL takes precedence. When unset, fall back to the long-standing
+# default (in-memory sqlite) so the existing 1500-test fast-path is preserved.
+_DEFAULT_SQLITE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = os.getenv("UNI_TEST_DB_URL", _DEFAULT_SQLITE_URL)
+IS_POSTGRES = TEST_DATABASE_URL.startswith("postgresql")
+
+# Backend root (one level up from this conftest's parent `tests/` dir).
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+_ALEMBIC_INI = _BACKEND_ROOT / "alembic.ini"
+
+
+def _build_schema_sqlite_sync(connection):  # type: ignore[no-untyped-def]
+    """SQLite path: build the schema from ORM metadata (fast)."""
+    Base.metadata.create_all(connection)
+
+
+def _drop_schema_sqlite_sync(connection):  # type: ignore[no-untyped-def]
+    """SQLite path: drop the schema. We tear down between tests so each
+    fixture starts clean — same lifecycle the old conftest had."""
+    Base.metadata.drop_all(connection)
+
+
+def _run_alembic_upgrade(database_url: str) -> None:
+    """Postgres path: invoke ``alembic upgrade head`` programmatically.
+
+    This is the *whole point* of pg_integration: we want migrations, not
+    metadata.create_all. We override ``sqlalchemy.url`` to point at the
+    test DB so the alembic config (which defaults to dev DB) doesn't
+    bleed in. The function is synchronous because alembic's Python API is.
+    """
+    # Late import: alembic is dev-only and we don't want to drag it into
+    # the sqlite hot path (importing alembic.config doesn't actually cost
+    # much, but isolating the import keeps the sqlite path fully decoupled).
+    from alembic.config import Config
+
+    from alembic import command
+
+    cfg = Config(str(_ALEMBIC_INI))
+    cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", database_url)
+    command.upgrade(cfg, "head")
+
+
+def _drop_all_pg_sync(connection) -> None:  # type: ignore[no-untyped-def]
+    """Postgres path: drop *everything* — tables, enums, alembic_version.
+
+    Re-running alembic on a partially-migrated DB is undefined; the safest
+    teardown is a clean slate. We drop+recreate the ``public`` schema in
+    one shot (cheaper than enumerating objects).
+    """
+    from sqlalchemy import text
+
+    connection.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+    connection.execute(text("CREATE SCHEMA public"))
 
 
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(TEST_DATABASE_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+
+    if IS_POSTGRES:
+        # Wipe + run real migrations. We do this per-test for simplicity;
+        # if CI wall-clock becomes a problem, switch to session-scoped
+        # engine with savepoint-based per-test rollback.
+        async with engine.begin() as conn:
+            await conn.run_sync(_drop_all_pg_sync)
+        _run_alembic_upgrade(TEST_DATABASE_URL)
+    else:
+        async with engine.begin() as conn:
+            await conn.run_sync(_build_schema_sqlite_sync)
 
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    if IS_POSTGRES:
+        async with engine.begin() as conn:
+            await conn.run_sync(_drop_all_pg_sync)
+    else:
+        async with engine.begin() as conn:
+            await conn.run_sync(_drop_schema_sqlite_sync)
     await engine.dispose()
 
 

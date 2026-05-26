@@ -88,6 +88,7 @@ async def test_subscription_cancel_writes_audit(
 
 
 @pytest.mark.asyncio
+@pytest.mark.pg_integration
 async def test_webhook_tier_upgrade_writes_audit(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:

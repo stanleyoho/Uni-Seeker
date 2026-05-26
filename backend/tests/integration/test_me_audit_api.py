@@ -21,6 +21,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+import pytest
+
 from app.auth import create_access_token
 from app.models.audit_log import AuditLog
 from app.models.enums import UserTier
@@ -128,6 +130,7 @@ async def test_list_my_audit_logs_returns_newest_first(
     ]
 
 
+@pytest.mark.pg_integration
 async def test_list_my_audit_logs_paginates(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _mk_user(db_session, "audit_page@x.com")
     base = datetime.now(UTC) - timedelta(hours=1)
@@ -167,6 +170,7 @@ async def test_list_my_audit_logs_paginates(client: AsyncClient, db_session: Asy
     assert len(body["entries"]) == 1
 
 
+@pytest.mark.pg_integration
 async def test_list_my_audit_logs_filters_by_event_types(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
