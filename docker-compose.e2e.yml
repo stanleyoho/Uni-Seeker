@@ -1,0 +1,163 @@
+# E2E-3: Real-browser Playwright stack.
+#
+# Spins the full triangle (Postgres + backend + frontend) on alternative
+# host ports so it can coexist with whatever Stanley already has running
+# on the dev ports (5432 / 8000 / 3001).
+#
+#   DB        host 5434  -> container 5432
+#   backend   host 8001  -> container 8000
+#   frontend  host 3002  -> container 3000
+#
+# No persistence: the postgres data dir is a named volume that
+# `docker compose down -v` wipes between runs so each e2e cycle starts
+# from a fresh schema + the same deterministic seed. The seed step
+# (e2e-seed service) runs after migrations and is idempotent.
+#
+# Usage (locally and in CI):
+#   docker compose -f docker-compose.e2e.yml up -d --wait
+#   cd frontend && E2E_TARGET=docker npx playwright test
+#   docker compose -f docker-compose.e2e.yml down -v
+#
+# Network: a dedicated network `uni-e2e` keeps these containers off the
+# default bridge so they cannot accidentally talk to a dev stack.
+
+name: uni-seeker-e2e
+
+services:
+  db-e2e:
+    image: postgres:16-alpine
+    container_name: uni-seeker-e2e-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: uni_seeker_e2e
+    ports:
+      - "5434:5432"
+    volumes:
+      - e2e_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d uni_seeker_e2e"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    networks:
+      - uni-e2e
+
+  redis-e2e:
+    image: redis:7-alpine
+    container_name: uni-seeker-e2e-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    networks:
+      - uni-e2e
+
+  # One-shot bootstrap: wait for DB, then run the e2e seed script.
+  # The script (`backend/scripts/seed_e2e_data.py`) is idempotent — safe
+  # to re-run within the same DB without uniqueness violations.
+  #
+  # We deliberately do NOT call `alembic upgrade head` here. The e2e
+  # stack uses the same metadata.create_all path as the pg-integration
+  # workflow (see .github/workflows/pg-integration.yml header comment
+  # for the alembic-baseline carry-over). The seed script does the
+  # create_all call itself before inserting fixtures.
+  e2e-seed:
+    build:
+      context: ..
+      dockerfile: Uni-Seeker/backend/Dockerfile
+    container_name: uni-seeker-e2e-seed
+    command: ["python", "scripts/seed_e2e_data.py"]
+    environment:
+      UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db-e2e:5432/uni_seeker_e2e
+      UNI_REDIS_URL: redis://redis-e2e:6379/0
+      UNI_JWT_SECRET_KEY: e2e-jwt-secret-do-not-use-in-prod
+      # Disable monetization gate so the seeded test user (Pro) does not
+      # hit billing flows during e2e. Mirrors how the smoke tests run.
+      UNI_ENABLE_MONETIZATION: "false"
+    depends_on:
+      db-e2e:
+        condition: service_healthy
+    networks:
+      - uni-e2e
+    # Compose treats this as "completed successfully" when exit code is 0,
+    # which `up --wait` requires for the depends_on chain below to proceed.
+    restart: "no"
+
+  backend-e2e:
+    build:
+      context: ..
+      dockerfile: Uni-Seeker/backend/Dockerfile
+    container_name: uni-seeker-e2e-backend
+    ports:
+      - "8001:8000"
+    environment:
+      UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db-e2e:5432/uni_seeker_e2e
+      UNI_REDIS_URL: redis://redis-e2e:6379/0
+      UNI_JWT_SECRET_KEY: e2e-jwt-secret-do-not-use-in-prod
+      # FinMind / Telegram / Stripe are all unset on purpose — e2e specs
+      # never exercise live external services. The few endpoints that
+      # require them (e.g. /prices/update) are out of scope for the
+      # browser flow.
+      UNI_FINMIND_API_TOKEN: ""
+      UNI_TELEGRAM_BOT_TOKEN: ""
+      UNI_TELEGRAM_CHAT_ID: ""
+      # Same monetization toggle as the seed step — keeps tier_guard happy.
+      UNI_ENABLE_MONETIZATION: "false"
+    depends_on:
+      db-e2e:
+        condition: service_healthy
+      redis-e2e:
+        condition: service_healthy
+      e2e-seed:
+        condition: service_completed_successfully
+    healthcheck:
+      # /api/openapi.json is the cheapest endpoint that proves uvicorn
+      # is past the lifespan startup — `/healthz` is not exposed at the
+      # /api/v1 prefix, and /docs is HTML so curl/wget would 200 even
+      # if the router crashed at import.
+      test:
+        - "CMD-SHELL"
+        - "python -c \"import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/api/openapi.json', timeout=2); sys.exit(0)\""
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    networks:
+      - uni-e2e
+
+  frontend-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: uni-seeker-e2e-frontend
+    ports:
+      - "3002:3000"
+    environment:
+      # In-container network: the frontend talks to backend via the
+      # service hostname. Tests run on the host and hit localhost:3002 →
+      # the SSR shell, then the browser JS calls localhost:8001 via the
+      # NEXT_PUBLIC_API_URL set at build time. We override at runtime via
+      # an env var the page-level fetch reads (see api-client base).
+      NEXT_PUBLIC_API_URL: http://localhost:8001/api/v1
+    depends_on:
+      backend-e2e:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "wget -q --spider --tries=1 --timeout=2 http://localhost:3000 || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    networks:
+      - uni-e2e
+
+volumes:
+  e2e_pgdata:
+
+networks:
+  uni-e2e:
+    name: uni-e2e

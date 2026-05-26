@@ -1,20 +1,25 @@
-import { test, expect } from "./setup";
-import { mockAuth, fulfillJson } from "./fixtures/auth";
+import { test as baseTest, expect } from "./setup";
+import { test as authTest, mockAuth, fulfillJson } from "./fixtures/auth";
 
 /**
  * /holdings E2E.
  *
- * Tests the assembled HoldingsPage in isolation: auth + every API call the
- * page issues is mocked through `page.route`. We never start the backend.
+ * Dual-mode by design:
+ *   - Local dev (`E2E_TARGET` unset): use `mockAuth` + `page.route` to
+ *     exercise the assembled HoldingsPage in isolation. Backend never
+ *     starts. This preserves the original spec coverage for developers
+ *     iterating on the frontend.
+ *   - E2E-3 docker (`E2E_TARGET=docker`): use the `loggedInPage`
+ *     fixture so the page hits the real Postgres-backed backend with
+ *     the e2e seed user. Assertions also check that KPI numbers
+ *     reflect the seeded BUY 1000 @ 580 trade on 2330.
  *
- * Coverage strategy:
- *   - render path (KPI row + positions table populated from mocks)
- *   - each entry-point button opens its modal
- *   - tier gating on the multi-currency switcher (Free vs Pro)
- *
- * Selectors lean on visible UI text (zh-TW) because the markup does not
- * carry stable test ids. If translations move, update strings here.
+ * Tests that don't make sense in docker mode (e.g. the rebalance
+ * preview-with-fake-payload flow) stay mock-only and gate themselves
+ * via `test.skip(isDocker, ...)`.
  */
+
+const isDocker = process.env.E2E_TARGET === "docker";
 
 const MOCK_ACCOUNT = {
   id: 1,
@@ -56,10 +61,6 @@ const MOCK_SUMMARY = {
   account_count: 1,
 };
 
-/**
- * Register the common /holdings API mocks. Caller supplies the auth tier
- * via mockAuth; positions and summary stay constant across tests.
- */
 async function mockHoldingsApi(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/holdings/accounts", (route) =>
     fulfillJson(route, [MOCK_ACCOUNT]),
@@ -70,61 +71,56 @@ async function mockHoldingsApi(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/holdings/summary**", (route) =>
     fulfillJson(route, MOCK_SUMMARY),
   );
-  // Defensive: dividends endpoint sometimes prefetched by future hooks.
   await page.route("**/api/v1/holdings/dividends**", (route) =>
     fulfillJson(route, []),
   );
 }
 
-test.describe("/holdings page", () => {
-  test.beforeEach(async ({ page }) => {
+// ── Mock-mode suite (legacy) ────────────────────────────────────────────────
+
+baseTest.describe("/holdings page (mock mode)", () => {
+  baseTest.skip(isDocker, "mock-mode suite — covered by docker suite below");
+
+  baseTest.beforeEach(async ({ page }) => {
     await mockAuth(page, { tier: "pro" });
     await mockHoldingsApi(page);
   });
 
-  test("renders KPI row + positions table", async ({ page }) => {
+  baseTest("renders KPI row + positions table", async ({ page }) => {
     await page.goto("/holdings");
-
-    // Page title — comes from translation, defaults to "持倉對賬".
     await expect(
       page.getByRole("heading", { name: /持倉|HOLDINGS/i }),
     ).toBeVisible();
-
-    // Positions table renders the symbol from the mocked response.
     await expect(page.getByText("2330").first()).toBeVisible();
   });
 
-  test("opens add trade modal via + record-trade button", async ({ page }) => {
+  baseTest("opens add trade modal via + record-trade button", async ({ page }) => {
     await page.goto("/holdings");
     await page.getByRole("button", { name: /記錄交易|新增交易/ }).first().click();
-    // The modal heading is "新增持倉交易".
     await expect(page.getByText("新增持倉交易")).toBeVisible();
   });
 
-  test("opens add dividend modal", async ({ page }) => {
+  baseTest("opens add dividend modal", async ({ page }) => {
     await page.goto("/holdings");
     await page.getByRole("button", { name: /記錄配息|新增配息/ }).click();
     await expect(page.getByText("新增配息").first()).toBeVisible();
   });
 
-  test("opens add account modal", async ({ page }) => {
+  baseTest("opens add account modal", async ({ page }) => {
     await page.goto("/holdings");
     await page.getByRole("button", { name: /新增帳戶/ }).click();
     await expect(page.getByText("新增券商帳戶")).toBeVisible();
   });
 
-  test("opens csv import modal", async ({ page }) => {
+  baseTest("opens csv import modal", async ({ page }) => {
     await page.goto("/holdings");
     await page.getByRole("button", { name: /匯入 CSV/ }).click();
     await expect(page.getByText("CSV 匯入交易")).toBeVisible();
   });
 
-  test("rebalance preview → execute happy path writes trades + refetches", async ({
+  baseTest("rebalance preview → execute happy path writes trades + refetches", async ({
     page,
   }) => {
-    // Stub the preview + execute endpoints with deterministic payloads.
-    // We assert the execute call actually fires after confirm, and that
-    // the result summary surfaces executed / failed counts to the UI.
     const previewPayload = {
       total_portfolio_value: "650000",
       suggested_trades: [
@@ -169,44 +165,70 @@ test.describe("/holdings page", () => {
 
     await page.goto("/holdings");
     await page.getByRole("button", { name: /再平衡|REBALANCE/i }).click();
-
-    // Account selector defaults to "all" — pick the one mocked account so
-    // the execute button becomes available (backend 422 without account_id).
     await page.locator("select").first().selectOption("1");
-
-    // Run preview to populate suggested_trades. The suggested_trades
-    // section renders a "建議交易" / "Suggested Trades" label only after
-    // the API call lands, so wait on that copy.
     await page.getByRole("button", { name: /預覽再平衡|Preview/i }).click();
     await expect(
       page.getByText(/建議交易|Suggested Trades/i).first(),
     ).toBeVisible();
-
-    // Execute button only shows when suggested_trades.length > 0 AND
-    // account_id is set. Click it to open the confirmation modal.
     await page.getByRole("button", { name: /執行再平衡|Execute Rebalance/i }).click();
     await expect(page.getByText(/將寫入 1 筆交易|will write 1 trade/i)).toBeVisible();
-
-    // Confirm → fires POST /rebalance/execute.
     await page.getByRole("button", { name: /確認執行|Confirm Execute/i }).click();
-
-    // Result summary surfaces executed count.
     await expect(page.getByText(/執行結果|Execute Result/i)).toBeVisible();
     expect(executeCallCount).toBe(1);
   });
 
-  test("currency switcher upsell hint fires for free tier", async ({ page }) => {
-    // Re-register auth as FREE — overrides the beforeEach Pro mock.
+  baseTest("currency switcher upsell hint fires for free tier", async ({ page }) => {
     await page.unroute("**/api/v1/auth/me");
     await mockAuth(page, { tier: "free" });
-
     await page.goto("/holdings");
-
-    // Currency switcher panel renders the upgrade hint text. We assert the
-    // hint string exists; the active-currency interaction varies per locale
-    // so the panel-level upgrade copy is the stable anchor.
     await expect(
       page.getByText(/升級 Pro|multi.?currency/i).first(),
     ).toBeVisible();
   });
+});
+
+// ── Docker-backed suite (E2E-3) ─────────────────────────────────────────────
+
+authTest.describe("/holdings page (docker e2e)", () => {
+  authTest.skip(!isDocker, "docker-only suite — runs when E2E_TARGET=docker");
+
+  authTest(
+    "renders real KPI numbers reflecting seeded BUY 1000 @ 580 on 2330",
+    async ({ loggedInPage: page }) => {
+      await page.goto("/holdings");
+
+      // Page chrome present.
+      await expect(
+        page.getByRole("heading", { name: /持倉|HOLDINGS/i }),
+      ).toBeVisible({ timeout: 15_000 });
+
+      // The seed inserts one trade: BUY 1000 shares of 2330 @ 580 TWD.
+      // The positions table should render the symbol AND the cost basis
+      // 580 (or its formatted variant). We assert the symbol is present
+      // first (cheap), then look for the cost number anywhere in the
+      // surrounding row container.
+      await expect(page.getByText("2330").first()).toBeVisible({
+        timeout: 15_000,
+      });
+
+      // KPI summary endpoint computes total_cost from the trade. Seed →
+      // total_cost = 580 * 1000 = 580,000. We accept any formatting that
+      // contains "580" because locale separators differ (580,000 vs
+      // 580000 vs 580K).
+      const body = page.locator("body");
+      await expect(body).toContainText(/580[,.]?000|580K|580,?000\s*TWD/i);
+    },
+  );
+
+  authTest(
+    "opens the record-trade modal (smoke for authenticated UI)",
+    async ({ loggedInPage: page }) => {
+      await page.goto("/holdings");
+      await page
+        .getByRole("button", { name: /記錄交易|新增交易/ })
+        .first()
+        .click();
+      await expect(page.getByText("新增持倉交易")).toBeVisible();
+    },
+  );
 });

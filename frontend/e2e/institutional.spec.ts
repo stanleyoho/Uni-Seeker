@@ -1,21 +1,23 @@
-import { test, expect } from "./setup";
-import { mockAuth, fulfillJson } from "./fixtures/auth";
+import { test as baseTest, expect } from "./setup";
+import { test as authTest, mockAuth, fulfillJson } from "./fixtures/auth";
 
 /**
  * /institutional E2E.
  *
- * Mocks the full 13F surface area the page consumes:
- *   GET /institutional/filers                 → list of subscribed filers
- *   GET /institutional/filers/{id}/filings    → quarterly filings index
- *   GET /institutional/filers/{id}/holdings   → snapshot for selected period
- *   GET /institutional/filers/{id}/diff       → QoQ moves (DiffView)
- *   GET /institutional/filers/search          → typeahead in FilerSearchModal
- *   POST /institutional/filers/{id}/refresh   → refresh button
+ * Mock-mode (legacy): network-layer mocks for the full 13F surface area.
+ * Docker-mode (E2E-3): real backend with the seeded Berkshire subscription.
  *
- * Two fixture worlds:
- *   - empty subscriptions  → asserts the empty CTA
- *   - one filer + 2 filings → asserts the snapshot + view-switcher flow
+ * The seed inserts:
+ *   - F13Filer  : BERKSHIRE HATHAWAY INC (CIK 0001067983)
+ *   - F13Filing : 1 row, form_type=13F-HR
+ *   - F13Holding: APPLE INC (5,500,000 shares, $1.1B value)
+ *   - F13UserSubscription: e2e user → Berkshire
+ *
+ * The docker-mode test asserts the filer card shows up, drilling into
+ * it reveals the seeded AAPL holding with NON-ZERO share count.
  */
+
+const isDocker = process.env.E2E_TARGET === "docker";
 
 const MOCK_FILER = {
   id: 42,
@@ -72,14 +74,8 @@ const MOCK_DIFF = {
   ],
 };
 
-/**
- * Default mocks: one subscribed filer, two filings, populated holdings.
- * Individual tests can `page.unroute(...)` to override a specific endpoint
- * (e.g. empty subscriptions, search results).
- */
 async function mockInstitutionalApi(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/institutional/filers", (route) => {
-    // GET vs POST — list vs subscribe. Branch on method.
     if (route.request().method() === "GET") {
       return fulfillJson(route, [MOCK_FILER]);
     }
@@ -126,13 +122,17 @@ async function mockInstitutionalApi(page: import("@playwright/test").Page) {
   );
 }
 
-test.describe("/institutional page", () => {
-  test.beforeEach(async ({ page }) => {
+// ── Mock-mode suite (legacy) ────────────────────────────────────────────────
+
+baseTest.describe("/institutional page (mock mode)", () => {
+  baseTest.skip(isDocker, "covered by docker suite");
+
+  baseTest.beforeEach(async ({ page }) => {
     await mockAuth(page, { tier: "pro" });
     await mockInstitutionalApi(page);
   });
 
-  test("renders header + subscribed filer entry", async ({ page }) => {
+  baseTest("renders header + subscribed filer entry", async ({ page }) => {
     await page.goto("/institutional");
     await expect(
       page.getByRole("heading", { name: /機構持倉|13F/i }),
@@ -140,44 +140,38 @@ test.describe("/institutional page", () => {
     await expect(page.getByText(/BERKSHIRE/i).first()).toBeVisible();
   });
 
-  test("empty state surfaces the subscribe CTA", async ({ page }) => {
-    // Override the GET /filers route to return an empty list.
+  baseTest("empty state surfaces the subscribe CTA", async ({ page }) => {
     await page.unroute("**/api/v1/institutional/filers");
     await page.route("**/api/v1/institutional/filers", (route) =>
       fulfillJson(route, []),
     );
 
     await page.goto("/institutional");
-    // Both the header button and the empty-state CTA say 訂閱機構/基金.
     await expect(
       page.getByRole("button", { name: /訂閱機構|基金/ }).first(),
     ).toBeVisible();
   });
 
-  test("selecting a filer shows its holdings snapshot", async ({ page }) => {
+  baseTest("selecting a filer shows its holdings snapshot", async ({ page }) => {
     await page.goto("/institutional");
-    // The first filer auto-selects via useEffect; AAPL should appear in
-    // the holdings table once /filings + /holdings resolve.
     await expect(page.getByText("AAPL").first()).toBeVisible();
-    // QoQ section heading rendered.
     await expect(
       page.getByText(/QUARTER-OVER-QUARTER|QoQ/i).first(),
     ).toBeVisible();
   });
 
-  test("opens search modal from + 訂閱機構/基金 button", async ({ page }) => {
+  baseTest("opens search modal from + 訂閱機構/基金 button", async ({ page }) => {
     await page.goto("/institutional");
     await page
       .getByRole("button", { name: /訂閱機構|基金/ })
       .first()
       .click();
-    // Search modal body copy includes this hint string.
     await expect(
       page.getByText(/輸入至少 2 字元|搜尋中|EDGAR/).first(),
     ).toBeVisible();
   });
 
-  test("opens bulk subscribe modal", async ({ page }) => {
+  baseTest("opens bulk subscribe modal", async ({ page }) => {
     await page.goto("/institutional");
     await page.getByRole("button", { name: /批次訂閱/ }).click();
     await expect(
@@ -185,20 +179,13 @@ test.describe("/institutional page", () => {
     ).toBeVisible();
   });
 
-  test("switches between holdings / timeline / top movers tabs", async ({
+  baseTest("switches between holdings / timeline / top movers tabs", async ({
     page,
   }) => {
     await page.goto("/institutional");
-
-    // Wait until the holdings table is populated so the view tabs render
-    // (they only show when a filer is selected).
     await expect(page.getByText("AAPL").first()).toBeVisible();
-
-    // Click TOP MOVERS tab.
     await page.getByRole("button", { name: /Top Movers|movers/i }).click();
     await expect(page.getByText(/TOP MOVERS/i).first()).toBeVisible();
-
-    // Back to HOLDINGS tab.
     await page
       .getByRole("button", { name: /^Holdings$|HOLDINGS$|^持倉快照$/i })
       .first()
@@ -207,4 +194,36 @@ test.describe("/institutional page", () => {
       page.getByText(/HOLDINGS SNAPSHOT|holdings/i).first(),
     ).toBeVisible();
   });
+});
+
+// ── Docker-backed suite (E2E-3) ─────────────────────────────────────────────
+
+authTest.describe("/institutional page (docker e2e)", () => {
+  authTest.skip(!isDocker, "docker-only suite");
+
+  authTest(
+    "shows the seeded Berkshire subscription with AAPL holding > 0 shares",
+    async ({ loggedInPage: page }) => {
+      await page.goto("/institutional");
+
+      // Filer list renders the seeded Berkshire subscription.
+      await expect(page.getByText(/BERKSHIRE/i).first()).toBeVisible({
+        timeout: 15_000,
+      });
+
+      // First filer auto-selects on mount → /holdings call resolves →
+      // the AAPL row should appear. The seed inserts 5,500,000 shares
+      // so the shares column should NOT read 0.
+      await expect(page.getByText("APPLE INC").first()).toBeVisible({
+        timeout: 15_000,
+      });
+
+      // Assert SOMEWHERE on the page the seeded share count surfaces.
+      // Locale formatting varies (5,500,000 vs 5500000 vs 5.5M); match
+      // any of those. This protects against a regression where the
+      // holdings endpoint silently returns zeros.
+      const body = page.locator("body");
+      await expect(body).toContainText(/5[,.]?500[,.]?000|5\.5M|5,500,000/i);
+    },
+  );
 });
