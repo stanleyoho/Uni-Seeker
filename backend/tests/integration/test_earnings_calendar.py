@@ -19,7 +19,6 @@ from app.modules.financial_analysis.earnings_calendar import (
     _period_end_for,
 )
 
-
 # ── _deadline_for / _period_end_for ───────────────────────────────────────
 
 

@@ -57,9 +57,8 @@ async def test_get_prices_not_found(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_trigger_price_update_mocked(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_trigger_price_update_mocked(client: AsyncClient, db_session: AsyncSession) -> None:
+    from typing import ClassVar
     from unittest.mock import AsyncMock, patch
 
     class _FakeResult:
@@ -67,7 +66,7 @@ async def test_trigger_price_update_mocked(
         duplicates_skipped = 10
         invalid_skipped = 2
         saved = 88
-        errors = []
+        errors: ClassVar[list[str]] = []
 
     with patch("app.api.v1.prices.PriceUpdater") as updater_cls:
         updater_cls.return_value.update_all = AsyncMock(return_value=_FakeResult())
@@ -80,9 +79,7 @@ async def test_trigger_price_update_mocked(
 
 
 @pytest.mark.asyncio
-async def test_backfill_with_mock_provider(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_backfill_with_mock_provider(client: AsyncClient, db_session: AsyncSession) -> None:
     """Mock yfinance + PriceUpdater._persist_* so no network."""
     from unittest.mock import AsyncMock, patch
 
@@ -119,9 +116,7 @@ async def test_backfill_collects_per_symbol_errors(
         patch("app.modules.price_updater.yfinance_provider.YFinanceProvider") as prov_cls,
         patch("asyncio.sleep", AsyncMock(return_value=None)),
     ):
-        prov_cls.return_value.fetch_history = AsyncMock(
-            side_effect=RuntimeError("provider boom")
-        )
+        prov_cls.return_value.fetch_history = AsyncMock(side_effect=RuntimeError("provider boom"))
 
         resp = await client.post(
             "/api/v1/prices/backfill",

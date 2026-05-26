@@ -11,10 +11,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
 from app.services.job_queue import BacktestJobQueue
-
 
 # ── enqueue / claim_next ──────────────────────────────────────────────────
 
@@ -39,7 +37,7 @@ async def test_claim_next_returns_none_when_empty(db_session: AsyncSession) -> N
 
 async def test_claim_next_picks_highest_priority(db_session: AsyncSession) -> None:
     q = BacktestJobQueue()
-    low = await q.enqueue(db_session, {}, "A", "single", priority=0)
+    await q.enqueue(db_session, {}, "A", "single", priority=0)
     high = await q.enqueue(db_session, {}, "B", "single", priority=10)
     await db_session.commit()
 

@@ -79,9 +79,7 @@ async def test_scan_returns_rankings_for_eligible_stocks(
     assert data["total_qualified"] >= 0  # May be 0 if all disqualified by scorer
 
 
-async def test_scan_min_data_days_filter(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_scan_min_data_days_filter(client: AsyncClient, db_session: AsyncSession) -> None:
     """A stock with fewer rows than min_data_days is excluded."""
     await _mk_stock_with_history(db_session, "SHORT", "ShortHistory", num_days=10)
 
@@ -108,9 +106,7 @@ async def test_get_score_insufficient_history_404(
     assert resp.status_code == 404
 
 
-async def test_get_score_basic_happy_path(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_score_basic_happy_path(client: AsyncClient, db_session: AsyncSession) -> None:
     """Stock with enough history → 200 with score payload."""
     await _mk_stock_with_history(db_session, "2330", "TSMC", num_days=60)
 

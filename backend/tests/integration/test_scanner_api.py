@@ -90,15 +90,11 @@ async def test_scan_invalid_strategy_key_returns_400(
     assert "Unknown strategy keys" in resp.json()["message"]
 
 
-async def test_scan_filters_inactive_stocks(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_scan_filters_inactive_stocks(client: AsyncClient, db_session: AsyncSession) -> None:
     """is_active=False stocks are excluded from the scan query."""
     closes = [100.0] * 60
     await _mk_stock_with_prices(db_session, "ACTIVE", "Active", closes, is_active=True)
-    await _mk_stock_with_prices(
-        db_session, "INACTIVE", "Inactive", closes, is_active=False
-    )
+    await _mk_stock_with_prices(db_session, "INACTIVE", "Inactive", closes, is_active=False)
 
     resp = await client.post(
         "/api/v1/scanner/scan", json={"symbols": ["ACTIVE", "INACTIVE"], "limit": 10}
@@ -127,9 +123,7 @@ async def test_get_signals_insufficient_data_400(
     assert resp.status_code == 400
 
 
-async def test_get_signals_happy_path(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_signals_happy_path(client: AsyncClient, db_session: AsyncSession) -> None:
     closes = [100.0 + i * 0.5 for i in range(60)]
     await _mk_stock_with_prices(db_session, "2330", "TSMC", closes)
 
@@ -141,9 +135,7 @@ async def test_get_signals_happy_path(
     assert "score" in data
 
 
-async def test_get_signals_strategy_filter(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_signals_strategy_filter(client: AsyncClient, db_session: AsyncSession) -> None:
     """strategy_keys query param scopes the evaluation to selected strategies."""
     closes = [100.0 + i * 0.5 for i in range(60)]
     await _mk_stock_with_prices(db_session, "2330", "TSMC", closes)
