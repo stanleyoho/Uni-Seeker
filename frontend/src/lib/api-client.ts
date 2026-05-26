@@ -274,113 +274,24 @@ export interface InstitutionalResponse {
 
 // --- Backtest ---
 
-export interface StrategyInfo {
-  name: string;
-  description: string;
-  params: Record<string, unknown>;
-}
+// Backtest types — sourced from generated OpenAPI schema (E2E-1 wire-up W4).
+// Frontend `BacktestResult` corresponds to backend `BacktestResponse`;
+// `BacktestMetrics` corresponds to `MetricsResponse` (the nested .metrics).
 
-export interface BacktestMetrics {
-  total_return: string;
-  annualized_return: string;
-  max_drawdown: string;
-  sharpe_ratio: string;
-  win_rate: string;
-  total_trades: number;
-  profit_factor: string;
-}
-
-export interface TradeRecord {
-  action: string;
-  date: string;
-  price: string;
-  shares: number;
-  reason: string;
-}
-
-export interface BacktestResult {
-  symbol: string;
-  strategy: string;
-  metrics: BacktestMetrics;
-  equity_curve: string[];
-  trades: TradeRecord[];
-}
+export type StrategyInfo = Schemas["StrategyInfo"];
+export type BacktestMetrics = Schemas["MetricsResponse"];
+export type TradeRecord = Schemas["TradeRecord"];
+export type BacktestResult = Schemas["BacktestResponse"];
 
 // --- Job Queue ---
 
-export interface JobEnqueueRequest {
-  symbol: string;
-  job_type?: string;
-  strategy?: string;
-  strategies?: string[];
-  mode?: string;
-  params?: Record<string, unknown>;
-  param_grid?: Record<string, unknown[]>;
-  initial_capital?: number;
-  position_size?: number;
-  stop_loss?: number | null;
-  take_profit?: number | null;
-}
-
-export interface JobStatus {
-  id: number;
-  symbol: string;
-  job_type: string;
-  status: string;
-  progress_pct: number;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  error_message?: string;
-}
-
-export interface QueueStatus {
-  jobs: JobStatus[];
-  running_count: number;
-  pending_count: number;
-}
-
-export interface TradeLogEntry {
-  date: string;
-  action: string;
-  price: number;
-  shares: number;
-  reason: string;
-}
-
-export interface BacktestHistoryItem {
-  id: number;
-  job_id: number;
-  symbol: string;
-  strategy_name: string;
-  strategy_params: Record<string, unknown>;
-  total_return: number;
-  annualized_return: number;
-  max_drawdown: number;
-  sharpe_ratio: number;
-  win_rate: number;
-  total_trades: number;
-  profit_factor: number;
-  trade_log: TradeLogEntry[] | null;
-  equity_curve: number[] | null;
-  backtest_type: string;
-  composite_mode: string | null;
-  date_range_start: string | null;
-  date_range_end: string | null;
-  buy_hold_return: number | null;
-  trading_days: number | null;
-  created_at: string;
-}
-
-export interface BacktestHistoryResponse {
-  results: BacktestHistoryItem[];
-  total: number;
-}
-
-export interface JobResultResponse {
-  job: JobStatus;
-  results: BacktestHistoryItem[];
-}
+export type JobEnqueueRequest = Schemas["JobEnqueueRequest"];
+export type JobStatus = Schemas["JobStatusResponse"];
+export type QueueStatus = Schemas["QueueStatusResponse"];
+export type TradeLogEntry = Schemas["TradeLogEntry"];
+export type BacktestHistoryItem = Schemas["BacktestHistoryItem"];
+export type BacktestHistoryResponse = Schemas["BacktestHistoryResponse"];
+export type JobResultResponse = Schemas["JobResultResponse"];
 
 // --- Portfolio ---
 // Types sourced from the generated OpenAPI schema (E2E-1 wire-up W2).
