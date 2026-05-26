@@ -108,14 +108,7 @@ export type ScreenResponse = Schemas["ScreenResponse"];
 
 // --- Notifications ---
 
-export interface NotificationRule {
-  id: number;
-  name: string;
-  rule_type: string;
-  symbol: string;
-  conditions: Record<string, unknown>;
-  is_active: boolean;
-}
+export type NotificationRule = Schemas["NotificationRuleResponse"];
 
 // --- Financials ---
 
@@ -1861,28 +1854,13 @@ export async function getInstitutionalForStock(
 // `telegram_chat_id` to `null` is the canonical "stop sending me TG alerts"
 // gesture (column becomes NULL, F13NotificationService filters us out).
 
-export interface MeNotificationSettings {
-  /** Numeric chat id ("123456789") or @channel handle. `null` ⇒ disabled. */
-  telegram_chat_id: string | null;
-  /**
-   * Round 14: Email channel opt-in (UNI_USER_003). When `true` the
-   * dispatcher fans 13F + alert notifications out to the user's
-   * primary `email` in addition to (or instead of) Telegram.
-   */
-  notify_via_email: boolean;
-}
+// MeNotification types — sourced from generated OpenAPI schema (E2E-1 W6).
+// Behaviour docs (Telegram chat id semantics, model_fields_set PATCH
+// semantics) live in the backend route handler and the api function
+// comments below; not duplicated here to avoid drift.
 
-/**
- * PATCH body shape — every field is optional. Omitted fields are NOT
- * touched on the user row (backend reads `model_fields_set`), so the
- * UI can flip the email toggle without re-sending the Telegram chat
- * id (and vice versa). `telegram_chat_id: null` is the canonical
- * "stop TG alerts" gesture.
- */
-export interface MeNotificationSettingsPatch {
-  telegram_chat_id?: string | null;
-  notify_via_email?: boolean;
-}
+export type MeNotificationSettings = Schemas["MeNotificationPreferencesResponse"];
+export type MeNotificationSettingsPatch = Schemas["MeNotificationPreferencesUpdate"];
 
 export async function getMeNotifications(): Promise<MeNotificationSettings> {
   return apiFetch<MeNotificationSettings>(`${API_BASE}/me/notifications`);
@@ -2070,25 +2048,9 @@ export async function executeRebalance(
 // client passes a larger ``offset`` than ``total_count``, the response
 // is simply an empty page.
 
-export interface AuditLogEntry {
-  /** UUID returned as string — opaque row key for the React list. */
-  id: string;
-  event_type: string;
-  resource_type: string | null;
-  resource_id: string | null;
-  after_state: Record<string, unknown> | null;
-  metadata: Record<string, unknown> | null;
-  /** ISO-8601 UTC timestamp. */
-  created_at: string;
-}
-
-export interface AuditLogListResponse {
-  entries: AuditLogEntry[];
-  /** Total rows matching the filter inside the 10-day window. */
-  total_count: number;
-  /** ``offset + entries.length < total_count`` — pre-computed by server. */
-  has_more: boolean;
-}
+// Audit log types — sourced from generated OpenAPI schema (E2E-1 W6).
+export type AuditLogEntry = Schemas["AuditLogEntry"];
+export type AuditLogListResponse = Schemas["AuditLogListResponse"];
 
 export interface ListMyAuditLogsOptions {
   limit?: number;
