@@ -349,25 +349,52 @@ function WatchlistPanel() {
   );
 }
 
+// Deterministic pseudo-random generator seeded by symbol. Used purely
+// for placeholder visualisation in the watchlist row -- not for any
+// security-sensitive purpose. Keeps render pure (react-hooks/purity).
+function makeSeededRand(seedStr: string): () => number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h += 0x6d2b79f5;
+    let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function WatchlistRow({
   item,
 }: {
   item: { symbol: string; name: string };
 }) {
   const sparkData = useMemo(() => {
+    const rand = makeSeededRand(`spark:${item.symbol}`);
     const base = 100;
     const data: number[] = [];
     let v = base;
     for (let i = 0; i < 15; i++) {
-      v += (Math.random() - 0.48) * 3;
+      v += (rand() - 0.48) * 3;
       data.push(v);
     }
     return data;
-  }, []);
+  }, [item.symbol]);
 
-  // Mock price/change for display density
-  const mockPrice = useMemo(() => (80 + Math.random() * 820).toFixed(2), []);
-  const mockChange = useMemo(() => ((Math.random() - 0.45) * 8).toFixed(2), []);
+  // Mock price/change for display density -- seeded by symbol so each row
+  // renders the same value across renders (otherwise React Compiler
+  // flags `Math.random` as impure during render).
+  const mockPrice = useMemo(() => {
+    const rand = makeSeededRand(`price:${item.symbol}`);
+    return (80 + rand() * 820).toFixed(2);
+  }, [item.symbol]);
+  const mockChange = useMemo(() => {
+    const rand = makeSeededRand(`change:${item.symbol}`);
+    return ((rand() - 0.45) * 8).toFixed(2);
+  }, [item.symbol]);
   const isUp = parseFloat(mockChange) >= 0;
 
   return (

@@ -21,6 +21,40 @@ import {
 } from "recharts";
 
 /* ------------------------------------------------------------------ */
+/*  Sortable table header                                               */
+/* ------------------------------------------------------------------ */
+
+function SortTh({
+  field,
+  label,
+  align = "right",
+  sortField,
+  sortDir,
+  onSort,
+}: {
+  field: keyof BacktestHistoryItem;
+  label: string;
+  align?: "left" | "right";
+  sortField: keyof BacktestHistoryItem;
+  sortDir: "asc" | "desc";
+  onSort: (field: keyof BacktestHistoryItem) => void;
+}) {
+  return (
+    <th
+      className={`py-3 px-4 text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors select-none ${align === "right" ? "text-right" : "text-left"}`}
+      onClick={() => onSort(field)}
+    >
+      {label}
+      {sortField === field && (
+        <span className="ml-1 text-[var(--accent-cyan)]">
+          {sortDir === "asc" ? "↑" : "↓"}
+        </span>
+      )}
+    </th>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Return badge                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -353,28 +387,6 @@ export default function BacktestHistoryPage() {
     }
   };
 
-  const SortTh = ({
-    field,
-    label,
-    align = "right",
-  }: {
-    field: keyof BacktestHistoryItem;
-    label: string;
-    align?: "left" | "right";
-  }) => (
-    <th
-      className={`py-3 px-4 text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors select-none ${align === "right" ? "text-right" : "text-left"}`}
-      onClick={() => handleSort(field)}
-    >
-      {label}
-      {sortField === field && (
-        <span className="ml-1 text-[var(--accent-cyan)]">
-          {sortDir === "asc" ? "↑" : "↓"}
-        </span>
-      )}
-    </th>
-  );
-
   return (
     <div className="flex-1 bg-[var(--background)]">
       <AmbientBackground />
@@ -460,14 +472,14 @@ export default function BacktestHistoryPage() {
                 <thead className="border-b border-[var(--border-subtle)]">
                   <tr>
                     <th className="py-3 px-4 text-left text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">ID</th>
-                    <SortTh field="symbol" label="SYMBOL" align="left" />
+                    <SortTh field="symbol" label="SYMBOL" align="left" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th className="py-3 px-4 text-left text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">STRATEGY</th>
-                    <SortTh field="total_return" label="RETURN" />
-                    <SortTh field="sharpe_ratio" label="SHARPE" />
-                    <SortTh field="max_drawdown" label="DRAWDOWN" />
-                    <SortTh field="win_rate" label="WIN %" />
-                    <SortTh field="total_trades" label="TRADES" />
-                    <SortTh field="created_at" label="DATE" />
+                    <SortTh field="total_return" label="RETURN" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh field="sharpe_ratio" label="SHARPE" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh field="max_drawdown" label="DRAWDOWN" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh field="win_rate" label="WIN %" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh field="total_trades" label="TRADES" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh field="created_at" label="DATE" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   </tr>
                 </thead>
                 <tbody>
