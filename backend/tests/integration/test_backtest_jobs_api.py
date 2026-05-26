@@ -15,7 +15,6 @@ Endpoints don't require auth; tests use the shared `client` fixture +
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -58,7 +57,9 @@ async def _mk_result(
         strategy_params={"period": 20},
         metrics_json={"sharpe_ratio": 1.5},
         equity_curve=[100.0, 105.0, 115.0],
-        trade_log=[{"date": "2026-04-01", "action": "BUY", "price": 580, "shares": 100, "reason": "entry"}],
+        trade_log=[
+            {"date": "2026-04-01", "action": "BUY", "price": 580, "shares": 100, "reason": "entry"}
+        ],
         total_return=total_return,
         sharpe_ratio=1.5,
         win_rate=0.6,
@@ -103,9 +104,7 @@ async def test_queue_status_empty(client: AsyncClient) -> None:
     assert data["jobs"] == []
 
 
-async def test_queue_status_counts_by_status(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_queue_status_counts_by_status(client: AsyncClient, db_session: AsyncSession) -> None:
     await _mk_job(db_session, "2330", status="pending")
     await _mk_job(db_session, "0050", status="pending")
     await _mk_job(db_session, "2317", status="running")
@@ -191,9 +190,7 @@ async def test_history_returns_results_with_total(
     assert len(data["results"]) == 2
 
 
-async def test_history_filter_by_symbol(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_history_filter_by_symbol(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     await _mk_result(db_session, job.id, symbol="2330")
     await _mk_result(db_session, job.id, symbol="0050")
@@ -205,9 +202,7 @@ async def test_history_filter_by_symbol(
     assert data["results"][0]["symbol"] == "0050"
 
 
-async def test_history_pagination_respected(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_history_pagination_respected(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     for i in range(5):
         await _mk_result(db_session, job.id, total_return=0.1 + i * 0.01)
@@ -222,9 +217,7 @@ async def test_history_pagination_respected(
 # ── GET /results/{id} ─────────────────────────────────────────────────────
 
 
-async def test_get_result_by_id(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_get_result_by_id(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     rec = await _mk_result(db_session, job.id, total_return=0.25)
 
@@ -241,9 +234,7 @@ async def test_get_result_by_id_404(client: AsyncClient) -> None:
 # ── GET /history/{symbol}/best ────────────────────────────────────────────
 
 
-async def test_best_for_symbol_returns_top10(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_best_for_symbol_returns_top10(client: AsyncClient, db_session: AsyncSession) -> None:
     job = await _mk_job(db_session, "2330")
     for i in range(12):
         await _mk_result(db_session, job.id, symbol="2330", total_return=0.01 * i)
