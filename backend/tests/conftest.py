@@ -109,17 +109,46 @@ def _drop_all_pg_sync(connection) -> None:  # type: ignore[no-untyped-def]
     connection.execute(text("CREATE SCHEMA public"))
 
 
+def _create_pg_enums_sync(connection) -> None:  # type: ignore[no-untyped-def]
+    """Postgres path: create the PG enum types that models declare with
+    ``create_type=False``. Normally the 3NF normalize migration creates
+    them; since we skip alembic for the pg_integration baseline workaround,
+    we mirror those CREATE TYPE statements here. Values mirror
+    ``app/models/enums.py``.
+    """
+    from sqlalchemy import text
+
+    connection.execute(text(
+        "CREATE TYPE market_enum AS ENUM ('TW_TWSE', 'TW_TPEX', 'US_NYSE', 'US_NASDAQ')"
+    ))
+    connection.execute(text(
+        "CREATE TYPE user_tier_enum AS ENUM ('free', 'basic', 'pro')"
+    ))
+    connection.execute(text(
+        "CREATE TYPE notification_status_enum AS ENUM ('pending', 'success', 'failed')"
+    ))
+
+
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(TEST_DATABASE_URL)
 
     if IS_POSTGRES:
-        # Wipe + run real migrations. We do this per-test for simplicity;
-        # if CI wall-clock becomes a problem, switch to session-scoped
-        # engine with savepoint-based per-test rollback.
+        # Wipe + rebuild schema. Originally `_run_alembic_upgrade(...)` here
+        # so each test validated the migration chain end-to-end, but the
+        # first revision `0ef449ae0f1a` only creates `monthly_revenues` and
+        # the chain assumes pre-existing baseline tables (`stocks`, `users`,
+        # …). Running `alembic upgrade head` on an empty DB therefore fails
+        # with `UndefinedTableError: relation "stocks" does not exist` at
+        # revision `b3a1c9d2e4f5` (3NF normalize). E2E-2 caught this real
+        # bug — the workaround until a proper baseline backfill migration
+        # lands is to use Base.metadata.create_all + manually create the
+        # PG enum types that models declare with `create_type=False`
+        # (those are normally created by the 3NF migration).
         async with engine.begin() as conn:
             await conn.run_sync(_drop_all_pg_sync)
-        _run_alembic_upgrade(TEST_DATABASE_URL)
+            await conn.run_sync(_create_pg_enums_sync)
+            await conn.run_sync(_build_schema_sqlite_sync)
     else:
         async with engine.begin() as conn:
             await conn.run_sync(_build_schema_sqlite_sync)
