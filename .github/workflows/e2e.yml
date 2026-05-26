@@ -47,7 +47,7 @@ jobs:
           # The build context for backend-e2e is "..", so AAE must live
           # right next to Uni-Seeker. Mirrors the monorepo layout on
           # Stanley's machine.
-          git clone --depth 1 git@github.com:hamrlab/adaptive-alpha-engine.git adaptive-alpha-engine
+          git clone --depth 1 git@github.com:stanleyoho/adaptive-alpha-engine.git adaptive-alpha-engine
 
       - name: Setup Node
         uses: actions/setup-node@v4
