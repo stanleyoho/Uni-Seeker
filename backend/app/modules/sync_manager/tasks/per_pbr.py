@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -140,7 +140,8 @@ class PerPbrSyncTask(SyncTask):
                 error_message=None,
             )
             sync_stmt = sync_stmt.on_conflict_do_update(
-                constraint="uq_sync_state_with_stock",
+                index_elements=["dataset", "stock_id"],
+                index_where=text("stock_id IS NOT NULL"),
                 set_={
                     "last_synced_date": max_date,
                     "last_run_at": now,
