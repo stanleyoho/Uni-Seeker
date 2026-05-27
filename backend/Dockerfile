@@ -29,8 +29,25 @@ COPY Uni-Seeker/backend /workspace/Uni-Seeker/backend
 
 WORKDIR /workspace/Uni-Seeker/backend
 
+# pyproject.toml's [tool.uv.sources] points backtesting_core +
+# prediction-engine at git+ssh AAE URLs — that's what backend-ci /
+# pg-integration / external-api-smoke / schema-gate workflows expect
+# (they load AAE_DEPLOY_KEY via ssh-agent and let uv clone in-place).
+# But inside the docker build context, there's no ssh-agent and no git
+# binary, so git+ssh resolution fails (`Git executable not found`).
+#
+# We've already COPYed the AAE packages from the build context above,
+# so rewrite the lookup to use those local paths instead. The patch
+# only affects the image — Stanley's working-tree pyproject.toml is
+# unchanged.
+RUN sed -i -E \
+    -e 's|backtesting_core = \{ git = "[^"]*", rev = "[^"]*", subdirectory = "packages/backtesting_core" \}|backtesting_core = { path = "../../adaptive-alpha-engine/packages/backtesting_core" }|' \
+    -e 's|prediction-engine = \{ git = "[^"]*", rev = "[^"]*", subdirectory = "packages/prediction_engine" \}|prediction-engine = { path = "../../adaptive-alpha-engine/packages/prediction_engine" }|' \
+    pyproject.toml \
+ && grep -E "backtesting_core|prediction-engine" pyproject.toml
+
 # Editable install picks up backtesting_core + prediction_engine via
-# [tool.uv.sources] paths.
+# the rewritten [tool.uv.sources] paths.
 RUN uv pip install --system -e ".[dev]"
 
 EXPOSE 8000
