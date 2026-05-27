@@ -62,7 +62,10 @@ export interface PortfolioHistoryEntry {
 
 /* ── Map API response to frontend types ── */
 
-function mapApiResponse(
+// Exported for unit testing. The mapping is pure and the
+// `metrics.sharpe → sharpe_ratio` rename (W2 drift) is the kind of thing
+// we want to guard with a regression test, separate from the hook plumbing.
+export function mapApiResponse(
   apiRes: PortfolioBacktestResponse,
   params: PortfolioBacktestParams,
 ): PortfolioBacktestResult {
