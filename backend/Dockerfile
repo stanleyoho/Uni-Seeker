@@ -44,8 +44,15 @@ RUN sed -i -E \
     -e 's|backtesting_core = \{ git = "[^"]*", rev = "[^"]*", subdirectory = "packages/backtesting_core" \}|backtesting_core = { path = "../../adaptive-alpha-engine/packages/backtesting_core" }|' \
     -e 's|prediction-engine = \{ git = "[^"]*", rev = "[^"]*", subdirectory = "packages/prediction_engine" \}|prediction-engine = { path = "../../adaptive-alpha-engine/packages/prediction_engine" }|' \
     pyproject.toml \
- && grep -E "backtesting_core|prediction-engine" pyproject.toml
+ && grep -E "backtesting_core|prediction-engine" pyproject.toml \
+ && rm -f uv.lock
 
+# `rm uv.lock`: the lockfile pins git+ssh sources for backtesting_core /
+# prediction-engine — that's what host environments use. Inside the
+# docker build we just rewrote pyproject.toml to use path sources,
+# so the lockfile no longer matches; deleting it forces uv to resolve
+# fresh from the rewritten pyproject.toml.
+#
 # Editable install picks up backtesting_core + prediction_engine via
 # the rewritten [tool.uv.sources] paths.
 RUN uv pip install --system -e ".[dev]"
