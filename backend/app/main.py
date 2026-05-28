@@ -127,7 +127,7 @@ def create_app() -> FastAPI:
             from app.cache import get_redis
 
             r = await get_redis()
-            await r.ping()  # type: ignore[misc]  # redis async client typed as Awaitable[bool] | bool
+            await r.ping()  # type: ignore[misc, unused-ignore]  # cross-env: needed on older redis-py, unused on newer
             status["services"]["redis"] = "ok"
         except Exception:
             status["services"]["redis"] = "error"
