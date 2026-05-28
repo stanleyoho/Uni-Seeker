@@ -16,6 +16,16 @@ FROM python:3.12-slim
 # do on host.
 WORKDIR /workspace
 
+# `git` is needed at install time because pyproject.toml pins
+# observability-core to a git+https source. PR #87's Dockerfile sed
+# rewrite covers backtesting_core and prediction-engine (path source
+# from the COPYed AAE packages), but obs-core has no copied checkout
+# inside the image — uv has to clone it, which needs git. The Debian
+# `python:3.12-slim` base has no git binary by default.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
 # Copy the sibling shared packages first so the path deps are satisfied.
