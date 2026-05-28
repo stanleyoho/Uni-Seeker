@@ -53,6 +53,15 @@ class Settings(BaseSettings):
     # when --use-figi is passed.
     openfigi_api_key: str | None = None  # UNI_OPENFIGI_API_KEY
 
+    # SEC EDGAR — required `User-Agent` per SEC fair-use policy. Must
+    # contain a real contact email or EDGAR returns 403 at runtime. The
+    # default below matches the existing hard-coded fallback inside
+    # ``EdgarClient.__init__`` so behaviour is unchanged when the env var
+    # is unset; operators SHOULD override per-deployment to their own
+    # contact address. Read by the F13 sync task that constructs an
+    # ``EdgarClient`` from the scheduler context.
+    sec_edgar_user_agent: str = "Uni-Seeker stanly7768@gmail.com"  # UNI_SEC_EDGAR_USER_AGENT
+
     # ── Email notification channel (Round 14) ─────────────────────────
     #
     # SMTP send-only configuration. We use Python's stdlib ``smtplib`` so

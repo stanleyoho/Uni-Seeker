@@ -15,6 +15,7 @@ from app.models.sync_state import SyncState
 from app.modules.notifier.telegram import TelegramNotifier
 from app.modules.sync_manager.rate_limiter import RateLimiter
 from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
+from app.modules.sync_manager.tasks.f13_filings import F13FilingsSyncTask
 from app.modules.sync_manager.tasks.financials import FinancialsSyncTask
 from app.modules.sync_manager.tasks.industry import IndustryAggregatesSyncTask
 from app.modules.sync_manager.tasks.margin import MarginSyncTask
@@ -34,6 +35,10 @@ logger = structlog.get_logger()
 
 # Execution order: stock_info first (so stocks table is up to date),
 # then the per-stock datasets, and finally industry-level aggregates.
+# ``f13_filings`` runs last because it talks to SEC EDGAR (not FinMind)
+# and therefore consumes a *separate* rate budget — placing it at the
+# tail guarantees the upstream FinMind rate exhaustion does not deprive
+# 13F refreshes of their independent EDGAR allotment.
 _TASK_ORDER: list[str] = [
     "stock_info",
     "prices",
@@ -43,6 +48,7 @@ _TASK_ORDER: list[str] = [
     "financials",
     "valuation",
     "industry_aggregates",
+    "f13_filings",
 ]
 
 
@@ -60,6 +66,7 @@ class SyncScheduler:
             "financials": FinancialsSyncTask(),
             "valuation": ValuationSyncTask(),
             "industry_aggregates": IndustryAggregatesSyncTask(),
+            "f13_filings": F13FilingsSyncTask(),
         }
         self._notifier: TelegramNotifier | None = None
 
