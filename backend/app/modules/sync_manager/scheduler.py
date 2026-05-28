@@ -26,10 +26,10 @@ from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
 from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
 from app.obs.metrics import SYNC_TASK_FAILURES_TOTAL
 
-# error_message column on sync_states is String(500); truncate aggressively
-# rather than risk a `value too long` write failure (which would itself become
-# a silent fail). Axis P owns any future widening.
-_ERROR_MESSAGE_MAX_LEN = 500
+# error_message column on sync_states is String(2000) since UNI_SYNC_002.
+# Truncate to that ceiling rather than risk a `value too long` write failure
+# (which would itself become a silent fail).
+_ERROR_MESSAGE_MAX_LEN = 2000
 
 logger = structlog.get_logger()
 
