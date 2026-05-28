@@ -144,9 +144,7 @@ async def _mk_filer(
     return f
 
 
-async def _subscribe(
-    db: AsyncSession, user_id: int, filer_id: int
-) -> F13UserSubscription:
+async def _subscribe(db: AsyncSession, user_id: int, filer_id: int) -> F13UserSubscription:
     sub = F13UserSubscription(user_id=user_id, filer_id=filer_id)
     db.add(sub)
     await db.commit()
