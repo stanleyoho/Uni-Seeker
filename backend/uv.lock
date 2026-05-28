@@ -122,22 +122,12 @@ wheels = [
 [[package]]
 name = "backtesting-core"
 version = "0.1.0"
-source = { editable = "../../adaptive-alpha-engine/packages/backtesting_core" }
+source = { git = "ssh://git@github.com/stanleyoho/adaptive-alpha-engine.git?subdirectory=packages%2Fbacktesting_core&rev=d0078f2#d0078f263450b98712df1325df165113c6af8090" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "scikit-learn" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=1.26.0" },
-    { name = "pandas", specifier = ">=2.2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "scikit-learn", specifier = ">=1.4.0" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "bcrypt"
@@ -1007,7 +997,7 @@ wheels = [
 [[package]]
 name = "observability-core"
 version = "0.2.1"
-source = { git = "ssh://git@github.com/stanleyoho/observability-core.git?rev=v0.2.1#cc5beaf582582e916a2f0cdafc02a0e8d7f44e69" }
+source = { git = "https://github.com/stanleyoho/observability-core.git?rev=v0.2.1#cc5beaf582582e916a2f0cdafc02a0e8d7f44e69" }
 dependencies = [
     { name = "sentry-sdk" },
     { name = "structlog" },
@@ -1129,7 +1119,7 @@ wheels = [
 [[package]]
 name = "prediction-engine"
 version = "0.1.0"
-source = { editable = "../../adaptive-alpha-engine/packages/prediction_engine" }
+source = { git = "ssh://git@github.com/stanleyoho/adaptive-alpha-engine.git?subdirectory=packages%2Fprediction_engine&rev=d0078f2#d0078f263450b98712df1325df165113c6af8090" }
 dependencies = [
     { name = "numpy" },
     { name = "observability-core" },
@@ -1137,18 +1127,6 @@ dependencies = [
     { name = "scipy" },
     { name = "sqlalchemy" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "observability-core", git = "ssh://****@github.com/stanleyoho/observability-core.git?rev=v0.2.1" },
-    { name = "pandas", specifier = ">=2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "scipy", specifier = ">=1.11" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "prometheus-client"
@@ -1851,17 +1829,17 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.14.0" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "asyncpg", specifier = ">=0.30.0" },
-    { name = "backtesting-core", editable = "../../adaptive-alpha-engine/packages/backtesting_core" },
+    { name = "backtesting-core", git = "ssh://****@github.com/stanleyoho/adaptive-alpha-engine.git?subdirectory=packages%2Fbacktesting_core&rev=d0078f2" },
     { name = "bcrypt", specifier = ">=4.0.0" },
     { name = "factory-boy", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
-    { name = "observability-core", git = "ssh://****@github.com/stanleyoho/observability-core.git?rev=v0.2.1" },
+    { name = "observability-core", git = "https://github.com/stanleyoho/observability-core.git?rev=v0.2.1" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "prediction-engine", editable = "../../adaptive-alpha-engine/packages/prediction_engine" },
+    { name = "prediction-engine", git = "ssh://****@github.com/stanleyoho/adaptive-alpha-engine.git?subdirectory=packages%2Fprediction_engine&rev=d0078f2" },
     { name = "prometheus-client", specifier = ">=0.20,<1" },
     { name = "prometheus-fastapi-instrumentator", specifier = ">=7.0,<8" },
     { name = "pydantic-settings", specifier = ">=2.6.0" },
