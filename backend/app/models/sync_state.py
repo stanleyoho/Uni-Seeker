@@ -49,7 +49,7 @@ class SyncState(Base):
     last_synced_date: Mapped[date | None] = mapped_column(Date, default=None)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     status: Mapped[str] = mapped_column(String(20), default="idle")
-    error_message: Mapped[str | None] = mapped_column(String(500), default=None)
+    error_message: Mapped[str | None] = mapped_column(String(2000), default=None)
     records_synced: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
