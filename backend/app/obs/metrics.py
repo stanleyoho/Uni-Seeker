@@ -9,9 +9,7 @@ from __future__ import annotations
 from prometheus_client import REGISTRY, Counter, Gauge
 
 
-def _safe_counter(
-    name: str, documentation: str, labelnames: tuple[str, ...]
-) -> Counter:
+def _safe_counter(name: str, documentation: str, labelnames: tuple[str, ...]) -> Counter:
     """Register a Counter idempotently (duplicate-safe for pytest re-imports).
 
     ``prometheus_client.Counter()`` raises ``ValueError: Duplicated timeseries``
@@ -30,6 +28,7 @@ def _safe_counter(
         if existing is None:
             raise
         return existing  # type: ignore[return-value]
+
 
 # ── tier conversion funnel ──────────────────────────────────────────────────
 
