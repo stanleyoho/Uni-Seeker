@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback
 from datetime import UTC, datetime
 from typing import Any
 
@@ -22,6 +23,12 @@ from app.modules.sync_manager.tasks.prices import PriceSyncTask
 from app.modules.sync_manager.tasks.revenue import RevenueSyncTask
 from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
 from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
+from app.obs.metrics import SYNC_TASK_FAILURES_TOTAL
+
+# error_message column on sync_states is String(500); truncate aggressively
+# rather than risk a `value too long` write failure (which would itself become
+# a silent fail). Axis P owns any future widening.
+_ERROR_MESSAGE_MAX_LEN = 500
 
 logger = structlog.get_logger()
 
@@ -92,13 +99,50 @@ class SyncScheduler:
         try:
             result = await task.run(db, self._rate_limiter, batch_size)
         except Exception as exc:
-            logger.error("sync_task_exception", task=task_name, error=str(exc))
-            await self._set_global_status(db, task_name, "error", error_message=str(exc)[:500])
+            # 2026-04-30 silent-fail incident hardening:
+            # Any exception MUST (a) write a non-empty error_message so an
+            # operator audit can distinguish "ran clean with 0 rows" from
+            # "crashed with no trace", and (b) increment a Prometheus counter
+            # so the failure is visible without DB inspection. status="failed"
+            # is reserved for the exception path; "error" was reused by the
+            # rate_limit-vs-error branch below and conflated the two cases.
+            error_type = type(exc).__name__
+            # Prepend "{ExceptionClass}: {message}\n" so the class name + reason
+            # survive truncation. Plain `traceback.format_exc()` puts the class
+            # line at the END of the traceback; with a 500-char cap on
+            # sync_states.error_message that final line is the first thing to
+            # be cut, hiding exactly the info operators need most.
+            tb_text = f"{error_type}: {exc}\n{traceback.format_exc()}"
+            logger.error(
+                "sync_task_exception",
+                task=task_name,
+                error_type=error_type,
+                error=str(exc),
+            )
+            SYNC_TASK_FAILURES_TOTAL.labels(task=task_name, error_type=error_type).inc()
+            try:
+                await self._set_global_status(
+                    db,
+                    task_name,
+                    "failed",
+                    error_message=tb_text[:_ERROR_MESSAGE_MAX_LEN],
+                )
+            except Exception as status_exc:
+                # The status write itself failed (the exact 4/30 mechanism:
+                # missing partial unique index → InFailedSQLTransactionError).
+                # Log loudly; counter already incremented above so observability
+                # is preserved even if DB is uncooperative. Do not swallow.
+                logger.error(
+                    "sync_task_status_write_failed",
+                    task=task_name,
+                    original_error_type=error_type,
+                    status_write_error=str(status_exc),
+                )
             return SyncResult(
                 dataset=task_name,
                 stopped_reason="error",
                 errors=1,
-                error_details=[str(exc)],
+                error_details=[f"{error_type}: {exc}"],
             )
 
         # Final status based on result
