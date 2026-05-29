@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { type StockSignal, type SignalAction } from "@/hooks/use-scanner";
+import { QuoteRow } from "@/components/quote-row";
 
 const ACTION_CONFIG: Record<SignalAction, { label: string; color: string; bg: string }> = {
   STRONG_BUY: { label: "STRONG BUY", color: "var(--stock-down)", bg: "rgba(0,200,83,0.1)" },
@@ -53,13 +53,20 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
         })}
       </div>
 
-      {/* Table */}
+      {/*
+        Scanner results table. The Quote column used to show symbol-only
+        (`stock.symbol.replace('.TW', '')`) with the name in a separate
+        column. The user asked every stock-listing surface to show
+        symbol + name + price + abs change + percent. StockSignalResponse
+        ships symbol/name/composite_action/score but no price/change —
+        QuoteRow renders an em-dash for the missing fields so the
+        backend gap is visible to ops without breaking the column.
+      */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--border-subtle)]">
-              <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Symbol</th>
-              <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Name</th>
+              <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Quote</th>
               <th className="text-center py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Signal</th>
               <th className="text-right py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Score</th>
               <th className="text-left py-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Strategies</th>
@@ -70,12 +77,14 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
               const cfg = ACTION_CONFIG[stock.compositeAction];
               return (
                 <tr key={stock.symbol} className="border-b border-[var(--border-subtle)] hover:bg-[var(--card-hover)] transition-colors">
-                  <td className="py-2.5 px-3">
-                    <Link href={`/stocks/${stock.symbol}`} className="font-bold text-[var(--foreground)] hover:text-[var(--accent-cyan)] transition-colors font-mono text-xs">
-                      {stock.symbol.replace(".TW", "")}
-                    </Link>
+                  <td className="py-1.5 px-3 min-w-[200px]">
+                    <QuoteRow
+                      symbol={stock.symbol}
+                      name={stock.name}
+                      href={`/stocks/${encodeURIComponent(stock.symbol)}`}
+                      className="!border-b-0"
+                    />
                   </td>
-                  <td className="py-2.5 px-3 text-xs text-[var(--text-secondary)]">{stock.name}</td>
                   <td className="py-2.5 px-3 text-center">
                     <span
                       className="inline-block px-2 py-0.5 text-[10px] font-bold"

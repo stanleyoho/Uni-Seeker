@@ -11,6 +11,7 @@ import { Eye } from "lucide-react";
 import { KpiCard, GlassPanel } from "@/components/stratos/primitives";
 import { Sparkline, SectorHeatmap } from "@/components/stratos/charts";
 import { AmbientBackground } from "@/components/stratos/ambient";
+import { QuoteRow } from "@/components/quote-row";
 import {
   useMarketIndices,
   useMarketMovers,
@@ -566,84 +567,25 @@ function MoverList({ items }: { items: MarketMover[] }) {
     return <div style={{ fontSize: 12, color: "#6B7280" }}>No data</div>;
   }
 
+  // Delegate the full quote-card shape to the canonical QuoteRow so this
+  // panel matches every other stock-listing surface (heatmap, search,
+  // signals). MarketMover ships every field we need (symbol, name,
+  // close, change, change_percent) so no derivation is required.
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {items.slice(0, 10).map((m, i) => {
-        const close = parseFloat(m.close);
-        const changePercent = parseFloat(m.change_percent);
-        const isUp = changePercent >= 0;
-        return (
-          <Link
-            key={m.symbol}
-            href={`/stocks/${encodeURIComponent(m.symbol)}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "5px 2px",
-              textDecoration: "none",
-              color: "inherit",
-              fontSize: 12,
-              borderBottom: i < 9 ? "1px solid rgba(255,255,255,0.03)" : "none",
-            }}
-          >
-            <span
-              style={{
-                color: "#6B7280",
-                fontVariantNumeric: "tabular-nums",
-                width: 18,
-                fontSize: 10,
-                textAlign: "right",
-              }}
-            >
-              {i + 1}
-            </span>
-            <span
-              style={{
-                fontWeight: 600,
-                color: "var(--foreground)",
-                minWidth: 48,
-              }}
-            >
-              {m.symbol.replace(".TW", "").replace(".TWO", "")}
-            </span>
-            <span
-              style={{
-                flex: 1,
-                fontSize: 11,
-                color: "#9CA3AF",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {m.name}
-            </span>
-            <span
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                color: "var(--foreground)",
-                minWidth: 52,
-                textAlign: "right",
-              }}
-            >
-              {close.toFixed(2)}
-            </span>
-            <span
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                fontWeight: 600,
-                color: isUp ? "var(--stock-up)" : "var(--stock-down)",
-                minWidth: 60,
-                textAlign: "right",
-              }}
-            >
-              {isUp ? "+" : ""}
-              {changePercent.toFixed(2)}%
-            </span>
-          </Link>
-        );
-      })}
+      {items.slice(0, 10).map((m, i) => (
+        <QuoteRow
+          key={m.symbol}
+          rank={i + 1}
+          symbol={m.symbol}
+          name={m.name}
+          price={m.close}
+          change={m.change}
+          changePercent={m.change_percent}
+          market={m.market}
+          href={`/stocks/${encodeURIComponent(m.symbol)}`}
+        />
+      ))}
     </div>
   );
 }

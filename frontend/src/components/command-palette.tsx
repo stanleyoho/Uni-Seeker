@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { searchStocks, type StockSearchResult } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
+import { QuoteRow } from "@/components/quote-row";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -202,36 +203,31 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           )}
 
           {results.map((stock, index) => (
-            <button
+            // QuoteRow is the canonical stock-listing row. StockSearchResult
+            // currently only ships symbol/name/market — price + change get
+            // rendered as em-dashes (flagged backend gap in the PR body).
+            // The aria-selected + data-result-item passthroughs preserve
+            // the existing listbox keyboard nav.
+            <QuoteRow
               key={stock.symbol}
-              data-result-item
-              type="button"
-              role="option"
-              aria-selected={index === selectedIndex}
+              symbol={stock.symbol}
+              name={stock.name}
+              market={marketLabel(stock.market)}
               onClick={() => navigateToStock(stock.symbol)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors duration-75 ${
+              role="option"
+              ariaSelected={index === selectedIndex}
+              dataAttributes={{ "data-result-item": true }}
+              className={
                 index === selectedIndex
                   ? "bg-[var(--card-active)]"
                   : "hover:bg-[var(--card-hover)]"
-              }`}
+              }
               style={
                 index === selectedIndex
                   ? { borderLeft: "2px solid var(--accent-primary)" }
                   : undefined
               }
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-[var(--foreground)] font-semibold text-xs mono-nums bg-[var(--card-active)] px-1.5 py-0.5 rounded shrink-0">
-                  {stock.symbol.replace(".TW", "").replace(".TWO", "")}
-                </span>
-                <span className="text-[var(--text-secondary)] text-xs truncate">
-                  {stock.name}
-                </span>
-              </div>
-              <span className="text-[10px] text-[var(--text-muted)] px-1.5 py-0.5 border border-[var(--border-color)] rounded shrink-0 ml-2">
-                {marketLabel(stock.market)}
-              </span>
-            </button>
+            />
           ))}
         </div>
 
