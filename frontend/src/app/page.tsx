@@ -63,9 +63,12 @@ function sectorRegion(s: HeatmapSector): "TW" | "US" | "Other" {
 }
 
 /**
- * Pick a fixed 4-tile KPI row: TAIEX index → TAIEX 0050 → S&P → NASDAQ.
+ * Pick a fixed 5-tile KPI row: 加權指數 → 櫃買 → NASDAQ → DJIA → S&P 500.
  * Falls back to the first available TW / US index when a preferred symbol
- * is missing so the row never collapses below 4 tiles.
+ * is missing so the row never collapses below the user's intent.
+ *
+ * Per-tile label normalization happens at render time (see ``displayLabel``)
+ * to drop the "TAIEX" prefix from the 加權指數 tile.
  */
 function pickKpiRow(indices: MarketIndex[]): MarketIndex[] {
   const tw = indices.filter((i) => classifyIndexRegion(i) === "TW");
@@ -80,15 +83,25 @@ function pickKpiRow(indices: MarketIndex[]): MarketIndex[] {
   };
 
   const taiex = pick(tw, [/^\^TWII$/i, /TAIEX|加權/i]) ?? tw[0];
-  const taiex0050 = pick(tw, [/0050/i]) ?? tw.find((i) => i.symbol !== taiex?.symbol);
-  const sp = pick(us, [/^SPY$/i, /^\^GSPC$/i, /S&P/i]) ?? us[0];
-  const nasdaq =
-    pick(us, [/^QQQ$/i, /^\^IXIC$/i, /NASDAQ/i]) ??
-    us.find((i) => i.symbol !== sp?.symbol);
+  const otc = pick(tw, [/櫃買|OTC|TPEX/i]) ?? tw.find((i) => i.symbol !== taiex?.symbol);
+  const nasdaq = pick(us, [/^\^IXIC$/i, /NASDAQ/i]) ?? us[0];
+  const dow = pick(us, [/^\^DJI$/i, /Dow|DJIA|道瓊/i]) ?? us.find((i) => i.symbol !== nasdaq?.symbol);
+  const sp = pick(us, [/^SPY$/i, /^\^GSPC$/i, /S&P|標準普爾|標普/i]);
 
-  return [taiex, taiex0050, sp, nasdaq].filter(
+  return [taiex, otc, nasdaq, dow, sp].filter(
     (i): i is MarketIndex => i !== undefined,
   );
+}
+
+/**
+ * Normalize KPI tile labels — drop the "TAIEX" English prefix from the
+ * 加權指數 tile, prefer the canonical Chinese index name everywhere else.
+ */
+function displayIndexLabel(idx: MarketIndex): string {
+  const raw = idx.name ?? idx.symbol;
+  // "TAIEX (加權指數)" → "加權指數" (drop the English prefix, keep the bracketed Chinese name).
+  const stripped = raw.replace(/^\s*TAIEX\s*\(?\s*/i, "").replace(/\)\s*$/, "").trim();
+  return stripped || raw;
 }
 
 // ---------------------------------------------------------------------------
@@ -502,22 +515,25 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-3 mt-3">
-            {/* -- 1. KPI Row: 4 indices, identical tile size -- */}
+            {/* -- 1. KPI Row: 5 indices (加權指數 / 櫃買 / NASDAQ / DJIA / S&P), identical tile size -- */}
             <div
-              className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+              className="grid grid-cols-2 lg:grid-cols-5 gap-3"
               style={{ flexShrink: 0 }}
             >
               {kpiRow.map((idx) => {
                 const val = parseFloat(idx.value);
                 const cp = parseFloat(idx.change_percent);
+                // abs change = value * change_percent / 100, derived since
+                // the index payload may not carry an explicit absolute change.
+                const absChange = (val * cp) / 100;
                 return (
                   <div key={idx.symbol} className="lg:h-[104px]">
                     <KpiCard
-                      label={idx.name}
+                      label={displayIndexLabel(idx)}
                       value={val.toLocaleString(undefined, {
                         maximumFractionDigits: 2,
                       })}
-                      delta={`${cp >= 0 ? "+" : ""}${cp.toFixed(2)}%`}
+                      delta={`${absChange >= 0 ? "+" : ""}${absChange.toFixed(2)} (${cp >= 0 ? "+" : ""}${cp.toFixed(2)}%)`}
                       direction={cp > 0 ? "up" : cp < 0 ? "down" : "flat"}
                     />
                   </div>
