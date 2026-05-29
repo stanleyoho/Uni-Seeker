@@ -7,6 +7,7 @@ import { type HeatmapSector } from "@/lib/api-client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { useHeatmap } from "@/hooks/use-market-data";
 import { GlassPanel } from "@/components/stratos/primitives";
+import { QuoteRow } from "@/components/quote-row";
 
 function changeColor(pct: number): string {
   if (pct > 3) return "bg-red-600/90";
@@ -44,22 +45,24 @@ function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (sym
       </div>
 
       <div className="flex-1 p-2 space-y-1 bg-[var(--bg-secondary)]/30">
-        {sector.stocks.slice(0, 5).map((stock) => {
-          const sChange = parseFloat(stock.change_percent);
-          const sUp = sChange >= 0;
-          return (
-            <button
-              key={stock.symbol}
-              onClick={() => onClick(stock.symbol)}
-              className="w-full flex items-center justify-between px-2 py-1 hover:bg-[var(--card-hover)] transition-colors text-left"
-            >
-              <span className="text-[11px] font-bold text-[var(--foreground)] tabular-nums">{stock.symbol.split('.')[0]}</span>
-              <span className={`text-[11px] font-bold tabular-nums ${sUp ? "text-[var(--stock-up)]" : "text-[var(--stock-down)]"}`}>
-                {sUp ? "+" : ""}{sChange.toFixed(2)}%
-              </span>
-            </button>
-          );
-        })}
+        {/*
+          Heatmap detail rows used to show only the code + %. The user
+          asked for the full quote set everywhere. HeatmapStock ships
+          symbol/name/close/change_percent but no absolute change —
+          QuoteRow derives it from price × pct internally so the line
+          stays consistent with Market Movers.
+        */}
+        {sector.stocks.slice(0, 5).map((stock) => (
+          <QuoteRow
+            key={stock.symbol}
+            variant="compact"
+            symbol={stock.symbol}
+            name={stock.name}
+            price={stock.close}
+            changePercent={stock.change_percent}
+            onClick={() => onClick(stock.symbol)}
+          />
+        ))}
       </div>
     </GlassPanel>
   );
