@@ -23,7 +23,8 @@ What gets seeded
 4. Stock prices: ~60 daily rows per stock (enough to clear
    ``MIN_DATA_POINTS = 20`` and produce non-trivial backtest metrics)
 5. Watchlist: one item for the e2e user (so /portfolio renders content)
-6. Portfolio account + one BUY trade on 2330 (so /holdings KPIs are non-zero)
+6. Portfolio account + one BUY trade on 2330 with companion lot + position
+   rows (so /holdings KPIs are non-zero and the positions table renders)
 7. F13Filer: Berkshire Hathaway (CIK 0001067983) + e2e user subscription
    + one F13 filing + one F13 holding (so /institutional renders content)
 
@@ -59,6 +60,8 @@ from app.db.models.institutional.filing import F13Filing
 from app.db.models.institutional.holding import F13Holding
 from app.db.models.institutional.subscription import F13UserSubscription
 from app.db.models.portfolio.account import PortfolioAccount
+from app.db.models.portfolio.lot import PortfolioLot
+from app.db.models.portfolio.position import PortfolioPosition
 from app.db.models.portfolio.trade import PortfolioTrade
 from app.models.base import Base
 from app.models.enums import Market, UserTier
@@ -251,7 +254,28 @@ async def _ensure_portfolio_account(session, *, user: User) -> PortfolioAccount:
 
 
 async def _ensure_trade(session, *, account: PortfolioAccount, symbol: str) -> None:
-    existing = (
+    """Insert the seed BUY trade AND materialize its lot + position rows.
+
+    Production trade ingestion goes through `PortfolioTradeService.record_trade`
+    which (1) writes the trade, (2) opens a `PortfolioLot` via `apply_buy`,
+    and (3) re-derives the `PortfolioPosition` roll-up. The /holdings page
+    reads from `portfolio_positions`, NOT `portfolio_trades`, so a trade
+    inserted without its companion lot/position rows renders the page as
+    empty ("無持倉"). The seed mirrors the service's BUY path manually
+    instead of importing the service (which would require User/session
+    plumbing not appropriate inside the seed).
+
+    For BUY qty=1000 @ price=580 fee=0:
+      lot.cost_per_unit  = 580
+      lot.original_qty   = lot.remaining_qty = 1000
+      position.quantity  = 1000
+      position.avg_cost  = 580
+      position.total_cost = 580 * 1000 = 580_000
+    """
+    qty = Decimal("1000")
+    price = Decimal("580.00")
+
+    trade = (
         await session.execute(
             select(PortfolioTrade).where(
                 PortfolioTrade.account_id == account.id,
@@ -259,20 +283,65 @@ async def _ensure_trade(session, *, account: PortfolioAccount, symbol: str) -> N
             )
         )
     ).scalar_one_or_none()
-    if existing is not None:
-        return
-    trade = PortfolioTrade(
-        account_id=account.id,
-        symbol=symbol,
-        market=Market.TW_TWSE,
-        action="BUY",
-        trade_date=date.today() - timedelta(days=10),
-        price=Decimal("580.00"),
-        quantity=Decimal("1000"),
-    )
-    session.add(trade)
-    await session.flush()
-    print(f"[seed] created trade for {symbol} on account {account.id}")
+    if trade is None:
+        trade = PortfolioTrade(
+            account_id=account.id,
+            symbol=symbol,
+            market=Market.TW_TWSE,
+            action="BUY",
+            trade_date=date.today() - timedelta(days=10),
+            price=price,
+            quantity=qty,
+        )
+        session.add(trade)
+        await session.flush()
+        print(f"[seed] created trade for {symbol} on account {account.id}")
+
+    # Lot / position are companion rows for this trade. Guard each
+    # independently so a partially-seeded DB heals on re-run instead of
+    # silently leaving /holdings empty.
+    existing_lot = (
+        await session.execute(
+            select(PortfolioLot).where(PortfolioLot.trade_id == trade.id)
+        )
+    ).scalar_one_or_none()
+    if existing_lot is None:
+        lot = PortfolioLot(
+            trade_id=trade.id,
+            account_id=account.id,
+            symbol=symbol,
+            market=Market.TW_TWSE,
+            original_qty=qty,
+            remaining_qty=qty,
+            cost_per_unit=price,
+        )
+        session.add(lot)
+        await session.flush()
+        print(f"[seed] created lot id={lot.id} for trade {trade.id}")
+
+    existing_position = (
+        await session.execute(
+            select(PortfolioPosition).where(
+                PortfolioPosition.account_id == account.id,
+                PortfolioPosition.symbol == symbol,
+                PortfolioPosition.market == Market.TW_TWSE,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing_position is None:
+        total_cost = price * qty
+        position = PortfolioPosition(
+            account_id=account.id,
+            symbol=symbol,
+            market=Market.TW_TWSE,
+            currency=account.currency,
+            quantity=qty,
+            avg_cost_fifo=price,
+            total_cost=total_cost,
+        )
+        session.add(position)
+        await session.flush()
+        print(f"[seed] created position id={position.id} qty={qty} cost={total_cost}")
 
 
 async def _ensure_filer_and_subscription(session, *, user: User) -> F13Filer:
