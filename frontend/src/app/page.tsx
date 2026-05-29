@@ -3,24 +3,22 @@
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { KpiCard, GlassPanel } from "@/components/stratos/primitives";
-import { SectorHeatmap } from "@/components/stratos/charts";
 import { AmbientBackground } from "@/components/stratos/ambient";
-import { QuoteRow } from "@/components/quote-row";
 import {
   useMarketIndices,
-  useMarketMovers,
   useHeatmap,
 } from "@/hooks/use-market-data";
 import { LoadingSpinner } from "@/components/ui/loading";
 import type {
   MarketIndex,
-  MarketMover,
   HeatmapSector,
+  HeatmapStock,
 } from "@/lib/api-client";
 
 // ---------------------------------------------------------------------------
-// Region classification helpers (single-screen dashboard splits TW vs US into
-// two columns; we still receive one merged payload per hook).
+// Region classification helpers (KPI row still needs TW vs US picking; the
+// sector grid below is region-agnostic — we render whatever the heatmap hook
+// returns, sorted by avg %).
 // ---------------------------------------------------------------------------
 
 function classifyIndexRegion(idx: MarketIndex): "TW" | "US" | "Other" {
@@ -43,23 +41,6 @@ function classifyIndexRegion(idx: MarketIndex): "TW" | "US" | "Other" {
     return "US";
   }
   return "Other";
-}
-
-function moverRegion(m: MarketMover): "TW" | "US" | "Other" {
-  if (m.market?.startsWith("TW_")) return "TW";
-  if (m.market?.startsWith("US_")) return "US";
-  return "Other";
-}
-
-function sectorRegion(s: HeatmapSector): "TW" | "US" | "Other" {
-  let tw = 0;
-  let us = 0;
-  for (const st of s.stocks) {
-    if (/\.TW$|\.TWO$|^\d{4,5}$/i.test(st.symbol)) tw++;
-    else if (/^[A-Z]{1,5}$/.test(st.symbol)) us++;
-  }
-  if (tw === 0 && us === 0) return "Other";
-  return tw >= us ? "TW" : "US";
 }
 
 /**
@@ -223,141 +204,411 @@ function MarketStatusBar() {
 }
 
 // ---------------------------------------------------------------------------
-// Column header (sits above each per-market grid track, replacing the old
-// red/cyan full-width MarketSectionHeader bar that broke single-screen fit).
+// Sector aggregate model — derives from useHeatmap's `HeatmapSector`.
+//
+// Backend ships per-sector aggregates (`avg_change_percent`, `stock_count`)
+// already, so we trust those. We additionally compute the top-3 movers by
+// |change_percent| inside the sector for the focus tiles' callout chips.
 // ---------------------------------------------------------------------------
 
-function ColumnHeader({
-  region,
-  label,
-}: {
-  region: "TW" | "US";
-  label: string;
-}) {
-  const accent =
-    region === "TW" ? "var(--accent-primary)" : "var(--accent-cyan)";
+interface SectorAggregate {
+  sector: string;
+  companyCount: number;
+  avgChangePercent: number;
+  topMovers: HeatmapStock[]; // sorted by |change_percent| desc, max 3
+  rawSector: HeatmapSector;
+}
+
+function aggregateSectors(sectors: HeatmapSector[]): SectorAggregate[] {
+  return sectors
+    .map((s) => {
+      const avg = parseFloat(s.avg_change_percent);
+      // Highest |change %| movers first — this matches the "today's biggest
+      // contributors" expectation in the focus tiles.
+      const topMovers = [...s.stocks]
+        .sort(
+          (a, b) =>
+            Math.abs(parseFloat(b.change_percent)) -
+            Math.abs(parseFloat(a.change_percent)),
+        )
+        .slice(0, 3);
+      return {
+        sector: s.industry,
+        companyCount: s.stock_count ?? s.stocks.length,
+        avgChangePercent: Number.isFinite(avg) ? avg : 0,
+        topMovers,
+        rawSector: s,
+      };
+    })
+    .filter((s) => s.companyCount > 0);
+}
+
+function sectorHref(sectorName: string): string {
+  // TODO(stanley): wire dedicated sector detail. /heatmap currently shows
+  // every sector — `?focus=` lets that page scroll/highlight when wired.
+  return `/heatmap?focus=${encodeURIComponent(sectorName)}`;
+}
+
+function formatPct(pct: number): string {
+  return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+}
+
+// ---------------------------------------------------------------------------
+// HotSectorsRow — aistockmap "今日焦點" strip.
+//
+// Top 3 sectors by avg change %, shown as wide horizontal tiles. Each tile
+// is a `<Link>` to the sector detail (currently /heatmap?focus=…). Skeletons
+// have identical dimensions so the row never reflows when data arrives.
+// ---------------------------------------------------------------------------
+
+function FocusTileSkeleton() {
   return (
-    <div className="flex items-center gap-2" style={{ height: 18 }}>
-      <span
-        aria-hidden="true"
+    <div
+      style={{
+        height: 120,
+        background: "var(--glass-bg, rgba(255,255,255,0.03))",
+        border: "1px solid var(--border-color, rgba(255,255,255,0.06))",
+        borderRadius: "var(--glass-radius, 0)",
+        backgroundImage: "var(--glass-gradient)",
+      }}
+    />
+  );
+}
+
+function FocusTile({ rank, agg }: { rank: number; agg: SectorAggregate }) {
+  const isUp = agg.avgChangePercent >= 0;
+  const accent = isUp ? "var(--stock-up)" : "var(--stock-down)";
+  const arrow = isUp ? "▲" : "▼";
+
+  return (
+    <Link
+      href={sectorHref(agg.sector)}
+      style={{
+        display: "block",
+        height: 120,
+        padding: "12px 16px",
+        background: "var(--glass-bg, rgba(255,255,255,0.03))",
+        border: "1px solid var(--border-color, rgba(255,255,255,0.06))",
+        borderTop: `2px solid ${accent}`,
+        backgroundImage: "var(--glass-gradient)",
+        boxShadow: "var(--glass-shadow)",
+        borderRadius: "var(--glass-radius, 0)",
+        color: "inherit",
+        textDecoration: "none",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* rank chip */}
+      <div
         style={{
-          width: 3,
-          height: 14,
-          background: accent,
-          borderRadius: 1,
+          position: "absolute",
+          top: 10,
+          right: 12,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          color: "var(--text-muted, #9CA3AF)",
         }}
-      />
-      <span
-        className="text-[11px] font-bold uppercase tracking-[0.18em] tabular-nums"
-        style={{ color: accent }}
       >
-        {region}
-      </span>
-      <span
-        className="text-[12px] font-semibold uppercase tracking-[0.04em]"
-        style={{ color: "var(--foreground)" }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sector heatmap panel (fixed-height container so the inner heatmap fills,
-// not overflows). Heatmap is clickable → /heatmap.
-// ---------------------------------------------------------------------------
-
-function SectorHeatmapPanel({
-  sectors,
-  title,
-}: {
-  sectors: HeatmapSector[];
-  title: string;
-}) {
-  const heatmapData = useMemo(
-    () =>
-      sectors.map((s) => ({
-        name: s.industry,
-        change: parseFloat(s.avg_change_percent),
-        marketCap: s.total_volume,
-      })),
-    [sectors],
-  );
-
-  return (
-    <GlassPanel
-      title={title}
-      className="h-full"
-      style={{ padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}
-    >
-      <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        {heatmapData.length === 0 ? (
-          <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-            No sector data available
-          </div>
-        ) : (
-          <Link
-            href="/heatmap"
-            style={{ display: "block", textDecoration: "none", color: "inherit", height: "100%" }}
-          >
-            <SectorHeatmap data={heatmapData} />
-          </Link>
-        )}
+        #{rank}
       </div>
-    </GlassPanel>
+
+      {/* big % */}
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 700,
+          lineHeight: 1.1,
+          color: accent,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {arrow} {formatPct(agg.avgChangePercent)}
+      </div>
+
+      {/* sector label + count */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--foreground)",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            maxWidth: 220,
+          }}
+        >
+          {agg.sector}
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: "2px 6px",
+            color: "var(--text-muted)",
+            border: "1px solid var(--border-color, rgba(255,255,255,0.08))",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {agg.companyCount} 家
+        </span>
+      </div>
+
+      {/* top movers row */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginTop: 10,
+          fontSize: 11,
+          fontFamily: "var(--font-mono, monospace)",
+          color: "var(--text-secondary, #9CA3AF)",
+        }}
+      >
+        {agg.topMovers.map((m) => {
+          const cp = parseFloat(m.change_percent);
+          const mColor =
+            cp >= 0 ? "var(--stock-up)" : "var(--stock-down)";
+          return (
+            <span key={m.symbol} style={{ display: "flex", gap: 4 }}>
+              <span style={{ color: "var(--foreground)" }}>{m.symbol}</span>
+              <span style={{ color: mColor, fontVariantNumeric: "tabular-nums" }}>
+                {formatPct(cp)}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+    </Link>
+  );
+}
+
+function HotSectorsRow({
+  aggregates,
+  isLoading,
+}: {
+  aggregates: SectorAggregate[];
+  isLoading: boolean;
+}) {
+  const top3 = useMemo(
+    () =>
+      [...aggregates]
+        .sort((a, b) => b.avgChangePercent - a.avgChangePercent)
+        .slice(0, 3),
+    [aggregates],
+  );
+
+  return (
+    <section style={{ flexShrink: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 3,
+            height: 14,
+            background: "var(--accent-primary)",
+            borderRadius: 1,
+          }}
+        />
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.18em] tabular-nums"
+          style={{ color: "var(--accent-primary)" }}
+        >
+          今日焦點
+        </span>
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.04em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Top Hot Sectors
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {isLoading || top3.length === 0
+          ? Array.from({ length: 3 }).map((_, i) => <FocusTileSkeleton key={i} />)
+          : top3.map((agg, i) => (
+              <FocusTile key={agg.sector} rank={i + 1} agg={agg} />
+            ))}
+      </div>
+    </section>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Market movers panel — tabbed (Gainers / Losers / Most Active), top 5 only.
-// Full list lives on /scanner; a See-all link is rendered in the panel header.
+// SectorCardGrid — aistockmap "產業/類別" grid.
+//
+// All sectors as a 4-col x N-row tile grid. Each tile is a `<Link>`; the avg
+// % is color-coded green-up / red-down per the STRATOS palette. Skeletons
+// fill the same slots when the hook is still loading so nothing reflows.
 // ---------------------------------------------------------------------------
 
-function MarketMoversPanel({
-  movers,
-  title,
+function SectorTileSkeleton() {
+  return (
+    <div
+      style={{
+        height: 96,
+        background: "var(--glass-bg, rgba(255,255,255,0.03))",
+        border: "1px solid var(--border-color, rgba(255,255,255,0.06))",
+        borderRadius: "var(--glass-radius, 0)",
+        backgroundImage: "var(--glass-gradient)",
+      }}
+    />
+  );
+}
+
+function SectorTile({ agg }: { agg: SectorAggregate }) {
+  const isUp = agg.avgChangePercent >= 0;
+  const accent = isUp ? "var(--stock-up)" : "var(--stock-down)";
+  const arrow = isUp ? "▲" : "▼";
+  const topSymbol = agg.topMovers[0]?.symbol;
+
+  return (
+    <Link
+      href={sectorHref(agg.sector)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        height: 96,
+        padding: "10px 12px",
+        background: "var(--glass-bg, rgba(255,255,255,0.03))",
+        border: "1px solid var(--border-color, rgba(255,255,255,0.06))",
+        borderLeft: `2px solid ${accent}`,
+        backgroundImage: "var(--glass-gradient)",
+        boxShadow: "var(--glass-shadow)",
+        borderRadius: "var(--glass-radius, 0)",
+        color: "inherit",
+        textDecoration: "none",
+        overflow: "hidden",
+      }}
+    >
+      {/* sector name + count */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--foreground)",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {agg.sector}
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--text-muted)",
+            flexShrink: 0,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {agg.companyCount}家
+        </span>
+      </div>
+
+      {/* big % */}
+      <div
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: accent,
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1.1,
+        }}
+      >
+        {arrow} {formatPct(agg.avgChangePercent)}
+      </div>
+
+      {/* top symbol (sparkline placeholder) */}
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          fontFamily: "var(--font-mono, monospace)",
+        }}
+      >
+        {topSymbol ? `領漲 ${topSymbol}` : ""}
+      </div>
+    </Link>
+  );
+}
+
+function SectorCardGrid({
+  aggregates,
+  isLoading,
 }: {
-  movers: { gainers: MarketMover[]; losers: MarketMover[]; most_active: MarketMover[] };
-  title: string;
+  aggregates: SectorAggregate[];
+  isLoading: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<"gainers" | "losers" | "most_active">("gainers");
+  // Sort by avg % desc — most reactive sectors first; mirrors "Top Hot" intent
+  // for the card grid as well so the eye flows top-left to bottom-right.
+  const sorted = useMemo(
+    () =>
+      [...aggregates].sort(
+        (a, b) => b.avgChangePercent - a.avgChangePercent,
+      ),
+    [aggregates],
+  );
 
-  const tabs: { key: typeof activeTab; label: string }[] = [
-    { key: "gainers", label: "漲幅" },
-    { key: "losers", label: "跌幅" },
-    { key: "most_active", label: "成交量" },
-  ];
-
-  const items = movers[activeTab].slice(0, 5);
+  // Cap at 12 (4×3) to honor the single-screen budget; remainder lives on
+  // /heatmap. The "see all" link gives users a hop point.
+  const visible = sorted.slice(0, 12);
 
   return (
     <GlassPanel
-      className="h-full"
-      style={{ padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}
+      className="flex flex-col min-h-0 flex-1"
+      noPadding
+      style={{ padding: 14 }}
     >
-      {/* Title + See-all link row */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 8,
+          marginBottom: 10,
         }}
       >
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "-0.04em",
-            color: "#9CA3AF",
-          }}
-        >
-          {title}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 3,
+              height: 14,
+              background: "var(--accent-cyan)",
+              borderRadius: 1,
+            }}
+          />
+          <span
+            className="text-[11px] font-bold uppercase tracking-[0.18em] tabular-nums"
+            style={{ color: "var(--accent-cyan)" }}
+          >
+            產業/類別
+          </span>
+          <span
+            className="text-[11px] font-semibold uppercase tracking-[0.04em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Sectors
+          </span>
+        </div>
         <Link
-          href="/scanner"
+          href="/heatmap"
           style={{
             fontSize: 11,
             color: "var(--accent-cyan)",
@@ -370,64 +621,14 @@ function MarketMoversPanel({
         </Link>
       </div>
 
-      {/* Tab bar */}
-      <div
-        style={{
-          display: "flex",
-          gap: 0,
-          marginBottom: 6,
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          flexShrink: 0,
-        }}
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              flex: 1,
-              padding: "4px 0",
-              fontSize: 11,
-              fontWeight: activeTab === tab.key ? 700 : 500,
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              color: activeTab === tab.key ? "var(--accent-cyan, #00E5FF)" : "#6B7280",
-              background: "none",
-              border: "none",
-              borderBottom:
-                activeTab === tab.key
-                  ? "2px solid var(--accent-cyan, #00E5FF)"
-                  : "2px solid transparent",
-              cursor: "pointer",
-              transition: "color 0.15s, border-color 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Active tab content — top 5 only, fills remaining height */}
-      <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        {items.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#6B7280", padding: "8px 0" }}>No data</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {items.map((m, i) => (
-              <QuoteRow
-                key={m.symbol}
-                rank={i + 1}
-                symbol={m.symbol}
-                name={m.name}
-                price={m.close}
-                change={m.change}
-                changePercent={m.change_percent}
-                market={m.market}
-                href={`/stocks/${encodeURIComponent(m.symbol)}`}
-              />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 auto-rows-fr">
+        {isLoading || visible.length === 0
+          ? Array.from({ length: 12 }).map((_, i) => (
+              <SectorTileSkeleton key={i} />
+            ))
+          : visible.map((agg) => (
+              <SectorTile key={agg.sector} agg={agg} />
             ))}
-          </div>
-        )}
       </div>
     </GlassPanel>
   );
@@ -436,60 +637,39 @@ function MarketMoversPanel({
 // ---------------------------------------------------------------------------
 // Main single-screen dashboard
 //
-// Layout budget @ 1440x900 viewport:
+// Layout budget @ 1440x900 viewport (post-refactor):
 //   - StratosHeader (sticky)          64px  (layout-owned)
 //   - TickerStrip   (sticky)          40px  (layout-owned)
 //   ─────────────────────────────────────  remaining ≈ 796px for this page
-//   - py-4 padding                    32px
+//   - py-3 padding                    24px
 //   - MarketStatusBar                 28px
-//   - KPI row (4 tiles, h-[104px])   104px
-//   - gap (3 between blocks: 12*3)    36px
-//   - Body grid (2-col TW | US)
-//       ColumnHeader                  18px
-//       Heatmap panel                280px
-//       Movers panel                 260px
-//   - Total ≈ 758px  ✓ fits inside 796px on desktop ≥ lg.
+//   - KPI row (5 tiles, h-[104px])   104px
+//   - gap (between blocks: 12*3)      36px
+//   - HotSectorsRow header           ~22px
+//   - HotSectorsRow tiles             120px
+//   - SectorCardGrid (fills rest)    ~430px
+//   - Total ≈ 764px  ✓ fits inside 796px.
 //
 // Hard rule: root flex column owns the screen height (h-screen on the outer
 // wrapper is provided via the layout's flex-col + flex-1); within this page
-// nothing scrolls vertically on desktop. Mobile / <lg drops to grid-cols-1
+// nothing scrolls vertically on desktop. Mobile / <lg drops to single column
 // and is allowed to scroll (per spec).
 // ---------------------------------------------------------------------------
 
 export default function HomePage() {
   const { data: indices = [], isLoading: indicesLoading } = useMarketIndices();
-  const { data: movers, isLoading: moversLoading } = useMarketMovers();
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();
 
   const kpiRow = useMemo(() => pickKpiRow(indices), [indices]);
 
-  const twSectors = useMemo(
-    () => (heatmapData?.sectors ?? []).filter((s) => sectorRegion(s) === "TW"),
-    [heatmapData?.sectors],
-  );
-  const usSectors = useMemo(
-    () => (heatmapData?.sectors ?? []).filter((s) => sectorRegion(s) === "US"),
+  // All sectors (TW + US merged) — the user explicitly asked for a single
+  // sector grid à la aistockmap, no region split here.
+  const aggregates = useMemo(
+    () => aggregateSectors(heatmapData?.sectors ?? []),
     [heatmapData?.sectors],
   );
 
-  const twMovers = useMemo(
-    () => ({
-      gainers: (movers?.gainers ?? []).filter((m) => moverRegion(m) === "TW"),
-      losers: (movers?.losers ?? []).filter((m) => moverRegion(m) === "TW"),
-      most_active: (movers?.most_active ?? []).filter((m) => moverRegion(m) === "TW"),
-    }),
-    [movers],
-  );
-  const usMovers = useMemo(
-    () => ({
-      gainers: (movers?.gainers ?? []).filter((m) => moverRegion(m) === "US"),
-      losers: (movers?.losers ?? []).filter((m) => moverRegion(m) === "US"),
-      most_active: (movers?.most_active ?? []).filter((m) => moverRegion(m) === "US"),
-    }),
-    [movers],
-  );
-
-  const isLoading = indicesLoading || moversLoading || heatmapLoading;
+  const isLoading = indicesLoading || heatmapLoading;
 
   return (
     // The inline `--page-h` var pins this page to the viewport minus the
@@ -541,40 +721,11 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* -- 2. Body: 2-col TW | US, each col = heatmap + movers stacked -- */}
-            <div
-              className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0"
-            >
-              {/* TW column */}
-              <div className="flex flex-col gap-2 min-h-0">
-                <ColumnHeader region="TW" label="Taiwan Market" />
-                <div className="grid grid-rows-[280px_minmax(0,1fr)] gap-3 flex-1 min-h-0">
-                  <SectorHeatmapPanel
-                    sectors={twSectors}
-                    title="TW SECTOR HEATMAP"
-                  />
-                  <MarketMoversPanel
-                    movers={twMovers}
-                    title="TW MARKET MOVERS"
-                  />
-                </div>
-              </div>
+            {/* -- 2. HotSectorsRow: top 3 hottest sectors -- */}
+            <HotSectorsRow aggregates={aggregates} isLoading={heatmapLoading} />
 
-              {/* US column */}
-              <div className="flex flex-col gap-2 min-h-0">
-                <ColumnHeader region="US" label="US Market" />
-                <div className="grid grid-rows-[280px_minmax(0,1fr)] gap-3 flex-1 min-h-0">
-                  <SectorHeatmapPanel
-                    sectors={usSectors}
-                    title="US SECTOR HEATMAP"
-                  />
-                  <MarketMoversPanel
-                    movers={usMovers}
-                    title="US MARKET MOVERS"
-                  />
-                </div>
-              </div>
-            </div>
+            {/* -- 3. SectorCardGrid: 4-col grid of every sector -- */}
+            <SectorCardGrid aggregates={aggregates} isLoading={heatmapLoading} />
           </div>
         )}
       </main>
