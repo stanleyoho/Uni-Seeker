@@ -1,26 +1,41 @@
-# User-defined Alert Rules (UNI-ALERT-001) — same registration pattern.
-from app.db.models.alerts import AlertRule
+# Cross-package model packages are imported for side effect only — their
+# __init__ files run the SQLAlchemy class definitions that register tables
+# on ``Base.metadata`` (consumed by alembic env.py and metadata.create_all).
+#
+# We deliberately do NOT use ``from X import Y`` here. That syntax forces
+# Python to bind the attribute Y on the (partially-loaded) submodule X,
+# which triggers an ImportError when this __init__ is re-entered during a
+# cross-package cycle. The canonical trigger:
+#
+#   scripts/seed_e2e_data.py:54  →  import app.db.models
+#   app.db.models.__init__:5     →  from app.db.models import alerts
+#   alerts.__init__:3            →  from .alert_rule import AlertRule
+#   alert_rule.py:26             →  from app.models.base import Base
+#                                      (which runs this __init__)
+#   this file (old):             →  from app.db.models.alerts import AlertRule
+#                                      → alerts is mid-load, AlertRule not yet
+#                                        bound → ImportError.
+#
+# ``import X`` (no name lookup) is safe under that partial-load condition —
+# Python returns the partial module and we never touch a not-yet-defined
+# attribute. The class registrations on Base.metadata still happen because
+# the import side effect runs each module body exactly once.
+#
+# Public re-exports remain via ``app.models.<submodule_dotted_path>`` for
+# anyone who wants them; the cross-package names are not listed in
+# ``__all__`` (verified). No external caller imports these from app.models
+# (grep verified: 0 hits across app/ and tests/).
+
+# User-defined Alert Rules (UNI-ALERT-001).
+import app.db.models.alerts
 
 # 13F Holdings Tracker (UNI-F13-001) — ORM lives under
-# app/db/models/institutional/ per design doc §6.5. Same registration
-# pattern as portfolio above.
-from app.db.models.institutional import (
-    F13Filer,
-    F13Filing,
-    F13Holding,
-    F13UserSubscription,
-)
+# app/db/models/institutional/ per design doc §6.5.
+import app.db.models.institutional
 
 # Portfolio Tracker (UNI-PORT-001) — ORM lives under app/db/models/portfolio/
-# per design doc §5.5. Import here so the tables register on Base.metadata
-# and Alembic autogenerate / create_all see them.
-from app.db.models.portfolio import (
-    PortfolioAccount,
-    PortfolioDividend,
-    PortfolioLot,
-    PortfolioPosition,
-    PortfolioTrade,
-)
+# per design doc §5.5.
+import app.db.models.portfolio
 from app.models.audit_log import AuditLog
 from app.models.backtest_job import BacktestJob
 from app.models.backtest_result import BacktestResultRecord
