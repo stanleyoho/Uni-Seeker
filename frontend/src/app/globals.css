@@ -19,8 +19,12 @@
   --accent-blue: #3b82f6;
   --accent-blue-hover: #2563eb;
   --accent-blue-glow: rgba(59, 130, 246, 0.2);
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
+  /* Body text contrast on #141925 background:
+     - text-secondary #D1D5DB → ~12.6:1 (was #9CA3AF → ~7.1:1)
+     - text-muted     #9CA3AF → ~7.1:1  (was #6B7280 → ~4.1:1, FAILED AA)
+     Both now pass WCAG AA (4.5:1) with margin for body labels. */
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
   --stock-up: #EE3F2C;
   --stock-up-bg: rgba(238,63,44,0.1);
   --stock-down: #10B981;
@@ -63,8 +67,11 @@
   --accent-blue: #2563eb;
   --accent-blue-hover: #1d4ed8;
   --accent-blue-glow: rgba(37, 99, 235, 0.2);
-  --text-secondary: #4A4A4A;
-  --text-muted: #7A7A7A;
+  /* Light theme contrast on #FAFAFA background:
+     - text-secondary #3A3A3A → ~12.2:1 (was #4A4A4A → ~8.9:1)
+     - text-muted     #5C5C5C → ~6.4:1  (was #7A7A7A → ~4.4:1, borderline AA) */
+  --text-secondary: #3A3A3A;
+  --text-muted: #5C5C5C;
   --stock-up: #D42B1E;
   --stock-up-bg: rgba(212,43,30,0.08);
   --stock-down: #1B8A4E;
@@ -86,6 +93,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-rubik);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Bump Tailwind body-text scale +1px per step for readability on dense
+     dashboards. Stanley feedback: "字體太小". Hierarchy preserved.
+       text-xs   12px → 13px
+       text-sm   14px → 15px
+       text-base 16px → 16px (anchor)
+       text-lg   18px → 19px
+     Line heights regenerated to keep tracking proportional. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: calc(1.375 / 0.9375);
+  --text-base: 1rem;
+  --text-base--line-height: calc(1.5 / 1);
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: calc(1.75 / 1.1875);
 }
 
 html {
