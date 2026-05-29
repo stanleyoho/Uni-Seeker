@@ -96,6 +96,10 @@ services:
       UNI_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db-e2e:5432/uni_seeker_e2e
       UNI_REDIS_URL: redis://redis-e2e:6379/0
       UNI_JWT_SECRET_KEY: e2e-jwt-secret-do-not-use-in-prod
+      # Disable per-IP auth rate limiter for e2e — Playwright drives ~10+
+      # logins per spec from the same Docker network IP and trips the prod
+      # 5/min limit. Production stays 5/min by default.
+      UNI_AUTH_RATE_LIMIT_MAX: "0"
       # FinMind / Telegram / Stripe are all unset on purpose — e2e specs
       # never exercise live external services. The few endpoints that
       # require them (e.g. /prices/update) are out of scope for the

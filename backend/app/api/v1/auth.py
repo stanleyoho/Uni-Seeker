@@ -24,25 +24,31 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 # ── In-memory rate limiter (per IP) ──────────────────────────────
-# Production: replace with Redis-based limiter
+# Production: replace with Redis-based limiter.
+# Window / max are configurable via UNI_AUTH_RATE_LIMIT_WINDOW_SECONDS / _MAX.
+# Setting UNI_AUTH_RATE_LIMIT_MAX=0 disables the limiter entirely (used by e2e).
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT_WINDOW = 60.0  # seconds
-_RATE_LIMIT_MAX = 5  # max attempts per window
 
 
 def _check_rate_limit(request: Request) -> None:
     """Raise 429 if IP exceeds rate limit for auth endpoints."""
+    from app.config import settings  # local import so tests can monkeypatch
+
+    limit_max = settings.auth_rate_limit_max
+    if limit_max <= 0:
+        return  # limiter disabled (e2e / explicitly opted out)
+    window = settings.auth_rate_limit_window_seconds
     ip = request.client.host if request.client else "unknown"
     now = time.time()
     attempts = _rate_limit_store[ip]
     # Clean old entries
-    _rate_limit_store[ip] = [t for t in attempts if now - t < _RATE_LIMIT_WINDOW]
-    if len(_rate_limit_store[ip]) >= _RATE_LIMIT_MAX:
+    _rate_limit_store[ip] = [t for t in attempts if now - t < window]
+    if len(_rate_limit_store[ip]) >= limit_max:
         logger.warning("rate_limit_exceeded", extra={"ip": ip})
         raise HTTPException(
             status_code=429,
-            detail=f"Too many attempts. Try again in {int(_RATE_LIMIT_WINDOW)} seconds.",
+            detail=f"Too many attempts. Try again in {int(window)} seconds.",
         )
     _rate_limit_store[ip].append(now)
 

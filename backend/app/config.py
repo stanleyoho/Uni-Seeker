@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     app_name: str = "Uni-Seeker"
     debug: bool = False
 
+    # Auth rate limiter (per IP, per /auth endpoint).
+    # Production: 5 attempts per 60s. Set to 0 to disable entirely (used by e2e).
+    auth_rate_limit_max: int = 5  # UNI_AUTH_RATE_LIMIT_MAX
+    auth_rate_limit_window_seconds: float = 60.0  # UNI_AUTH_RATE_LIMIT_WINDOW_SECONDS
+
     # Feature toggle: when False, require_tier passes all users as PRO
     enable_monetization: bool = False  # UNI_ENABLE_MONETIZATION
 
