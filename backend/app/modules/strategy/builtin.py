@@ -247,6 +247,12 @@ class BiasReversalStrategy:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
         ma = sum(closes[-self._period :]) / self._period
+        # Guard against degenerate input: an all-zero (or nearly-zero) window
+        # makes ma == 0 and bias undefined. One bad ticker must not 500 the
+        # whole /scanner/scan batch (browser audit 2026-05-28).
+        if ma == 0:
+            return Signal(action="HOLD", symbol="", reason="Degenerate data (MA=0)")
+
         bias = (closes[-1] - ma) / ma * 100
 
         if bias <= self._buy:
@@ -318,6 +324,11 @@ class RSIBiasComboStrategy:
         if len(closes) < self._bias_period:
             return None
         ma = sum(closes[-self._bias_period :]) / self._bias_period
+        # Guard: degenerate (all-zero) window → undefined bias.
+        # Returning None lets the caller short-circuit to HOLD instead of
+        # crashing the whole scanner batch (browser audit 2026-05-28).
+        if ma == 0:
+            return None
         return (closes[-1] - ma) / ma * 100
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:

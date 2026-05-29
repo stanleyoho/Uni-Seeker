@@ -118,3 +118,65 @@ async def test_get_score_basic_happy_path(client: AsyncClient, db_session: Async
     assert "valuation_score" in data
     assert "price_position_score" in data
     assert "quality_score" in data
+
+
+# ── Bug 1 regression: HTTP boundary ───────────────────────────────────────
+async def _mk_stock_with_zero_close_history(
+    db: AsyncSession,
+    symbol: str,
+    name: str,
+    num_days: int,
+) -> None:
+    """Seed a stock whose entire price history is `close == 0`.
+
+    Mirrors a real-world data-quality scenario (failed sync, pre-IPO row,
+    badly normalized CSV) that surfaced as a 500 in production.
+    """
+    s = Stock(symbol=symbol, name=name, market=Market.TW_TWSE)
+    db.add(s)
+    await db.commit()
+    await db.refresh(s)
+
+    base_date = date(2026, 5, 1)
+    for i in range(num_days):
+        db.add(
+            StockPrice(
+                stock_id=s.id,
+                date=base_date - timedelta(days=num_days - i - 1),
+                open=Decimal("0"),
+                high=Decimal("0"),
+                low=Decimal("0"),
+                close=Decimal("0"),
+                change=Decimal("0"),
+                volume=0,
+            )
+        )
+    await db.commit()
+
+
+async def test_scan_does_not_500_on_zero_close_data(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """GET /low-base/scan?limit=5 with bad/zero data must NOT 500.
+
+    Reproducer for the 2026-05-28 browser-audit bug:
+        curl 'http://127.0.0.1:8000/api/v1/low-base/scan?limit=5' → 500
+        ZeroDivisionError in app/modules/low_base/scorer.py
+    """
+    # Seed a degenerate stock so the scorer hits the zero divisor.
+    await _mk_stock_with_zero_close_history(db_session, "ZERO", "ZeroStock", num_days=60)
+    # Plus a healthy stock so we know the endpoint can still rank others.
+    await _mk_stock_with_history(db_session, "2330", "TSMC", num_days=60)
+
+    resp = await client.get("/api/v1/low-base/scan?limit=5&min_data_days=60")
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["total_scanned"] >= 2
+    # The degenerate stock should either be excluded or have a finite score —
+    # never crash the whole response. Backend serializes numeric scores as
+    # strings (Decimal-as-string convention).
+    for row in data.get("results", []):
+        # Either a JSON number, or a string parseable as a finite float.
+        assert isinstance(row["total_score"], int | float | str)
+        val = float(row["total_score"])
+        assert val == val  # not NaN
