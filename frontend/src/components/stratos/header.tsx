@@ -511,8 +511,122 @@ export function StratosHeader() {
 }
 
 /* =========================================
-   TickerStrip — 40px height, CSS marquee
-   ========================================= */
+   TickerStrip — 40px height, TW + US clusters
+   =========================================
+   Visually groups indices by region: TW cluster on the left
+   (TAIEX / 0050 / OTC / 加權...), US cluster on the right
+   (S&P / NDX / SOX / DJI...), separated by a vertical divider.
+   Each cluster has a small "TW" / "US" label so the eye knows
+   which market a quote belongs to without parsing the symbol.
+
+   Horizontal scroll is preserved: the whole strip overflows-x and
+   the inner row is `whitespace-nowrap`. The marquee animation
+   from the previous version is intentionally removed so the
+   region labels remain in place — users now scroll manually when
+   the cluster overflows, which is more legible for a fixed
+   2-cluster layout. */
+
+/** Classify a MarketIndex into TW / US / Other by symbol + name patterns. */
+function classifyIndexRegion(idx: MarketIndex): "TW" | "US" | "Other" {
+  const s = idx.symbol || "";
+  const n = idx.name || "";
+  if (
+    /\.TW$/i.test(s) ||
+    /\.TWO$/i.test(s) ||
+    /^\^TWII$/i.test(s) ||
+    /^\^TPEX$/i.test(s) ||
+    /TAIEX|加權|櫃買|OTC/i.test(n)
+  ) {
+    return "TW";
+  }
+  if (
+    /^SPY$|^QQQ$|^DIA$|^IWM$/i.test(s) ||
+    /^\^(GSPC|IXIC|DJI|NDX|SOX|RUT)$/i.test(s) ||
+    /S&P|NASDAQ|Dow Jones|Russell|Philadelphia|Semiconductor|費半/i.test(n)
+  ) {
+    return "US";
+  }
+  return "Other";
+}
+
+function ClusterLabel({ label }: { label: string }) {
+  return (
+    <span
+      className="text-[10px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 shrink-0"
+      style={{
+        color: "var(--text-muted)",
+        background: "color-mix(in srgb, var(--foreground) 6%, transparent)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 2,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function TickerQuote({ item }: { item: MarketIndex }) {
+  const chg = Number(item.change_percent);
+  const isUp = chg >= 0;
+  return (
+    <div className="flex items-center gap-2 px-3 shrink-0">
+      <span
+        className="text-[12px] font-bold"
+        style={{ color: "var(--foreground)" }}
+      >
+        {item.name || item.symbol}
+      </span>
+      <span
+        className="text-[12px] tabular-nums"
+        style={{ color: "var(--foreground)" }}
+      >
+        {Number(item.value).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </span>
+      <span
+        className="text-[12px] tabular-nums font-medium"
+        style={{ color: isUp ? "var(--stock-up)" : "var(--stock-down)" }}
+      >
+        {isUp ? "+" : ""}
+        {chg.toFixed(2)}%
+      </span>
+    </div>
+  );
+}
+
+function TickerCluster({
+  label,
+  items,
+}: {
+  label: string;
+  items: MarketIndex[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1 h-full shrink-0">
+      <ClusterLabel label={label} />
+      {items.map((item) => (
+        <TickerQuote key={item.symbol} item={item} />
+      ))}
+    </div>
+  );
+}
+
+function ClusterDivider() {
+  return (
+    <span
+      aria-hidden="true"
+      className="shrink-0 mx-2"
+      style={{
+        width: 1,
+        height: 20,
+        background: "var(--border-color)",
+      }}
+    />
+  );
+}
 
 function TickerStrip() {
   const { data: indices, isLoading } = useMarketIndices();
@@ -532,81 +646,33 @@ function TickerStrip() {
     );
   }
 
-  // If fewer than 3 indices, render a static row instead of scrolling marquee
-  if (indices.length < 3) {
-    return (
-      <div className="h-10 flex items-center justify-center gap-6" style={{
-        background: "var(--bg-secondary)",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}>
-        {indices.map((item) => {
-          const chg = Number(item.change_percent);
-          return (
-            <div key={item.symbol} className="flex items-center gap-2">
-              <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>{item.name}</span>
-              <span className="text-[12px]" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              <span className="text-[12px] font-medium" style={{ color: chg >= 0 ? "var(--stock-up)" : "var(--stock-down)", fontVariantNumeric: "tabular-nums" }}>
-                {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
+  const tw: MarketIndex[] = [];
+  const us: MarketIndex[] = [];
+  const other: MarketIndex[] = [];
+  for (const idx of indices) {
+    const region = classifyIndexRegion(idx);
+    if (region === "TW") tw.push(idx);
+    else if (region === "US") us.push(idx);
+    else other.push(idx);
   }
-
-  // Duplicate for seamless loop
-  const items: MarketIndex[] = [...indices, ...indices];
 
   return (
     <div
-      className="h-10 overflow-hidden relative group"
+      className="h-10 overflow-x-auto overflow-y-hidden scrollbar-hide"
       style={{
         background: "var(--bg-secondary)",
         borderBottom: "1px solid var(--border-subtle)",
       }}
     >
-      <div
-        className="flex items-center h-full whitespace-nowrap"
-        style={{
-          animation: `ticker-scroll ${Math.max(indices.length * 4, 20)}s linear infinite`,
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.animationPlayState = 'paused'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.animationPlayState = 'running'; }}
-      >
-        {items.map((item, i) => {
-          const chg = Number(item.change_percent);
-          return (
-            <div key={`${item.symbol}-${i}`} className="flex items-center gap-2 px-4 shrink-0">
-              <span className="text-[12px] font-bold" style={{ color: "var(--foreground)" }}>
-                {item.name || item.symbol}
-              </span>
-              <span className="text-[12px] tabular-nums" style={{ color: "var(--foreground)" }}>
-                {Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span
-                className="text-[12px] tabular-nums font-medium"
-                style={{
-                  color: chg >= 0
-                    ? "var(--stock-up)"
-                    : "var(--stock-down)",
-                }}
-              >
-                {chg >= 0 ? "+" : ""}
-                {chg.toFixed(2)}%
-              </span>
-            </div>
-          );
-        })}
+      <div className="flex items-center h-full whitespace-nowrap px-4 gap-1">
+        <TickerCluster label="TW" items={tw} />
+        {tw.length > 0 && us.length > 0 && <ClusterDivider />}
+        <TickerCluster label="US" items={us} />
+        {other.length > 0 && (us.length > 0 || tw.length > 0) && (
+          <ClusterDivider />
+        )}
+        <TickerCluster label="ETC" items={other} />
       </div>
-
-      {/* CSS keyframe for marquee — injected inline */}
-      <style>{`
-        @keyframes ticker-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }
