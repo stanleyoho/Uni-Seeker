@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
-  --bg-secondary: #0a0a0a;
+  /* Surface tokens — bumped one step lighter so glass cards (alpha 0.03)
+     gain visible separation from the page. Previous values #000/#0a0a0a
+     made cards disappear into the page; #141925/#1a2030 preserves
+     STRATOS dark-luxury feel while opening up contrast. */
+  --background: #141925;
+  --bg-secondary: #1a2030;
   --foreground: #FFFFFF;
   --card-bg: rgba(255,255,255,0.03);
   --card-hover: rgba(255,255,255,0.06);

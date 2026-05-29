@@ -103,35 +103,66 @@ function generateMockTrend(base: number): { v: number }[] {
   return points;
 }
 
-/** Filter indices to show major markets */
+/** Classify an index as TW / US / Other from symbol + name patterns. */
+function classifyIndexRegion(idx: MarketIndex): "TW" | "US" | "Other" {
+  const s = idx.symbol || "";
+  const n = idx.name || "";
+  if (
+    /\.TW$/i.test(s) ||
+    /\.TWO$/i.test(s) ||
+    /^\^TWII$/i.test(s) ||
+    /^\^TPEX$/i.test(s) ||
+    /TAIEX|加權|櫃買|OTC/i.test(n)
+  ) {
+    return "TW";
+  }
+  if (
+    /^SPY$|^QQQ$|^DIA$|^IWM$/i.test(s) ||
+    /^\^(GSPC|IXIC|DJI|NDX|SOX|RUT)$/i.test(s) ||
+    /S&P|NASDAQ|Dow Jones|Russell|Philadelphia|Semiconductor|費半/i.test(n)
+  ) {
+    return "US";
+  }
+  return "Other";
+}
+
+/** Classify a mover row by its backend market enum. */
+function moverRegion(m: MarketMover): "TW" | "US" | "Other" {
+  if (m.market?.startsWith("TW_")) return "TW";
+  if (m.market?.startsWith("US_")) return "US";
+  return "Other";
+}
+
+/** Classify a heatmap sector by majority region of its constituents. */
+function sectorRegion(s: HeatmapSector): "TW" | "US" | "Other" {
+  let tw = 0;
+  let us = 0;
+  for (const st of s.stocks) {
+    if (/\.TW$|\.TWO$|^\d{4,5}$/i.test(st.symbol)) tw++;
+    else if (/^[A-Z]{1,5}$/.test(st.symbol)) us++;
+  }
+  if (tw === 0 && us === 0) return "Other";
+  return tw >= us ? "TW" : "US";
+}
+
+/** Pick the headline index per market (first matching well-known symbol). */
+function pickHeadline(
+  indices: MarketIndex[],
+  preferred: RegExp[],
+): MarketIndex | undefined {
+  for (const re of preferred) {
+    const m = indices.find((i) => re.test(i.symbol) || re.test(i.name));
+    if (m) return m;
+  }
+  return indices[0];
+}
+
+/** Filter indices to show major markets — first TW, then US, up to 4. */
 function filterMajorIndices(indices: MarketIndex[]): MarketIndex[] {
-  const matchers = [
-    (n: string) => /TAIEX|加權|0050/i.test(n),
-    (n: string) => /SPY|S&P/i.test(n),
-    (n: string) => /NASDAQ|QQQ|那斯達克/i.test(n),
-    (n: string) => /SOX|費半|Semiconductor|半導體/i.test(n),
-  ];
-
-  const matched: MarketIndex[] = [];
-  for (const matcher of matchers) {
-    const found = indices.find(
-      (idx) => matcher(idx.name) || matcher(idx.symbol)
-    );
-    if (found && !matched.some((m) => m.symbol === found.symbol)) {
-      matched.push(found);
-    }
-  }
-
-  if (matched.length < 4) {
-    for (const idx of indices) {
-      if (matched.length >= 4) break;
-      if (!matched.some((m) => m.symbol === idx.symbol)) {
-        matched.push(idx);
-      }
-    }
-  }
-
-  return matched.slice(0, 4);
+  const tw = indices.filter((i) => classifyIndexRegion(i) === "TW");
+  const us = indices.filter((i) => classifyIndexRegion(i) === "US");
+  const ordered = [...tw, ...us];
+  return ordered.slice(0, 4);
 }
 
 function IndexChartCell({ idx }: { idx: MarketIndex }) {
@@ -476,8 +507,10 @@ function WatchlistRow({
 
 function MarketMoversPanel({
   movers,
+  title = "MARKET MOVERS",
 }: {
   movers: { gainers: MarketMover[]; losers: MarketMover[]; most_active: MarketMover[] };
+  title?: string;
 }) {
   const [activeTab, setActiveTab] = useState<"gainers" | "losers" | "most_active">("gainers");
 
@@ -488,7 +521,7 @@ function MarketMoversPanel({
   ];
 
   return (
-    <GlassPanel title="MARKET MOVERS">
+    <GlassPanel title={title}>
       {/* Tab bar */}
       <div
         style={{
@@ -621,8 +654,10 @@ function MoverList({ items }: { items: MarketMover[] }) {
 
 function SectorHeatmapPanel({
   sectors,
+  title = "SECTOR HEATMAP",
 }: {
   sectors: HeatmapSector[];
+  title?: string;
 }) {
   const heatmapData = useMemo(
     () =>
@@ -635,7 +670,7 @@ function SectorHeatmapPanel({
   );
 
   return (
-    <GlassPanel title="SECTOR HEATMAP">
+    <GlassPanel title={title}>
       {heatmapData.length === 0 ? (
         <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
           No sector data available
@@ -748,6 +783,138 @@ function NewsFeedPanel() {
 }
 
 // ---------------------------------------------------------------------------
+// Section: Market Section Header (TAIWAN MARKET / US MARKET divider)
+// ---------------------------------------------------------------------------
+
+function MarketSectionHeader({
+  region,
+  label,
+  sublabel,
+}: {
+  region: "TW" | "US";
+  label: string;
+  sublabel?: string;
+}) {
+  const accent =
+    region === "TW" ? "var(--accent-primary)" : "var(--accent-cyan)";
+  return (
+    <div
+      className="flex items-center gap-3 pt-2 pb-1"
+      role="heading"
+      aria-level={2}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 4,
+          height: 18,
+          background: accent,
+          borderRadius: 1,
+        }}
+      />
+      <span
+        className="text-[11px] font-bold uppercase tracking-[0.18em] tabular-nums"
+        style={{ color: accent }}
+      >
+        {region}
+      </span>
+      <span
+        className="text-[15px] font-semibold uppercase tracking-[0.04em]"
+        style={{ color: "var(--foreground)" }}
+      >
+        {label}
+      </span>
+      {sublabel && (
+        <span
+          className="text-[11px] uppercase tracking-[0.08em]"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {sublabel}
+        </span>
+      )}
+      <span
+        aria-hidden="true"
+        className="flex-1 ml-2"
+        style={{
+          height: 1,
+          background:
+            "linear-gradient(to right, var(--border-color), transparent)",
+        }}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section: Per-market block (Headline tile + chart + heatmap + movers)
+// ---------------------------------------------------------------------------
+
+function MarketSection({
+  region,
+  label,
+  sublabel,
+  headline,
+  chartIndex,
+  sectors,
+  movers,
+}: {
+  region: "TW" | "US";
+  label: string;
+  sublabel?: string;
+  headline?: MarketIndex;
+  chartIndex?: MarketIndex;
+  sectors: HeatmapSector[];
+  movers: { gainers: MarketMover[]; losers: MarketMover[]; most_active: MarketMover[] };
+}) {
+  const heatmapTitle = region === "TW" ? "TW SECTOR HEATMAP" : "US SECTOR HEATMAP";
+  const moversTitle = region === "TW" ? "TW MARKET MOVERS" : "US MARKET MOVERS";
+  return (
+    <section className="space-y-3" aria-label={`${label} dashboard`}>
+      <MarketSectionHeader region={region} label={label} sublabel={sublabel} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Headline KPI tile */}
+        {headline && (
+          <div className="lg:col-span-3">
+            <KpiCard
+              label={headline.name}
+              value={parseFloat(headline.value).toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+              delta={`${parseFloat(headline.change_percent) >= 0 ? "+" : ""}${parseFloat(
+                headline.change_percent,
+              ).toFixed(2)}%`}
+              direction={
+                parseFloat(headline.change_percent) > 0
+                  ? "up"
+                  : parseFloat(headline.change_percent) < 0
+                  ? "down"
+                  : "flat"
+              }
+            />
+          </div>
+        )}
+        {/* Sparkline chart for the same headline (or second index) */}
+        {chartIndex && (
+          <div className={headline ? "lg:col-span-9" : "lg:col-span-12"}>
+            <IndexChartCell idx={chartIndex} />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-7">
+          <SectorHeatmapPanel sectors={sectors} title={heatmapTitle} />
+        </div>
+        <div className="lg:col-span-5">
+          <MarketMoversPanel movers={movers} title={moversTitle} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Dashboard
 // ---------------------------------------------------------------------------
 
@@ -757,6 +924,88 @@ export default function HomePage() {
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmap();
 
   const majorIndices = useMemo(() => filterMajorIndices(indices), [indices]);
+
+  // Split indices, movers, sectors by region — single API call, client-side
+  // routing. Avoids extra backend round-trips (per scope: preserve data flow).
+  const twIndices = useMemo(
+    () => indices.filter((i) => classifyIndexRegion(i) === "TW"),
+    [indices],
+  );
+  const usIndices = useMemo(
+    () => indices.filter((i) => classifyIndexRegion(i) === "US"),
+    [indices],
+  );
+
+  const twHeadline = useMemo(
+    () =>
+      pickHeadline(twIndices, [
+        /^\^TWII$/i,
+        /TAIEX|加權/i,
+        /0050/i,
+      ]),
+    [twIndices],
+  );
+  const twChartIndex = useMemo(
+    () =>
+      pickHeadline(twIndices, [
+        /0050/i,
+        /^\^TPEX$/i,
+        /OTC|櫃買/i,
+      ]) ?? twIndices.find((i) => i.symbol !== twHeadline?.symbol),
+    [twIndices, twHeadline?.symbol],
+  );
+
+  const usHeadline = useMemo(
+    () =>
+      pickHeadline(usIndices, [
+        /^SPY$/i,
+        /S&P/i,
+        /^\^GSPC$/i,
+      ]),
+    [usIndices],
+  );
+  const usChartIndex = useMemo(
+    () =>
+      pickHeadline(usIndices, [
+        /^QQQ$/i,
+        /NASDAQ/i,
+        /^\^IXIC$/i,
+        /^\^SOX$/i,
+        /^\^DJI$/i,
+      ]) ?? usIndices.find((i) => i.symbol !== usHeadline?.symbol),
+    [usIndices, usHeadline?.symbol],
+  );
+
+  const twSectors = useMemo(
+    () => (heatmapData?.sectors ?? []).filter((s) => sectorRegion(s) === "TW"),
+    [heatmapData?.sectors],
+  );
+  const usSectors = useMemo(
+    () => (heatmapData?.sectors ?? []).filter((s) => sectorRegion(s) === "US"),
+    [heatmapData?.sectors],
+  );
+
+  const twMovers = useMemo(
+    () => ({
+      gainers: (movers?.gainers ?? []).filter((m) => moverRegion(m) === "TW"),
+      losers: (movers?.losers ?? []).filter((m) => moverRegion(m) === "TW"),
+      most_active: (movers?.most_active ?? []).filter(
+        (m) => moverRegion(m) === "TW",
+      ),
+    }),
+    [movers],
+  );
+  const usMovers = useMemo(
+    () => ({
+      gainers: (movers?.gainers ?? []).filter((m) => moverRegion(m) === "US"),
+      losers: (movers?.losers ?? []).filter((m) => moverRegion(m) === "US"),
+      most_active: (movers?.most_active ?? []).filter(
+        (m) => moverRegion(m) === "US",
+      ),
+    }),
+    [movers],
+  );
+
   const isLoading = indicesLoading || moversLoading || heatmapLoading;
 
   return (
@@ -772,8 +1021,8 @@ export default function HomePage() {
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* -- 1. Top KPI Row (Indices) -- */}
+          <div className="space-y-6">
+            {/* -- 1. Top KPI Row (mixed indices, ordered TW then US) -- */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {majorIndices.map((idx) => {
                 const val = parseFloat(idx.value);
@@ -790,34 +1039,34 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* -- 2. Main Grid: Index Charts (8col) + Watchlist (4col) -- */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {majorIndices.slice(0, 2).map((idx) => (
-                    <IndexChartCell key={idx.symbol} idx={idx} />
-                  ))}
-                </div>
-                <SectorHeatmapPanel sectors={heatmapData?.sectors ?? []} />
-              </div>
+            {/* -- 2. TAIWAN MARKET section -- */}
+            <MarketSection
+              region="TW"
+              label="Taiwan Market"
+              sublabel="台股總覽"
+              headline={twHeadline}
+              chartIndex={twChartIndex}
+              sectors={twSectors}
+              movers={twMovers}
+            />
 
-              <div className="lg:col-span-4 h-full">
+            {/* -- 3. US MARKET section -- */}
+            <MarketSection
+              region="US"
+              label="US Market"
+              sublabel="美股總覽"
+              headline={usHeadline}
+              chartIndex={usChartIndex}
+              sectors={usSectors}
+              movers={usMovers}
+            />
+
+            {/* -- 4. Footer Grid: Watchlist + News (global, market-agnostic) -- */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-8">
+              <div className="lg:col-span-5">
                 <WatchlistPanel />
               </div>
-            </div>
-
-            {/* -- 3. Bottom Grid: Movers (6col) + News (6col) -- */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-8">
-              <div className="lg:col-span-6">
-                <MarketMoversPanel
-                  movers={{
-                    gainers: movers?.gainers ?? [],
-                    losers: movers?.losers ?? [],
-                    most_active: movers?.most_active ?? [],
-                  }}
-                />
-              </div>
-              <div className="lg:col-span-6">
+              <div className="lg:col-span-7">
                 <NewsFeedPanel />
               </div>
             </div>
