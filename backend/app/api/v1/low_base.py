@@ -224,9 +224,7 @@ async def get_stock_low_base_score(
     # uses, so the single-symbol response shape matches scan rows.
     sector: str | None = None
     if stock.industry_id is not None:
-        ind_row = await db.execute(
-            select(Industry.name).where(Industry.id == stock.industry_id)
-        )
+        ind_row = await db.execute(select(Industry.name).where(Industry.id == stock.industry_id))
         sector = ind_row.scalar_one_or_none()
 
     price_query = (
