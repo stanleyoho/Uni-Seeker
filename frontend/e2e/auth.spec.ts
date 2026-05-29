@@ -63,10 +63,20 @@ test.describe("Auth flow (docker e2e)", () => {
     });
     await page.goto("/portfolio");
 
-    // 7. /portfolio is gated → AuthProvider's redirect should push us
-    //    to /login. We accept either landing on /login OR seeing the
-    //    login form copy (the page renders a public-shell instead of
-    //    a 302 in some auth states).
-    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+    // 7. /portfolio is gated. The frontend has two equivalent "unauthed"
+    //    surfaces:
+    //      a) AuthProvider redirects to /login (URL change).
+    //      b) The page renders its public-shell with a "請先登入" panel
+    //         + a "GO TO LOGIN" CTA (URL stays at /portfolio, but the
+    //         unauthed copy is on screen).
+    //    Both are valid auth-gated states. Race the two so whichever
+    //    fires first satisfies the assertion.
+    await Promise.race([
+      page.waitForURL(/\/login/, { timeout: 10_000 }),
+      page
+        .getByRole("link", { name: /GO TO LOGIN|登入|sign in/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 10_000 }),
+    ]);
   });
 });

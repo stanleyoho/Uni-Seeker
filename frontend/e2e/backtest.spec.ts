@@ -67,10 +67,14 @@ authTest.describe("Backtest Page (docker e2e)", () => {
       await expect(strategySelect).toBeVisible({ timeout: 10_000 });
       await strategySelect.selectOption({ value: "rsi_oversold" });
 
-      // The "RUN BACKTEST" button text varies (RUN / Run / 執行回測).
-      // Match generously then click.
+      // The run button text varies (RUN / Run / EXECUTE BACKTEST /
+      // 執行回測). The STRATOS redesign of the manual panel ships
+      // "EXECUTE BACKTEST" as the canonical copy. Match generously
+      // then click.
       const runButton = page
-        .getByRole("button", { name: /RUN|執行回測|RUN BACKTEST/i })
+        .getByRole("button", {
+          name: /EXECUTE BACKTEST|RUN BACKTEST|RUN|執行回測/i,
+        })
         .first();
       await runButton.click();
 

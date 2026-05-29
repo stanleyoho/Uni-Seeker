@@ -151,15 +151,22 @@ authTest.describe("/portfolio watchlist page (docker e2e)", () => {
         timeout: 15_000,
       });
 
-      // Remove 2330 in-row. Each row has a delete affordance — match
-      // the row containing "2330" and click its remove button. Copy
-      // varies (DELETE / 刪除 / 移除 / × icon) so the regex is generous.
-      const row2330 = page
-        .locator("tr,div")
-        .filter({ hasText: "2330" })
-        .first();
+      // Remove 2330 in-row. Each row's "Actions" cell has a trash
+      // affordance with an accessible name like
+      // `Remove 2330 from watchlist` (the icon button also exposes a
+      // /title/, so the regex catches both legacy "DELETE"/"移除" copy
+      // and the current STRATOS a11y label).
+      //
+      // The action cell is `opacity-0 group-hover:opacity-100` — visible
+      // to the a11y tree (Playwright treats opacity:0 as visible) but
+      // hovering the row first is more faithful to user intent and keeps
+      // the assertion robust if the cell ever switches to display:none.
+      const row2330 = page.locator("tr").filter({ hasText: "2330" }).first();
+      await row2330.hover();
       const deleteBtn = row2330
-        .getByRole("button", { name: /DELETE|刪除|移除|remove|REMOVE|×/i })
+        .getByRole("button", {
+          name: /Remove .* from watchlist|DELETE|刪除|移除|REMOVE|×/i,
+        })
         .first();
       await deleteBtn.click();
 
