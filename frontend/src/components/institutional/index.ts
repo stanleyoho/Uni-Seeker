@@ -42,6 +42,9 @@ export {
 } from "./holdings-timeline";
 export { TopMovers, type TopMoversProps } from "./top-movers";
 
+// Inline browser (default-view search + subscribe surface)
+export { FilerBrowser, type FilerBrowserProps } from "./filer-browser";
+
 // Modals
 export { FilerSearchModal } from "./filer-search-modal";
 export { BulkSubscribeModal } from "./bulk-subscribe-modal";

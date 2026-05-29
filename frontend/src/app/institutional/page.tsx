@@ -32,6 +32,7 @@ import {
 import {
   BulkSubscribeModal,
   DiffView,
+  FilerBrowser,
   FilerListResponsive,
   FilerSearchModal,
   HoldingsTimeline,
@@ -185,23 +186,30 @@ export default function InstitutionalPage() {
           </div>
         </div>
 
-        {/* Filer list */}
+        {/* Filer list — when the user has zero subscriptions we drop the
+         * sortable table's empty state and render the inline FilerBrowser
+         * instead, so a first-time visitor can search + subscribe without
+         * popping a modal. Subscribed users see the existing list. */}
         <section>
-          <FilerListResponsive
-            filers={filers}
-            selectedFilerId={selectedFilerId}
-            onSelect={setSelectedFilerId}
-            loading={filersLoading}
-            emptyCta={
-              <ClippedButton
-                variant="cyan-ghost"
-                size="md"
-                onClick={() => setSearchOpen(true)}
-              >
-                {subscribeLabel}
-              </ClippedButton>
-            }
-          />
+          {!filersLoading && filers.length === 0 ? (
+            <FilerBrowser />
+          ) : (
+            <FilerListResponsive
+              filers={filers}
+              selectedFilerId={selectedFilerId}
+              onSelect={setSelectedFilerId}
+              loading={filersLoading}
+              emptyCta={
+                <ClippedButton
+                  variant="cyan-ghost"
+                  size="md"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  {subscribeLabel}
+                </ClippedButton>
+              }
+            />
+          )}
         </section>
 
         {/* Detail panes (visible only when a filer is selected) */}
