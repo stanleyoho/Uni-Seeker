@@ -42,13 +42,17 @@ test.describe("Trade Journal flow (docker e2e)", () => {
       await page.getByRole("button", { name: /\+\s*新增帳戶|新增帳戶/ }).click();
 
       // 3. Fill the form. The form has:
-      //    - "帳戶名稱" text input
-      //    - "券商（選填）" text input
+      //    - "帳戶名稱" text input — placeholder "元大證券"
+      //    - "券商（選填）" text input — placeholder "元大"
       //    - "市場" select (TW / US / CRYPTO)
       //    - "計價幣別" select (TWD / USD / USDT)
       //    - "建立帳戶" submit button
-      const inputs = page.locator('input[type="text"]');
-      await inputs.nth(0).fill(accountName);
+      //
+      // The account-form inputs render WITHOUT an explicit
+      // `type="text"` attribute (default text type), so a CSS
+      // attribute selector `input[type="text"]` does NOT match —
+      // we go by placeholder instead which is stable and unique.
+      await page.getByPlaceholder("元大證券").fill(accountName);
 
       // 4. Submit.
       await page.getByRole("button", { name: /^建立帳戶$|建立帳戶/ }).click();
@@ -69,24 +73,19 @@ test.describe("Trade Journal flow (docker e2e)", () => {
       await page.getByRole("button", { name: /\+\s*新增交易|新增交易/ }).click();
 
       // 9. The AddTradeModal renders. Find the symbol input and fill.
-      //    The modal's first text input is the symbol field.
-      const modalSymbolInput = page
-        .locator('input[type="text"]')
-        .filter({ hasNotText: accountName }) // exclude prior list inputs
-        .last();
-      await modalSymbolInput.fill(symbol);
+      //    Same default-no-type-attr caveat as the account form above:
+      //    we go by placeholder ("2330.TW / AAPL / BTC") which is the
+      //    stable identifier for the symbol input.
+      await page.getByPlaceholder(/2330\.TW.*AAPL.*BTC/).fill(symbol);
 
       // 10. Fill price + quantity (BUY is default action).
       //
-      // The AddTradeModal source (frontend/src/components/journal/
-      // add-trade-modal.tsx) renders price/quantity/fee/tax as plain
-      // input[type="text"] siblings with no distinguishing placeholder.
-      // We use label-based lookup which the modal exposes via the
-      // labelCls span next to each input. If the label match misses
-      // (translation drift), the test fails fast on the submit step
-      // below with a clear "no price provided" backend 422.
-      const priceField = page.getByLabel(/^價格|price/i, { exact: false }).first();
-      const qtyField = page.getByLabel(/^數量|quantity/i, { exact: false }).first();
+      // Price + quantity inputs render with placeholder="0.00" /
+      // placeholder="0" and no label-element wrapper (only sibling
+      // span used as a label). Address them positionally via their
+      // unique placeholders.
+      const priceField = page.getByPlaceholder("0.00").first();
+      const qtyField = page.locator('input[placeholder="0"]').first();
       if (await priceField.count()) {
         await priceField.fill("580");
       }

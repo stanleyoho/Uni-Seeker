@@ -79,13 +79,30 @@ def create_app() -> FastAPI:
     # after an application has started") if this lives inside lifespan.
     Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
+    # Built-in dev/e2e origins.
+    #   :3000 — primary `next dev` port
+    #   :3001 — Next.js fallback when 3000 is busy (and the dev-mode
+    #            playwright base URL used outside docker)
+    #   :3002 — docker-compose.e2e.yml frontend host port; the dockerized
+    #            Playwright suite drives the browser at this origin and
+    #            without it every preflight (OPTIONS /api/v1/*) lands as
+    #            a 400 disallowed-origin which breaks every spec that
+    #            does anything beyond render-only smoke. See PR
+    #            fix(e2e) repair 6 remaining Playwright failures.
     allowed_origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        # Next.js dev fallback when port 3000 is busy
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3002",
     ]
+    # Operator-supplied extras (e.g. prod web origin) merged in via env.
+    if settings.cors_extra_origins:
+        for raw in settings.cors_extra_origins.split(","):
+            origin = raw.strip()
+            if origin and origin not in allowed_origins:
+                allowed_origins.append(origin)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

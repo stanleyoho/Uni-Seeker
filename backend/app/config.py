@@ -43,6 +43,19 @@ class Settings(BaseSettings):
     auth_rate_limit_max: int = 5  # UNI_AUTH_RATE_LIMIT_MAX
     auth_rate_limit_window_seconds: float = 60.0  # UNI_AUTH_RATE_LIMIT_WINDOW_SECONDS
 
+    # CORS — additional comma-separated origins to allow on top of the
+    # built-in defaults (localhost:3000 / :3001 / :3002 with both
+    # localhost & 127.0.0.1 spellings). Empty string disables the
+    # extension. Production override should list the prod web origins
+    # only — the defaults already cover local dev + e2e.
+    #
+    # Why an extension list rather than full replacement? Every dev
+    # workflow (`npm run dev`, the docker e2e stack, ad-hoc 3001 fallback
+    # when 3000 is busy) needs the localhost defaults; making CORS purely
+    # env-driven would silently break local UIs whenever the env var is
+    # forgotten. The split keeps prod tight without paying that tax.
+    cors_extra_origins: str = ""  # UNI_CORS_EXTRA_ORIGINS
+
     # Feature toggle: when False, require_tier passes all users as PRO
     enable_monetization: bool = False  # UNI_ENABLE_MONETIZATION
 
