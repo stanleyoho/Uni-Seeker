@@ -25,15 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     # First-run caveat (2026-05-27): the e2e stack's backend image build
-    # fails because `uv.lock` pins `prediction-engine` / `backtesting_core`
-    # to git+ssh AAE sources, but the Dockerfile COPYs them from the
-    # sibling workspace. Inside the docker build context, uv tries to
-    # resolve from the lockfile's git source — no git/ssh inside the
-    # image. Marked continue-on-error so this PR can ship the spec /
-    # docker-compose / seed-script artifacts while the lockfile vs.
-    # Dockerfile mismatch is sorted in a follow-up. Tracked as carry-over
-    # in daily-task/2026-05-27-DailyTask.md.
-    continue-on-error: true
+    # Was previously continue-on-error: true while the docker stack and
+    # Playwright suite were being repaired (PR #86 → #87 → #95 → #96 →
+    # #97 → #98 → #99). PR #99 took the docker-target suite to 12/12 passed
+    # and the build chain is healthy end to end (Dockerfile installs git,
+    # obs-core resolves over https, seed has no circular import, auth rate
+    # limiter is e2e-disabled, CORS allows :3002, watchlist trash a11y
+    # fixed, holdings seed inserts companion lot+position, etc). Removing
+    # the gate so e2e failures actually block PRs again.
 
     # The repo lives at $GITHUB_WORKSPACE/Uni-Seeker once we adjust the
     # checkout layout below — backend Dockerfile expects to see the
