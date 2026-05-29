@@ -6,6 +6,11 @@ from app.schemas.types import DecimalStr
 class LowBaseScoreResponse(BaseModel):
     symbol: str
     name: str
+    # Industry/sector name from Stock.industry_id → Industry.name. Optional
+    # because not every Stock row has an industry mapped (NULL FK → grouped
+    # under "其他" in the UI). Added so the /research/low-base page can
+    # render results per-sector instead of one giant flat ranking.
+    sector: str | None = None
     total_score: DecimalStr
     valuation_score: DecimalStr
     price_position_score: DecimalStr

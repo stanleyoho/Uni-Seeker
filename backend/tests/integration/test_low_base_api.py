@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import Market
+from app.models.industry import Industry
 from app.models.price import StockPrice
 from app.models.stock import Stock
 
@@ -152,6 +153,91 @@ async def _mk_stock_with_zero_close_history(
             )
         )
     await db.commit()
+
+
+# ── Sector projection (industry/sector grouping support) ─────────────────
+async def _mk_stock_with_industry(
+    db: AsyncSession,
+    symbol: str,
+    name: str,
+    industry_name: str | None,
+    num_days: int = 60,
+) -> Stock:
+    """Same as _mk_stock_with_history, but also wires Stock.industry_id.
+
+    When industry_name is None the stock is created with NULL industry_id —
+    this is the "其他" bucket the frontend groups by.
+    """
+    industry_id: int | None = None
+    if industry_name is not None:
+        ind = Industry(name=industry_name)
+        db.add(ind)
+        await db.commit()
+        await db.refresh(ind)
+        industry_id = ind.id
+
+    s = Stock(symbol=symbol, name=name, market=Market.TW_TWSE, industry_id=industry_id)
+    db.add(s)
+    await db.commit()
+    await db.refresh(s)
+
+    base_date = date(2026, 5, 1)
+    for i in range(num_days):
+        c = 100.0 + (i % 7) * 0.5
+        db.add(
+            StockPrice(
+                stock_id=s.id,
+                date=base_date - timedelta(days=num_days - i - 1),
+                open=Decimal(str(c)),
+                high=Decimal(str(c)),
+                low=Decimal(str(c)),
+                close=Decimal(str(c)),
+                change=Decimal("0"),
+                volume=100_000,
+            )
+        )
+    await db.commit()
+    return s
+
+
+async def test_scan_response_includes_sector_field(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Each row in /low-base/scan must carry a `sector` field.
+
+    Industry-tagged stocks → sector matches Industry.name.
+    Stocks with NULL industry_id → sector is None (frontend → "其他").
+    """
+    await _mk_stock_with_industry(db_session, "2330", "TSMC", industry_name="Semiconductor")
+    await _mk_stock_with_industry(db_session, "NULLIND", "NoIndustry", industry_name=None)
+
+    resp = await client.get("/api/v1/low-base/scan?limit=10&min_data_days=60")
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    # Sector must appear on every row, even when null.
+    by_symbol = {row["symbol"]: row for row in data.get("results", [])}
+    for symbol in ("2330", "NULLIND"):
+        if symbol in by_symbol:  # only if the scorer didn't disqualify it
+            assert "sector" in by_symbol[symbol], (
+                f"{symbol} response row missing `sector` key: {by_symbol[symbol]}"
+            )
+
+    # When a stock is tagged, the projection must echo the Industry.name back.
+    if "2330" in by_symbol:
+        assert by_symbol["2330"]["sector"] == "Semiconductor"
+    if "NULLIND" in by_symbol:
+        assert by_symbol["NULLIND"]["sector"] is None
+
+
+async def test_single_symbol_response_includes_sector(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """/low-base/{symbol} must mirror the scan-row shape (incl. sector)."""
+    await _mk_stock_with_industry(db_session, "2330", "TSMC", industry_name="Semiconductor")
+    resp = await client.get("/api/v1/low-base/2330")
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data.get("sector") == "Semiconductor"
 
 
 async def test_scan_does_not_500_on_zero_close_data(

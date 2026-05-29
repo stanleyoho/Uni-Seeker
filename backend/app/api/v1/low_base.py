@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_stock_or_404
+from app.models.industry import Industry
 from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
@@ -69,16 +70,20 @@ async def scan_low_base(
     When *enhanced=True*, institutional flow and technical signal data are
     fetched for each stock and fed into the scorer with adjusted weights.
     """
-    # Get all stock_ids with enough data, along with their symbol/name
+    # Get all stock_ids with enough data, along with their symbol/name/sector.
+    # LEFT JOIN Industry so stocks with NULL industry_id still surface
+    # (sector → None → bucketed under "其他" by the frontend).
     symbol_query = (
         select(
             StockPrice.stock_id,
             Stock.symbol,
             Stock.name,
+            Industry.name.label("sector"),
             func.count(StockPrice.id).label("cnt"),
         )
         .join(Stock, Stock.id == StockPrice.stock_id)
-        .group_by(StockPrice.stock_id, Stock.symbol, Stock.name)
+        .join(Industry, Industry.id == Stock.industry_id, isouter=True)
+        .group_by(StockPrice.stock_id, Stock.symbol, Stock.name, Industry.name)
         .having(func.count(StockPrice.id) >= min_data_days)
     )
     result = await db.execute(symbol_query)
@@ -99,7 +104,7 @@ async def scan_low_base(
     inst_start = (today - timedelta(days=10)).isoformat()
     inst_end = today.isoformat()
 
-    for stock_id, symbol, name, _count in stock_rows:
+    for stock_id, symbol, name, sector, _count in stock_rows:
         # Fetch prices
         price_query = (
             select(StockPrice)
@@ -179,6 +184,7 @@ async def scan_low_base(
                 LowBaseScoreResponse(
                     symbol=score.symbol,
                     name=score.name,
+                    sector=sector,
                     total_score=score.total_score,
                     valuation_score=score.valuation_score,
                     price_position_score=score.price_position_score,
@@ -213,6 +219,15 @@ async def get_stock_low_base_score(
     fetched and incorporated into the composite score.
     """
     stock = await get_stock_or_404(db, symbol)
+
+    # Resolve sector via Industry FK — same lookup as the /scan endpoint
+    # uses, so the single-symbol response shape matches scan rows.
+    sector: str | None = None
+    if stock.industry_id is not None:
+        ind_row = await db.execute(
+            select(Industry.name).where(Industry.id == stock.industry_id)
+        )
+        sector = ind_row.scalar_one_or_none()
 
     price_query = (
         select(StockPrice).where(StockPrice.stock_id == stock.id).order_by(StockPrice.date.asc())
@@ -291,6 +306,7 @@ async def get_stock_low_base_score(
     return LowBaseScoreResponse(
         symbol=score.symbol,
         name=score.name,
+        sector=sector,
         total_score=score.total_score,
         valuation_score=score.valuation_score,
         price_position_score=score.price_position_score,

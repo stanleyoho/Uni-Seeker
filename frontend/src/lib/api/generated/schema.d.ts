@@ -4160,6 +4160,8 @@ export interface components {
             symbol: string;
             /** Name */
             name: string;
+            /** Sector */
+            sector?: string | null;
             /** Total Score */
             total_score: string;
             /** Valuation Score */
