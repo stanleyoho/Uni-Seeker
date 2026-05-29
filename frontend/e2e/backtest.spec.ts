@@ -43,6 +43,16 @@ authTest.describe("Backtest Page (docker e2e)", () => {
       await page.goto("/portfolio/backtest");
       await expect(page.locator("header")).toBeVisible({ timeout: 15_000 });
 
+      // /portfolio/backtest defaults to AUTO DISCOVERY mode — only the
+      // MANUAL STRATEGY panel exposes the <select> + per-strategy run
+      // flow that this spec asserts. Flip the mode toggle FIRST so the
+      // manual panel mounts before we look for the dropdown. Toggle
+      // label is intentionally permissive in case copy gets translated.
+      await page
+        .getByRole("button", { name: /MANUAL STRATEGY|手動策略/i })
+        .first()
+        .click();
+
       // The symbol input has placeholder copy "e.g., AAPL, 2330.TW".
       // The seed populates symbol "2330" (without .TW suffix) because
       // that matches the canonical symbol in the stocks table. Replace

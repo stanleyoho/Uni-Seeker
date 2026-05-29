@@ -131,12 +131,19 @@ authTest.describe("/portfolio watchlist page (docker e2e)", () => {
   authTest.skip(!isDocker, "docker-only suite");
 
   authTest(
-    "renders the seeded 2330 watchlist item, then add → remove AAPL round-trip",
+    "renders the seeded 2330 watchlist row, then removes it",
     async ({ loggedInPage: page }) => {
+      // Why no add-AAPL leg? The portfolio page no longer ships an
+      // in-page "add symbol" input — adding to the watchlist now goes
+      // through the FOLLOW button on /stocks/[symbol]. The cross-page
+      // add/remove round-trip is exercised by the dedicated stock
+      // detail spec; here we keep the contract focused on the seed
+      // shape that this page is supposed to render, plus the remove
+      // mutation which IS reachable in-page.
       await page.goto("/portfolio");
 
       await expect(
-        page.getByRole("heading", { name: /自選股|Watchlist/i }),
+        page.getByRole("heading", { name: /Watchlist Management|自選股|Watchlist/i }),
       ).toBeVisible({ timeout: 15_000 });
 
       // Seed inserts a 2330 watchlist row.
@@ -144,39 +151,21 @@ authTest.describe("/portfolio watchlist page (docker e2e)", () => {
         timeout: 15_000,
       });
 
-      // Add AAPL. The page has an input + "ADD" button — exact copy
-      // varies; we match by placeholder + role generously.
-      const addInput = page
-        .locator('input[type="text"]')
-        .filter({ hasNot: page.locator(":disabled") })
-        .first();
-      await addInput.fill("AAPL");
-      await page
-        .getByRole("button", { name: /^\s*(\+\s*)?ADD\b|新增|加入/i })
-        .first()
-        .click();
-
-      // Wait for AAPL to appear (POST /watchlist returns the new row,
-      // the list invalidates and re-fetches).
-      await expect(page.getByText("AAPL").first()).toBeVisible({
-        timeout: 15_000,
-      });
-
-      // Remove AAPL. Each row has a delete affordance — match the row
-      // containing "AAPL" and click its delete button.
-      // Look for a button with "DELETE" or trash icon labelled "remove"
-      // in the row's vicinity. Fallback: any button in the AAPL row.
-      const aaplRow = page
+      // Remove 2330 in-row. Each row has a delete affordance — match
+      // the row containing "2330" and click its remove button. Copy
+      // varies (DELETE / 刪除 / 移除 / × icon) so the regex is generous.
+      const row2330 = page
         .locator("tr,div")
-        .filter({ hasText: "AAPL" })
+        .filter({ hasText: "2330" })
         .first();
-      const deleteBtn = aaplRow
+      const deleteBtn = row2330
         .getByRole("button", { name: /DELETE|刪除|移除|remove|REMOVE|×/i })
         .first();
       await deleteBtn.click();
 
-      // AAPL should disappear from the list.
-      await expect(page.getByText("AAPL").first()).toBeHidden({
+      // 2330 should disappear from the list (DELETE /watchlist/{id}
+      // resolves, the list invalidates and re-fetches without it).
+      await expect(page.getByText("2330").first()).toBeHidden({
         timeout: 15_000,
       });
     },
