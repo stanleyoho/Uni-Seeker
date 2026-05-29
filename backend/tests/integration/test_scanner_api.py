@@ -154,3 +154,49 @@ async def test_get_signals_unknown_strategy_400(
 
     resp = await client.get("/api/v1/scanner/2330?strategy_keys=fake_strategy")
     assert resp.status_code == 400
+
+
+# ── Bug 2 regression: HTTP boundary ───────────────────────────────────────
+async def test_scan_does_not_500_on_zero_close_data(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """POST /scanner/scan must NOT 500 when a stock has degenerate price data.
+
+    Reproducer for the 2026-05-28 browser-audit bug:
+        curl -X POST -H 'Content-Type: application/json' \\
+            -d '{"strategies":["rsi"],"limit":5}' \\
+            'http://127.0.0.1:8000/api/v1/scanner/scan' → 500
+        ZeroDivisionError in BiasReversalStrategy.evaluate / RSIBiasComboStrategy.
+    """
+    # Healthy stock + one with all-zero closes (data sync glitch shape).
+    await _mk_stock_with_prices(db_session, "2330", "TSMC", [100.0 + i * 0.5 for i in range(60)])
+    await _mk_stock_with_prices(db_session, "ZERO", "ZeroStock", [0.0] * 60)
+
+    # NOTE: the original failing payload also used `strategies` (not the
+    # canonical `strategy_keys`). Pydantic silently ignores unknown fields
+    # so the relevant behavior is independent of that typo — both shapes
+    # must succeed without crashing the batch.
+    resp = await client.post(
+        "/api/v1/scanner/scan",
+        json={"strategies": ["rsi"], "limit": 5},
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    # Healthy stock must still appear in results; degenerate one is HOLD
+    # but must not have crashed the request.
+    symbols = {r["symbol"] for r in data["results"]}
+    assert "2330" in symbols
+
+
+async def test_scan_canonical_payload_with_degenerate_row(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Same bug, this time using the canonical schema field name."""
+    await _mk_stock_with_prices(db_session, "2330", "TSMC", [100.0 + i * 0.5 for i in range(60)])
+    await _mk_stock_with_prices(db_session, "ZERO", "ZeroStock", [0.0] * 60)
+
+    resp = await client.post(
+        "/api/v1/scanner/scan",
+        json={"strategy_keys": ["rsi_oversold", "bias_reversal"], "limit": 5},
+    )
+    assert resp.status_code == 200, resp.text

@@ -222,3 +222,40 @@ class TestEnhancedScoring:
         assert "foreign_net_buy_5d" in score.details
         assert "technical_score" in score.details
         assert "institutional_technical_score" in score.details
+
+
+# ── Bug 1 regression: ZeroDivisionError when 240d high is 0 ───────────────
+# Browser audit on 2026-05-28 surfaced GET /api/v1/low-base/scan?limit=5
+# raising 500 / ZeroDivisionError. Root cause traced to
+# `drop_pct = (closes[-1] - high_240) / high_240 * 100` in scorer.py
+# blowing up when the seeded data contained zeros (sync glitch / pre-IPO
+# rows with 0 close). Same shape also breaks `calculate_ma_deviation` when
+# the MA window happens to be 0.
+class TestZeroDivisionRegression:
+    def test_scorer_handles_all_zero_closes(self) -> None:
+        """All-zero close series must not crash the scorer.
+
+        This is the exact shape that triggered the production 500.
+        """
+        score = calculate_low_base_score(
+            symbol="ZERO.TW",
+            name="ZeroStock",
+            closes=[0.0] * 240,
+        )
+        # No assertion on the absolute value — the contract is just
+        # "does not raise + returns a finite score".
+        assert score.total_score is not None
+        assert score.total_score == score.total_score  # not NaN
+
+    def test_scorer_handles_zero_high_240(self) -> None:
+        """`high_240 == 0` (240-day max of zero) must not crash."""
+        closes = [0.0] * 239 + [0.0]  # all zero so max == 0
+        score = calculate_low_base_score(symbol="Z", name="Z", closes=closes)
+        assert score.total_score is not None
+
+    def test_scorer_mixed_zero_recent_closes(self) -> None:
+        """A few zero-prefix rows in front (e.g. missing early data)
+        must not crash even if some divisions still work."""
+        closes = [0.0] * 100 + [50.0] * 140
+        score = calculate_low_base_score(symbol="Z", name="Z", closes=closes)
+        assert score.total_score is not None

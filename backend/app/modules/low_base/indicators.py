@@ -59,6 +59,14 @@ def calculate_ma_deviation(closes: list[float], period: int = 240) -> MADeviatio
         return None
 
     ma = sum(closes[-period:]) / period
+    # Guard against degenerate input: a window of all zeros (data sync
+    # glitch / missing rows backfilled as 0) makes the MA itself 0 and
+    # `(current - ma) / ma` undefined. Treat as "no signal" rather than
+    # crashing the entire /low-base/scan request. Browser audit
+    # 2026-05-28 surfaced this as a ZeroDivisionError 500.
+    if ma == 0:
+        return None
+
     current = closes[-1]
     deviation = (current - ma) / ma * 100
 

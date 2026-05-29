@@ -189,13 +189,20 @@ def calculate_low_base_score(
     # Price drop from recent high (moderate drop = good, extreme = risky)
     if len(closes) >= 240:
         high_240 = max(closes[-240:])
-        drop_pct = (closes[-1] - high_240) / high_240 * 100
-        # -25% drop = 100, 0% drop = 0, but < -50% = 20 (too risky)
-        if drop_pct < -50:
-            price_components.append(20.0)
-        else:
-            price_components.append(_score_linear(drop_pct, -25.0, 0.0))
-        details["drop_from_high_240d"] = round(drop_pct, 2)
+        # Guard against degenerate input: high_240 == 0 means the entire
+        # 240-day window has close == 0 (data sync glitch / pre-IPO row /
+        # de-listed stub). Skip this component instead of dividing by
+        # zero — browser audit 2026-05-28 surfaced this as a
+        # ZeroDivisionError 500 for /low-base/scan. We don't append a
+        # synthetic score because there's no signal here, just no data.
+        if high_240 > 0:
+            drop_pct = (closes[-1] - high_240) / high_240 * 100
+            # -25% drop = 100, 0% drop = 0, but < -50% = 20 (too risky)
+            if drop_pct < -50:
+                price_components.append(20.0)
+            else:
+                price_components.append(_score_linear(drop_pct, -25.0, 0.0))
+            details["drop_from_high_240d"] = round(drop_pct, 2)
 
     price_position_score = (
         sum(price_components) / len(price_components) if price_components else 50.0

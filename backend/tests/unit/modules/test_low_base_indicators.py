@@ -58,3 +58,12 @@ def test_peg_overvalued() -> None:
 
 def test_peg_negative_growth() -> None:
     assert calculate_peg(pe=10.0, earnings_growth_pct=-5.0) is None
+
+
+# ── Bug 1 regression: ZeroDivisionError when MA == 0 ──────────────────────
+# `calculate_ma_deviation` previously did `(current - ma) / ma * 100` with
+# no guard. An all-zero close window (e.g. data gap / bad sync) made
+# `ma == 0` and crashed the whole `/low-base/scan` endpoint.
+def test_ma_deviation_all_zero_window_returns_none() -> None:
+    """All-zero close window must NOT raise; ma==0 is undefined → None."""
+    assert calculate_ma_deviation([0.0] * 240, 240) is None
