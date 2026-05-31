@@ -62,6 +62,30 @@ export const queryKeys = {
     ranking: (limit?: number) =>
       [...queryKeys.lowBase.all, "ranking", limit] as const,
   },
+  signals: {
+    all: ["signals"] as const,
+    recent: (lookbackHours?: number, top?: number) =>
+      [...queryKeys.signals.all, "recent", lookbackHours, top] as const,
+  },
+  twInstitutional: {
+    all: ["tw-institutional"] as const,
+    topNet: (
+      kind?: string,
+      direction?: string,
+      date?: string,
+      limit?: number,
+    ) =>
+      [
+        ...queryKeys.twInstitutional.all,
+        "top-net",
+        kind,
+        direction,
+        date,
+        limit,
+      ] as const,
+    symbol: (symbol: string, days?: number) =>
+      [...queryKeys.twInstitutional.all, "symbol", symbol, days] as const,
+  },
   journal: {
     all: ["journal"] as const,
     accounts: () => [...queryKeys.journal.all, "accounts"] as const,

@@ -9,6 +9,10 @@ import {
   useHeatmap,
 } from "@/hooks/use-market-data";
 import { LoadingSpinner } from "@/components/ui/loading";
+import {
+  PreMarketSignalRow,
+  TwInstitutionalRow,
+} from "@/components/home/signal-and-flow-row";
 import type {
   MarketIndex,
   HeatmapSector,
@@ -720,6 +724,21 @@ export default function HomePage() {
                 );
               })}
             </div>
+
+            {/* -- 1b. Pre-Market Signal Board (黃金交叉/量價突破/RSI 反彈) --
+                 Inserted between KPI row and HotSectorsRow per the
+                 day-trader audit: "first thing in the morning, surface
+                 what fired overnight". 3 mini-tiles, each links to
+                 /research?template=... so users can drill into the
+                 strategy that fired the count. */}
+            <PreMarketSignalRow />
+
+            {/* -- 1c. TW 三大法人 (外資/投信買超 + 自營賣超 top1) --
+                 Directly below the signal board so chip-data and
+                 strategy signals share the same row of visual weight.
+                 Each tile links to /tw-institutional?kind=... for the
+                 full leaderboard. */}
+            <TwInstitutionalRow />
 
             {/* -- 2. HotSectorsRow: top 3 hottest sectors -- */}
             <HotSectorsRow aggregates={aggregates} isLoading={heatmapLoading} />

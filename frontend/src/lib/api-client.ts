@@ -154,6 +154,56 @@ export type LowBaseRanking = Schemas["LowBaseRankingResponse"];
 export type InstitutionalData = Schemas["InstitutionalDayRecord"];
 export type InstitutionalResponse = Schemas["InstitutionalResponse"];
 
+// --- TW 三大法人 (Taiwan institutional flow) + Pre-market signal board ---
+//
+// These endpoints are new in PR "feat: TW 三大法人 + signal board" and
+// the OpenAPI schema regen has not yet been wired through. Declared as
+// local interfaces; replace with `Schemas["..."]` after the next regen.
+
+export interface TwInstitutionalTopRow {
+  symbol: string;
+  name: string;
+  net_amount: number;
+  price: string | null;
+  change_percent: string | null;
+}
+
+export interface TwInstitutionalTopNetResponse {
+  data: TwInstitutionalTopRow[];
+  date: string;
+  kind: string;
+  direction: string;
+  message: string | null;
+}
+
+export interface TwInstitutionalDayRecord {
+  date: string;
+  foreign_net: number;
+  trust_net: number;
+  dealer_net: number;
+  total_net: number;
+}
+
+export interface TwInstitutionalSymbolResponse {
+  symbol: string;
+  name: string;
+  data: TwInstitutionalDayRecord[];
+}
+
+export interface RecentSignalRow {
+  symbol: string;
+  name: string;
+  signal_type: string;
+  fired_at: string;
+  current_price: string | null;
+  change_percent: string | null;
+}
+
+export interface RecentSignalsResponse {
+  signals: RecentSignalRow[];
+  grouped: Record<string, number>;
+}
+
 // --- Backtest ---
 
 // Backtest types — sourced from generated OpenAPI schema (E2E-1 wire-up W4).
@@ -412,6 +462,65 @@ export async function fetchInstitutional(
     `${API_BASE}/institutional/${encodeURIComponent(symbol)}?${params}`,
   );
   return json.data;
+}
+
+// --- TW 三大法人 (Taiwan institutional flow) ---
+
+export async function fetchTwInstitutionalTopNet(params: {
+  kind?: "foreign" | "trust" | "dealer" | "total";
+  direction?: "buy" | "sell";
+  date?: string;
+  limit?: number;
+}): Promise<TwInstitutionalTopNetResponse> {
+  const sp = new URLSearchParams();
+  if (params.kind) sp.set("kind", params.kind);
+  if (params.direction) sp.set("direction", params.direction);
+  if (params.date) sp.set("date", params.date);
+  if (params.limit !== undefined) sp.set("limit", String(params.limit));
+  // Defensive: backend should never 500 on empty DB, but if the
+  // network errors completely we still want a clean empty payload so
+  // the home tile can render an empty-state instead of crashing.
+  try {
+    return await apiFetch<TwInstitutionalTopNetResponse>(
+      `${API_BASE}/tw-institutional/top-net?${sp}`,
+    );
+  } catch {
+    return {
+      data: [],
+      date: params.date ?? "",
+      kind: params.kind ?? "foreign",
+      direction: params.direction ?? "buy",
+      message: "network error",
+    };
+  }
+}
+
+export async function fetchTwInstitutionalSymbol(
+  symbol: string,
+  days = 30,
+): Promise<TwInstitutionalSymbolResponse> {
+  return apiFetch<TwInstitutionalSymbolResponse>(
+    `${API_BASE}/tw-institutional/symbol/${encodeURIComponent(symbol)}?days=${days}`,
+  );
+}
+
+// --- Pre-market Signal Board ---
+
+export async function fetchRecentSignals(params: {
+  lookbackHours?: number;
+  top?: number;
+} = {}): Promise<RecentSignalsResponse> {
+  const sp = new URLSearchParams();
+  if (params.lookbackHours !== undefined)
+    sp.set("lookback_hours", String(params.lookbackHours));
+  if (params.top !== undefined) sp.set("top", String(params.top));
+  try {
+    return await apiFetch<RecentSignalsResponse>(
+      `${API_BASE}/signals/recent?${sp}`,
+    );
+  } catch {
+    return { signals: [], grouped: {} };
+  }
 }
 
 // --- Backtest ---

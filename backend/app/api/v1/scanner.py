@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
+from app.models.signal_fire import SignalFire
 from app.models.stock import Stock
 from app.modules.scanner.engine import SignalScanner, StockSignal
 from app.modules.strategy import create_default_registry
@@ -21,6 +24,8 @@ from app.schemas.scanner import (
     SignalScanRequest,
     StockSignalResponse,
 )
+
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/scanner", tags=["scanner"])
 
@@ -125,12 +130,66 @@ async def scan_stocks(
 
     strategies_used = req.strategy_keys or available_keys
 
+    # Persist BUY fires to the signal_fires event log so the home page
+    # pre-market signal board can read them. Best-effort: a write
+    # failure must NOT 500 the scan response (the home board is a
+    # convenience surface, the scan API is the primary contract).
+    try:
+        await _persist_buy_fires(db, results, stocks_data)
+    except Exception as exc:  # pragma: no cover - belt-and-suspenders
+        logger.warning("signal_fire_persist_failed", error=str(exc))
+
     return ScanResponse(
         results=[_stock_signal_to_response(r) for r in limited],
         scan_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date().isoformat(),
         total_scanned=len(stocks_data),
         strategies_used=strategies_used,
     )
+
+
+async def _persist_buy_fires(
+    db: AsyncSession,
+    results: list[StockSignal],
+    stocks_data: list[dict[str, object]],
+) -> None:
+    """Write one SignalFire row per BUY signal in ``results``.
+
+    Why only BUY: the pre-market signal board is a long-only screener
+    (黃金交叉 / 量價突破 / RSI 反彈). SELL signals can be added later
+    when there's UI for them. SignalFire is *additive* — we don't
+    UPSERT here; a fresh row each scan is fine because the GET endpoint
+    deduplicates by (symbol, signal_type) and keeps the latest.
+    """
+    # Latest close per stock from the prepared stocks_data — saves a
+    # second JOIN at write time.
+    latest_close: dict[str, float] = {}
+    for s in stocks_data:
+        sym = s.get("symbol")
+        closes = s.get("closes") or []
+        if isinstance(sym, str) and closes and isinstance(closes, list):
+            latest_close[sym] = float(closes[-1])
+
+    new_rows: list[SignalFire] = []
+    for r in results:
+        price = latest_close.get(r.symbol)
+        for sig in r.signals:
+            action = str(sig.get("action", ""))
+            if action != "BUY":
+                continue
+            new_rows.append(
+                SignalFire(
+                    symbol=r.symbol,
+                    name=r.name,
+                    signal_type=str(sig.get("strategy", "")),
+                    action=action,
+                    strength=float(sig.get("strength", 0.0) or 0.0),
+                    fire_price=(Decimal(str(price)) if price is not None else None),
+                )
+            )
+
+    if new_rows:
+        db.add_all(new_rows)
+        await db.commit()
 
 
 @router.get("/{symbol}", response_model=StockSignalResponse)
