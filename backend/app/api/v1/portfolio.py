@@ -80,9 +80,7 @@ async def _fetch_prices_for_symbols(
 
     # Pull the stocks first so we can surface a precise 404 before doing
     # the (larger) price fetch.
-    stock_rows = (
-        (await db.execute(select(Stock).where(Stock.symbol.in_(symbols)))).scalars().all()
-    )
+    stock_rows = (await db.execute(select(Stock).where(Stock.symbol.in_(symbols)))).scalars().all()
     found: dict[str, Stock] = {s.symbol: s for s in stock_rows}
     missing = [s for s in symbols if s not in found]
     if missing:

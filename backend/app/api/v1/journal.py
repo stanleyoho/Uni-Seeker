@@ -257,9 +257,7 @@ async def list_groups(db: DbDep) -> list[GroupResponse]:
         accounts_map = {
             acc.id: acc
             for acc in (
-                await db.execute(
-                    select(TradeAccount).where(TradeAccount.id.in_(list(account_ids)))
-                )
+                await db.execute(select(TradeAccount).where(TradeAccount.id.in_(list(account_ids))))
             )
             .scalars()
             .all()

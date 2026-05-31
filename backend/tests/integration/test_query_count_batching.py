@@ -195,9 +195,7 @@ async def test_list_groups_batches_account_reads(
         db_session.add(g)
         await db_session.flush()
         db_session.add(
-            AccountGroupMember(
-                group_id=g.id, account_id=accounts[i].id, target_weight=None
-            )
+            AccountGroupMember(group_id=g.id, account_id=accounts[i].id, target_weight=None)
         )
     await db_session.commit()
 

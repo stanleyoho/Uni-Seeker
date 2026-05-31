@@ -301,9 +301,7 @@ async def _ensure_trade(session, *, account: PortfolioAccount, symbol: str) -> N
     # independently so a partially-seeded DB heals on re-run instead of
     # silently leaving /holdings empty.
     existing_lot = (
-        await session.execute(
-            select(PortfolioLot).where(PortfolioLot.trade_id == trade.id)
-        )
+        await session.execute(select(PortfolioLot).where(PortfolioLot.trade_id == trade.id))
     ).scalar_one_or_none()
     if existing_lot is None:
         lot = PortfolioLot(

@@ -23,6 +23,7 @@ Decisions baked in (per Stanley):
   Q5  tier limits enforced in service layer, not DB
   Q8  backfill 4 quarters handled by Batch A2 ingester, not migration
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -40,7 +41,10 @@ def upgrade() -> None:
     op.create_table(
         "f13_filers",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column("cik", sa.String(length=10), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
@@ -58,12 +62,16 @@ def upgrade() -> None:
         sa.Column("latest_filing_date", sa.Date(), nullable=True),
         sa.Column("latest_position_count", sa.Integer(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint("cik", name="uq_f13_filers_cik"),
     )
@@ -74,28 +82,38 @@ def upgrade() -> None:
     op.create_table(
         "f13_user_subscriptions",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column(
-            "user_id", sa.BigInteger,
+            "user_id",
+            sa.BigInteger,
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column(
-            "filer_id", sa.BigInteger,
+            "filer_id",
+            sa.BigInteger,
             sa.ForeignKey("f13_filers.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column(
-            "subscribed_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "subscribed_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "notify_on_new_filing", sa.Boolean(),
-            nullable=False, server_default=sa.true(),
+            "notify_on_new_filing",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.true(),
         ),
         sa.UniqueConstraint(
-            "user_id", "filer_id",
+            "user_id",
+            "filer_id",
             name="uq_f13_user_subscriptions_user_filer",
         ),
     )
@@ -114,10 +132,14 @@ def upgrade() -> None:
     op.create_table(
         "f13_filings",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column(
-            "filer_id", sa.BigInteger,
+            "filer_id",
+            sa.BigInteger,
             sa.ForeignKey("f13_filers.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -138,11 +160,14 @@ def upgrade() -> None:
         sa.Column("total_positions", sa.Integer(), nullable=True),
         sa.Column("raw_xml_url", sa.String(length=500), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint(
-            "filer_id", "accession_number",
+            "filer_id",
+            "accession_number",
             name="uq_f13_filings_filer_accession",
         ),
         sa.CheckConstraint(
@@ -165,24 +190,34 @@ def upgrade() -> None:
     op.create_table(
         "f13_holdings",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column(
-            "filing_id", sa.BigInteger,
+            "filing_id",
+            sa.BigInteger,
             sa.ForeignKey("f13_filings.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column("cusip", sa.String(length=9), nullable=False),
         sa.Column("name_of_issuer", sa.String(length=255), nullable=False),
         sa.Column(
-            "value_usd", sa.Numeric(precision=24, scale=2), nullable=False,
+            "value_usd",
+            sa.Numeric(precision=24, scale=2),
+            nullable=False,
         ),
         sa.Column(
-            "shares", sa.Numeric(precision=24, scale=0), nullable=True,
+            "shares",
+            sa.Numeric(precision=24, scale=0),
+            nullable=True,
         ),
         sa.Column("put_call", sa.String(length=10), nullable=True),
         sa.Column(
-            "investment_discretion", sa.String(length=20), nullable=True,
+            "investment_discretion",
+            sa.String(length=20),
+            nullable=True,
         ),
         sa.Column(
             "voting_authority_sole",
@@ -200,13 +235,16 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column(
-            "stock_id", sa.BigInteger,
+            "stock_id",
+            sa.BigInteger,
             sa.ForeignKey("stocks.id", ondelete="SET NULL"),
             nullable=True,
         ),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.CheckConstraint(
             "put_call IS NULL OR put_call IN ('PUT', 'CALL')",
@@ -254,10 +292,12 @@ def downgrade() -> None:
     op.drop_table("f13_holdings")
 
     op.drop_index(
-        "ix_f13_filings_filer_filed_desc", table_name="f13_filings",
+        "ix_f13_filings_filer_filed_desc",
+        table_name="f13_filings",
     )
     op.drop_index(
-        "ix_f13_filings_filer_period_desc", table_name="f13_filings",
+        "ix_f13_filings_filer_period_desc",
+        table_name="f13_filings",
     )
     op.drop_table("f13_filings")
 
