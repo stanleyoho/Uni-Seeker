@@ -356,32 +356,93 @@ function FocusTile({ rank, agg }: { rank: number; agg: SectorAggregate }) {
         </span>
       </div>
 
-      {/* top movers row */}
-      <div
+      {/* Top mover sub-headline — per Stanley's brief: one line, prominent.
+          Layout: 領漲: <symbol> <name truncated> <abs+pct>. Falls back to
+          the prior 3-symbol strip when name data is missing on the top
+          mover, so older heatmap fixtures still render something useful. */}
+      <FocusTileTopMover agg={agg} />
+    </Link>
+  );
+}
+
+/**
+ * Sub-headline row for the FocusTile. Shows the top mover by |change %|
+ * in a single line: "領漲: SYMBOL NAME +ABS (+PCT%)". The line is sized
+ * to keep the FocusTile under the 130px height budget.
+ */
+function FocusTileTopMover({ agg }: { agg: SectorAggregate }) {
+  const top = agg.topMovers[0];
+  if (!top) return null;
+
+  const cp = parseFloat(top.change_percent);
+  const close = parseFloat(top.close);
+  // Backend only ships `close` + `change_percent` — derive abs change so
+  // the user sees a real number (mirrors the QuoteRow convention).
+  const absChange =
+    Number.isFinite(close) && Number.isFinite(cp) ? (close * cp) / 100 : null;
+  const moverColor = cp >= 0 ? "var(--stock-up)" : "var(--stock-down)";
+  const absText =
+    absChange === null
+      ? ""
+      : `${absChange >= 0 ? "+" : ""}${absChange.toFixed(2)} `;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 10,
+        fontSize: 11,
+        fontFamily: "var(--font-mono, monospace)",
+        color: "var(--text-secondary, #9CA3AF)",
+        minHeight: 16,
+      }}
+    >
+      <span
         style={{
-          display: "flex",
-          gap: 8,
-          marginTop: 10,
-          fontSize: 11,
-          fontFamily: "var(--font-mono, monospace)",
-          color: "var(--text-secondary, #9CA3AF)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          color: "var(--text-muted)",
+          textTransform: "uppercase",
         }}
       >
-        {agg.topMovers.map((m) => {
-          const cp = parseFloat(m.change_percent);
-          const mColor =
-            cp >= 0 ? "var(--stock-up)" : "var(--stock-down)";
-          return (
-            <span key={m.symbol} style={{ display: "flex", gap: 4 }}>
-              <span style={{ color: "var(--foreground)" }}>{m.symbol}</span>
-              <span style={{ color: mColor, fontVariantNumeric: "tabular-nums" }}>
-                {formatPct(cp)}
-              </span>
-            </span>
-          );
-        })}
-      </div>
-    </Link>
+        領漲
+      </span>
+      <span
+        style={{
+          color: "var(--foreground)",
+          fontWeight: 600,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {top.symbol}
+      </span>
+      <span
+        style={{
+          color: "var(--text-secondary)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        {top.name}
+      </span>
+      <span
+        style={{
+          color: moverColor,
+          fontVariantNumeric: "tabular-nums",
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
+        {absText}
+        {formatPct(cp)}
+      </span>
+    </div>
   );
 }
 

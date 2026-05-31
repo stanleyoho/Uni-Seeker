@@ -8,6 +8,8 @@ import { StratosHeader } from "@/components/stratos/header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { OnboardingProvider } from "@/contexts/onboarding-context";
 import { OnboardingResetHook } from "@/components/onboarding/reset-button";
+import { WatchlistRail } from "@/components/watchlist/WatchlistRail";
+import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -38,7 +40,22 @@ export default function RootLayout({
               <AuthProvider>
                 <OnboardingProvider>
                   <StratosHeader />
-                  {children}
+                  {/*
+                    Main content + persistent watchlist rail.
+                    - On <lg, the rail collapses to `hidden` (mobile users
+                      get the dedicated /watchlist + portfolio surface).
+                    - On lg+, the rail sits as a 240px sticky column to the
+                      right of the children. flex-1 lets the page absorb the
+                      remaining horizontal room; min-w-0 stops long ticker
+                      strips from forcing the column wider than the viewport.
+                  */}
+                  <div className="flex-1 flex flex-row min-h-0">
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      {children}
+                    </div>
+                    <WatchlistRail />
+                  </div>
+                  <CommandPalette />
                   <ServiceWorkerRegister />
                   <OnboardingResetHook />
                 </OnboardingProvider>

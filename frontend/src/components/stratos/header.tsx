@@ -7,7 +7,7 @@ import { Bell, Settings } from "lucide-react";
 import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
-import { CommandPalette } from "@/components/command-palette";
+import { CMDK_OPEN_EVENT } from "@/components/command-palette/CommandPalette";
 import { useMarketIndices } from "@/hooks/use-market-data";
 import type { MarketIndex } from "@/lib/api-client";
 
@@ -21,9 +21,16 @@ export function StratosHeader() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement | null>(null);
+  // The legacy local `paletteOpen` state is gone — the global CommandPalette
+  // (mounted by app/layout.tsx) owns its own open state and listens for
+  // ⌘K / Ctrl+K plus the CMDK_OPEN_EVENT CustomEvent dispatched here.
+  const openPalette = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(CMDK_OPEN_EVENT));
+    }
+  };
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -76,14 +83,16 @@ export function StratosHeader() {
     { href: "/journal", label: t.nav.journal ?? "Journal" },
   ];
 
-  /* Keyboard shortcut: press F to open CommandPalette */
+  /* Keyboard shortcut: press F to open the global CommandPalette (the new
+     ⌘K palette also listens to ⌘K directly; this preserves the existing F
+     muscle memory from PR #109 by dispatching the same CustomEvent.) */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "f" && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const active = document.activeElement;
         if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || (active as HTMLElement).isContentEditable)) return;
         e.preventDefault();
-        setPaletteOpen(true);
+        window.dispatchEvent(new CustomEvent(CMDK_OPEN_EVENT));
       }
     };
     window.addEventListener("keydown", handler);
@@ -214,13 +223,13 @@ export function StratosHeader() {
             <button
               className="search-bar hidden lg:flex ml-2"
               aria-label={t.nav.quickSearch ?? "Search"}
-              onClick={() => setPaletteOpen(true)}
+              onClick={openPalette}
             >
               <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <span className="text-[var(--text-muted)]">{t.nav.quickSearch ?? "Search"}</span>
-              <kbd>F</kbd>
+              <kbd>⌘K</kbd>
             </button>
           </div>
 
@@ -455,7 +464,7 @@ export function StratosHeader() {
 
               {/* Search button for mobile */}
               <button
-                onClick={() => { setMobileOpen(false); setPaletteOpen(true); }}
+                onClick={() => { setMobileOpen(false); openPalette(); }}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] rounded-md transition-colors duration-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -505,7 +514,8 @@ export function StratosHeader() {
       {/* Ticker strip right below header */}
       <TickerStrip />
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {/* CommandPalette is mounted globally by app/layout.tsx — the search
+          button + F shortcut above dispatch CMDK_OPEN_EVENT to open it. */}
     </>
   );
 }
