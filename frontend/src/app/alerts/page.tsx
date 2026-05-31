@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { AmbientBackground } from "@/components/stratos/ambient";
-import { ConditionBuilder } from "@/components/screener/condition-builder";
 import { useNotifications } from "@/hooks/use-notifications";
 import { type ScreenCondition } from "@/lib/api-client";
+
+// ConditionBuilder is only visible after the user clicks CREATE NEW
+// RULE (gated by `showBuilder` state). Dynamic-import so the listing
+// view doesn't ship its bundle on first paint.
+const ConditionBuilder = dynamic(
+  () => import("@/components/screener/condition-builder").then((m) => m.ConditionBuilder),
+  { ssr: false },
+);
 
 export default function AlertsPage() {
   const { rules, addRule, removeRule, toggleRule } = useNotifications();

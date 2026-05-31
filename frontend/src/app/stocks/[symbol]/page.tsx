@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { StockChart } from "@/components/charts/stock-chart";
+import dynamic from "next/dynamic";
 import { IndicatorPanel } from "./components/indicator-panel";
 import { ValuationPanel } from "./components/valuation-panel";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
@@ -17,6 +17,30 @@ import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primiti
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation } from "@/hooks/use-market-data";
 import { AmbientBackground } from "@/components/stratos/ambient";
+
+// StockChart pulls in `lightweight-charts` (~110 KB gz). Dynamic-import
+// so the chart bundle only loads after the rest of the page is hydrated.
+// `ssr: false` because lightweight-charts touches `window` in module
+// init and crashes on the server. The skeleton fills the chart's
+// fixed-height slot so the layout doesn't jump.
+const StockChart = dynamic(
+  () => import("@/components/charts/stock-chart").then((m) => m.StockChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="w-full animate-pulse"
+        style={{
+          height: 500,
+          background: "var(--bg-secondary, rgba(255,255,255,0.04))",
+          border: "1px solid var(--border-subtle, rgba(255,255,255,0.06))",
+        }}
+        aria-busy="true"
+        aria-label="Loading chart"
+      />
+    ),
+  },
+);
 
 const TIMEFRAMES = [
   { key: "30", label: "1M" },
