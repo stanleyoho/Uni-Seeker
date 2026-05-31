@@ -32,6 +32,13 @@ class StockSignalResponse(BaseModel):
     composite_action: str
     score: float
     signals: list[SignalDetail]
+    # Names of TA-Lib candlestick patterns firing on the latest bar for
+    # this stock (e.g. ``["CDLHAMMER", "CDLENGULFING"]``). Empty list
+    # when no patterns fired. Populated by
+    # ``app.modules.scanner.patterns.detect_patterns``. The default is
+    # preserved so callers that construct this model without OHLC
+    # context (notably the per-stock signal endpoint) still work.
+    candlestick_patterns: list[str] = Field(default_factory=list)
 
 
 class ScanResponse(BaseModel):
