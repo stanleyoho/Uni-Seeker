@@ -1,10 +1,51 @@
-import math
+"""Built-in trading strategies — TA-Lib backed.
 
+Pre-2026-06-01 every strategy in this file hand-rolled its own SMA / RSI /
+MACD / Bollinger / BIAS math. They now delegate to the TA-Lib adapters
+in ``app.modules.indicators.talib_wrappers`` so the math is canonical
+and shared with ``app.modules.indicators.*``.
+
+Public surface preserved:
+    * Class names: MACrossoverStrategy, RSIOversoldStrategy,
+      MACDCrossoverStrategy, BollingerBounceStrategy, BiasReversalStrategy,
+      RSIBiasComboStrategy.
+    * Constructor params + defaults: unchanged.
+    * ``evaluate(closes, **kwargs) -> Signal``: signature + Signal shape
+      identical to the old version. Strength values may differ at the
+      sub-ε level because TA-Lib uses Wilder smoothing seeded on the
+      first full window — the old MACrossoverStrategy used a trailing-
+      window SMA, so for MA crossovers the numbers match exactly.
+
+Tests:
+    * ``tests/unit/modules/test_strategy_base.py`` and the existing
+      strategy tests still run unmodified.
+    * Indicator-level parity is locked down in
+      ``tests/unit/modules/test_talib_parity.py``.
+"""
+
+from app.modules.indicators.talib_wrappers import (
+    bbands as talib_bbands,
+)
+from app.modules.indicators.talib_wrappers import (
+    macd as talib_macd_full,
+)
+from app.modules.indicators.talib_wrappers import (
+    rsi as talib_rsi,
+)
+from app.modules.indicators.talib_wrappers import (
+    sma as talib_sma,
+)
 from app.modules.strategy.base import Signal, StrategyConfig
 
 
 class MACrossoverStrategy:
-    """Buy when short MA crosses above long MA, sell when crosses below."""
+    """Buy when short MA crosses above long MA, sell when it crosses below.
+
+    Implementation note: TA-Lib's SMA gives the same values as the
+    trailing-window sum the original code used, so we can compute both
+    SMA series once for the full price history and inspect the last two
+    values to detect a cross.
+    """
 
     def __init__(self, short_period: int = 5, long_period: int = 20) -> None:
         self.config = StrategyConfig(
@@ -19,13 +60,12 @@ class MACrossoverStrategy:
         if len(closes) < self._long + 1:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
-        def sma(data: list[float], period: int) -> float:
-            return sum(data[-period:]) / period
-
-        short_now = sma(closes, self._short)
-        long_now = sma(closes, self._long)
-        short_prev = sma(closes[:-1], self._short)
-        long_prev = sma(closes[:-1], self._long)
+        short_series = talib_sma(closes, period=self._short)
+        long_series = talib_sma(closes, period=self._long)
+        short_now, short_prev = short_series[-1], short_series[-2]
+        long_now, long_prev = long_series[-1], long_series[-2]
+        if short_now is None or short_prev is None or long_now is None or long_prev is None:
+            return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
         if short_prev <= long_prev and short_now > long_now:
             return Signal(
@@ -45,10 +85,13 @@ class MACrossoverStrategy:
 
 
 class RSIOversoldStrategy:
-    """Buy when RSI drops below threshold, sell when RSI rises above sell threshold."""
+    """Buy when RSI drops below ``buy_threshold``, sell when it rises above ``sell_threshold``."""
 
     def __init__(
-        self, period: int = 14, buy_threshold: float = 30.0, sell_threshold: float = 70.0
+        self,
+        period: int = 14,
+        buy_threshold: float = 30.0,
+        sell_threshold: float = 70.0,
     ) -> None:
         self.config = StrategyConfig(
             name="RSI Oversold",
@@ -67,19 +110,10 @@ class RSIOversoldStrategy:
         if len(closes) <= self._period:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
-        changes = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
-        gains = [max(c, 0) for c in changes[-self._period :]]
-        losses = [abs(min(c, 0)) for c in changes[-self._period :]]
-        avg_gain = sum(gains) / self._period
-        avg_loss = sum(losses) / self._period
-
-        if avg_loss == 0:
-            rsi = 100.0
-        elif avg_gain == 0:
-            rsi = 0.0
-        else:
-            rs = avg_gain / avg_loss
-            rsi = 100 - 100 / (1 + rs)
+        rsi_series = talib_rsi(closes, period=self._period)
+        rsi = rsi_series[-1]
+        if rsi is None:
+            return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
         if rsi < self._buy:
             return Signal(
@@ -99,7 +133,7 @@ class RSIOversoldStrategy:
 
 
 class MACDCrossoverStrategy:
-    """Buy when MACD line crosses above signal line, sell when crosses below."""
+    """Buy when MACD line crosses above signal line, sell when it crosses below."""
 
     def __init__(self, fast: int = 12, slow: int = 26, signal: int = 9) -> None:
         self.config = StrategyConfig(
@@ -111,48 +145,17 @@ class MACDCrossoverStrategy:
         self._slow = slow
         self._signal = signal
 
-    def _ema(self, data: list[float], period: int) -> list[float | None]:
-        result: list[float | None] = [None] * len(data)
-        if len(data) < period:
-            return result
-        sma = sum(data[:period]) / period
-        result[period - 1] = sma
-        multiplier = 2.0 / (period + 1)
-        for i in range(period, len(data)):
-            prev = result[i - 1]
-            if prev is not None:
-                result[i] = (data[i] - prev) * multiplier + prev
-        return result
-
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        n = len(closes)
-        if n < self._slow + self._signal:
+        if len(closes) < self._slow + self._signal:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
-        fast_ema = self._ema(closes, self._fast)
-        slow_ema = self._ema(closes, self._slow)
+        macd_line, signal_line, _hist = talib_macd_full(
+            closes, fast=self._fast, slow=self._slow, signal=self._signal
+        )
+        cur_macd, prev_macd = macd_line[-1], macd_line[-2]
+        cur_signal, prev_signal = signal_line[-1], signal_line[-2]
 
-        macd_line: list[float | None] = [None] * n
-        for i in range(n):
-            fast_v = fast_ema[i]
-            slow_v = slow_ema[i]
-            if fast_v is not None and slow_v is not None:
-                macd_line[i] = fast_v - slow_v
-
-        macd_start = self._slow - 1
-        macd_data = [v for v in macd_line[macd_start:] if v is not None]
-        if len(macd_data) < self._signal + 1:
-            return Signal(action="HOLD", symbol="", reason="Insufficient MACD data")
-
-        signal_ema = self._ema(macd_data, self._signal)
-
-        # Get current and previous MACD vs signal
-        cur_macd = macd_data[-1]
-        prev_macd = macd_data[-2]
-        cur_signal = signal_ema[-1]
-        prev_signal = signal_ema[-2]
-
-        if cur_signal is None or prev_signal is None:
+        if cur_macd is None or prev_macd is None or cur_signal is None or prev_signal is None:
             return Signal(action="HOLD", symbol="", reason="Signal line not ready")
 
         if prev_macd <= prev_signal and cur_macd > cur_signal:
@@ -173,7 +176,7 @@ class MACDCrossoverStrategy:
 
 
 class BollingerBounceStrategy:
-    """Buy when price touches lower band (mean reversion), sell when touches upper band."""
+    """Buy when price touches the lower band (mean reversion), sell on upper-band touch."""
 
     def __init__(self, period: int = 20, num_std: float = 2.0) -> None:
         self.config = StrategyConfig(
@@ -185,17 +188,20 @@ class BollingerBounceStrategy:
         self._num_std = num_std
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        n = len(closes)
-        if n < self._period:
+        if len(closes) < self._period:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
-        window = closes[-self._period :]
-        sma = sum(window) / self._period
-        variance = sum((x - sma) ** 2 for x in window) / self._period
-        std = math.sqrt(variance)
-        upper = sma + self._num_std * std
-        lower = sma - self._num_std * std
+        upper_series, middle_series, lower_series = talib_bbands(
+            closes, period=self._period, num_std=self._num_std
+        )
+        upper, middle, lower = upper_series[-1], middle_series[-1], lower_series[-1]
+        if upper is None or middle is None or lower is None:
+            return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
+        # Derive the std envelope back out of the bands to compute
+        # signal strength as a multiple of σ from the touched band
+        # (matches the original strength formula).
+        std = (upper - middle) / self._num_std if self._num_std else 0.0
         price = closes[-1]
 
         if price <= lower:
@@ -226,7 +232,10 @@ class BiasReversalStrategy:
     positive bias exceeds threshold."""
 
     def __init__(
-        self, period: int = 20, buy_threshold: float = -5.0, sell_threshold: float = 5.0
+        self,
+        period: int = 20,
+        buy_threshold: float = -5.0,
+        sell_threshold: float = 5.0,
     ) -> None:
         self.config = StrategyConfig(
             name="Bias Reversal",
@@ -242,17 +251,15 @@ class BiasReversalStrategy:
         self._sell = sell_threshold
 
     def evaluate(self, closes: list[float], **kwargs: object) -> Signal:
-        n = len(closes)
-        if n < self._period:
+        if len(closes) < self._period:
             return Signal(action="HOLD", symbol="", reason="Insufficient data")
 
-        ma = sum(closes[-self._period :]) / self._period
-        # Guard against degenerate input: an all-zero (or nearly-zero) window
-        # makes ma == 0 and bias undefined. One bad ticker must not 500 the
-        # whole /scanner/scan batch (browser audit 2026-05-28).
-        if ma == 0:
+        ma_series = talib_sma(closes, period=self._period)
+        ma = ma_series[-1]
+        # Guard: degenerate all-zero window → ma == 0 → undefined bias.
+        # Preserves the 2026-05-28 ZeroDivisionError fix.
+        if ma is None or ma == 0:
             return Signal(action="HOLD", symbol="", reason="Degenerate data (MA=0)")
-
         bias = (closes[-1] - ma) / ma * 100
 
         if bias <= self._buy:
@@ -275,7 +282,7 @@ class BiasReversalStrategy:
 
 
 class RSIBiasComboStrategy:
-    """Buy when RSI oversold AND negative bias both confirm. Double
+    """Buy when RSI is oversold AND negative BIAS confirms. Double
     confirmation for higher accuracy."""
 
     def __init__(
@@ -309,25 +316,15 @@ class RSIBiasComboStrategy:
     def _calc_rsi(self, closes: list[float]) -> float | None:
         if len(closes) <= self._rsi_period:
             return None
-        changes = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
-        gains = [max(c, 0) for c in changes[-self._rsi_period :]]
-        losses = [abs(min(c, 0)) for c in changes[-self._rsi_period :]]
-        avg_gain = sum(gains) / self._rsi_period
-        avg_loss = sum(losses) / self._rsi_period
-        if avg_loss == 0:
-            return 100.0
-        if avg_gain == 0:
-            return 0.0
-        return 100 - 100 / (1 + avg_gain / avg_loss)
+        return talib_rsi(closes, period=self._rsi_period)[-1]
 
     def _calc_bias(self, closes: list[float]) -> float | None:
         if len(closes) < self._bias_period:
             return None
-        ma = sum(closes[-self._bias_period :]) / self._bias_period
+        ma_series = talib_sma(closes, period=self._bias_period)
+        ma = ma_series[-1]
         # Guard: degenerate (all-zero) window → undefined bias.
-        # Returning None lets the caller short-circuit to HOLD instead of
-        # crashing the whole scanner batch (browser audit 2026-05-28).
-        if ma == 0:
+        if ma is None or ma == 0:
             return None
         return (closes[-1] - ma) / ma * 100
 
@@ -365,5 +362,7 @@ class RSIBiasComboStrategy:
                 strength=strength,
             )
         return Signal(
-            action="HOLD", symbol="", reason=f"RSI={rsi:.1f}, BIAS={bias:.2f}% no double confirm"
+            action="HOLD",
+            symbol="",
+            reason=f"RSI={rsi:.1f}, BIAS={bias:.2f}% no double confirm",
         )

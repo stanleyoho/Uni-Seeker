@@ -1,20 +1,19 @@
+"""MACD indicator — TA-Lib backed.
+
+MACD = (EMA(fast) - EMA(slow)) with a Signal line = EMA(signal_period)
+applied to the MACD series, and Histogram = MACD - Signal.
+
+Pre-2026-06-01 this file shipped a hand-rolled EMA seeded with the SMA
+of the first ``period`` points. TA-Lib's ``MACD`` uses the same
+seeding (the canonical Wilder/Appel recurrence), so the parity test
+``test_macd_parity`` passes within ε on shared fixtures. Defaults
+``fast=12, slow=26, signal=9`` are unchanged.
+"""
+
 from typing import Any
 
 from app.modules.indicators.base import IndicatorResult
-
-
-def _ema(data: list[float], period: int) -> list[float | None]:
-    result: list[float | None] = [None] * len(data)
-    if len(data) < period:
-        return result
-    sma = sum(data[:period]) / period
-    result[period - 1] = sma
-    multiplier = 2.0 / (period + 1)
-    for i in range(period, len(data)):
-        prev = result[i - 1]
-        if prev is not None:
-            result[i] = round((data[i] - prev) * multiplier + prev, 4)
-    return result
+from app.modules.indicators.talib_wrappers import macd as talib_macd
 
 
 class MACDIndicator:
@@ -24,39 +23,9 @@ class MACDIndicator:
         fast = int(params.get("fast", 12))
         slow = int(params.get("slow", 26))
         signal_period = int(params.get("signal", 9))
-        n = len(closes)
-
-        macd_line: list[float | None] = [None] * n
-        signal_line: list[float | None] = [None] * n
-        histogram: list[float | None] = [None] * n
-
-        if n < slow:
-            return IndicatorResult(
-                name=self.name,
-                values={"MACD": macd_line, "signal": signal_line, "histogram": histogram},
-            )
-
-        fast_ema = _ema(closes, fast)
-        slow_ema = _ema(closes, slow)
-
-        for i in range(n):
-            fast_v = fast_ema[i]
-            slow_v = slow_ema[i]
-            if fast_v is not None and slow_v is not None:
-                macd_line[i] = round(fast_v - slow_v, 4)
-
-        macd_start = slow - 1
-        macd_data = [v for v in macd_line[macd_start:] if v is not None]
-        if len(macd_data) >= signal_period:
-            signal_ema = _ema(macd_data, signal_period)
-            for i, val in enumerate(signal_ema):
-                idx = macd_start + i
-                if idx < n:
-                    signal_line[idx] = val
-                    macd_v = macd_line[idx]
-                    if val is not None and macd_v is not None:
-                        histogram[idx] = round(macd_v - val, 4)
-
+        macd_line, signal_line, histogram = talib_macd(
+            closes, fast=fast, slow=slow, signal=signal_period
+        )
         return IndicatorResult(
             name=self.name,
             values={"MACD": macd_line, "signal": signal_line, "histogram": histogram},

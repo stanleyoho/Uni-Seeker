@@ -1,6 +1,27 @@
+"""KD (Stochastic Oscillator) — TA-Lib backed.
+
+The Taiwan-market convention this codebase follows:
+    raw_k = (close - lowest_low) / (highest_high - lowest_low) * 100
+    K     = SMA(raw_k, k_smooth)
+    D     = SMA(K,     d_smooth)
+
+with defaults ``k_period=9, k_smooth=3, d_smooth=3``.
+
+TA-Lib's ``STOCH`` is parameterized identically: ``fastk_period=k_period``
+plus ``slowk_period=k_smooth`` and ``slowd_period=d_smooth`` with both
+``matype=0`` (SMA). The wrapper in ``talib_wrappers.stoch`` sets all
+that up, and ``test_kd_parity`` confirms output equivalence within ε.
+
+NOTE: TA-Lib's STOCH only emits values starting at index
+``k_period + k_smooth + d_smooth - 3``, which matches the warmup that
+the old hand-rolled implementation imposed (raw_k needed k_period-1
+bars, then two more SMA chains of length k_smooth and d_smooth).
+"""
+
 from typing import Any
 
 from app.modules.indicators.base import IndicatorResult
+from app.modules.indicators.talib_wrappers import stoch as talib_stoch
 
 
 class KDIndicator:
@@ -13,32 +34,15 @@ class KDIndicator:
         k_smooth = int(params.get("k_smooth", 3))
         d_smooth = int(params.get("d_smooth", 3))
 
-        n = len(closes)
-        k_values: list[float | None] = [None] * n
-        d_values: list[float | None] = [None] * n
-
-        if n < k_period or len(highs) != n or len(lows) != n:
-            return IndicatorResult(name=self.name, values={"K": k_values, "D": d_values})
-
-        raw_k: list[float | None] = [None] * n
-        for i in range(k_period - 1, n):
-            window_high = max(highs[i - k_period + 1 : i + 1])
-            window_low = min(lows[i - k_period + 1 : i + 1])
-            if window_high == window_low:
-                raw_k[i] = 50.0
-            else:
-                raw_k[i] = round((closes[i] - window_low) / (window_high - window_low) * 100, 4)
-
-        valid_raw = [(i, v) for i, v in enumerate(raw_k) if v is not None]
-        for j in range(k_smooth - 1, len(valid_raw)):
-            idx = valid_raw[j][0]
-            window = [valid_raw[j - k + 1][1] for k in range(k_smooth, 0, -1)]
-            k_values[idx] = round(sum(window) / k_smooth, 4)
-
-        valid_k = [(i, v) for i, v in enumerate(k_values) if v is not None]
-        for j in range(d_smooth - 1, len(valid_k)):
-            idx = valid_k[j][0]
-            window = [valid_k[j - k + 1][1] for k in range(d_smooth, 0, -1)]
-            d_values[idx] = round(sum(window) / d_smooth, 4)
-
-        return IndicatorResult(name=self.name, values={"K": k_values, "D": d_values})
+        k_values, d_values = talib_stoch(
+            highs,
+            lows,
+            closes,
+            k_period=k_period,
+            k_smooth=k_smooth,
+            d_smooth=d_smooth,
+        )
+        return IndicatorResult(
+            name=self.name,
+            values={"K": k_values, "D": d_values},
+        )

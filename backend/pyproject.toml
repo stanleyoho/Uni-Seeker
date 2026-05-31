@@ -23,6 +23,20 @@ dependencies = [
     "pyjwt>=2.9.0",
     "bcrypt>=4.0.0",
     "stripe>=7.0.0",
+    # TA-Lib (technical-analysis library): replaces hand-rolled RSI / MACD /
+    # Bollinger / SMA / EMA / KD in app/modules/indicators/ and
+    # app/modules/strategy/builtin.py, and powers candlestick pattern
+    # detection in app/modules/scanner/patterns.py (CDLDOJI, CDLENGULFING,
+    # CDLHAMMER, CDLMORNINGSTAR, CDLEVENINGSTAR, CDLSHOOTINGSTAR).
+    # The Python wheel binds against the TA-Lib **C library** — must be
+    # installed at the system level (`brew install ta-lib` on macOS,
+    # `apt-get install libta-lib0-dev` on Ubuntu CI). See CI workflows.
+    "ta-lib>=0.4.32",
+    # FinanceDatabase: open dataset (~300k symbols) with sector/industry/
+    # country taxonomy. Powers app/services/symbol_taxonomy/financedb_service.py
+    # and scripts/backfill_us_sector_taxonomy.py — populates US sectors so
+    # the US heatmap in app/api/v1/heatmap.py renders.
+    "financedatabase>=2.3.1",
     "backtesting_core",
     "prediction-engine",
     "observability-core",

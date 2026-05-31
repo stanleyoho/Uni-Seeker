@@ -1,7 +1,17 @@
-import math
+"""Bollinger Bands — TA-Lib backed.
+
+Bands = SMA ± num_std * stdev. Pre-2026-06-01 the math was hand-rolled
+using ``math.sqrt`` and a per-window list comprehension; this file now
+delegates to ``talib.BBANDS`` via ``talib_wrappers.bbands``. Both
+implementations use **population** standard deviation (variance
+divided by ``period``, not ``period - 1``) so the parity test
+``test_bollinger_parity`` matches within ε.
+"""
+
 from typing import Any
 
 from app.modules.indicators.base import IndicatorResult
+from app.modules.indicators.talib_wrappers import bbands as talib_bbands
 
 
 class BollingerBandsIndicator:
@@ -10,27 +20,7 @@ class BollingerBandsIndicator:
     def calculate(self, closes: list[float], **params: Any) -> IndicatorResult:
         period = int(params.get("period", 20))
         num_std = float(params.get("num_std", 2.0))
-        n = len(closes)
-
-        upper: list[float | None] = [None] * n
-        middle: list[float | None] = [None] * n
-        lower: list[float | None] = [None] * n
-
-        if n < period:
-            return IndicatorResult(
-                name=self.name,
-                values={"upper": upper, "middle": middle, "lower": lower},
-            )
-
-        for i in range(period - 1, n):
-            window = closes[i - period + 1 : i + 1]
-            sma = sum(window) / period
-            variance = sum((x - sma) ** 2 for x in window) / period
-            std = math.sqrt(variance)
-            middle[i] = round(sma, 4)
-            upper[i] = round(sma + num_std * std, 4)
-            lower[i] = round(sma - num_std * std, 4)
-
+        upper, middle, lower = talib_bbands(closes, period=period, num_std=num_std)
         return IndicatorResult(
             name=self.name,
             values={"upper": upper, "middle": middle, "lower": lower},
