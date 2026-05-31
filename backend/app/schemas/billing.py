@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 
 from app.models.enums import UserTier
+from app.schemas._base import StrictModel
 
 
-class CheckoutRequest(BaseModel):
+class CheckoutRequest(StrictModel):
     tier: str  # "basic" | "pro"
 
 

@@ -22,6 +22,11 @@ class StockPrice(Base):
     __table_args__ = (
         UniqueConstraint("stock_id", "date", name="uq_stock_prices_stock_id_date"),
         Index("ix_stock_prices_stock_id_date", "stock_id", "date"),
+        # UNI-PERF-001 (2026-06-01): heatmap uses MAX(date) + WHERE date=
+        # to scope the latest trading day; the bare date index removes
+        # the seq-scan. Mirrored in alembic so create_all (tests) and
+        # migrations (prod) stay in sync.
+        Index("ix_stock_prices_date", "date"),
     )
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)

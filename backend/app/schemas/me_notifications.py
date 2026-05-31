@@ -14,8 +14,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.schemas._base import StrictModel
 
-class MeNotificationPreferencesUpdate(BaseModel):
+
+class MeNotificationPreferencesUpdate(StrictModel):
     """PATCH ``/api/v1/me/notifications`` body.
 
     All fields are optional so the PATCH is genuinely partial — the

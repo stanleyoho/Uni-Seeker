@@ -2,15 +2,17 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.schemas._base import StrictModel
 
-class ConditionSchema(BaseModel):
+
+class ConditionSchema(StrictModel):
     indicator: str
     params: dict[str, Any] = {}
     op: str
     value: Any
 
 
-class ScreenRequest(BaseModel):
+class ScreenRequest(StrictModel):
     market: str | None = None
     conditions: list[ConditionSchema]
     operator: str = "AND"
@@ -29,7 +31,7 @@ class ScreenResponse(BaseModel):
     total: int
 
 
-class IndustryScreenRequest(BaseModel):
+class IndustryScreenRequest(StrictModel):
     z_threshold: float = -1.0
 
 

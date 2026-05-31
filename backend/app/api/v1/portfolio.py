@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_stock_or_404
 from app.models.price import StockPrice
+from app.models.stock import Stock
 from app.modules.backtester.portfolio_backtest import (
     PortfolioAllocation,
     PortfolioBacktestConfig,
@@ -34,7 +35,12 @@ async def _fetch_prices_for_symbol(
     db: AsyncSession,
     symbol: str,
 ) -> list[StockPrice]:
-    """Fetch price data for a single symbol, raising appropriate errors."""
+    """Fetch price data for a single symbol, raising appropriate errors.
+
+    Single-symbol path — kept around for completeness even though the
+    backtest endpoint now uses :func:`_fetch_prices_for_symbols` (plural)
+    to avoid N+1.
+    """
     stock = await get_stock_or_404(db, symbol)
     query = (
         select(StockPrice).where(StockPrice.stock_id == stock.id).order_by(StockPrice.date.asc())
@@ -49,6 +55,68 @@ async def _fetch_prices_for_symbol(
             ),
         )
     return prices
+
+
+async def _fetch_prices_for_symbols(
+    db: AsyncSession,
+    symbols: list[str],
+) -> dict[str, list[StockPrice]]:
+    """Batched price fetch for portfolio backtests — TWO queries total
+    regardless of allocation count.
+
+    Before (audit-flagged): ``run_portfolio_backtest`` called the
+    single-symbol helper inside a ``for alloc in req.allocations`` loop
+    → 2 queries per allocation (stock lookup + price fetch) → 2N
+    round-trips for an N-stock portfolio.
+
+    After: one ``WHERE symbol IN (...)`` over ``stocks`` + one
+    ``WHERE stock_id IN (...)`` over ``stock_prices``, grouped on the
+    Python side via the (stock_id → symbol) map. Same downstream
+    behaviour (404 on unknown symbol, 400 on <20 data points) so
+    callers don't need to change.
+    """
+    if not symbols:
+        return {}
+
+    # Pull the stocks first so we can surface a precise 404 before doing
+    # the (larger) price fetch.
+    stock_rows = (
+        (await db.execute(select(Stock).where(Stock.symbol.in_(symbols)))).scalars().all()
+    )
+    found: dict[str, Stock] = {s.symbol: s for s in stock_rows}
+    missing = [s for s in symbols if s not in found]
+    if missing:
+        # Mirror the single-symbol helper's 404 surface — fail on the first
+        # missing symbol so the client gets the same error shape they'd see
+        # if they'd asked for that one symbol on its own.
+        raise HTTPException(status_code=404, detail=f"Stock '{missing[0]}' not found")
+
+    id_to_symbol = {s.id: s.symbol for s in stock_rows}
+    prices_by_symbol: dict[str, list[StockPrice]] = {s: [] for s in symbols}
+
+    rows = await db.execute(
+        select(StockPrice)
+        .where(StockPrice.stock_id.in_(list(id_to_symbol.keys())))
+        .order_by(StockPrice.stock_id, StockPrice.date.asc())
+    )
+    for price in rows.scalars().all():
+        sym = id_to_symbol.get(price.stock_id)
+        if sym is not None:
+            prices_by_symbol[sym].append(price)
+
+    # Same 20-data-point gate the single-symbol path enforces. Done after
+    # the batched fetch so we still raise a deterministic 400 even when
+    # several symbols are short on history.
+    for sym, prices in prices_by_symbol.items():
+        if len(prices) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Insufficient data for '{sym}': need at least 20 data points, "
+                    f"got {len(prices)}"
+                ),
+            )
+    return prices_by_symbol
 
 
 @router.post("/backtest", response_model=PortfolioBacktestResponse)
@@ -68,10 +136,13 @@ async def run_portfolio_backtest(
             detail=f"Allocation weights must sum to 1.0, got {total_weight:.6f}",
         )
 
-    # Fetch prices for all symbols
-    prices_map: dict[str, list[StockPrice]] = {}
-    for alloc in req.allocations:
-        prices_map[alloc.symbol] = await _fetch_prices_for_symbol(db, alloc.symbol)
+    # Fetch prices for all symbols in TWO queries (was 2N before — see
+    # `_fetch_prices_for_symbols` docstring). Preserves uniqueness via
+    # set() so callers passing the same symbol twice don't double-fetch.
+    prices_map = await _fetch_prices_for_symbols(
+        db,
+        list({a.symbol for a in req.allocations}),
+    )
 
     # Build PortfolioAllocation objects with strategy instances
     allocations: list[PortfolioAllocation] = []

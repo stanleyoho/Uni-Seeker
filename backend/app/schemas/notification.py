@@ -3,8 +3,10 @@ from typing import Any
 
 from pydantic import BaseModel, field_validator
 
+from app.schemas._base import StrictModel
 
-class NotificationCondition(BaseModel):
+
+class NotificationCondition(StrictModel):
     """Single notification condition."""
 
     indicator: str  # "price", "RSI", "MACD", "volume_change", etc.
@@ -13,7 +15,7 @@ class NotificationCondition(BaseModel):
     params: dict[str, object] = {}
 
 
-class NotificationRuleCreate(BaseModel):
+class NotificationRuleCreate(StrictModel):
     name: str
     rule_type: str  # "price_alert", "indicator_alert", "multi_condition", "daily_summary"
     symbol: str = ""

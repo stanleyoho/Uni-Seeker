@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 
+from app.schemas._base import StrictModel
 from app.schemas.types import DecimalStr
 
 
-class BacktestRequest(BaseModel):
+class BacktestRequest(StrictModel):
     symbol: str
     strategy: str  # single strategy key, e.g. "ma_crossover"
     params: dict[str, object] = {}
@@ -17,7 +18,7 @@ class BacktestRequest(BaseModel):
     end_date: str | None = None  # YYYY-MM-DD, inclusive
 
 
-class CompositeBacktestRequest(BaseModel):
+class CompositeBacktestRequest(StrictModel):
     symbol: str
     strategies: list[str]  # e.g. ["rsi_oversold", "macd_crossover"]
     mode: str = "majority"  # "all", "any", "majority"
@@ -58,7 +59,7 @@ class BacktestResponse(BaseModel):
     trades: list[TradeRecord]
 
 
-class AutoDiscoveryRequest(BaseModel):
+class AutoDiscoveryRequest(StrictModel):
     symbol: str
     initial_capital: float = 1_000_000
     position_size: float = 0.1

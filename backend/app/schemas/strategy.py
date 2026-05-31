@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas._base import StrictModel
+
 
 class StrategyInfo(BaseModel):
     name: str
@@ -11,7 +13,7 @@ class StrategyListResponse(BaseModel):
     strategies: list[StrategyInfo]
 
 
-class CompositeStrategyRequest(BaseModel):
+class CompositeStrategyRequest(StrictModel):
     """Request to build a composite strategy for backtest."""
 
     strategies: list[str]  # e.g. ["rsi_oversold", "bias_reversal"]

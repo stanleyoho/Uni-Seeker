@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.schemas._base import StrictModel
 
-class SignalScanRequest(BaseModel):
+
+class SignalScanRequest(StrictModel):
     symbols: list[str] | None = Field(
         default=None,
         description="Stock symbols to scan.  None means scan all.",

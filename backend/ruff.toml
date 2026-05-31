@@ -44,6 +44,16 @@ ignore = ["N802", "RUF001", "RUF002", "RUF003", "TC001", "TC002", "TC003", "DTZ0
 allowed-confusables = ["：", "（", "）"]
 
 [lint.per-file-ignores]
+# RUF012 in app/schemas: Pydantic BaseModel safely handles mutable defaults
+# (it deep-copies them on each instance construction — that's the whole
+# point of the framework). Ruff's RUF012 special-cases the literal
+# ``pydantic.BaseModel`` class but does not follow subclass chains, so
+# request schemas that inherit from ``app.schemas._base.StrictModel`` (a
+# trivial ``BaseModel`` subclass that adds ``extra="forbid"``) trip the
+# rule even though the runtime behaviour is identical. The right answer
+# is to teach ruff about the subclass — until then, scope the ignore to
+# the schemas directory so we don't lose RUF012 coverage everywhere else.
+"app/schemas/**/*.py" = ["RUF012"]
 # Rule additions:
 # - E501 in alembic/scripts/tests: generated DDL, long URL/CLI strings,
 #   fixture data + module docstrings are intentionally one-line.

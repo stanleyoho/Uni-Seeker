@@ -32,6 +32,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer
 
 from app.models.enums import Market
+from app.schemas._base import StrictModel
 
 DividendType = Literal["CASH", "STOCK"]
 
@@ -39,7 +40,7 @@ DividendType = Literal["CASH", "STOCK"]
 # ── request DTOs ────────────────────────────────────────────────────────────
 
 
-class DividendCreateRequest(BaseModel):
+class DividendCreateRequest(StrictModel):
     """POST /holdings/dividends body.
 
     CASH branch needs `amount_per_share`; STOCK branch needs `ratio`.
@@ -63,7 +64,7 @@ class DividendCreateRequest(BaseModel):
     note: str | None = None
 
 
-class DividendUpdateRequest(BaseModel):
+class DividendUpdateRequest(StrictModel):
     """PATCH /holdings/dividends/{id} body — every field optional.
 
     Phase 2 MVP: only `note`, `pay_date`, `withholding_tax` are actually

@@ -6,8 +6,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.schemas._base import StrictModel
 
-class JobEnqueueRequest(BaseModel):
+
+class JobEnqueueRequest(StrictModel):
     symbol: str
     job_type: str = "single"  # single, composite, grid_search
     strategy: str | None = None

@@ -26,6 +26,19 @@ router = APIRouter(prefix="/scanner", tags=["scanner"])
 
 PRICE_LOOKBACK = 60  # number of trading days to fetch per stock
 
+# Upper bound on `_fetch_stocks_closes` when the caller does NOT pass an
+# explicit ``symbols`` list. Audit-flagged: a bare POST /scanner/scan
+# with no symbols previously fanned out to every active stock (~1500
+# rows × 60-day lookback ≈ 90k Decimal rows). The bound below caps the
+# work at ~300 stocks worth of price history per request, which still
+# covers TWSE-50 + main US large-caps in one call but stops a curious
+# user from accidentally OOM-ing the worker.
+#
+# Tuning rationale: 300 × 60 ≈ 18k rows, ~50 ms on a warm cache locally.
+# Raise if a future use-case needs broader coverage; lower if WS scan
+# subscriptions start showing latency in the dashboard.
+DEFAULT_SCAN_MAX_STOCKS = 300
+
 
 def _get_strategy_registry() -> StrategyRegistry:
     return create_default_registry()
@@ -53,30 +66,54 @@ async def _fetch_stocks_closes(
     db: AsyncSession,
     symbols: list[str] | None = None,
     lookback: int = PRICE_LOOKBACK,
+    max_stocks: int = DEFAULT_SCAN_MAX_STOCKS,
 ) -> list[dict[str, object]]:
     """Fetch latest closing prices for stocks, grouped by symbol.
 
     Returns a list of dicts with keys ``symbol``, ``name``, ``closes``.
+
+    When ``symbols`` is omitted the query is bounded to the most
+    recently-updated ``max_stocks`` active rows so a bare scan request
+    can't fan out across the entire universe (audit fix). The
+    ``is_active`` filter benefits from the ``ix_stocks_is_active``
+    index added in UNI-PERF-001; the symbol IN-clause uses the existing
+    unique index on ``symbol``.
     """
-    # Build a subquery that ranks prices per stock descending by date,
-    # then keep only the most recent `lookback` rows.
-    query = (
-        select(
-            Stock.symbol,
-            Stock.name,
-            StockPrice.close,
-            StockPrice.date,
-        )
-        .join(Stock, Stock.id == StockPrice.stock_id)
-        .where(Stock.is_active.is_(True))
-        .order_by(Stock.symbol, StockPrice.date.asc())
-    )
-
+    # Resolve the candidate stock set first so the price query can use a
+    # cheap IN-clause on the indexed ``stock_id`` column rather than a
+    # 2-table join across the whole universe.
+    candidate_query = select(Stock.id, Stock.symbol, Stock.name).where(Stock.is_active.is_(True))
     if symbols:
-        query = query.where(Stock.symbol.in_(symbols))
+        candidate_query = candidate_query.where(Stock.symbol.in_(symbols))
+    else:
+        # Apply the upper bound only when the caller did NOT enumerate
+        # symbols explicitly — caller-provided lists are honoured as-is
+        # so single-stock probes never get silently truncated.
+        candidate_query = candidate_query.order_by(Stock.updated_at.desc()).limit(max_stocks)
 
+    candidate_rows = (await db.execute(candidate_query)).all()
+    if not candidate_rows:
+        return []
+
+    id_to_meta: dict[int, tuple[str, str]] = {sid: (sym, name) for sid, sym, name in candidate_rows}
+
+    # Pull every price row for the candidate set in ONE query. The
+    # composite index ``ix_stock_prices_stock_id_date`` services both the
+    # IN-filter and the ORDER BY without a sort step.
+    query = (
+        select(StockPrice.stock_id, StockPrice.close, StockPrice.date)
+        .where(StockPrice.stock_id.in_(list(id_to_meta.keys())))
+        .order_by(StockPrice.stock_id, StockPrice.date.asc())
+    )
     result = await db.execute(query)
-    rows = result.all()
+    raw_rows = result.all()
+    # Re-shape into the legacy (symbol, name, close, date) row tuples so
+    # the grouping block below stays unchanged.
+    rows = [
+        (id_to_meta[stock_id][0], id_to_meta[stock_id][1], close_price, _date)
+        for stock_id, close_price, _date in raw_rows
+        if stock_id in id_to_meta
+    ]
 
     # Group by symbol, keeping only last `lookback` prices per stock.
     grouped: dict[str, dict[str, object]] = {}
