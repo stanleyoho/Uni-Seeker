@@ -24,25 +24,52 @@
  */
 
 import { useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import {
   ClippedButton,
   GlassPanel,
 } from "@/components/stratos/primitives";
+// Always-mounted institutional components — keep static so first paint
+// has the filer list and the holdings table immediately.
 import {
-  BulkSubscribeModal,
   DiffView,
-  FilerBrowser,
   FilerListResponsive,
-  FilerSearchModal,
-  HoldingsTimeline,
   InstitutionalHoldingsTableResponsive,
-  MultiFilerCompareModal,
   RefreshButton,
-  TopMovers,
   holdingDisplaySymbol,
   type F13Holding,
 } from "@/components/institutional";
+
+// View-/modal-gated components (≈ 2,400 LOC combined). HoldingsTimeline +
+// TopMovers only render when the user picks that view tab; FilerBrowser
+// only shows when the user has zero subscriptions; the three modals
+// only mount on click. Dynamic-load all six so they're not part of the
+// initial /institutional chunk.
+const HoldingsTimeline = dynamic(
+  () => import("@/components/institutional/holdings-timeline").then((m) => m.HoldingsTimeline),
+  { ssr: false },
+);
+const TopMovers = dynamic(
+  () => import("@/components/institutional/top-movers").then((m) => m.TopMovers),
+  { ssr: false },
+);
+const FilerBrowser = dynamic(
+  () => import("@/components/institutional/filer-browser").then((m) => m.FilerBrowser),
+  { ssr: false },
+);
+const FilerSearchModal = dynamic(
+  () => import("@/components/institutional/filer-search-modal").then((m) => m.FilerSearchModal),
+  { ssr: false },
+);
+const BulkSubscribeModal = dynamic(
+  () => import("@/components/institutional/bulk-subscribe-modal").then((m) => m.BulkSubscribeModal),
+  { ssr: false },
+);
+const MultiFilerCompareModal = dynamic(
+  () => import("@/components/institutional/multi-filer-compare-modal").then((m) => m.MultiFilerCompareModal),
+  { ssr: false },
+);
 import {
   useFilings,
   useHoldings,

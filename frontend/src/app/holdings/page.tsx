@@ -20,24 +20,48 @@
  */
 
 import { useCallback, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { useI18n } from "@/i18n/context";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
+// Non-modal components — needed on first paint, keep static.
 import {
   AccountSwitcher,
-  AccountModal,
-  AddHoldingDividendModal,
-  AddHoldingTradeModal,
   BulkActionsBar,
   CsvExportDropdown,
-  CsvImportModal,
   CurrencySwitcher,
   HoldingsKpiRow,
   HoldingsTableResponsive,
   PositionsEmptyState,
   PullToRefreshWrapper,
-  RebalanceModal,
 } from "@/components/holdings";
+
+// Modal components — gated by useState flags, never mounted on initial
+// render. Dynamic-imported so the rebalance / add-trade / add-dividend /
+// account / csv-import bundles (≈ 2,100 LOC combined) load on demand
+// when the user clicks the relevant CTA. `ssr: false` because each
+// modal portals into document.body and otherwise causes hydration
+// warnings.
+const AddHoldingTradeModal = dynamic(
+  () => import("@/components/holdings/add-trade-modal").then((m) => m.AddHoldingTradeModal),
+  { ssr: false },
+);
+const AddHoldingDividendModal = dynamic(
+  () => import("@/components/holdings/add-dividend-modal").then((m) => m.AddHoldingDividendModal),
+  { ssr: false },
+);
+const AccountModal = dynamic(
+  () => import("@/components/holdings/account-modal").then((m) => m.AccountModal),
+  { ssr: false },
+);
+const RebalanceModal = dynamic(
+  () => import("@/components/holdings/rebalance-modal").then((m) => m.RebalanceModal),
+  { ssr: false },
+);
+const CsvImportModal = dynamic(
+  () => import("@/components/holdings/csv-import-modal").then((m) => m.CsvImportModal),
+  { ssr: false },
+);
 import {
   useHoldingAccounts,
   useHoldingPositions,
