@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def _seed_fires(db: "AsyncSession") -> None:
+async def _seed_fires(db: AsyncSession) -> None:
     """Seed three BUY fires from the last hour + one stale fire (>24h)."""
     from app.models.enums import Market
 
@@ -25,29 +25,44 @@ async def _seed_fires(db: "AsyncSession") -> None:
 
     now = datetime.now(tz=UTC)
     fresh_a = SignalFire(
-        symbol="2330", name="台積電",
-        signal_type="ma_crossover", action="BUY",
-        strength=0.8, fire_price=Decimal("1245"),
+        symbol="2330",
+        name="台積電",
+        signal_type="ma_crossover",
+        action="BUY",
+        strength=0.8,
+        fire_price=Decimal("1245"),
     )
     fresh_b = SignalFire(
-        symbol="2454", name="聯發科",
-        signal_type="rsi_oversold", action="BUY",
-        strength=0.6, fire_price=Decimal("1300"),
+        symbol="2454",
+        name="聯發科",
+        signal_type="rsi_oversold",
+        action="BUY",
+        strength=0.6,
+        fire_price=Decimal("1300"),
     )
     fresh_c = SignalFire(
-        symbol="2317", name="鴻海",
-        signal_type="ma_crossover", action="BUY",
-        strength=0.7, fire_price=Decimal("142"),
+        symbol="2317",
+        name="鴻海",
+        signal_type="ma_crossover",
+        action="BUY",
+        strength=0.7,
+        fire_price=Decimal("142"),
     )
     stale = SignalFire(
-        symbol="2330", name="台積電",
-        signal_type="ma_crossover", action="BUY",
-        strength=0.5, fire_price=Decimal("1200"),
+        symbol="2330",
+        name="台積電",
+        signal_type="ma_crossover",
+        action="BUY",
+        strength=0.5,
+        fire_price=Decimal("1200"),
     )
     sell_signal = SignalFire(
-        symbol="2603", name="長榮",
-        signal_type="ma_crossover", action="SELL",
-        strength=0.4, fire_price=Decimal("165"),
+        symbol="2603",
+        name="長榮",
+        signal_type="ma_crossover",
+        action="SELL",
+        strength=0.4,
+        fire_price=Decimal("165"),
     )
     db.add_all([fresh_a, fresh_b, fresh_c, stale, sell_signal])
     await db.commit()
@@ -64,7 +79,7 @@ async def _seed_fires(db: "AsyncSession") -> None:
     await db.commit()
 
 
-async def test_recent_empty_db(client: "AsyncClient") -> None:
+async def test_recent_empty_db(client: AsyncClient) -> None:
     """Empty DB returns clean empty payload, no 500."""
     resp = await client.get("/api/v1/signals/recent?lookback_hours=20&top=10")
     assert resp.status_code == 200
@@ -74,8 +89,8 @@ async def test_recent_empty_db(client: "AsyncClient") -> None:
 
 
 async def test_recent_returns_only_buy_within_window(
-    client: "AsyncClient",
-    db_session: "AsyncSession",
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     await _seed_fires(db_session)
 
@@ -90,8 +105,8 @@ async def test_recent_returns_only_buy_within_window(
 
 
 async def test_recent_grouped_counts(
-    client: "AsyncClient",
-    db_session: "AsyncSession",
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     await _seed_fires(db_session)
 
@@ -104,8 +119,8 @@ async def test_recent_grouped_counts(
 
 
 async def test_recent_signal_type_normalized_to_tile_name(
-    client: "AsyncClient",
-    db_session: "AsyncSession",
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     await _seed_fires(db_session)
 
@@ -119,8 +134,8 @@ async def test_recent_signal_type_normalized_to_tile_name(
 
 
 async def test_recent_lookback_filters_old_fires(
-    client: "AsyncClient",
-    db_session: "AsyncSession",
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     await _seed_fires(db_session)
 

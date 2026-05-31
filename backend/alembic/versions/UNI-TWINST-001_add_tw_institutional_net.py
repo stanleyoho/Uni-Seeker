@@ -18,6 +18,7 @@ Schema decisions:
 
 This migration is fully reversible.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -36,40 +37,57 @@ def upgrade() -> None:
     op.create_table(
         "tw_institutional_net",
         sa.Column(
-            "id", sa.Integer(), autoincrement=True, primary_key=True,
+            "id",
+            sa.Integer(),
+            autoincrement=True,
+            primary_key=True,
         ),
         sa.Column(
-            "stock_id", sa.Integer(),
+            "stock_id",
+            sa.Integer(),
             sa.ForeignKey("stocks.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column("date", sa.Date(), nullable=False),
         sa.Column(
-            "foreign_net", sa.BigInteger(),
-            nullable=False, server_default="0",
+            "foreign_net",
+            sa.BigInteger(),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "trust_net", sa.BigInteger(),
-            nullable=False, server_default="0",
+            "trust_net",
+            sa.BigInteger(),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "dealer_net", sa.BigInteger(),
-            nullable=False, server_default="0",
+            "dealer_net",
+            sa.BigInteger(),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "total_net", sa.BigInteger(),
-            nullable=False, server_default="0",
+            "total_net",
+            sa.BigInteger(),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint(
-            "stock_id", "date",
+            "stock_id",
+            "date",
             name="uq_tw_institutional_net_stock_date",
         ),
     )

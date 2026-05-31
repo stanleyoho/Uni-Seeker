@@ -66,7 +66,8 @@ class SignalFire(Base):
     # home tile doesn't need a second JOIN against StockPrice for the
     # mini-board render. Source: latest StockPrice.close at scan time.
     fire_price: Mapped[float | None] = mapped_column(
-        Numeric(12, 4), default=None,
+        Numeric(12, 4),
+        default=None,
     )
     # ``init=False`` is mandatory under MappedAsDataclass when a server
     # default is the source of truth — otherwise dataclass.__init__

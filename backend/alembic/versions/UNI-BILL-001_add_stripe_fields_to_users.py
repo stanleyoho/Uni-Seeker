@@ -7,6 +7,7 @@ Create Date: 2026-05-11
 Note: revision identifier uses underscores; alembic 1.18+ rejects hyphen.
 Filename keeps hyphens for human readability of the BILL series.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa

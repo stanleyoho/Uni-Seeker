@@ -84,20 +84,17 @@ async def get_recent_signals(
     # Join back to SignalFire to recover name + price for the latest fire.
     # LEFT JOIN StockPrice gives us the freshest close + change_percent
     # for the symbol; if a price is missing the row still renders.
-    latest_price_subq = (
-        select(
-            StockPrice.stock_id,
-            StockPrice.close,
-            StockPrice.change_percent,
-            func.row_number()
-            .over(
-                partition_by=StockPrice.stock_id,
-                order_by=desc(StockPrice.date),
-            )
-            .label("rn"),
+    latest_price_subq = select(
+        StockPrice.stock_id,
+        StockPrice.close,
+        StockPrice.change_percent,
+        func.row_number()
+        .over(
+            partition_by=StockPrice.stock_id,
+            order_by=desc(StockPrice.date),
         )
-        .subquery()
-    )
+        .label("rn"),
+    ).subquery()
 
     query = (
         select(
@@ -117,8 +114,7 @@ async def get_recent_signals(
         .join(Stock, Stock.symbol == SignalFire.symbol, isouter=True)
         .join(
             latest_price_subq,
-            (latest_price_subq.c.stock_id == Stock.id)
-            & (latest_price_subq.c.rn == 1),
+            (latest_price_subq.c.stock_id == Stock.id) & (latest_price_subq.c.rn == 1),
             isouter=True,
         )
         .order_by(desc(SignalFire.fired_at))

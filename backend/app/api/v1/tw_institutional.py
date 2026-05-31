@@ -83,9 +83,7 @@ async def _resolve_query_date(
     is fully empty so the caller can short-circuit to the empty payload.
     """
     has_requested = await db.execute(
-        select(func.count(TwInstitutionalNet.id)).where(
-            TwInstitutionalNet.date == requested
-        )
+        select(func.count(TwInstitutionalNet.id)).where(TwInstitutionalNet.date == requested)
     )
     if (has_requested.scalar_one() or 0) > 0:
         return requested

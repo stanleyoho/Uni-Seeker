@@ -44,6 +44,7 @@ Indices
   Postgres uses btree which is order-agnostic for single-key range
   scans; we don't bother with explicit DESC.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -64,8 +65,12 @@ depends_on: str | Sequence[str] | None = None
 # on it.
 def _market_enum() -> PgEnum:
     return PgEnum(
-        "TW_TWSE", "TW_TPEX", "US_NYSE", "US_NASDAQ",
-        name="market_enum", create_type=False,
+        "TW_TWSE",
+        "TW_TPEX",
+        "US_NYSE",
+        "US_NASDAQ",
+        name="market_enum",
+        create_type=False,
     )
 
 
@@ -74,7 +79,8 @@ def upgrade() -> None:
         "portfolio_dividends",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "account_id", sa.BigInteger,
+            "account_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -86,21 +92,29 @@ def upgrade() -> None:
         sa.Column("amount_per_share", sa.Numeric(precision=24, scale=8), nullable=False),
         sa.Column("quantity_at_record", sa.Numeric(precision=24, scale=8), nullable=False),
         sa.Column(
-            "currency", sa.String(length=3),
-            nullable=False, server_default="TWD",
+            "currency",
+            sa.String(length=3),
+            nullable=False,
+            server_default="TWD",
         ),
         sa.Column(
-            "withholding_tax", sa.Numeric(precision=24, scale=8),
-            nullable=False, server_default="0",
+            "withholding_tax",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column("note", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.CheckConstraint(
             "dividend_type IN ('CASH', 'STOCK')",

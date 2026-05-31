@@ -26,6 +26,7 @@ Indices: (user_id, status) is the hot path for the scheduler
 ("give me every active rule for this user"); a single B-tree on
 status alone would not be selective enough at scale.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -54,10 +55,14 @@ def upgrade() -> None:
     op.create_table(
         "alert_rules",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column(
-            "user_id", sa.BigInteger,
+            "user_id",
+            sa.BigInteger,
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -66,39 +71,41 @@ def upgrade() -> None:
         sa.Column("symbol", sa.String(length=20), nullable=True),
         sa.Column("market", sa.String(length=20), nullable=True),
         sa.Column(
-            "threshold_value", sa.Numeric(precision=24, scale=8), nullable=False,
+            "threshold_value",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
         ),
         sa.Column("threshold_type", sa.String(length=10), nullable=False),
         sa.Column(
-            "status", sa.String(length=10),
-            nullable=False, server_default="ACTIVE",
+            "status",
+            sa.String(length=10),
+            nullable=False,
+            server_default="ACTIVE",
         ),
         sa.Column("last_evaluated_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_triggered_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.CheckConstraint(
-            "rule_type IN ("
-            + ", ".join(f"'{rt}'" for rt in _RULE_TYPES)
-            + ")",
+            "rule_type IN (" + ", ".join(f"'{rt}'" for rt in _RULE_TYPES) + ")",
             name="ck_alert_rules_rule_type",
         ),
         sa.CheckConstraint(
-            "status IN ("
-            + ", ".join(f"'{s}'" for s in _STATUSES)
-            + ")",
+            "status IN (" + ", ".join(f"'{s}'" for s in _STATUSES) + ")",
             name="ck_alert_rules_status",
         ),
         sa.CheckConstraint(
-            "threshold_type IN ("
-            + ", ".join(f"'{t}'" for t in _THRESHOLD_TYPES)
-            + ")",
+            "threshold_type IN (" + ", ".join(f"'{t}'" for t in _THRESHOLD_TYPES) + ")",
             name="ck_alert_rules_threshold_type",
         ),
         # Position-scoped rules need both symbol + market; portfolio-wide

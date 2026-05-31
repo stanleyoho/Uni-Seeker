@@ -17,6 +17,7 @@ Telegram chat IDs are signed 64-bit integers (negative for groups), but
 we store as VARCHAR(64) to remain forward-compatible with usernames
 (``@user`` form) the bot API accepts equally well.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa

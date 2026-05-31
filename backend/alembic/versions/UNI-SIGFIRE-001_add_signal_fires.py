@@ -18,6 +18,7 @@ Index strategy:
 Why not reuse signal_scans: that table is the JSON aggregate snapshot
 per scan run, not a per-fire event stream. See model docstring.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -36,27 +37,37 @@ def upgrade() -> None:
     op.create_table(
         "signal_fires",
         sa.Column(
-            "id", sa.Integer(), autoincrement=True, primary_key=True,
+            "id",
+            sa.Integer(),
+            autoincrement=True,
+            primary_key=True,
         ),
         sa.Column("symbol", sa.String(length=50), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("signal_type", sa.String(length=50), nullable=False),
         sa.Column("action", sa.String(length=10), nullable=False),
         sa.Column(
-            "strength", sa.Numeric(precision=6, scale=4),
-            nullable=False, server_default="0",
+            "strength",
+            sa.Numeric(precision=6, scale=4),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "fire_price", sa.Numeric(precision=12, scale=4),
+            "fire_price",
+            sa.Numeric(precision=12, scale=4),
             nullable=True,
         ),
         sa.Column(
-            "fired_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "fired_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
     )
     op.create_index(
-        "ix_signal_fires_fired_at", "signal_fires", ["fired_at"],
+        "ix_signal_fires_fired_at",
+        "signal_fires",
+        ["fired_at"],
     )
     op.create_index(
         "ix_signal_fires_signal_type_fired_at",

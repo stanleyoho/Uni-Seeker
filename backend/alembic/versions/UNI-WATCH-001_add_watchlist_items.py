@@ -4,6 +4,7 @@ Revision ID: UNI_WATCH_001
 Revises: UNI_COMP_001
 Create Date: 2026-05-18
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -21,16 +22,22 @@ def upgrade() -> None:
         "watchlist_items",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "user_id", sa.BigInteger,
-            sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
+            "user_id",
+            sa.BigInteger,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column(
-            "stock_id", sa.BigInteger,
-            sa.ForeignKey("stocks.id", ondelete="CASCADE"), nullable=False,
+            "stock_id",
+            sa.BigInteger,
+            sa.ForeignKey("stocks.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint("user_id", "stock_id", name="uq_watchlist_user_stock"),
     )

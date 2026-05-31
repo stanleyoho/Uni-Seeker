@@ -28,7 +28,7 @@ def rate_limiter() -> RateLimiter:
 
 
 async def test_sync_writes_aggregated_rows(
-    db_session: "AsyncSession",
+    db_session: AsyncSession,
     rate_limiter: RateLimiter,
 ) -> None:
     stock = Stock(symbol="2330", name="台積電", market=Market.TW_TWSE)
@@ -37,26 +37,32 @@ async def test_sync_writes_aggregated_rows(
 
     raw = [
         {
-            "date": "2026-05-29", "name": "Foreign_Investor",
-            "buy": 10_000_000, "sell": 5_000_000,
+            "date": "2026-05-29",
+            "name": "Foreign_Investor",
+            "buy": 10_000_000,
+            "sell": 5_000_000,
         },
         {
-            "date": "2026-05-29", "name": "Investment_Trust",
-            "buy": 2_000_000, "sell": 500_000,
+            "date": "2026-05-29",
+            "name": "Investment_Trust",
+            "buy": 2_000_000,
+            "sell": 500_000,
         },
         {
-            "date": "2026-05-29", "name": "Dealer_self",
-            "buy": 100_000, "sell": 200_000,
+            "date": "2026-05-29",
+            "name": "Dealer_self",
+            "buy": 100_000,
+            "sell": 200_000,
         },
         {
-            "date": "2026-05-29", "name": "Dealer_Hedging",
-            "buy": 300_000, "sell": 100_000,
+            "date": "2026-05-29",
+            "name": "Dealer_Hedging",
+            "buy": 300_000,
+            "sell": 100_000,
         },
     ]
 
-    with patch(
-        "app.modules.sync_manager.tasks.tw_institutional.FinMindClient"
-    ) as client_cls:
+    with patch("app.modules.sync_manager.tasks.tw_institutional.FinMindClient") as client_cls:
         client_cls.return_value.fetch = AsyncMock(return_value=raw)
         task = TwInstitutionalSyncTask()
         result = await task.run(db_session, rate_limiter, batch_size=50)
@@ -66,12 +72,14 @@ async def test_sync_writes_aggregated_rows(
     assert result.stopped_reason == "completed"
 
     rows = (
-        await db_session.execute(
-            select(TwInstitutionalNet).where(
-                TwInstitutionalNet.stock_id == stock.id
+        (
+            await db_session.execute(
+                select(TwInstitutionalNet).where(TwInstitutionalNet.stock_id == stock.id)
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(rows) == 1
     row = rows[0]
     assert row.date == date(2026, 5, 29)
@@ -83,7 +91,7 @@ async def test_sync_writes_aggregated_rows(
 
 
 async def test_sync_handles_no_active_stocks(
-    db_session: "AsyncSession",
+    db_session: AsyncSession,
     rate_limiter: RateLimiter,
 ) -> None:
     task = TwInstitutionalSyncTask()
@@ -93,7 +101,7 @@ async def test_sync_handles_no_active_stocks(
 
 
 async def test_sync_skips_stock_on_fetch_error(
-    db_session: "AsyncSession",
+    db_session: AsyncSession,
     rate_limiter: RateLimiter,
 ) -> None:
     """Bad ticker must not abort the whole batch."""
@@ -110,14 +118,14 @@ async def test_sync_skips_stock_on_fetch_error(
             raise RuntimeError("simulated 4xx")
         return [
             {
-                "date": "2026-05-29", "name": "Foreign_Investor",
-                "buy": 100, "sell": 50,
+                "date": "2026-05-29",
+                "name": "Foreign_Investor",
+                "buy": 100,
+                "sell": 50,
             }
         ]
 
-    with patch(
-        "app.modules.sync_manager.tasks.tw_institutional.FinMindClient"
-    ) as client_cls:
+    with patch("app.modules.sync_manager.tasks.tw_institutional.FinMindClient") as client_cls:
         client_cls.return_value.fetch = fake_fetch
         task = TwInstitutionalSyncTask()
         result = await task.run(db_session, rate_limiter, batch_size=50)
