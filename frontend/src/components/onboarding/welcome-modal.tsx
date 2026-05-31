@@ -31,7 +31,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Bell,
@@ -160,6 +160,7 @@ export function WelcomeModal({
 }: WelcomeModalProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const [stepIndex, setStepIndex] = React.useState(0);
   const primaryButtonRef = useRef<HTMLDivElement>(null);
 
@@ -194,19 +195,36 @@ export function WelcomeModal({
 
   const stepKey = STEPS[stepIndex];
 
+  // Silent-nav guard (NAV-006). The modal used to call
+  // `router.push("/holdings")` on completion regardless of where the
+  // user already was; combined with auto-focus on the primary button,
+  // a user who Cmd-Tabbed back to the tab mid-research-session could
+  // smash Enter and find themselves yanked off /research → /holdings.
+  // We now navigate ONLY when the user is on the home page (which is
+  // where a freshly-onboarded user lands), and otherwise leave them
+  // exactly where they were. The same guard applies to the optional
+  // notifications jump — it stays an explicit click but, even then,
+  // we only do it from the home page.
+  const safeToAutoNav = pathname === "/" || pathname === "";
+
   const goNext = useCallback(() => {
     if (stepIndex < STEPS.length - 1) {
       setStepIndex((i) => i + 1);
     } else {
       onComplete();
-      router.push("/holdings");
+      if (safeToAutoNav) router.push("/holdings");
     }
-  }, [stepIndex, onComplete, router]);
+  }, [stepIndex, onComplete, router, safeToAutoNav]);
 
   const goNotifications = useCallback(() => {
     onComplete();
+    // The notifications jump is user-initiated (explicit button) so
+    // we honour it more aggressively than goNext's auto-jump, but we
+    // still skip it from sensitive surfaces like /research where a
+    // mid-flow navigation would lose the user's filter state.
+    if (pathname.startsWith("/research")) return;
     router.push("/settings/notifications");
-  }, [onComplete, router]);
+  }, [onComplete, router, pathname]);
 
   const headerId = useMemo(() => `welcome-modal-title-${stepKey}`, [stepKey]);
 
