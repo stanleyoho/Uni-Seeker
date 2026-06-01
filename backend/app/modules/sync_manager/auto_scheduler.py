@@ -63,6 +63,18 @@ class AutoSyncScheduler:
             replace_existing=True,
         )
 
+        # ETF estimated NAV refresh at 17:35 Taipei — runs 5 min after
+        # the main daily sync so the stocks/prices side has settled by
+        # the time we resolve ETF symbols against `stocks.name LIKE
+        # '%ETF%'`. Powers /api/v1/etf-arbitrage/list.
+        self._scheduler.add_job(
+            self._etf_nav_sync,
+            CronTrigger(hour=17, minute=35, timezone="Asia/Taipei"),
+            id="etf_nav_sync",
+            name="ETF 預估淨值同步",
+            replace_existing=True,
+        )
+
         self._scheduler.start()
         self._running = True
         logger.info("auto_scheduler_started", jobs=self.get_jobs())
@@ -141,3 +153,45 @@ class AutoSyncScheduler:
             total = sum(r.records_synced for r in results)
             if total > 0:
                 await self._sync._notify(f"\U0001f504 補同步完成: {total} 筆資料")
+
+    async def _etf_nav_sync(self) -> None:
+        """Refresh ETF estimated NAV for the premium/discount monitor.
+
+        Best-effort: NAV is an *enrichment* for the arbitrage view, not
+        a primary financial record. If FinMind rate-limits or the
+        dataset isn't available for the current token tier we log and
+        move on — the endpoint already degrades gracefully with a
+        ``message`` field.
+        """
+        logger.info("auto_sync_etf_nav_start")
+        from datetime import date, timedelta
+
+        from sqlalchemy import select
+
+        from app.database import async_session
+        from app.models.enums import Market
+        from app.models.stock import Stock
+        from app.modules.finmind.market_provider import FinMindMarketProvider
+
+        provider = FinMindMarketProvider()
+        async with async_session() as db:
+            result = await db.execute(
+                select(Stock)
+                .where(Stock.market.in_((Market.TW_TWSE, Market.TW_TPEX)))
+                .where(Stock.is_active.is_(True))
+                .where(Stock.name.like("%ETF%"))
+            )
+            etfs = list(result.scalars().all())
+
+        start = (date.today() - timedelta(days=7)).isoformat()
+        ok = 0
+        for etf in etfs:
+            symbol_id = etf.symbol.replace(".TW", "").replace(".TWO", "")
+            try:
+                raw = await provider.fetch_etf_nav(stock_id=symbol_id, start_date=start)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("etf_nav_sync_skip", symbol=symbol_id, error=str(exc))
+                continue
+            if raw:
+                ok += 1
+        logger.info("auto_sync_etf_nav_done", refreshed=ok, total=len(etfs))

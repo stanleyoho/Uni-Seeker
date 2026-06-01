@@ -85,3 +85,39 @@ class FinMindMarketProvider:
             data_id=stock_id,
             start_date=start_date,
         )
+
+    async def fetch_etf_nav(
+        self,
+        stock_id: str,
+        start_date: str,
+        end_date: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fetch ETF estimated net asset value (NAV).
+
+        Uses the ``TaiwanStockNAV`` dataset which exposes per-ETF daily
+        net asset value. Used by the /api/v1/etf-arbitrage premium /
+        discount monitor — premium% = (market_price - nav) / nav * 100.
+
+        Parameters
+        ----------
+        stock_id : str
+            ETF symbol (e.g. ``"00830"``).
+        start_date : str
+            ISO start date.
+        end_date : str | None
+            Optional ISO end date.
+
+        Returns
+        -------
+        list[dict]
+            Raw NAV records, typically containing ``date``, ``stock_id``
+            and ``nav``. Caller coerces. If FinMind does not expose the
+            dataset for the given symbol (token tier restriction),
+            an empty list is returned.
+        """
+        return await self._client.fetch(
+            dataset="TaiwanStockNAV",
+            data_id=stock_id,
+            start_date=start_date,
+            end_date=end_date,
+        )

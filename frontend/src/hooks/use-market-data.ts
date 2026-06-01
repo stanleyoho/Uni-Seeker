@@ -16,6 +16,8 @@ import {
   fetchAiCommentary,
   fetchBuffettIndicator,
   fetchMarketTemperature,
+  fetchETFArbitrage,
+  type ETFArbitrageQuery,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -127,6 +129,23 @@ export function useLowBaseRanking(limit = 20) {
     queryKey: queryKeys.lowBase.ranking(limit),
     queryFn: () => fetchLowBaseRanking(limit),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ETF premium / discount monitor — refresh every 2 min to mirror the
+// market-movers cadence; NAV itself only updates daily at 17:35 but
+// the *market price* leg moves intraday.
+export function useETFArbitrage(query: ETFArbitrageQuery = {}) {
+  return useQuery({
+    queryKey: queryKeys.etfArbitrage.list(
+      query.market,
+      query.type,
+      query.direction,
+      query.limit,
+    ),
+    queryFn: () => fetchETFArbitrage(query),
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
   });
 }
 

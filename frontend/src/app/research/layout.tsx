@@ -30,6 +30,10 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
       label: t.nav.compare,
       activeQuery: { key: "tab", value: "compare" },
     },
+    // ETF premium/discount monitor (twetf.com-inspired). Hard-coded
+    // label until the i18n bundle gains an `etfArbitrage` key —
+    // keeping it inline keeps this PR self-contained.
+    { href: "/research/etf-arbitrage", label: "ETF 折溢價" },
   ];
 
   return (

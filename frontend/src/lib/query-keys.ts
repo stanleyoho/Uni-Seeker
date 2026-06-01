@@ -90,6 +90,23 @@ export const queryKeys = {
     symbol: (symbol: string, days?: number) =>
       [...queryKeys.twInstitutional.all, "symbol", symbol, days] as const,
   },
+  etfArbitrage: {
+    all: ["etf-arbitrage"] as const,
+    list: (
+      market?: string,
+      type?: string,
+      direction?: string,
+      limit?: number,
+    ) =>
+      [
+        ...queryKeys.etfArbitrage.all,
+        "list",
+        market,
+        type,
+        direction,
+        limit,
+      ] as const,
+  },
   journal: {
     all: ["journal"] as const,
     accounts: () => [...queryKeys.journal.all, "accounts"] as const,
