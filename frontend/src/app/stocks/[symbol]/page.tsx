@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { IndicatorPanel } from "./components/indicator-panel";
 import { ValuationPanel } from "./components/valuation-panel";
+import { AiCommentaryCard } from "./components/ai-commentary-card";
 import { type MarginData, type RevenueAnalysis } from "@/lib/api-client";
 import { useI18n } from "@/i18n/context";
 
@@ -15,7 +16,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { ScoreBar } from "@/components/ui/score-bar";
 import { GlassPanel, KpiCard, ClippedButton } from "@/components/stratos/primitives";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation } from "@/hooks/use-market-data";
+import { usePrices, useCompanyInfo, useMarginData, useRevenue, useValuation, useAiCommentary } from "@/hooks/use-market-data";
 import { AmbientBackground } from "@/components/stratos/ambient";
 
 // StockChart pulls in `lightweight-charts` (~110 KB gz). Dynamic-import
@@ -222,6 +223,12 @@ export default function StockDetailPage() {
   const { data: marginData, isLoading: marginLoading } = useMarginData(symbol, activeTab === "margin" && isTWSymbol);
   const { data: revenueData, isLoading: revenueLoading } = useRevenue(symbol, activeTab === "revenue");
   const { data: valuationData, isLoading: valuationLoading } = useValuation(symbol, activeTab === "valuation");
+  // AI commentary: only fetch on the Overview tab — that's where the
+  // card actually renders, and the call is cheap on cache hits but we
+  // still avoid issuing it when the user lands on, say, the Financials
+  // tab directly via a deep link.
+  const { data: aiCommentary, isLoading: aiCommentaryLoading, isError: aiCommentaryError } =
+    useAiCommentary(symbol, activeTab === "chart");
 
   const prices = priceData?.data ?? [];
 
@@ -327,6 +334,7 @@ export default function StockDetailPage() {
         {/* -- 3. Content Area -- */}
         <div className="min-h-[600px]">
           {activeTab === "chart" && (
+            <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-9">
                 <GlassPanel title="Market Performance" noPadding>
@@ -377,11 +385,21 @@ export default function StockDetailPage() {
 
                 <GlassPanel title="Analysis Context">
                   <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                    Based on recent performance, {symbol} is currently {isUp ? "showing bullish momentum" : "facing downward pressure"}. 
+                    Based on recent performance, {symbol} is currently {isUp ? "showing bullish momentum" : "facing downward pressure"}.
                     Switch to Analysis tab for technical indicators.
                   </p>
                 </GlassPanel>
               </div>
+            </div>
+
+            {/* 今日 AI 解讀 — deterministic narrative composed from today's
+                price action + indicators + sector context. Sits below the
+                chart row, full-width, above the deeper-dive tabs. */}
+            <AiCommentaryCard
+              data={aiCommentary}
+              isLoading={aiCommentaryLoading}
+              isError={aiCommentaryError}
+            />
             </div>
           )}
 

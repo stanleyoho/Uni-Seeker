@@ -13,6 +13,7 @@ import {
   fetchRevenueAnalysis,
   fetchInstitutional,
   fetchValuationEstimates,
+  fetchAiCommentary,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -110,5 +111,19 @@ export function useValuation(symbol: string, enabled = true) {
     queryFn: () => fetchValuationEstimates(symbol),
     staleTime: 10 * 60 * 1000,
     enabled: enabled && !!symbol,
+  });
+}
+
+// AI commentary is server-cached for 4h, so a long client staleTime is
+// safe and avoids re-fetching when users tab between Overview / Analysis.
+// `retry: false` because a 404 means "no price data yet" — retrying
+// won't help and we want the empty-state to render fast.
+export function useAiCommentary(symbol: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.stocks.aiCommentary(symbol),
+    queryFn: () => fetchAiCommentary(symbol),
+    staleTime: 60 * 60 * 1000, // 1h client cache; server keeps 4h
+    enabled: enabled && !!symbol,
+    retry: false,
   });
 }

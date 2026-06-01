@@ -96,6 +96,24 @@ export interface IndicatorResponse {
   values: Record<string, (string | null)[]>;
 }
 
+// --- AI Commentary ---
+// Handwritten because the OpenAPI schema in this branch hasn't been
+// regenerated yet. The contract matches `app/schemas/ai_commentary.py`
+// 1:1; when the schema gate regenerates we'll switch to the generated
+// alias the same way StockPrice / FinancialRatios / etc do.
+export interface AiCommentarySource {
+  kind: string;
+  detail: string;
+}
+
+export interface AiCommentaryResponse {
+  symbol: string;
+  date: string; // ISO YYYY-MM-DD
+  commentary: string;
+  confidence: number;
+  sources: AiCommentarySource[];
+}
+
 // --- Stock Search ---
 
 export type StockSearchResult = Schemas["StockSearchResult"];
@@ -281,6 +299,15 @@ export type ValuationEstimates = Schemas["ValuationEstimatesResponse"];
 
 export async function fetchPrices(symbol: string, limit = 30): Promise<PriceListResponse> {
   return apiFetch<PriceListResponse>(`${API_BASE}/prices/${symbol}?limit=${limit}`);
+}
+
+// Per-stock daily AI commentary. The backend caches for 4h keyed by
+// (symbol, date), so this call is cheap on cache hits. Returns 404 when
+// the symbol is unknown OR has no price data.
+export async function fetchAiCommentary(symbol: string): Promise<AiCommentaryResponse> {
+  return apiFetch<AiCommentaryResponse>(
+    `${API_BASE}/stocks/${encodeURIComponent(symbol)}/ai-commentary`,
+  );
 }
 
 export async function fetchIndicator(

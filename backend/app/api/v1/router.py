@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.ai_commentary import router as ai_commentary_router
 from app.api.v1.alpha import router as alpha_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.backtest import router as backtest_router
@@ -46,6 +47,9 @@ v1_router.include_router(me_notifications_router)
 v1_router.include_router(me_audit_router)
 v1_router.include_router(alpha_router)
 v1_router.include_router(stocks_router)
+# Nested under /stocks/{symbol}/ai-commentary — register after stocks_router
+# so FastAPI's path matcher resolves cleanly.
+v1_router.include_router(ai_commentary_router)
 v1_router.include_router(financial_metrics_router)
 v1_router.include_router(financials_router)
 v1_router.include_router(strategies_router)

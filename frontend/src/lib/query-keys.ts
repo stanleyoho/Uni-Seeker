@@ -34,6 +34,8 @@ export const queryKeys = {
       ] as const,
     valuation: (symbol: string) =>
       [...queryKeys.stocks.detail(symbol), "valuation"] as const,
+    aiCommentary: (symbol: string) =>
+      [...queryKeys.stocks.detail(symbol), "ai-commentary"] as const,
   },
   backtest: {
     all: ["backtest"] as const,
