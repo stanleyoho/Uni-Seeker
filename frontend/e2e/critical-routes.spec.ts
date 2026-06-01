@@ -134,9 +134,17 @@ test.describe("critical routes — PR fix/critical-routes", () => {
     await page.goto("/portfolio/watchlist");
     await expect(page).toHaveURL(/\/portfolio\/watchlist$/);
 
-    // The relocated watchlist keeps its "Watchlist Management" header.
+    // The relocated watchlist keeps its heading. Real page renders the
+    // i18n'd label (`自選股` under zh-TW, the default locale) and falls
+    // back to the English literal `Watchlist Management` only when the
+    // translation key is missing. Accept either so the spec doesn't
+    // break the moment someone flips the default locale or trims the
+    // translation table.
     await expect(
-      page.getByRole("heading", { name: /watchlist management/i }),
+      page.getByRole("heading", {
+        level: 1,
+        name: /Watchlist Management|自選股/i,
+      }),
     ).toBeVisible();
   });
 

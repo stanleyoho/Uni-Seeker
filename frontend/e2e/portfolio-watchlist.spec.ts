@@ -56,7 +56,7 @@ baseTest.describe("/portfolio watchlist page (mock mode)", () => {
     await mockAuth(page, { tier: "pro" });
     await mockWatchlistApi(page);
 
-    await page.goto("/portfolio");
+    await page.goto("/portfolio/watchlist");
 
     await expect(
       page.getByRole("heading", { name: /自選股|Watchlist/i }),
@@ -81,7 +81,7 @@ baseTest.describe("/portfolio watchlist page (mock mode)", () => {
       fulfillJson(route, { symbol: "SYM0", data: [] }),
     );
 
-    await page.goto("/portfolio");
+    await page.goto("/portfolio/watchlist");
     await expect(page.getByText(/接近上限.*8\/10|Free 上限/).first()).toBeVisible();
   });
 
@@ -102,7 +102,7 @@ baseTest.describe("/portfolio watchlist page (mock mode)", () => {
       }
     });
 
-    await page.goto("/portfolio");
+    await page.goto("/portfolio/watchlist");
 
     await expect(
       page
@@ -115,7 +115,7 @@ baseTest.describe("/portfolio watchlist page (mock mode)", () => {
     await mockAuth(page, { tier: "pro" });
     await mockWatchlistApi(page);
 
-    await page.goto("/portfolio");
+    await page.goto("/portfolio/watchlist");
     await expect(page.getByText("2330").first()).toBeVisible();
 
     const downloadPromise = page.waitForEvent("download");
@@ -140,10 +140,21 @@ authTest.describe("/portfolio watchlist page (docker e2e)", () => {
       // detail spec; here we keep the contract focused on the seed
       // shape that this page is supposed to render, plus the remove
       // mutation which IS reachable in-page.
-      await page.goto("/portfolio");
+      //
+      // Route history: pre-PR-115, `/portfolio` rendered the watchlist
+      // UI inline. Post-PR-115, `/portfolio` is the dashboard and the
+      // canonical watchlist surface moved to `/portfolio/watchlist`.
+      // The in-page remove affordance lives on that child route.
+      await page.goto("/portfolio/watchlist");
 
+      // The page's H1 uses the i18n'd watchlist title (`自選股` under
+      // zh-TW, "Watchlist Management" as the English fallback). Accept
+      // both so we don't break the spec when the default locale flips.
       await expect(
-        page.getByRole("heading", { name: /Watchlist Management|自選股|Watchlist/i }),
+        page.getByRole("heading", {
+          level: 1,
+          name: /Watchlist Management|自選股|Watchlist/i,
+        }),
       ).toBeVisible({ timeout: 15_000 });
 
       // Seed inserts a 2330 watchlist row.
