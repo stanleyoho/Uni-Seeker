@@ -22,7 +22,9 @@ export function StratosHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement | null>(null);
+  const overflowRef = useRef<HTMLDivElement | null>(null);
   // The legacy local `paletteOpen` state is gone — the global CommandPalette
   // (mounted by app/layout.tsx) owns its own open state and listens for
   // ⌘K / Ctrl+K plus the CMDK_OPEN_EVENT CustomEvent dispatched here.
@@ -74,13 +76,33 @@ export function StratosHeader() {
     setLocale(locale === "zh-TW" ? "en" : "zh-TW");
   };
 
+  // Primary top-nav: the surfaces a day-trader actually opens in a
+  // typical session. Heatmap + Institutional (13F) were demoted to
+  // the "更多" overflow dropdown below because:
+  //   - /heatmap is reachable from the home page's Hot Sectors cards
+  //     (each card already links to `/heatmap?focus=<sector>`), so
+  //     keeping it in the primary strip duplicated an entry that
+  //     almost never gets clicked directly.
+  //   - /institutional ships SEC 13F data, which is US-only +
+  //     quarterly. PR #112 K5 added the TW 三大法人 row on the home
+  //     page, so the TW day-trader's primary institutional flow now
+  //     lives on /; 13F is a niche power-user surface that doesn't
+  //     earn a top-nav slot.
   const navLinks = [
     { href: "/", label: t.nav.markets ?? "Markets" },
     { href: "/research", label: t.nav.research ?? "Research" },
     { href: "/portfolio", label: t.nav.portfolio ?? "Portfolio" },
     { href: "/holdings", label: t.nav.holdings ?? "Holdings" },
-    { href: "/institutional", label: t.nav.institutional ?? "機構持倉" },
     { href: "/journal", label: t.nav.journal ?? "Journal" },
+  ];
+
+  // Secondary "更多" overflow menu — opt-in surfaces the user can
+  // reach from the dropdown or from inline links elsewhere (e.g. Hot
+  // Sectors cards → /heatmap). Pages themselves stay fully
+  // functional; only the nav prominence changed.
+  const overflowLinks = [
+    { href: "/heatmap", label: t.nav.heatmap ?? "熱力圖" },
+    { href: "/institutional", label: t.nav.institutional ?? "機構持倉" },
   ];
 
   /* Keyboard shortcut: press F to open the global CommandPalette (the new
@@ -109,6 +131,7 @@ export function StratosHeader() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse open menus when the router transitions to a new pathname
     setMobileOpen(false);
     setSettingsOpen(false);
+    setOverflowOpen(false);
   }, [pathname]);
 
   // Close settings dropdown on outside click / Esc.
@@ -132,6 +155,32 @@ export function StratosHeader() {
       window.removeEventListener("keydown", handleKey);
     };
   }, [settingsOpen]);
+
+  // Mirror the settings-dropdown dismissal handlers for the new
+  // "更多" overflow menu. Same shape so the two menus stay
+  // behaviourally consistent — outside-click + Esc both close. A
+  // shared util would be cleaner, but cloning the 4 lines keeps each
+  // menu's lifecycle self-contained for the next reader.
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        overflowRef.current &&
+        !overflowRef.current.contains(e.target as Node)
+      ) {
+        setOverflowOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOverflowOpen(false);
+    };
+    window.addEventListener("mousedown", handleClick);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [overflowOpen]);
 
   return (
     <>
@@ -198,6 +247,68 @@ export function StratosHeader() {
                 )}
               </Link>
             ))}
+
+            {/* 更多 (More) overflow — hosts demoted nav entries
+                (heatmap + institutional). Styled to match the Settings
+                dropdown so users learn the convention "secondary nav
+                lives behind an inline dropdown trigger" once.  The
+                active underline is preserved when the active route
+                belongs to the overflow, so the user still knows where
+                they are. */}
+            <div className="relative" ref={overflowRef}>
+              <button
+                onClick={() => setOverflowOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={overflowOpen}
+                aria-label={t.nav.more ?? "更多"}
+                className={`relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200 flex items-center gap-1 ${
+                  overflowLinks.some((l) => isActive(l.href))
+                    ? "text-[var(--foreground)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {t.nav.more ?? "更多"}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                {overflowLinks.some((l) => isActive(l.href)) && (
+                  <span
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full"
+                    style={{ background: "var(--accent-primary)" }}
+                  />
+                )}
+              </button>
+              {overflowOpen && (
+                <div
+                  role="menu"
+                  className="absolute left-0 mt-2 min-w-[180px] py-1 z-50"
+                  style={{
+                    background: "var(--background)",
+                    border: "1px solid var(--border-color)",
+                    boxShadow:
+                      "0 8px 24px color-mix(in srgb, #000 40%, transparent)",
+                  }}
+                >
+                  {overflowLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      role="menuitem"
+                      onClick={() => setOverflowOpen(false)}
+                      aria-current={isActive(link.href) ? "page" : undefined}
+                      className="block px-3 py-2 text-[13px] transition-colors duration-150 hover:bg-[var(--card-hover)]"
+                      style={{
+                        color: isActive(link.href)
+                          ? "var(--foreground)"
+                          : "var(--text-secondary)",
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Bell icon — Alerts */}
             <Link
@@ -384,6 +495,29 @@ export function StratosHeader() {
                   className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 ${
                     isActive(link.href)
                       ? "text-[var(--foreground)] bg-[var(--card-hover)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {/* Mobile overflow surfaces — same demoted entries the
+                  desktop "更多" dropdown owns. Inline here (rather
+                  than a nested mobile dropdown) because the mobile
+                  menu is already a vertical sheet; another
+                  collapsible would be noise. The dimmer styling
+                  subtly signals secondary priority without hiding
+                  the rows. */}
+              {overflowLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                  className={`block px-3 py-2.5 text-sm rounded-md transition-colors duration-200 opacity-80 ${
+                    isActive(link.href)
+                      ? "text-[var(--foreground)] bg-[var(--card-hover)] opacity-100"
                       : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
                   }`}
                 >

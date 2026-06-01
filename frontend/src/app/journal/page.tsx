@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { GlassPanel, KpiCard } from "@/components/stratos/primitives";
 import {
@@ -15,6 +16,8 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import { AccountsTabPanel } from "./components/accounts-panel";
+import { GroupsTabPanel } from "./components/groups-panel";
 
 /* Dummy asset curve for Phase 1 (real snapshots in Plan C) */
 const DUMMY_CURVE = [
@@ -32,6 +35,19 @@ function fmt(n: number, decimals = 0) {
 }
 
 export default function JournalDashboard() {
+  // Route-consolidation refactor: this page hosts the `日誌 / 帳戶 /
+  // 群組` tab multiplex. The default (`?tab=` absent) renders the
+  // dashboard that used to live here; `?tab=accounts` and
+  // `?tab=groups` render the panels extracted from the former
+  // `/journal/accounts` and `/journal/groups` routes (both routes
+  // still exist as permanent redirects so external links keep
+  // working).
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab");
+
+  // Hooks below stay above the early return so React's
+  // rule-of-hooks ordering is preserved regardless of which tab is
+  // active.
   const { data: accounts = [] } = useJournalAccounts();
   const { data: alertsData } = useJournalAlerts();
   const alerts = alertsData?.alerts ?? [];
@@ -40,6 +56,24 @@ export default function JournalDashboard() {
   const totalValue = 0; // Phase 2: from portfolio_snapshots
   const unrealizedPnl = 0;
   const realizedPnl = 0;
+
+  if (activeTab === "accounts") {
+    return (
+      <div className="relative flex-1 overflow-y-auto p-6 space-y-6">
+        <AmbientBackground />
+        <AccountsTabPanel />
+      </div>
+    );
+  }
+
+  if (activeTab === "groups") {
+    return (
+      <div className="relative flex-1 overflow-y-auto p-6">
+        <AmbientBackground />
+        <GroupsTabPanel />
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex-1 overflow-y-auto p-6 space-y-6">
