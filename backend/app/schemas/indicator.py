@@ -2,8 +2,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.schemas._base import StrictModel
 
-class IndicatorRequest(BaseModel):
+
+class IndicatorRequest(StrictModel):
     symbol: str
     indicator: str
     params: dict[str, Any] = {}

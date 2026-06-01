@@ -11,10 +11,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.schemas._base import StrictModel
 from app.schemas.institutional.filer import F13FilerResponse
 
 
-class F13SubscribeRequest(BaseModel):
+class F13SubscribeRequest(StrictModel):
     """POST /institutional/filers body.
 
     `cik` is the canonical 10-digit zero-padded form; service layer
@@ -53,7 +54,7 @@ class F13SubscriptionResponse(BaseModel):
 # ── Bulk subscribe ──────────────────────────────────────────────────────
 
 
-class F13BulkSubscribeRequestItem(BaseModel):
+class F13BulkSubscribeRequestItem(StrictModel):
     """One row in `POST /institutional/filers/bulk`.
 
     `cik` is required (the service normalises to 10-digit padded form;
@@ -66,7 +67,7 @@ class F13BulkSubscribeRequestItem(BaseModel):
     name: str | None = Field(default=None, max_length=255)
 
 
-class F13BulkSubscribeRequest(BaseModel):
+class F13BulkSubscribeRequest(StrictModel):
     """Bulk-subscribe up to 20 filers in one request.
 
     Validation rules (Pydantic):
@@ -114,7 +115,7 @@ class F13BulkSubscribeResponse(BaseModel):
 # ── Per-subscription preferences ────────────────────────────────────────
 
 
-class F13SubscriptionPreferencesUpdate(BaseModel):
+class F13SubscriptionPreferencesUpdate(StrictModel):
     """PATCH `/institutional/filers/{filer_id}/preferences` body.
 
     Currently a single-boolean toggle (notify_on_new_filing) but

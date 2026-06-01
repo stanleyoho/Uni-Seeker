@@ -2,8 +2,10 @@ import re
 
 from pydantic import BaseModel, field_validator
 
+from app.schemas._base import StrictModel
 
-class RegisterRequest(BaseModel):
+
+class RegisterRequest(StrictModel):
     email: str
     password: str
     username: str
@@ -35,7 +37,7 @@ class RegisterRequest(BaseModel):
         return v
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(StrictModel):
     email: str
     password: str
 

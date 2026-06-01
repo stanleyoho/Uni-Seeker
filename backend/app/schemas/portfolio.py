@@ -6,15 +6,17 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.schemas._base import StrictModel
 
-class PortfolioAllocationInput(BaseModel):
+
+class PortfolioAllocationInput(StrictModel):
     symbol: str
     weight: float
     strategy: str
     params: dict[str, object] = {}
 
 
-class PortfolioBacktestRequest(BaseModel):
+class PortfolioBacktestRequest(StrictModel):
     allocations: list[PortfolioAllocationInput]
     rebalance_mode: str = "none"
     rebalance_config: dict[str, object] = {}

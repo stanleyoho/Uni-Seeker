@@ -15,11 +15,12 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.models.enums import Market
+from app.schemas._base import StrictModel
 
 TradeAction = Literal["BUY", "SELL"]
 
 
-class TradeCreateRequest(BaseModel):
+class TradeCreateRequest(StrictModel):
     """POST /holdings/trades body.
 
     Phase 1 supports only BUY / SELL (spec §13 Phase 1 AC1).
@@ -38,7 +39,7 @@ class TradeCreateRequest(BaseModel):
     note: str | None = None
 
 
-class TradeUpdateRequest(BaseModel):
+class TradeUpdateRequest(StrictModel):
     """PATCH /holdings/trades/{id} body — every field optional.
 
     Per Q14.4 "全開放": any field on any trade may change. Service

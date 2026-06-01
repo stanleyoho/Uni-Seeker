@@ -13,6 +13,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.schemas._base import StrictModel
+
 RuleTypeLiteral = Literal[
     "POSITION_PRICE_DROP",
     "POSITION_PRICE_RISE",
@@ -25,7 +27,7 @@ StatusLiteral = Literal["ACTIVE", "PAUSED", "TRIGGERED"]
 ThresholdTypeLiteral = Literal["PCT", "ABSOLUTE"]
 
 
-class AlertRuleCreateRequest(BaseModel):
+class AlertRuleCreateRequest(StrictModel):
     """POST /holdings/alerts body.
 
     Validation:
@@ -44,7 +46,7 @@ class AlertRuleCreateRequest(BaseModel):
     market: str | None = Field(default=None, max_length=20)
 
 
-class AlertRuleUpdateRequest(BaseModel):
+class AlertRuleUpdateRequest(StrictModel):
     """PATCH /holdings/alerts/{id} — every field optional.
 
     Only ``name``, ``status``, ``threshold_value`` and ``threshold_type``

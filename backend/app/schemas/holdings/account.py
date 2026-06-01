@@ -13,9 +13,10 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import Market
+from app.schemas._base import StrictModel
 
 
-class AccountCreateRequest(BaseModel):
+class AccountCreateRequest(StrictModel):
     """POST /holdings/accounts body.
 
     `market` is required because the materialised `portfolio_accounts`
@@ -30,7 +31,7 @@ class AccountCreateRequest(BaseModel):
     description: str | None = None
 
 
-class AccountUpdateRequest(BaseModel):
+class AccountUpdateRequest(StrictModel):
     """PATCH /holdings/accounts/{id} body — every field optional."""
 
     name: str | None = Field(default=None, min_length=1, max_length=100)

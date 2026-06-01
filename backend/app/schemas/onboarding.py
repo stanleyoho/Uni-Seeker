@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas._base import StrictModel
 
-class KYCRequest(BaseModel):
+
+class KYCRequest(StrictModel):
     answers: list[int] = Field(
         ...,
         min_length=5,

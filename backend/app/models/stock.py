@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -9,6 +9,16 @@ from app.models.enums import Market, MarketType
 
 class Stock(Base):
     __tablename__ = "stocks"
+    __table_args__ = (
+        # UNI-PERF-001 (2026-06-01): scanner / screener / low-base
+        # endpoints filter on ``is_active`` every call; heatmap uses
+        # ``WHERE market = …`` to scope sectors. Both columns are
+        # low-cardinality but the seq-scans show up in pg_stat_statements
+        # on a warm cache. Mirrored in alembic so create_all (tests) and
+        # migrations (prod) stay in sync.
+        Index("ix_stocks_is_active", "is_active"),
+        Index("ix_stocks_market", "market"),
+    )
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     symbol: Mapped[str] = mapped_column(String(50), unique=True, index=True)

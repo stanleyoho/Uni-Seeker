@@ -8,10 +8,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas._base import StrictModel
+
 # ── Account ───────────────────────────────────────────────────────────────────
 
 
-class AccountCreate(BaseModel):
+class AccountCreate(StrictModel):
     name: str
     broker: str | None = None
     market: Literal["TW", "US", "CRYPTO"]
@@ -34,7 +36,7 @@ class AccountResponse(BaseModel):
 # ── Trade ─────────────────────────────────────────────────────────────────────
 
 
-class TradeCreate(BaseModel):
+class TradeCreate(StrictModel):
     symbol: str
     market: Literal["TW", "US", "CRYPTO"]
     action: Literal["BUY", "SELL", "DIVIDEND", "SPLIT"]
@@ -113,12 +115,12 @@ class AccountDetailResponse(BaseModel):
 # ── Group ─────────────────────────────────────────────────────────────────────
 
 
-class GroupMemberInput(BaseModel):
+class GroupMemberInput(StrictModel):
     account_id: int
     target_weight: Decimal | None = None
 
 
-class GroupCreate(BaseModel):
+class GroupCreate(StrictModel):
     name: str
     description: str | None = None
     base_currency: str = "TWD"
@@ -146,7 +148,7 @@ class GroupResponse(BaseModel):
 # ── Allocation Rule ───────────────────────────────────────────────────────────
 
 
-class AllocationRuleCreate(BaseModel):
+class AllocationRuleCreate(StrictModel):
     symbol: str
     target_weight: Decimal
     lower_threshold: Decimal = Decimal("0.03")

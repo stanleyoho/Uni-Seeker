@@ -219,8 +219,77 @@ async def create_group(body: GroupCreate, db: DbDep) -> GroupResponse:
 
 @router.get("/groups", response_model=list[GroupResponse])
 async def list_groups(db: DbDep) -> list[GroupResponse]:
-    groups = (await db.execute(select(AccountGroup))).scalars().all()
-    return [await _build_group_response(db, g) for g in groups]
+    """List every group with members materialised.
+
+    Performance note (audit fix): the previous implementation called
+    ``_build_group_response`` inside a list-comprehension which itself
+    ran 2 queries per group (members + accounts), yielding 1 + 2N
+    round-trips for N groups. For users with a dozen+ groups this added
+    noticeable latency on the Trade Journal landing page.
+
+    The batched version is 3 queries total: groups, all member rows
+    (one IN-clause across every group id), and all referenced accounts
+    (one IN-clause across the union of account ids). Group composition
+    is then assembled in Python — same wire shape, no behavioural change.
+    """
+    groups = list((await db.execute(select(AccountGroup))).scalars().all())
+    if not groups:
+        return []
+
+    group_ids = [g.id for g in groups]
+    member_rows = list(
+        (
+            await db.execute(
+                select(AccountGroupMember).where(AccountGroupMember.group_id.in_(group_ids))
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    members_by_group: dict[int, list[AccountGroupMember]] = {gid: [] for gid in group_ids}
+    for m in member_rows:
+        members_by_group[m.group_id].append(m)
+
+    account_ids = {m.account_id for m in member_rows}
+    accounts_map: dict[int, TradeAccount] = {}
+    if account_ids:
+        accounts_map = {
+            acc.id: acc
+            for acc in (
+                await db.execute(select(TradeAccount).where(TradeAccount.id.in_(list(account_ids))))
+            )
+            .scalars()
+            .all()
+        }
+
+    responses: list[GroupResponse] = []
+    for g in groups:
+        members: list[GroupMemberResponse] = []
+        for m in members_by_group.get(g.id, []):
+            acc = accounts_map.get(m.account_id)
+            if acc is None:
+                # Orphaned member (account deleted out-of-band) — drop
+                # silently, mirrors the same defensive branch in
+                # ``_build_group_response``.
+                continue
+            members.append(
+                GroupMemberResponse(
+                    account_id=m.account_id,
+                    target_weight=m.target_weight,
+                    account=AccountResponse.model_validate(acc),
+                )
+            )
+        responses.append(
+            GroupResponse(
+                id=g.id,
+                name=g.name,
+                description=g.description,
+                base_currency=g.base_currency,
+                members=members,
+            )
+        )
+    return responses
 
 
 @router.get("/groups/{group_id}", response_model=GroupResponse)

@@ -172,13 +172,18 @@ async def test_scan_does_not_500_on_zero_close_data(
     await _mk_stock_with_prices(db_session, "2330", "TSMC", [100.0 + i * 0.5 for i in range(60)])
     await _mk_stock_with_prices(db_session, "ZERO", "ZeroStock", [0.0] * 60)
 
-    # NOTE: the original failing payload also used `strategies` (not the
-    # canonical `strategy_keys`). Pydantic silently ignores unknown fields
-    # so the relevant behavior is independent of that typo — both shapes
-    # must succeed without crashing the batch.
+    # The original failing payload used `strategies` (typo) which the
+    # pre-StrictModel scanner silently dropped — that masked the
+    # underlying ZeroDivisionError until a healthy strategy ran on the
+    # all-zero ``closes`` array. With StrictModel that typo is now a
+    # 422 (good!), so this regression test uses the canonical field
+    # name ``strategy_keys`` with the real ``rsi_oversold`` strategy
+    # name (the indicator/strategy split landed post-2026-05-28) and
+    # asserts the **divide-by-zero crash is gone** — that is the bug
+    # this test was guarding against, independent of the input shape.
     resp = await client.post(
         "/api/v1/scanner/scan",
-        json={"strategies": ["rsi"], "limit": 5},
+        json={"strategy_keys": ["rsi_oversold"], "limit": 5},
     )
     assert resp.status_code == 200, resp.text
     data = resp.json()

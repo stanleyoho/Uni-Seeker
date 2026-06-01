@@ -16,8 +16,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.schemas._base import StrictModel
 
-class WatchlistAddRequest(BaseModel):
+
+class WatchlistAddRequest(StrictModel):
     symbol: str = Field(..., min_length=1, max_length=20)
 
 
@@ -35,7 +37,7 @@ class WatchlistItemResponse(BaseModel):
 # ── Bulk add (Round 6) ──────────────────────────────────────────────────────
 
 
-class WatchlistBulkAddRequest(BaseModel):
+class WatchlistBulkAddRequest(StrictModel):
     """Bulk-add up to 20 symbols in one request.
 
     Validation:
