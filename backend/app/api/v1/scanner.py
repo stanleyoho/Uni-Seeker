@@ -176,14 +176,23 @@ async def _persist_buy_fires(
             action = str(sig.get("action", ""))
             if action != "BUY":
                 continue
+            # ``sig`` is typed ``dict[str, object]`` on StockSignal, so each
+            # ``.get()`` returns ``object``. Coerce via ``str()`` first
+            # (handles None/0 sentinels) before float() to keep mypy happy.
+            raw_strength = sig.get("strength", 0.0)
+            strength_val = float(str(raw_strength)) if raw_strength is not None else 0.0
+            # SignalFire.fire_price is Mapped[float | None]; the underlying
+            # column is Numeric(12,4) so SA accepts float or Decimal at
+            # runtime, but the typed surface here is float.
+            fire_price_val: float | None = float(Decimal(str(price))) if price is not None else None
             new_rows.append(
                 SignalFire(
                     symbol=r.symbol,
                     name=r.name,
                     signal_type=str(sig.get("strategy", "")),
                     action=action,
-                    strength=float(sig.get("strength", 0.0) or 0.0),
-                    fire_price=(Decimal(str(price)) if price is not None else None),
+                    strength=strength_val,
+                    fire_price=fire_price_val,
                 )
             )
 

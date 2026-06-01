@@ -2306,6 +2306,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/signals/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Recent Signals
+         * @description Return the most recent BUY signals fired within ``lookback_hours``.
+         */
+        get: operations["get_recent_signals_api_v1_signals_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tw-institutional/top-net": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Top Net
+         * @description Top N stocks by net buy or net sell for the given date and kind.
+         */
+        get: operations["get_top_net_api_v1_tw_institutional_top_net_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tw-institutional/symbol/{symbol}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Symbol History
+         * @description Return the last N days of three-way net for a single stock.
+         */
+        get: operations["get_symbol_history_api_v1_tw_institutional_symbol__symbol__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/predictions/save": {
         parameters: {
             query?: never;
@@ -4756,6 +4816,36 @@ export interface components {
             /** Target Pct */
             target_pct: number | string;
         };
+        /**
+         * RecentSignalRow
+         * @description One entry in the recent-signals list.
+         */
+        RecentSignalRow: {
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Signal Type */
+            signal_type: string;
+            /**
+             * Fired At
+             * Format: date-time
+             */
+            fired_at: string;
+            /** Current Price */
+            current_price?: string | null;
+            /** Change Percent */
+            change_percent?: string | null;
+        };
+        /** RecentSignalsResponse */
+        RecentSignalsResponse: {
+            /** Signals */
+            signals: components["schemas"]["RecentSignalRow"][];
+            /** Grouped */
+            grouped: {
+                [key: string]: number;
+            };
+        };
         /** RegisterRequest */
         RegisterRequest: {
             /** Email */
@@ -5295,6 +5385,72 @@ export interface components {
             trade_date?: string | null;
             /** Note */
             note?: string | null;
+        };
+        /**
+         * TwInstitutionalDayRecord
+         * @description One day's three-way net for a single symbol (drill-down view).
+         */
+        TwInstitutionalDayRecord: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Foreign Net */
+            foreign_net: number;
+            /** Trust Net */
+            trust_net: number;
+            /** Dealer Net */
+            dealer_net: number;
+            /** Total Net */
+            total_net: number;
+        };
+        /**
+         * TwInstitutionalSymbolResponse
+         * @description Per-symbol history response for /tw-institutional/symbol/{symbol}.
+         */
+        TwInstitutionalSymbolResponse: {
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Data */
+            data: components["schemas"]["TwInstitutionalDayRecord"][];
+        };
+        /**
+         * TwInstitutionalTopNetResponse
+         * @description Leaderboard response for /tw-institutional/top-net.
+         */
+        TwInstitutionalTopNetResponse: {
+            /** Data */
+            data: components["schemas"]["TwInstitutionalTopRow"][];
+            /** Date */
+            date: string;
+            /** Kind */
+            kind: string;
+            /** Direction */
+            direction: string;
+            /**
+             * Message
+             * @description Set to a hint when ``data`` is empty (e.g. no DB rows).
+             */
+            message?: string | null;
+        };
+        /**
+         * TwInstitutionalTopRow
+         * @description One leaderboard row in the top-net response.
+         */
+        TwInstitutionalTopRow: {
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Net Amount */
+            net_amount: number;
+            /** Price */
+            price?: string | null;
+            /** Change Percent */
+            change_percent?: string | null;
         };
         /** UserResponse */
         UserResponse: {
@@ -9267,6 +9423,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StockSignalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recent_signals_api_v1_signals_recent_get: {
+        parameters: {
+            query?: {
+                /** @description Window in hours measured back from now (UTC). */
+                lookback_hours?: number;
+                /** @description Max number of signal rows to return. */
+                top?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentSignalsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_top_net_api_v1_tw_institutional_top_net_get: {
+        parameters: {
+            query?: {
+                /** @description ISO date (YYYY-MM-DD). Defaults to today (Taipei). */
+                date?: string | null;
+                /** @description foreign | trust | dealer | total */
+                kind?: string;
+                /** @description buy = top net buyers, sell = top net sellers. */
+                direction?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwInstitutionalTopNetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_symbol_history_api_v1_tw_institutional_symbol__symbol__get: {
+        parameters: {
+            query?: {
+                /** @description Trailing window length in calendar days. */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwInstitutionalSymbolResponse"];
                 };
             };
             /** @description Validation Error */
