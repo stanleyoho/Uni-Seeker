@@ -28,7 +28,12 @@
     "quickSearch": "Search",
     "backtestHistory": "History",
     "journal": "Journal",
-    "holdings": "Holdings"
+    "holdings": "Holdings",
+    "portfolioOverview": "Overview",
+    "accounts": "Accounts",
+    "groups": "Groups",
+    "journalLog": "Log",
+    "more": "More"
   },
   "holdings": {
     "title": "Holdings",

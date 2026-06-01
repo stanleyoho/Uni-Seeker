@@ -28,7 +28,12 @@
     "quickSearch": "搜尋",
     "backtestHistory": "歷史",
     "journal": "交易日誌",
-    "holdings": "持倉"
+    "holdings": "持倉",
+    "portfolioOverview": "總覽",
+    "accounts": "帳戶",
+    "groups": "群組",
+    "journalLog": "日誌",
+    "more": "更多"
   },
   "holdings": {
     "title": "持倉對賬",

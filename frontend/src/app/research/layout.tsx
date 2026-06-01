@@ -10,10 +10,26 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
   // into one Scan workflow (templates + condition builder + numeric
   // thresholds + tooltips). The standalone `/research/scanner` route now
   // redirects to `/research` — see `frontend/src/app/research/scanner/page.tsx`.
+  //
+  // Route-consolidation refactor: the `比較` tab no longer points to the
+  // sibling `/research/compare` route — that page is now a permanent
+  // redirect to `/research?tab=compare`. The CompareTabPanel is mounted
+  // by `/research/page.tsx` when `?tab=compare` is present. Low-Base
+  // stays as its own route because it has nested dynamic sub-routes
+  // (e.g. `/research/low-base/[symbol]`) that would be awkward to
+  // flatten into a single page-level switch.
   const tabs = [
-    { href: "/research", label: t.nav.scan ?? "掃描" },
+    {
+      href: "/research",
+      label: t.nav.scan ?? "掃描",
+      defaultWhenQueryMissing: true,
+    },
     { href: "/research/low-base", label: t.nav.lowBase },
-    { href: "/research/compare", label: t.nav.compare },
+    {
+      href: "/research?tab=compare",
+      label: t.nav.compare,
+      activeQuery: { key: "tab", value: "compare" },
+    },
   ];
 
   return (

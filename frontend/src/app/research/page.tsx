@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { useRunScan, type SignalAction, type ScanResult } from "@/hooks/use-scanner";
 import { SignalTable } from "@/app/scanner/components/signal-table";
 import { downloadCSV } from "@/lib/csv-export";
+import { CompareTabPanel } from "./components/compare-panel";
 
 import {
   TEMPLATES,
@@ -133,6 +135,17 @@ const ALL_ACTIONS: SignalAction[] = [
 ];
 
 export default function UnifiedResearchPage() {
+  // Route-consolidation: `/research/compare` was folded into this page
+  // via `?tab=compare`. We read the live query so we can multiplex
+  // which tab panel renders. Scan stays the default — any other
+  // `tab=` value (or no query string) falls through to the scan
+  // workflow below. We always render the page chrome
+  // (AmbientBackground + `<main>` padding) so the SubTabs strip in
+  // the layout sits above a consistent canvas regardless of which
+  // tab is active.
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab");
+
   const [form, setForm] = useState<FormState>(() => makeEmptyForm());
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [actionFilter, setActionFilter] = useState<SignalAction[]>([
@@ -176,6 +189,15 @@ export default function UnifiedResearchPage() {
     <div className="flex-1 bg-[var(--background)]">
       <AmbientBackground />
       <main className="relative z-10 max-w-[var(--page-max-width)] mx-auto px-[var(--page-padding)] md:px-[var(--page-padding-md)] py-6 animate-fade-in">
+        {/* Tab multiplex: `?tab=compare` renders CompareTabPanel
+            (extracted from the former `/research/compare` route);
+            anything else falls through to the scan workflow below.
+            The shared `<main>` chrome above keeps padding + ambient
+            backdrop identical across tabs. */}
+        {activeTab === "compare" ? (
+          <CompareTabPanel />
+        ) : (
+        <>
         {/* ---- Template picker row ---- */}
         <GlassPanel title="STRATEGY TEMPLATES">
           <div className="flex flex-wrap gap-2">
@@ -398,6 +420,8 @@ export default function UnifiedResearchPage() {
             </GlassPanel>
           </div>
         </div>
+        </>
+        )}
       </main>
     </div>
   );
