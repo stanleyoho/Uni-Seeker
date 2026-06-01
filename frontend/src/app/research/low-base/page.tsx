@@ -29,6 +29,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { getErrorMessage } from "@/lib/type-guards";
 import { AmbientBackground } from "@/components/stratos/ambient";
 import { QuoteRow } from "@/components/quote-row/QuoteRow";
+import { classifySentiment, type SentimentClassification } from "@/lib/sentiment";
 import type { LowBaseScore } from "@/lib/api-client";
 
 const OTHER_SECTOR_LABEL = "其他";
@@ -39,12 +40,24 @@ function sectorAnchor(name: string): string {
   return `sector-${encodeURIComponent(name)}`;
 }
 
-function scoreColor(score: number | string): string {
+/**
+ * Map the 0–100 low-base composite score onto the shared 5-level
+ * sentiment band. The legacy scoreColor() ramp (>=80 / >=60 / >=40 /
+ * else) used 4 buckets driven by `var(--stock-*)` tokens; we re-bucket
+ * to 5 levels so the visual language matches heatmap + scanner.
+ *
+ * Bucket borders chosen to preserve the legacy "≥80 = strongest signal"
+ * read: 80 → heated, 60 → up, 40 → flat, 20 → down, else → deep.
+ * Conceptually we feed (score − 50) into classifySentiment so a 0-100
+ * scale collapses onto its percent-band semantics.
+ */
+function scoreSentiment(score: number | string): SentimentClassification {
   const n = Number(score);
-  if (n >= 80) return "var(--stock-up)";
-  if (n >= 60) return "var(--accent-cyan, #00E5FF)";
-  if (n >= 40) return "var(--foreground)";
-  return "var(--text-secondary)";
+  if (!Number.isFinite(n)) return classifySentiment(null);
+  // Re-centre the 0-100 score on 50 and scale so ±30 lands at the
+  // ±1 "heated/deep" boundary of classifySentiment.
+  const recentred = (n - 50) / 30;
+  return classifySentiment(recentred);
 }
 
 interface SectorBucket {
@@ -204,32 +217,35 @@ export default function LowBasePage() {
                   </div>
                   <GlassPanel noPadding>
                     <ul className="flex flex-col">
-                      {s.rows.map((row, idx) => (
-                        <li
-                          key={row.symbol}
-                          className="flex items-center gap-2 border-b border-[var(--border-subtle)] last:border-b-0"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <QuoteRow
-                              symbol={row.symbol}
-                              name={row.name}
-                              // Price / change come from the scan endpoint's
-                              // `details` payload only sometimes; the scan
-                              // contract focuses on scores, not quotes —
-                              // QuoteRow renders em-dash for missing fields.
-                              href={`/stocks/${encodeURIComponent(row.symbol)}`}
-                              rank={idx + 1}
-                            />
-                          </div>
-                          <div
-                            className="shrink-0 pr-3 text-sm font-bold tabular-nums"
-                            style={{ color: scoreColor(row.total_score) }}
-                            aria-label={`${lb.totalScore} ${row.total_score}`}
+                      {s.rows.map((row, idx) => {
+                        const ss = scoreSentiment(row.total_score);
+                        return (
+                          <li
+                            key={row.symbol}
+                            className="flex items-center gap-2 border-b border-[var(--border-subtle)] last:border-b-0"
                           >
-                            {row.total_score}
-                          </div>
-                        </li>
-                      ))}
+                            <div className="flex-1 min-w-0">
+                              <QuoteRow
+                                symbol={row.symbol}
+                                name={row.name}
+                                // Price / change come from the scan endpoint's
+                                // `details` payload only sometimes; the scan
+                                // contract focuses on scores, not quotes —
+                                // QuoteRow renders em-dash for missing fields.
+                                href={`/stocks/${encodeURIComponent(row.symbol)}`}
+                                rank={idx + 1}
+                              />
+                            </div>
+                            <div
+                              className={`shrink-0 pr-3 text-sm font-bold tabular-nums inline-flex items-center gap-1 ${ss.colorClass}`}
+                              aria-label={`${lb.totalScore} ${row.total_score}`}
+                            >
+                              <span aria-hidden="true">{ss.emoji}</span>
+                              <span>{row.total_score}</span>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </GlassPanel>
                 </section>

@@ -21,6 +21,7 @@
 
 import Link from "next/link";
 import React from "react";
+import { classifySentiment } from "@/lib/sentiment";
 
 export type QuoteRowVariant = "default" | "compact";
 
@@ -183,16 +184,21 @@ export function QuoteRow({
     changeNum = (priceNum * pctNum) / 100;
   }
 
-  // Direction lock-step: pct drives the colour. If only abs change is
-  // known, fall back to that. Otherwise neutral.
-  const directionSource = pctNum ?? changeNum ?? 0;
-  const isUp = directionSource > 0;
-  const isDown = directionSource < 0;
-  const colorVar = isUp
-    ? "var(--stock-up)"
-    : isDown
-      ? "var(--stock-down)"
-      : "var(--text-muted)";
+  // Sentiment-driven colour band. The 5-level taxonomy lives in
+  // lib/sentiment.ts and is shared with the heatmap, scanner, and
+  // low-base ranking — every surface speaks the same signal language.
+  //
+  // When the percent is missing, we synthesize one from absolute change
+  // alone (price unknown), so a partial row still picks the right
+  // direction. NaN / null falls back to "平" (gray).
+  const directionPct =
+    pctNum ??
+    (changeNum !== null && priceNum !== null && priceNum !== 0
+      ? (changeNum / priceNum) * 100
+      : changeNum !== null
+        ? Math.sign(changeNum) * 0.0001 // sign-only fallback when price unknown
+        : null);
+  const sentiment = classifySentiment(directionPct);
 
   const priceText = priceNum !== null ? formatPrice(priceNum) : DASH;
   const changeText = changeNum !== null ? formatSignedFixed(changeNum) : DASH;
@@ -228,15 +234,22 @@ export function QuoteRow({
         <span className="tabular-nums text-[var(--foreground)] shrink-0">
           {priceText}
         </span>
-        <span
-          className="tabular-nums font-bold shrink-0"
-          style={{ color: colorVar }}
-        >
-          {changeText}
+        {/*
+          Sentiment emoji prefix keeps the row readable at-a-glance
+          even at 11px / for color-blind users. aria-hidden because
+          the level is already conveyed by the signed numbers below
+          (screen readers read the changeText as "+1.23" / "-0.4").
+        */}
+        <span aria-hidden="true" className="shrink-0 leading-none">
+          {sentiment.emoji}
         </span>
         <span
-          className="tabular-nums font-bold shrink-0"
-          style={{ color: colorVar }}
+          className={`tabular-nums font-bold shrink-0 ${sentiment.colorClass}`}
+        >
+          {sentiment.arrow} {changeText}
+        </span>
+        <span
+          className={`tabular-nums font-bold shrink-0 ${sentiment.colorClass}`}
         >
           {pctText}
         </span>
@@ -279,10 +292,14 @@ export function QuoteRow({
           {priceText}
         </span>
         <span
-          className="text-[11px] tabular-nums font-semibold"
-          style={{ color: colorVar }}
+          className={`text-[11px] tabular-nums font-semibold inline-flex items-center gap-1 ${sentiment.colorClass}`}
         >
-          {changeText} ({pctText})
+          <span aria-hidden="true" className="leading-none">
+            {sentiment.emoji}
+          </span>
+          <span>
+            {sentiment.arrow} {changeText} ({pctText})
+          </span>
         </span>
       </div>
     </RowAnchor>

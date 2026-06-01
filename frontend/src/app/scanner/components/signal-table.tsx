@@ -2,6 +2,7 @@
 
 import { type StockSignal, type SignalAction } from "@/hooks/use-scanner";
 import { QuoteRow } from "@/components/quote-row";
+import { classifySentiment } from "@/lib/sentiment";
 
 const ACTION_CONFIG: Record<SignalAction, { label: string; color: string; bg: string }> = {
   STRONG_BUY: { label: "STRONG BUY", color: "var(--stock-down)", bg: "rgba(0,200,83,0.1)" },
@@ -75,6 +76,12 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
           <tbody>
             {filtered.map((stock) => {
               const cfg = ACTION_CONFIG[stock.compositeAction];
+              // Score is a composite signal intensity (not a percent),
+              // but the 5-level taxonomy maps cleanly: |score|>=1 is
+              // a "heated" / "deep" conviction, the flat band absorbs
+              // near-zero noise. Sharing the helper keeps the visual
+              // vocabulary identical across heatmap, scanner, low-base.
+              const scoreSentiment = classifySentiment(stock.score);
               return (
                 <tr key={stock.symbol} className="border-b border-[var(--border-subtle)] hover:bg-[var(--card-hover)] transition-colors">
                   <td className="py-1.5 px-3 min-w-[200px]">
@@ -93,8 +100,9 @@ export function SignalTable({ stocks, actionFilter, onActionFilterChange }: Sign
                       {cfg.label}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-xs font-bold tabular-nums" style={{ color: stock.score > 0 ? "var(--stock-down)" : stock.score < 0 ? "var(--stock-up)" : "var(--text-muted)" }}>
-                    {stock.score > 0 ? "+" : ""}{stock.score.toFixed(2)}
+                  <td className={`py-2.5 px-3 text-right font-mono text-xs font-bold tabular-nums ${scoreSentiment.colorClass}`}>
+                    <span aria-hidden="true" className="mr-1">{scoreSentiment.emoji}</span>
+                    {scoreSentiment.arrow} {stock.score > 0 ? "+" : ""}{stock.score.toFixed(2)}
                   </td>
                   <td className="py-2.5 px-3">
                     <div className="flex flex-wrap gap-1">

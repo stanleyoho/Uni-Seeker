@@ -8,37 +8,47 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { useHeatmap } from "@/hooks/use-market-data";
 import { GlassPanel } from "@/components/stratos/primitives";
 import { QuoteRow } from "@/components/quote-row";
-
-function changeColor(pct: number): string {
-  if (pct > 3) return "bg-red-600/90";
-  if (pct > 1.5) return "bg-red-500/80";
-  if (pct > 0.5) return "bg-red-500/50";
-  if (pct > 0) return "bg-red-500/25";
-  if (pct === 0) return "bg-[var(--card-hover)]";
-  if (pct > -0.5) return "bg-green-500/25";
-  if (pct > -1.5) return "bg-green-500/50";
-  if (pct > -3) return "bg-green-500/80";
-  return "bg-green-600/90";
-}
+import { classifySentiment, type SentimentLevel } from "@/lib/sentiment";
 
 import { AmbientBackground } from "@/components/stratos/ambient";
 
+/**
+ * Per-level cell paint (border + fill). Spelled out as literal Tailwind
+ * class strings so the JIT sees every class — derived/concatenated
+ * class names would be tree-shaken at build time.
+ */
+const HEATMAP_CELL_PAINT: Record<SentimentLevel, { border: string; fill: string }> = {
+  "过热": { border: "border-t-red-500", fill: "bg-red-500/15" },
+  "上涨": { border: "border-t-orange-500", fill: "bg-orange-500/15" },
+  "平": { border: "border-t-gray-500", fill: "bg-gray-500/10" },
+  "下跌": { border: "border-t-sky-500", fill: "bg-sky-500/15" },
+  "深跌": { border: "border-t-purple-500", fill: "bg-purple-500/15" },
+};
+
 function SectorBlock({ sector, onClick }: { sector: HeatmapSector; onClick: (symbol: string) => void }) {
   const avgChange = parseFloat(sector.avg_change_percent);
+  // Today's intensity ramp was a green/red split (~9 buckets); replace
+  // with the shared 5-level taxonomy so heatmap cells, scanner rows,
+  // and low-base ranking speak the same signal language. Emoji prefix
+  // doubles as a color-blind cue.
+  const sentiment = classifySentiment(avgChange);
+  const paint = HEATMAP_CELL_PAINT[sentiment.level];
   const isUp = avgChange >= 0;
   const pctText = `${isUp ? "+" : ""}${avgChange.toFixed(2)}%`;
 
   return (
-    <GlassPanel 
-      noPadding 
-      className="flex flex-col h-full border-t-2" 
-      style={{ borderTopColor: changeColor(avgChange) }}
+    <GlassPanel
+      noPadding
+      className={`flex flex-col h-full border-t-4 ${paint.border}`}
     >
-      <div className="p-3 bg-gradient-to-b from-white/5 to-transparent">
+      <div className={`p-3 ${paint.fill} bg-gradient-to-b from-white/5 to-transparent`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[var(--foreground)] truncate pr-4">{sector.industry}</h3>
-          <span className="text-sm font-bold tabular-nums" style={{ color: isUp ? "var(--stock-up)" : "var(--stock-down)" }}>
-            {pctText}
+          <h3 className="text-sm font-bold text-[var(--foreground)] truncate pr-4">
+            <span aria-hidden="true" className="mr-1">{sentiment.emoji}</span>
+            {sector.industry}
+          </h3>
+          <span className={`text-sm font-bold tabular-nums ${sentiment.colorClass}`}>
+            {sentiment.arrow} {pctText}
           </span>
         </div>
         <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{sector.stock_count} STOCKS</p>
