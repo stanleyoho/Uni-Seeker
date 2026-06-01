@@ -30,7 +30,7 @@ logger = get_logger(component="etf_arbitrage")
 router = APIRouter(prefix="/etf-arbitrage", tags=["etf-arbitrage"])
 
 # The set of valid `type` query values. ``all`` short-circuits filtering.
-_TYPE_VALUES = ("all",) + ETF_TYPES
+_TYPE_VALUES = ("all", *ETF_TYPES)
 _TypeQuery = Literal["all", "股票型", "主動式", "債券型", "槓桿反向"]
 _DirectionQuery = Literal["all", "premium", "discount"]
 
@@ -46,7 +46,13 @@ async def list_etf_arbitrage(
     db: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[ETFArbitrageService, Depends(_get_service)],
     market: str = Query(default="TW", description="TW only for v1"),
-    type: _TypeQuery = Query(default="all", description="ETF type filter"),
+    # `type` shadows a Python builtin; use `type_filter` internally and
+    # expose the public query name via `alias`.
+    type_filter: _TypeQuery = Query(
+        default="all",
+        alias="type",
+        description="ETF type filter",
+    ),
     direction: _DirectionQuery = Query(default="all", description="premium / discount / all"),
     limit: int = Query(default=50, ge=1, le=500),
 ) -> ETFArbitrageListResponse:
@@ -60,7 +66,7 @@ async def list_etf_arbitrage(
     rows, stats, message = await service.list_etfs(
         db,
         market=market,
-        type_filter=type,
+        type_filter=type_filter,
         direction=direction,
         limit=limit,
     )

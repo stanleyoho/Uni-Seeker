@@ -189,7 +189,7 @@ class AutoSyncScheduler:
             symbol_id = etf.symbol.replace(".TW", "").replace(".TWO", "")
             try:
                 raw = await provider.fetch_etf_nav(stock_id=symbol_id, start_date=start)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("etf_nav_sync_skip", symbol=symbol_id, error=str(exc))
                 continue
             if raw:

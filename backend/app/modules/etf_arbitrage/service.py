@@ -160,9 +160,7 @@ class ETFArbitrageService:
             if price_row is None or nav is None or nav <= 0:
                 continue
             try:
-                premium = (
-                    (price_row.close - nav) / nav * Decimal("100")
-                ).quantize(Decimal("0.01"))
+                premium = ((price_row.close - nav) / nav * Decimal("100")).quantize(Decimal("0.01"))
             except (InvalidOperation, ZeroDivisionError):
                 continue
             etf_type = classify_etf_type(stock.name)
@@ -206,7 +204,10 @@ class ETFArbitrageService:
         *,
         market: str,
     ) -> list[Stock]:
-        markets = _TW_MARKETS if market.upper() == "TW" else _TW_MARKETS
+        # v1 only supports TW; the parameter is kept for forward-compat
+        # and the same universe applies regardless of the input value.
+        del market  # unused — explicit so reviewers see the intent
+        markets = _TW_MARKETS
         stmt = (
             select(Stock)
             .where(Stock.market.in_(markets))
@@ -268,7 +269,7 @@ class ETFArbitrageService:
                     stock_id=symbol_id,
                     start_date=start,
                 )
-            except Exception as exc:  # noqa: BLE001 — provider errors are non-fatal
+            except Exception as exc:
                 logger.warning(
                     "etf_arbitrage_nav_fetch_failed",
                     symbol=symbol_id,

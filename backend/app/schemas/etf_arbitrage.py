@@ -22,9 +22,7 @@ class ETFArbitrageRowSchema(BaseModel):
     premium_percent: str = Field(
         ..., description="(market_price - nav) / nav * 100, signed, e.g. '+1.41'"
     )
-    sentiment_level: str = Field(
-        ..., description="One of: 過熱 / 溢價 / 平價 / 折價 / 深折"
-    )
+    sentiment_level: str = Field(..., description="One of: 過熱 / 溢價 / 平價 / 折價 / 深折")
     volume_lots: int = Field(..., description="Trading volume in lots (千股)")
     trend: str | None = Field(None, description="Reserved for ▲▲▲ trend rendering")
 

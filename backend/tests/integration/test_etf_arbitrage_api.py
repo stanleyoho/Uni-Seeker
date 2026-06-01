@@ -123,9 +123,7 @@ def _override_service():
     return _set, app
 
 
-async def test_list_premium_math_and_shape(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_list_premium_math_and_shape(client: AsyncClient, db_session: AsyncSession) -> None:
     """Endpoint returns rows with expected premium% and correct shape."""
     # market = 90.40, nav = 89.14 → premium ~ +1.41%
     await _seed_etf(
@@ -149,7 +147,8 @@ async def test_list_premium_math_and_shape(
     resp = await client.get("/api/v1/etf-arbitrage/list")
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert "data" in body and "stats" in body
+    assert "data" in body
+    assert "stats" in body
     assert len(body["data"]) == 1
     row = body["data"][0]
     # Shape
@@ -182,9 +181,7 @@ async def test_list_premium_math_and_shape(
     assert stats["max_premium_etf"]["symbol"] == "00830"
 
 
-async def test_direction_filter_discount(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_direction_filter_discount(client: AsyncClient, db_session: AsyncSession) -> None:
     """direction=discount returns only rows with premium% < 0."""
     await _seed_etf(
         db_session,
@@ -248,9 +245,7 @@ async def test_type_filter_excludes_leveraged(
     assert "00633L" not in symbols
 
 
-async def test_empty_nav_returns_message(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_empty_nav_returns_message(client: AsyncClient, db_session: AsyncSession) -> None:
     """When FinMind returns no NAV data, response carries a message
     instead of fabricating zeros."""
     await _seed_etf(
