@@ -166,7 +166,7 @@ async def get_buffett_indicator(db: DbSession) -> BuffettIndicatorResponse:
             if raw is not None:
                 try:
                     candidate = Decimal(str(raw))
-                except Exception:  # noqa: BLE001  (defensive: bad numeric)
+                except Exception:
                     candidate = Decimal("0")
                 # Reject obvious garbage (sub-trillion) — likely missing
                 # shares_outstanding data — and stay on the fallback path.
@@ -239,7 +239,7 @@ async def get_market_temperature(db: DbSession) -> MarketTemperatureResponse:
         seen.add(row.symbol)
         try:
             latest_changes.append(Decimal(str(row.change_percent)))
-        except Exception:  # noqa: BLE001
+        except Exception:
             continue
         if latest_date is None and row.date is not None:
             latest_date = str(row.date)
@@ -253,9 +253,7 @@ async def get_market_temperature(db: DbSession) -> MarketTemperatureResponse:
         latest_date = _today_taipei()
     else:
         # Mean over the populated set, two-decimal quantize.
-        average = (sum(latest_changes) / Decimal(len(latest_changes))).quantize(
-            Decimal("0.01")
-        )
+        average = (sum(latest_changes) / Decimal(len(latest_changes))).quantize(Decimal("0.01"))
         index_count = len(latest_changes)
 
     score = _temperature_score(average).quantize(Decimal("0.01"))
