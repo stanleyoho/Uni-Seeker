@@ -18,7 +18,9 @@ test.describe("Homepage", () => {
     await expect(page.getByText("Uni-Seeker").first()).toBeVisible();
     await expect(page.locator('a[href="/portfolio"]').first()).toBeVisible();
     await expect(page.locator('a[href="/holdings"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/institutional"]').first()).toBeVisible();
+    // PR #119 demoted /institutional to overflow menu; assert /research
+    // (primary nav) instead so the smoke covers a still-prominent surface.
+    await expect(page.locator('a[href="/research"]').first()).toBeVisible();
   });
 
   test("navigates to /portfolio", async ({ page }) => {
