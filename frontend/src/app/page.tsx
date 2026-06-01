@@ -18,6 +18,12 @@ import type {
   HeatmapSector,
   HeatmapStock,
 } from "@/lib/api-client";
+import { SectorNarrativePopover } from "@/components/sector-narrative-popover";
+import {
+  getSectorNarrative,
+  getSectorLeadSentence,
+  hasSectorNarrative,
+} from "@/lib/sector-narratives";
 
 // ---------------------------------------------------------------------------
 // Region classification helpers (KPI row still needs TW vs US picking; the
@@ -303,19 +309,35 @@ function FocusTile({ rank, agg }: { rank: number; agg: SectorAggregate }) {
         overflow: "hidden",
       }}
     >
-      {/* rank chip */}
+      {/* rank chip + Ⓘ popover. The popover stops click propagation so it
+          doesn't accidentally trigger the FocusTile's parent <Link>
+          navigation when the user opens / closes the narrative. */}
       <div
         style={{
           position: "absolute",
-          top: 10,
-          right: 12,
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          color: "var(--text-muted, #9CA3AF)",
+          top: 8,
+          right: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        #{rank}
+        <SectorNarrativePopover
+          sectorName={agg.sector}
+          narrative={getSectorNarrative(agg.sector)}
+          href={sectorHref(agg.sector)}
+          side="bottom"
+        />
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            color: "var(--text-muted, #9CA3AF)",
+          }}
+        >
+          #{rank}
+        </span>
       </div>
 
       {/* big % */}
@@ -365,6 +387,26 @@ function FocusTile({ rank, agg }: { rank: number; agg: SectorAggregate }) {
           the prior 3-symbol strip when name data is missing on the top
           mover, so older heatmap fixtures still render something useful. */}
       <FocusTileTopMover agg={agg} />
+      {/* Theme lead sentence — only when we have a real narrative entry
+          (skip generic fallback to avoid teasing a placeholder). One line,
+          ellipsis-clamped to keep the FocusTile bounded; full text is in
+          the popover. */}
+      {hasSectorNarrative(agg.sector) && (
+        <div
+          title={getSectorLeadSentence(agg.sector)}
+          style={{
+            marginTop: 6,
+            fontSize: 10.5,
+            lineHeight: 1.4,
+            color: "var(--text-muted, #9CA3AF)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {getSectorLeadSentence(agg.sector)}
+        </div>
+      )}
     </Link>
   );
 }
@@ -557,8 +599,9 @@ function SectorTile({ agg }: { agg: SectorAggregate }) {
         overflow: "hidden",
       }}
     >
-      {/* sector name + count */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+      {/* sector name + count + narrative popover. Popover lives in the
+          right-side group so it doesn't fight the count chip for space. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <span
           style={{
             fontSize: 13,
@@ -571,16 +614,23 @@ function SectorTile({ agg }: { agg: SectorAggregate }) {
         >
           {agg.sector}
         </span>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--text-muted)",
-            flexShrink: 0,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {agg.companyCount}家
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <SectorNarrativePopover
+            sectorName={agg.sector}
+            narrative={getSectorNarrative(agg.sector)}
+            href={sectorHref(agg.sector)}
+            side="bottom"
+          />
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--text-muted)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {agg.companyCount}家
+          </span>
         </span>
       </div>
 
