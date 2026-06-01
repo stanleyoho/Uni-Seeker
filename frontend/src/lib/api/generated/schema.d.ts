@@ -1258,7 +1258,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Groups */
+        /**
+         * List Groups
+         * @description List every group with members materialised.
+         *
+         *     Performance note (audit fix): the previous implementation called
+         *     ``_build_group_response`` inside a list-comprehension which itself
+         *     ran 2 queries per group (members + accounts), yielding 1 + 2N
+         *     round-trips for N groups. For users with a dozen+ groups this added
+         *     noticeable latency on the Trade Journal landing page.
+         *
+         *     The batched version is 3 queries total: groups, all member rows
+         *     (one IN-clause across every group id), and all referenced accounts
+         *     (one IN-clause across the union of account ids). Group composition
+         *     is then assembled in Python — same wire shape, no behavioural change.
+         */
         get: operations["list_groups_api_v1_journal_groups_get"];
         put?: never;
         /** Create Group */
