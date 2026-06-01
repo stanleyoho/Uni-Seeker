@@ -10,6 +10,7 @@ import { OnboardingProvider } from "@/contexts/onboarding-context";
 import { OnboardingResetHook } from "@/components/onboarding/reset-button";
 import { WatchlistRail } from "@/components/watchlist/WatchlistRail";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { Footer } from "@/components/stratos/footer";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -55,6 +56,14 @@ export default function RootLayout({
                     </div>
                     <WatchlistRail />
                   </div>
+                  {/*
+                    Footer sits OUTSIDE the flex-1 content row so the
+                    single-screen dashboard above is unaffected; it
+                    appears at the bottom of the layout column (below
+                    the fold on dense pages, pinned-to-bottom on short
+                    pages) and never overlaps the watchlist rail.
+                  */}
+                  <Footer />
                   <CommandPalette />
                   <ServiceWorkerRegister />
                   <OnboardingResetHook />

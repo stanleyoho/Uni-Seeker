@@ -24,8 +24,10 @@ describe("QuoteRow", () => {
     expect(screen.getByText("2330")).toBeInTheDocument();
     expect(screen.getByText("台積電")).toBeInTheDocument();
     expect(screen.getByText("1,100.50")).toBeInTheDocument();
-    // abs change + percent rendered together on the right side
-    expect(screen.getByText("+12.50 (+1.15%)")).toBeInTheDocument();
+    // abs change + percent rendered together on the right side, now
+    // prefixed by the 5-level sentiment arrow (▲ for the +1.15% reading
+    // which lands in the 過熱 band ≥ +1%).
+    expect(screen.getByText("▲ +12.50 (+1.15%)")).toBeInTheDocument();
   });
 
   it("derives absolute change from price × percent when missing", () => {
@@ -38,7 +40,8 @@ describe("QuoteRow", () => {
         changePercent="2"
       />,
     );
-    expect(screen.getByText("+3.00 (+2.00%)")).toBeInTheDocument();
+    // +2.00% lands in 過熱 → ▲ prefix.
+    expect(screen.getByText("▲ +3.00 (+2.00%)")).toBeInTheDocument();
   });
 
   it("renders em-dash for missing fields (search / scanner gap)", () => {
@@ -69,7 +72,9 @@ describe("QuoteRow", () => {
     expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.getByText("Apple Inc.")).toBeInTheDocument();
     expect(screen.getByText("195.00")).toBeInTheDocument();
-    expect(screen.getByText("-2.50")).toBeInTheDocument();
+    // -1.27% lands in 深跌 → ▼ prefix on the abs-change cell.
+    // Compact variant renders abs change and pct as separate spans.
+    expect(screen.getByText("▼ -2.50")).toBeInTheDocument();
     expect(screen.getByText("-1.27%")).toBeInTheDocument();
   });
 
