@@ -14,6 +14,7 @@ Creates the four Phase 1 tables for the Portfolio Tracker module
 Phase 3 (portfolio_dividends) and Phase 4+ (holdings_snapshots) are
 intentionally deferred — they will get their own migrations.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -33,8 +34,12 @@ depends_on: str | Sequence[str] | None = None
 # does not DROP it (other tables still depend on it).
 def _market_enum() -> PgEnum:
     return PgEnum(
-        "TW_TWSE", "TW_TPEX", "US_NYSE", "US_NASDAQ",
-        name="market_enum", create_type=False,
+        "TW_TWSE",
+        "TW_TPEX",
+        "US_NYSE",
+        "US_NASDAQ",
+        name="market_enum",
+        create_type=False,
     )
 
 
@@ -44,25 +49,32 @@ def upgrade() -> None:
         "portfolio_accounts",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "user_id", sa.BigInteger,
+            "user_id",
+            sa.BigInteger,
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("market", _market_enum(), nullable=False),
         sa.Column(
-            "currency", sa.String(length=10),
-            nullable=False, server_default="TWD",
+            "currency",
+            sa.String(length=10),
+            nullable=False,
+            server_default="TWD",
         ),
         sa.Column("broker", sa.String(length=50), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
     )
     op.create_index(
-        "ix_portfolio_accounts_user_id", "portfolio_accounts", ["user_id"],
+        "ix_portfolio_accounts_user_id",
+        "portfolio_accounts",
+        ["user_id"],
     )
 
     # ── portfolio_trades ──────────────────────────────────────────────────
@@ -70,7 +82,8 @@ def upgrade() -> None:
         "portfolio_trades",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "account_id", sa.BigInteger,
+            "account_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -81,21 +94,29 @@ def upgrade() -> None:
         sa.Column("price", sa.Numeric(precision=24, scale=8), nullable=True),
         sa.Column("quantity", sa.Numeric(precision=24, scale=8), nullable=True),
         sa.Column(
-            "fee", sa.Numeric(precision=24, scale=8),
-            nullable=False, server_default="0",
+            "fee",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "tax", sa.Numeric(precision=24, scale=8),
-            nullable=False, server_default="0",
+            "tax",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column("note", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.CheckConstraint(
             "(price IS NULL) OR (price > 0)",
@@ -117,12 +138,14 @@ def upgrade() -> None:
         "portfolio_lots",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "trade_id", sa.BigInteger,
+            "trade_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_trades.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column(
-            "account_id", sa.BigInteger,
+            "account_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -132,8 +155,10 @@ def upgrade() -> None:
         sa.Column("remaining_qty", sa.Numeric(precision=24, scale=8), nullable=False),
         sa.Column("cost_per_unit", sa.Numeric(precision=24, scale=8), nullable=False),
         sa.Column(
-            "is_exhausted", sa.Boolean(),
-            nullable=False, server_default=sa.false(),
+            "is_exhausted",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.false(),
         ),
         sa.CheckConstraint(
             "original_qty > 0",
@@ -164,7 +189,8 @@ def upgrade() -> None:
         "portfolio_positions",
         sa.Column("id", sa.BigInteger, sa.Identity(always=True), primary_key=True),
         sa.Column(
-            "account_id", sa.BigInteger,
+            "account_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -172,25 +198,35 @@ def upgrade() -> None:
         sa.Column("market", _market_enum(), nullable=False),
         sa.Column("currency", sa.String(length=10), nullable=False),
         sa.Column(
-            "quantity", sa.Numeric(precision=24, scale=8),
-            nullable=False, server_default="0",
+            "quantity",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column("avg_cost_fifo", sa.Numeric(precision=24, scale=8), nullable=True),
         sa.Column("total_cost", sa.Numeric(precision=24, scale=8), nullable=True),
         sa.Column(
-            "realized_pnl", sa.Numeric(precision=24, scale=8),
-            nullable=False, server_default="0",
+            "realized_pnl",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+            server_default="0",
         ),
         sa.Column(
-            "is_closed", sa.Boolean(),
-            nullable=False, server_default=sa.false(),
+            "is_closed",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.false(),
         ),
         sa.Column(
-            "last_updated", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "last_updated",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint(
-            "account_id", "symbol", "market",
+            "account_id",
+            "symbol",
+            "market",
             name="uq_portfolio_positions_account_symbol_market",
         ),
         sa.CheckConstraint(

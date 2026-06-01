@@ -23,6 +23,7 @@ from app.modules.sync_manager.tasks.per_pbr import PerPbrSyncTask
 from app.modules.sync_manager.tasks.prices import PriceSyncTask
 from app.modules.sync_manager.tasks.revenue import RevenueSyncTask
 from app.modules.sync_manager.tasks.stock_info import StockInfoSyncTask
+from app.modules.sync_manager.tasks.tw_institutional import TwInstitutionalSyncTask
 from app.modules.sync_manager.tasks.valuation import ValuationSyncTask
 from app.obs.metrics import SYNC_TASK_FAILURES_TOTAL
 
@@ -43,6 +44,12 @@ _TASK_ORDER: list[str] = [
     "stock_info",
     "prices",
     "margin",
+    # tw_institutional (三大法人) — TWSE publishes ~17:00 Taipei. Placed
+    # right after margin so chip-data signals see a consistent trading
+    # day. Same per-stock FinMind cost profile as margin; placement keeps
+    # rate-budget pressure at the front of the chain so industry_aggregates
+    # and f13_filings still receive tail headroom.
+    "tw_institutional",
     "per_pbr",
     "revenue",
     "financials",
@@ -61,6 +68,7 @@ class SyncScheduler:
             "stock_info": StockInfoSyncTask(),
             "prices": PriceSyncTask(),
             "margin": MarginSyncTask(),
+            "tw_institutional": TwInstitutionalSyncTask(),
             "per_pbr": PerPbrSyncTask(),
             "revenue": RevenueSyncTask(),
             "financials": FinancialsSyncTask(),

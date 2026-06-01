@@ -23,6 +23,7 @@ user-wide row coexists with per-account rows on the same date. The
 daily snapshot job's UPSERT keeps "one user-wide row per day" true in
 practice.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -39,40 +40,55 @@ def upgrade() -> None:
     op.create_table(
         "holdings_snapshots",
         sa.Column(
-            "id", sa.BigInteger, sa.Identity(always=True), primary_key=True,
+            "id",
+            sa.BigInteger,
+            sa.Identity(always=True),
+            primary_key=True,
         ),
         sa.Column(
-            "user_id", sa.BigInteger,
+            "user_id",
+            sa.BigInteger,
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column(
-            "account_id", sa.BigInteger,
+            "account_id",
+            sa.BigInteger,
             sa.ForeignKey("portfolio_accounts.id", ondelete="CASCADE"),
             nullable=True,
         ),
         sa.Column("snapshot_date", sa.Date(), nullable=False),
         sa.Column(
-            "total_value", sa.Numeric(precision=24, scale=8), nullable=False,
-        ),
-        sa.Column(
-            "total_cost", sa.Numeric(precision=24, scale=8), nullable=False,
-        ),
-        sa.Column(
-            "total_unrealized_pnl", sa.Numeric(precision=24, scale=8),
+            "total_value",
+            sa.Numeric(precision=24, scale=8),
             nullable=False,
         ),
         sa.Column(
-            "realized_pnl_cum", sa.Numeric(precision=24, scale=8),
+            "total_cost",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+        ),
+        sa.Column(
+            "total_unrealized_pnl",
+            sa.Numeric(precision=24, scale=8),
+            nullable=False,
+        ),
+        sa.Column(
+            "realized_pnl_cum",
+            sa.Numeric(precision=24, scale=8),
             nullable=False,
         ),
         sa.Column("position_count", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.func.now(),
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.UniqueConstraint(
-            "user_id", "account_id", "snapshot_date",
+            "user_id",
+            "account_id",
+            "snapshot_date",
             name="uq_holdings_snapshots_user_account_date",
         ),
         sa.CheckConstraint(

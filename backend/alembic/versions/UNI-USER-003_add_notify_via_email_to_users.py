@@ -28,6 +28,7 @@ shape)? Two reasons:
 Phase-2 (LINE / Webhook) will revisit consolidation when the channel
 list outgrows columns.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa

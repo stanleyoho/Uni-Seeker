@@ -26,9 +26,11 @@ from app.api.v1.prices import router as prices_router
 from app.api.v1.revenue import router as revenue_router
 from app.api.v1.scanner import router as scanner_router
 from app.api.v1.screener import router as screener_router
+from app.api.v1.signals import router as signals_router
 from app.api.v1.stocks import router as stocks_router
 from app.api.v1.strategies import router as strategies_router
 from app.api.v1.sync import router as sync_router
+from app.api.v1.tw_institutional import router as tw_institutional_router
 from app.api.v1.valuation_models import router as valuation_models_router
 from app.api.v1.watchlist import router as watchlist_router
 from app.api.v1.ws import router as ws_router
@@ -62,6 +64,8 @@ v1_router.include_router(valuation_models_router)
 v1_router.include_router(backtest_jobs_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(scanner_router)
+v1_router.include_router(signals_router)
+v1_router.include_router(tw_institutional_router)
 v1_router.include_router(predictions_router)
 v1_router.include_router(billing_router)
 v1_router.include_router(watchlist_router)

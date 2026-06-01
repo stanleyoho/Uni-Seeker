@@ -15,6 +15,7 @@ Notes:
 - Rate-limited via EdgarRateLimiter to be polite to SEC.
 - ParseError / fetch error is *flagged* in the report, not mock-fixed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -91,9 +92,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                 return result
             if not hits:
                 result["status"] = "n/a"
-                result["errors"].append(
-                    f"no_13F-HR_filings_for_query={filer['name']!r}"
-                )
+                result["errors"].append(f"no_13F-HR_filings_for_query={filer['name']!r}")
                 return result
             # First hit by relevance.
             result["cik"] = hits[0].cik
@@ -106,9 +105,7 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
             )
         except Exception as exc:
             result["status"] = "fail"
-            result["errors"].append(
-                f"list_filings_error: {exc.__class__.__name__}: {exc}"
-            )
+            result["errors"].append(f"list_filings_error: {exc.__class__.__name__}: {exc}")
             return result
 
         result["filings_found"] = len(filings)
@@ -125,14 +122,11 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
             try:
                 xml = await client.fetch_filing_xml(filing.raw_xml_url)
             except EdgarTransientError as exc:
-                result["errors"].append(
-                    f"fetch_transient_{filing.accession_number}: {exc}"
-                )
+                result["errors"].append(f"fetch_transient_{filing.accession_number}: {exc}")
                 continue
             except Exception as exc:
                 result["errors"].append(
-                    f"fetch_error_{filing.accession_number}: "
-                    f"{exc.__class__.__name__}: {exc}"
+                    f"fetch_error_{filing.accession_number}: {exc.__class__.__name__}: {exc}"
                 )
                 continue
 
@@ -153,17 +147,14 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                 continue
             except Exception as exc:
                 result["errors"].append(
-                    f"parse_unexpected_{filing.accession_number}: "
-                    f"{exc.__class__.__name__}: {exc}"
+                    f"parse_unexpected_{filing.accession_number}: {exc.__class__.__name__}: {exc}"
                 )
                 continue
 
             summary = summarize_filing(holdings)
             result["filings_parsed_ok"] += 1
             result["holdings_parsed"] += len(holdings)
-            result["options_holdings"] += sum(
-                1 for h in holdings if h.put_call is not None
-            )
+            result["options_holdings"] += sum(1 for h in holdings if h.put_call is not None)
             if holdings:
                 result["filings_with_holdings"] += 1
                 parsed_per_filing.append(
@@ -179,23 +170,13 @@ async def smoke_run_filer(client: EdgarClient, filer: dict[str, Any]) -> dict[st
                 changes = compute_diff(prev, curr)
                 result["diff_summary"] = {
                     "NEW": sum(1 for c in changes if c.change_type.value == "NEW"),
-                    "INCREASED": sum(
-                        1 for c in changes if c.change_type.value == "INCREASED"
-                    ),
-                    "DECREASED": sum(
-                        1 for c in changes if c.change_type.value == "DECREASED"
-                    ),
-                    "EXITED": sum(
-                        1 for c in changes if c.change_type.value == "EXITED"
-                    ),
-                    "UNCHANGED": sum(
-                        1 for c in changes if c.change_type.value == "UNCHANGED"
-                    ),
+                    "INCREASED": sum(1 for c in changes if c.change_type.value == "INCREASED"),
+                    "DECREASED": sum(1 for c in changes if c.change_type.value == "DECREASED"),
+                    "EXITED": sum(1 for c in changes if c.change_type.value == "EXITED"),
+                    "UNCHANGED": sum(1 for c in changes if c.change_type.value == "UNCHANGED"),
                 }
             except Exception as exc:
-                result["errors"].append(
-                    f"diff_error: {exc.__class__.__name__}: {exc}"
-                )
+                result["errors"].append(f"diff_error: {exc.__class__.__name__}: {exc}")
 
         # 5. Final status: pass iff we have at least one filing parsed successfully
         # with holdings AND no fetch/parse errors at all.
@@ -227,11 +208,7 @@ def _print_report(results: list[dict[str, Any]]) -> tuple[int, int, int, int]:
     for r in results:
         status = str(r["status"]).upper()
         cik = r.get("cik") or "?"
-        resolved = (
-            f" (resolved={r['resolved_name']!r})"
-            if r.get("resolved_name")
-            else ""
-        )
+        resolved = f" (resolved={r['resolved_name']!r})" if r.get("resolved_name") else ""
         print(f"\n[{status}] {r['name']} (CIK {cik}){resolved}")
         print(f"  filings_found       : {r['filings_found']}")
         print(f"  filings_parsed_ok   : {r['filings_parsed_ok']}")
@@ -240,10 +217,7 @@ def _print_report(results: list[dict[str, Any]]) -> tuple[int, int, int, int]:
         print(f"  amendment_filings   : {r['amendment_filings']}")
         print(f"  options_holdings    : {r['options_holdings']}")
         if r["namespace_variants_seen"]:
-            print(
-                f"  xmlns variants seen : {len(r['namespace_variants_seen'])} "
-                f"unique URI(s)"
-            )
+            print(f"  xmlns variants seen : {len(r['namespace_variants_seen'])} unique URI(s)")
             for ns in sorted(r["namespace_variants_seen"]):
                 print(f"      - {ns}")
         if r["diff_summary"]:
@@ -262,10 +236,7 @@ def _print_report(results: list[dict[str, Any]]) -> tuple[int, int, int, int]:
 
     print()
     print("=" * 80)
-    print(
-        f"AGGREGATE: {passed} pass / {partial} partial / "
-        f"{failed} fail / {na} n/a"
-    )
+    print(f"AGGREGATE: {passed} pass / {partial} partial / {failed} fail / {na} n/a")
     print("=" * 80)
     return passed, partial, failed, na
 

@@ -4,6 +4,7 @@ Revision ID: UNI_BILL_002
 Revises: UNI_BILL_001
 Create Date: 2026-05-14
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa

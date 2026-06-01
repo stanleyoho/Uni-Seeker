@@ -4,6 +4,7 @@ Revision ID: UNI_COMP_001
 Revises: UNI_BILL_002
 Create Date: 2026-05-14
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -23,14 +24,21 @@ def upgrade() -> None:
     op.add_column("users", sa.Column("risk_tolerance", sa.String(20), nullable=True))
     op.add_column("users", sa.Column("kyc_completed_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("users", sa.Column("terms_accepted_version", sa.String(20), nullable=True))
-    op.add_column("users", sa.Column("terms_accepted_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column(
+        "users", sa.Column("terms_accepted_at", sa.DateTime(timezone=True), nullable=True)
+    )
 
     op.create_table(
         "user_devices",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", sa.BigInteger,
-                  sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column(
+            "user_id", sa.BigInteger, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        ),
         sa.Column("fingerprint_hash", sa.String(64), nullable=False),
         sa.Column("user_agent", sa.String(500), nullable=True),
         sa.Column("ip_address", sa.String(45), nullable=True),
@@ -44,13 +52,19 @@ def upgrade() -> None:
 
     op.create_table(
         "audit_logs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True,
-                  server_default=sa.text("gen_random_uuid()")),
-        sa.Column("created_at", sa.DateTime(timezone=True),
-                  nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("actor_type", sa.String(20), nullable=False, server_default="user"),
-        sa.Column("user_id", sa.BigInteger,
-                  sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "user_id", sa.BigInteger, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("action", sa.String(100), nullable=False),
         sa.Column("resource_type", sa.String(50), nullable=True),
         sa.Column("resource_id", sa.String(255), nullable=True),

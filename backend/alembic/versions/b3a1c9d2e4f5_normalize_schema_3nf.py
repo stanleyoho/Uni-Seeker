@@ -16,6 +16,7 @@ This migration:
 - Converts data types: revenue FLOAT->NUMERIC, tier->enum, market->enum
 - Creates composite indexes for performance
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -31,19 +32,26 @@ depends_on: str | Sequence[str] | None = None
 
 # ---------- Enum definitions ----------
 market_enum = postgresql.ENUM(
-    "TW_TWSE", "TW_TPEX", "US_NYSE", "US_NASDAQ",
+    "TW_TWSE",
+    "TW_TPEX",
+    "US_NYSE",
+    "US_NASDAQ",
     name="market_enum",
     create_type=False,
 )
 
 user_tier_enum = postgresql.ENUM(
-    "free", "basic", "pro",
+    "free",
+    "basic",
+    "pro",
     name="user_tier_enum",
     create_type=False,
 )
 
 notification_status_enum = postgresql.ENUM(
-    "pending", "success", "failed",
+    "pending",
+    "success",
+    "failed",
     name="notification_status_enum",
     create_type=False,
 )
@@ -64,8 +72,18 @@ def upgrade() -> None:
         "industries",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("name", sa.String(100), nullable=False, unique=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
     )
     op.create_index("ix_industries_name", "industries", ["name"])
 
@@ -96,10 +114,15 @@ def upgrade() -> None:
     op.create_unique_constraint("uq_users_username", "users", ["username"])
 
     # Add updated_at column
-    op.add_column("users", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "users",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
     # Convert tier from varchar to PG enum
     op.execute("""
@@ -119,11 +142,15 @@ def upgrade() -> None:
     """)
 
     # Add industry_id FK column
-    op.add_column("stocks", sa.Column(
-        "industry_id", sa.Integer(),
-        sa.ForeignKey("industries.id", ondelete="SET NULL"),
-        nullable=True,
-    ))
+    op.add_column(
+        "stocks",
+        sa.Column(
+            "industry_id",
+            sa.Integer(),
+            sa.ForeignKey("industries.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+    )
     op.create_index("ix_stocks_industry_id", "stocks", ["industry_id"])
 
     # Populate industry_id from existing industry text
@@ -163,8 +190,12 @@ def upgrade() -> None:
     # Make stock_id NOT NULL and add FK
     op.alter_column("stock_prices", "stock_id", nullable=False)
     op.create_foreign_key(
-        "fk_stock_prices_stock_id", "stock_prices",
-        "stocks", ["stock_id"], ["id"], ondelete="CASCADE",
+        "fk_stock_prices_stock_id",
+        "stock_prices",
+        "stocks",
+        ["stock_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
 
     # Drop old symbol and market columns
@@ -175,9 +206,7 @@ def upgrade() -> None:
     op.create_unique_constraint(
         "uq_stock_prices_stock_id_date", "stock_prices", ["stock_id", "date"]
     )
-    op.create_index(
-        "ix_stock_prices_stock_id_date", "stock_prices", ["stock_id", "date"]
-    )
+    op.create_index("ix_stock_prices_stock_id_date", "stock_prices", ["stock_id", "date"])
 
     # ============================================================
     # Phase 6: Stock valuations - replace symbol with stock_id FK
@@ -198,8 +227,12 @@ def upgrade() -> None:
 
     op.alter_column("stock_valuations", "stock_id", nullable=False)
     op.create_foreign_key(
-        "fk_stock_valuations_stock_id", "stock_valuations",
-        "stocks", ["stock_id"], ["id"], ondelete="CASCADE",
+        "fk_stock_valuations_stock_id",
+        "stock_valuations",
+        "stocks",
+        ["stock_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
 
     # Drop old columns
@@ -207,18 +240,21 @@ def upgrade() -> None:
     op.drop_column("stock_valuations", "industry")
 
     # Add updated_at
-    op.add_column("stock_valuations", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "stock_valuations",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
     # New indexes
     op.create_unique_constraint(
         "uq_stock_valuations_stock_id_date", "stock_valuations", ["stock_id", "date"]
     )
-    op.create_index(
-        "ix_stock_valuations_stock_id_date", "stock_valuations", ["stock_id", "date"]
-    )
+    op.create_index("ix_stock_valuations_stock_id_date", "stock_valuations", ["stock_id", "date"])
 
     # ============================================================
     # Phase 7: Margin trading - replace symbol with stock_id FK
@@ -239,25 +275,32 @@ def upgrade() -> None:
 
     op.alter_column("margin_trading", "stock_id", nullable=False)
     op.create_foreign_key(
-        "fk_margin_trading_stock_id", "margin_trading",
-        "stocks", ["stock_id"], ["id"], ondelete="CASCADE",
+        "fk_margin_trading_stock_id",
+        "margin_trading",
+        "stocks",
+        ["stock_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
 
     op.drop_column("margin_trading", "symbol")
 
     # Add updated_at
-    op.add_column("margin_trading", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "margin_trading",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
     # New indexes
     op.create_unique_constraint(
         "uq_margin_trading_stock_id_date", "margin_trading", ["stock_id", "date"]
     )
-    op.create_index(
-        "ix_margin_trading_stock_id_date", "margin_trading", ["stock_id", "date"]
-    )
+    op.create_index("ix_margin_trading_stock_id_date", "margin_trading", ["stock_id", "date"])
 
     # ============================================================
     # Phase 8: Monthly revenues - replace symbol with stock_id FK,
@@ -279,8 +322,12 @@ def upgrade() -> None:
 
     op.alter_column("monthly_revenues", "stock_id", nullable=False)
     op.create_foreign_key(
-        "fk_monthly_revenues_stock_id", "monthly_revenues",
-        "stocks", ["stock_id"], ["id"], ondelete="CASCADE",
+        "fk_monthly_revenues_stock_id",
+        "monthly_revenues",
+        "stocks",
+        ["stock_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
 
     # Drop old columns
@@ -289,7 +336,8 @@ def upgrade() -> None:
 
     # Convert revenue from FLOAT to NUMERIC(18,2)
     op.alter_column(
-        "monthly_revenues", "revenue",
+        "monthly_revenues",
+        "revenue",
         type_=sa.Numeric(18, 2),
         existing_type=sa.Float(),
         postgresql_using="revenue::numeric(18,2)",
@@ -297,14 +345,16 @@ def upgrade() -> None:
 
     # Convert growth columns from FLOAT to NUMERIC(10,4)
     op.alter_column(
-        "monthly_revenues", "mom_growth",
+        "monthly_revenues",
+        "mom_growth",
         type_=sa.Numeric(10, 4),
         existing_type=sa.Float(),
         existing_nullable=True,
         postgresql_using="mom_growth::numeric(10,4)",
     )
     op.alter_column(
-        "monthly_revenues", "yoy_growth",
+        "monthly_revenues",
+        "yoy_growth",
         type_=sa.Numeric(10, 4),
         existing_type=sa.Float(),
         existing_nullable=True,
@@ -312,10 +362,15 @@ def upgrade() -> None:
     )
 
     # Add updated_at
-    op.add_column("monthly_revenues", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "monthly_revenues",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
     # New UNIQUE and index
     op.create_unique_constraint(
@@ -342,16 +397,25 @@ def upgrade() -> None:
 
     op.alter_column("notification_rules", "user_id", nullable=False)
     op.create_foreign_key(
-        "fk_notification_rules_user_id", "notification_rules",
-        "users", ["user_id"], ["id"], ondelete="CASCADE",
+        "fk_notification_rules_user_id",
+        "notification_rules",
+        "users",
+        ["user_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
     op.create_index("ix_notification_rules_user_id", "notification_rules", ["user_id"])
 
     # Add updated_at
-    op.add_column("notification_rules", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "notification_rules",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
     # ============================================================
     # Phase 10: Notification logs - add user_id FK, status, updated_at
@@ -377,30 +441,48 @@ def upgrade() -> None:
 
     op.alter_column("notification_logs", "user_id", nullable=False)
     op.create_foreign_key(
-        "fk_notification_logs_user_id", "notification_logs",
-        "users", ["user_id"], ["id"], ondelete="CASCADE",
+        "fk_notification_logs_user_id",
+        "notification_logs",
+        "users",
+        ["user_id"],
+        ["id"],
+        ondelete="CASCADE",
     )
     op.create_index("ix_notification_logs_user_id", "notification_logs", ["user_id"])
 
     # Add FK on rule_id (was missing)
     op.create_foreign_key(
-        "fk_notification_logs_rule_id", "notification_logs",
-        "notification_rules", ["rule_id"], ["id"], ondelete="SET NULL",
+        "fk_notification_logs_rule_id",
+        "notification_logs",
+        "notification_rules",
+        ["rule_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_index("ix_notification_logs_rule_id", "notification_logs", ["rule_id"])
 
     # Add status column
-    op.add_column("notification_logs", sa.Column(
-        "status", notification_status_enum,
-        server_default="pending", nullable=False,
-    ))
+    op.add_column(
+        "notification_logs",
+        sa.Column(
+            "status",
+            notification_status_enum,
+            server_default="pending",
+            nullable=False,
+        ),
+    )
     op.create_index("ix_notification_logs_status", "notification_logs", ["status"])
 
     # Add updated_at
-    op.add_column("notification_logs", sa.Column(
-        "updated_at", sa.DateTime(timezone=True),
-        server_default=sa.text("now()"), nullable=False,
-    ))
+    op.add_column(
+        "notification_logs",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+    )
 
 
 def downgrade() -> None:
@@ -436,7 +518,9 @@ def downgrade() -> None:
     op.alter_column("monthly_revenues", "revenue", type_=sa.Float())
 
     # Re-add industry and symbol columns
-    op.add_column("monthly_revenues", sa.Column("industry", sa.String(50), server_default="", nullable=False))
+    op.add_column(
+        "monthly_revenues", sa.Column("industry", sa.String(50), server_default="", nullable=False)
+    )
     op.add_column("monthly_revenues", sa.Column("symbol", sa.String(20), nullable=True))
 
     op.execute("""
@@ -483,7 +567,9 @@ def downgrade() -> None:
     op.drop_constraint("uq_stock_valuations_stock_id_date", "stock_valuations", type_="unique")
     op.drop_column("stock_valuations", "updated_at")
 
-    op.add_column("stock_valuations", sa.Column("industry", sa.String(100), server_default="", nullable=False))
+    op.add_column(
+        "stock_valuations", sa.Column("industry", sa.String(100), server_default="", nullable=False)
+    )
     op.add_column("stock_valuations", sa.Column("symbol", sa.String(20), nullable=True))
     op.execute("""
         UPDATE stock_valuations sv
@@ -506,9 +592,14 @@ def downgrade() -> None:
     op.drop_index("ix_stock_prices_stock_id_date", table_name="stock_prices")
     op.drop_constraint("uq_stock_prices_stock_id_date", "stock_prices", type_="unique")
 
-    op.add_column("stock_prices", sa.Column(
-        "market", sa.String(20), nullable=True,
-    ))
+    op.add_column(
+        "stock_prices",
+        sa.Column(
+            "market",
+            sa.String(20),
+            nullable=True,
+        ),
+    )
     op.add_column("stock_prices", sa.Column("symbol", sa.String(20), nullable=True))
     op.execute("""
         UPDATE stock_prices sp
@@ -528,7 +619,9 @@ def downgrade() -> None:
     # ============================================================
     # Reverse Phase 4: stocks
     # ============================================================
-    op.add_column("stocks", sa.Column("industry", sa.String(100), server_default="", nullable=False))
+    op.add_column(
+        "stocks", sa.Column("industry", sa.String(100), server_default="", nullable=False)
+    )
     op.execute("""
         UPDATE stocks s
         SET industry = COALESCE(i.name, '')

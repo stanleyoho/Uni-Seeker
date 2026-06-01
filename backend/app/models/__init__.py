@@ -63,9 +63,11 @@ from app.models.price import StockPrice
 from app.models.price_estimate import PriceEstimate
 from app.models.processed_webhook_event import ProcessedWebhookEvent
 from app.models.revenue import MonthlyRevenue
+from app.models.signal_fire import SignalFire
 from app.models.signal_scan import SignalScanRecord
 from app.models.stock import Stock
 from app.models.sync_state import SyncState
+from app.models.tw_institutional import TwInstitutionalNet
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.valuation import StockValuation
@@ -95,6 +97,7 @@ __all__ = [
     "Position",
     "PriceEstimate",
     "ProcessedWebhookEvent",
+    "SignalFire",
     "SignalScanRecord",
     "Stock",
     "StockPrice",
@@ -103,6 +106,7 @@ __all__ = [
     "Trade",
     "TradeAccount",
     "TradeLot",
+    "TwInstitutionalNet",
     "User",
     "UserDevice",
     "UserTier",

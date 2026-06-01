@@ -39,6 +39,21 @@ class AutoSyncScheduler:
             replace_existing=True,
         )
 
+        # TW 三大法人 dedicated post-close pull at 17:35 — TWSE publishes
+        # at ~17:00, so we wait 30 min for upstream to settle then run
+        # *just* this task. Reason it's separate from daily_sync: if the
+        # earlier tasks (prices/financials) eat the FinMind rate budget,
+        # institutional flow STILL needs to land tonight so the morning
+        # pre-market signal board has fresh chip data. Two independent
+        # runs = two independent rate-budget evaluations.
+        self._scheduler.add_job(
+            self._tw_institutional_sync,
+            CronTrigger(hour=17, minute=35, timezone="Asia/Taipei"),
+            id="tw_institutional_postclose",
+            name="三大法人盤後同步",
+            replace_existing=True,
+        )
+
         # Catch-up sync every 2 hours (handles rate-limit interrupted runs)
         self._scheduler.add_job(
             self._catchup_sync,
@@ -89,6 +104,32 @@ class AutoSyncScheduler:
 
         async with async_session() as db:
             await self._sync.run_all_with_notify(db)
+
+    async def _tw_institutional_sync(self) -> None:
+        """Dedicated post-close 三大法人 sync — independent rate budget.
+
+        ``run_task`` already writes status + bumps Prometheus counter on
+        failure; the broad try/except here is belt-and-suspenders so an
+        outer crash still emits a log line instead of vanishing into the
+        APScheduler executor's exception swallow.
+        """
+        logger.info("auto_sync_tw_institutional_start")
+        from app.database import async_session
+
+        async with async_session() as db:
+            try:
+                result = await self._sync.run_task("tw_institutional", db)
+                logger.info(
+                    "auto_sync_tw_institutional_finished",
+                    records=result.records_synced,
+                    stocks=result.stocks_processed,
+                    stopped=result.stopped_reason,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.error(
+                    "auto_sync_tw_institutional_exception",
+                    error=str(exc),
+                )
 
     async def _catchup_sync(self) -> None:
         """Catch-up sync -- runs all tasks to handle rate-limit interrupted runs."""

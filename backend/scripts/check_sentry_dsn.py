@@ -7,6 +7,7 @@ Exit code policy:
 Intended for CI workflows guarding production deploy boxes; local
 pre-commit hooks should NOT run this (no DSN in dev is expected).
 """
+
 import os
 import sys
 

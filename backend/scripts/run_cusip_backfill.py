@@ -22,6 +22,7 @@ path unchanged.
 The script owns its DB transaction — single commit at the end. On any
 exception, the transaction is rolled back by the ``async with`` exit.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -85,33 +86,33 @@ async def main() -> None:
             OpenFigiClient,
             openfigi_api_key_from_env,
         )
+
         figi_ctx = OpenFigiClient(api_key=openfigi_api_key_from_env())
 
     async with async_session() as db:
+
         async def _do_backfill() -> dict[str, object]:
             if args.is_global:
                 if args.use_figi:
                     return dict(
                         await backfill_cusips_global_with_figi(
-                            db, figi_client=figi_ctx, limit=args.limit,
+                            db,
+                            figi_client=figi_ctx,
+                            limit=args.limit,
                         )
                     )
-                return dict(
-                    await backfill_cusips_global(db, args.limit)
-                )
+                return dict(await backfill_cusips_global(db, args.limit))
             if args.filer_id is not None:
                 if args.use_figi:
                     return dict(
                         await backfill_cusips_for_filer_with_figi(
-                            db, args.filer_id,
-                            figi_client=figi_ctx, limit=args.limit,
+                            db,
+                            args.filer_id,
+                            figi_client=figi_ctx,
+                            limit=args.limit,
                         )
                     )
-                return dict(
-                    await backfill_cusips_for_filer(
-                        db, args.filer_id, args.limit
-                    )
-                )
+                return dict(await backfill_cusips_for_filer(db, args.filer_id, args.limit))
             print("Specify --filer-id <id> or --global", file=sys.stderr)
             sys.exit(2)
 
