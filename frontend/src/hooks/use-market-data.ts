@@ -14,6 +14,8 @@ import {
   fetchInstitutional,
   fetchValuationEstimates,
   fetchAiCommentary,
+  fetchBuffettIndicator,
+  fetchMarketTemperature,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -40,6 +42,29 @@ export function useHeatmap(marketFilter?: string) {
     queryKey: queryKeys.market.heatmap(marketFilter),
     queryFn: () => fetchHeatmapData(marketFilter),
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+// Macro mini-widgets — refreshed every 5 min (matches backend cache TTL).
+// Buffett ratio barely moves intra-day; temperature follows the index
+// basket which the KPI row already auto-refreshes at 1 min, but we cap
+// both at 5 min to avoid pinging the macro endpoints unnecessarily.
+
+export function useBuffettIndicator() {
+  return useQuery({
+    queryKey: queryKeys.market.buffett(),
+    queryFn: fetchBuffettIndicator,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+}
+
+export function useMarketTemperature() {
+  return useQuery({
+    queryKey: queryKeys.market.temperature(),
+    queryFn: fetchMarketTemperature,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 

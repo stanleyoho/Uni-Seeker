@@ -8,6 +8,11 @@ import {
   useMarketIndices,
   useHeatmap,
 } from "@/hooks/use-market-data";
+import {
+  BuffettIndicatorTile,
+  MarketTemperatureTile,
+  RankingsPanel,
+} from "@/components/home-widgets";
 import { LoadingSpinner } from "@/components/ui/loading";
 import {
   PreMarketSignalRow,
@@ -681,15 +686,15 @@ function SectorCardGrid({
     [aggregates],
   );
 
-  // Cap at 12 (4×3) to honor the single-screen budget; remainder lives on
-  // /heatmap. The "see all" link gives users a hop point.
-  const visible = sorted.slice(0, 12);
+  // W4-C: shrunk to 6 tiles (1 row × 6 cols on lg) to make room for the
+  // new Macro row + RankingsPanel. Full grid lives on /heatmap.
+  const visible = sorted.slice(0, 6);
 
   return (
     <GlassPanel
-      className="flex flex-col min-h-0 flex-1"
+      className="flex flex-col min-h-0"
       noPadding
-      style={{ padding: 14 }}
+      style={{ padding: 14, flexShrink: 0 }}
     >
       <div
         style={{
@@ -736,9 +741,9 @@ function SectorCardGrid({
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 auto-rows-fr">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 auto-rows-fr">
         {isLoading || visible.length === 0
-          ? Array.from({ length: 12 }).map((_, i) => (
+          ? Array.from({ length: 6 }).map((_, i) => (
               <SectorTileSkeleton key={i} />
             ))
           : visible.map((agg) => (
@@ -752,18 +757,21 @@ function SectorCardGrid({
 // ---------------------------------------------------------------------------
 // Main single-screen dashboard
 //
-// Layout budget @ 1440x900 viewport (post-refactor):
+// Layout budget @ 1440x900 viewport (W4-C revision: + macro tiles, + rankings,
+// sector grid shrunk to 1 row):
 //   - StratosHeader (sticky)          64px  (layout-owned)
 //   - TickerStrip   (sticky)          40px  (layout-owned)
 //   ─────────────────────────────────────  remaining ≈ 796px for this page
 //   - py-3 padding                    24px
 //   - MarketStatusBar                 28px
+//   - Macro row (Buffett+Temp, 2-col)  80px
 //   - KPI row (5 tiles, h-[104px])   104px
-//   - gap (between blocks: 12*3)      36px
-//   - HotSectorsRow header           ~22px
-//   - HotSectorsRow tiles             120px
-//   - SectorCardGrid (fills rest)    ~430px
-//   - Total ≈ 764px  ✓ fits inside 796px.
+//   - HotSectorsRow (header+tiles)   ~142px
+//   - RankingsPanel (3-col x 5 rows) ~220px
+//   - SectorCardGrid (1 row, 6 tiles)~110px
+//   - gap (5 × 12px)                  60px
+//   ─────────────────────────────────
+//   - Total ≈ 768px  ✓ fits inside 796px.
 //
 // Hard rule: root flex column owns the screen height (h-screen on the outer
 // wrapper is provided via the layout's flex-col + flex-1); within this page
@@ -810,7 +818,16 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-3 mt-3">
-            {/* -- 1. KPI Row: 5 indices (加權指數 / 櫃買 / NASDAQ / DJIA / S&P), identical tile size -- */}
+            {/* -- 1a. Macro mini-widgets: Buffett Indicator + Market Temperature -- */}
+            <div
+              className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+              style={{ flexShrink: 0 }}
+            >
+              <BuffettIndicatorTile />
+              <MarketTemperatureTile />
+            </div>
+
+            {/* -- 1b. KPI Row: 5 indices (加權指數 / 櫃買 / NASDAQ / DJIA / S&P), identical tile size -- */}
             <div
               className="grid grid-cols-2 lg:grid-cols-5 gap-3"
               style={{ flexShrink: 0 }}
@@ -854,7 +871,11 @@ export default function HomePage() {
             {/* -- 2. HotSectorsRow: top 3 hottest sectors -- */}
             <HotSectorsRow aggregates={aggregates} isLoading={heatmapLoading} />
 
-            {/* -- 3. SectorCardGrid: 4-col grid of every sector -- */}
+            {/* -- 3. RankingsPanel: 漲幅 / 跌幅 / 成交量 top-5 each -- */}
+            <RankingsPanel />
+
+            {/* -- 4. SectorCardGrid: 1-row of 6 sectors (shrunken from 12).
+                   Full grid lives on /heatmap per W4-A demotion. -- */}
             <SectorCardGrid aggregates={aggregates} isLoading={heatmapLoading} />
           </div>
         )}

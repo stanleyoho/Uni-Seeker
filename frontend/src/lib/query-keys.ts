@@ -6,6 +6,8 @@ export const queryKeys = {
       [...queryKeys.market.all, "movers", filter] as const,
     heatmap: (filter?: string) =>
       [...queryKeys.market.all, "heatmap", filter] as const,
+    buffett: () => [...queryKeys.market.all, "buffett"] as const,
+    temperature: () => [...queryKeys.market.all, "temperature"] as const,
   },
   stocks: {
     all: ["stocks"] as const,
