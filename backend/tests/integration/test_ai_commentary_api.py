@@ -33,7 +33,7 @@ async def _seed_series(
     for i in range(days):
         d = base_date - timedelta(days=days - 1 - i)
         # Mild +0.5% daily drift so RSI lands in the bullish band.
-        close = start_close * (1.005 ** i)
+        close = start_close * (1.005**i)
         prev_close = start_close * (1.005 ** (i - 1)) if i > 0 else close
         change = close - prev_close
         chg_pct = (change / prev_close * 100) if prev_close else 0.0
@@ -70,14 +70,10 @@ async def test_ai_commentary_404_when_no_prices(
     # Global error handler shapes the body as { error, message, ... }; the
     # original FastAPI `detail` lands in `message`.
     body = resp.json()
-    assert "No price data" in body.get("message", "") or "No price data" in body.get(
-        "detail", ""
-    )
+    assert "No price data" in body.get("message", "") or "No price data" in body.get("detail", "")
 
 
-async def test_ai_commentary_full_response(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_ai_commentary_full_response(client: AsyncClient, db_session: AsyncSession) -> None:
     ind = Industry(name="半導體業")
     db_session.add(ind)
     await db_session.commit()
@@ -140,12 +136,7 @@ async def test_ai_commentary_sector_hot_branch(
     await _seed_series(db_session, tsmc, days=40, start_close=800.0)
     # Make sure today's row for 2330 has a big positive change_percent.
     # The series builder already gave us +0.5% daily; we re-stamp today.
-    today_row_q = await db_session.execute(
-        # use raw SQL-equivalent via ORM
-        StockPrice.__table__.select()
-        .where(StockPrice.stock_id == tsmc.id)
-        .where(StockPrice.date == target)
-    )
+    # (Probe-execute removed — the assertion below covers what mattered.)
     # Add a strong dragger today for 紡織業 with negative change_percent.
     db_session.add(
         StockPrice(

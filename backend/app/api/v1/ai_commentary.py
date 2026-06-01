@@ -143,8 +143,6 @@ async def get_ai_commentary(
         return AiCommentaryResponse(**cached)
 
     closes = [float(p.close) for p in series_rows]
-    highs = [float(p.high) for p in series_rows]
-    lows = [float(p.low) for p in series_rows]
     volumes = [int(p.volume or 0) for p in series_rows]
 
     # MA20 + 20-day average volume — computed inline, no indicator call needed.

@@ -99,7 +99,9 @@ def _price_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySourc
     direction = "上漲" if change >= 0 else "下跌"
     sign = "+" if change >= 0 else ""
 
-    parts = [f"{ctx.symbol} 今日收盤 {ctx.close:.2f}，{direction} {abs(change):.2f} ({sign}{pct:.2f}%)"]
+    parts = [
+        f"{ctx.symbol} 今日收盤 {ctx.close:.2f}，{direction} {abs(change):.2f} ({sign}{pct:.2f}%)"
+    ]
 
     if ctx.high is not None and ctx.low is not None:
         parts.append(f"，盤中區間 {ctx.low:.2f}–{ctx.high:.2f}")
@@ -113,7 +115,9 @@ def _price_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySourc
         else:
             parts.append("，量能接近 20 日均量水準")
 
-    source = CommentarySource(kind="price", detail=f"close={ctx.close:.2f}, prev={ctx.prev_close:.2f}")
+    source = CommentarySource(
+        kind="price", detail=f"close={ctx.close:.2f}, prev={ctx.prev_close:.2f}"
+    )
     return "".join(parts) + "。", source, 1.0
 
 
@@ -148,7 +152,11 @@ def _rsi_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySource 
         state = "偏弱區間，賣壓尚未停歇"
     else:
         state = "超賣區間，短線可留意反彈機會"
-    return f"RSI 為 {ctx.rsi:.1f}，處於{state}。", CommentarySource(kind="rsi", detail=f"RSI={ctx.rsi:.1f}"), 0.8
+    return (
+        f"RSI 為 {ctx.rsi:.1f}，處於{state}。",
+        CommentarySource(kind="rsi", detail=f"RSI={ctx.rsi:.1f}"),
+        0.8,
+    )
 
 
 def _macd_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySource | None, float]:
@@ -161,10 +169,16 @@ def _macd_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySource
         msg = "MACD 位於訊號線下方，柱狀體為負，動能偏空"
     else:
         msg = "MACD 與訊號線糾結，動能尚未明朗"
-    return msg + "。", CommentarySource(kind="macd", detail=f"MACD={ctx.macd:.3f}, signal={ctx.macd_signal:.3f}"), 0.7
+    return (
+        msg + "。",
+        CommentarySource(kind="macd", detail=f"MACD={ctx.macd:.3f}, signal={ctx.macd_signal:.3f}"),
+        0.7,
+    )
 
 
-def _bollinger_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySource | None, float]:
+def _bollinger_sentence(
+    ctx: CommentaryContext,
+) -> tuple[str | None, CommentarySource | None, float]:
     if ctx.close is None or ctx.bb_upper is None or ctx.bb_lower is None:
         return None, None, 0.0
     if ctx.close >= ctx.bb_upper:
@@ -178,7 +192,13 @@ def _bollinger_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentaryS
             msg = "股價位於布林通道下半部，趨勢偏弱"
     else:
         msg = "股價位於布林通道內部"
-    return msg + "。", CommentarySource(kind="bb", detail=f"close={ctx.close:.2f} in [{ctx.bb_lower:.2f}, {ctx.bb_upper:.2f}]"), 0.6
+    return (
+        msg + "。",
+        CommentarySource(
+            kind="bb", detail=f"close={ctx.close:.2f} in [{ctx.bb_lower:.2f}, {ctx.bb_upper:.2f}]"
+        ),
+        0.6,
+    )
 
 
 def _sector_sentence(ctx: CommentaryContext) -> tuple[str | None, CommentarySource | None, float]:

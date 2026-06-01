@@ -483,6 +483,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{symbol}/ai-commentary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ai Commentary
+         * @description Return today's deterministic AI commentary for a stock.
+         *
+         *     Cached for 4h. Falls back gracefully when indicators or sector
+         *     context are unavailable (e.g. short price series, missing industry).
+         */
+        get: operations["get_ai_commentary_api_v1_stocks__symbol__ai_commentary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/financial-metrics/{symbol}": {
         parameters: {
             query?: never;
@@ -2692,6 +2715,29 @@ export interface components {
             description?: string | null;
         };
         /**
+         * AiCommentaryResponse
+         * @description Daily AI commentary for a single stock.
+         *
+         *     `confidence` is the share of signals that contributed to the
+         *     narrative (weighted). Below ~0.5 callers should surface a
+         *     "data sparse" UI hint.
+         */
+        AiCommentaryResponse: {
+            /** Symbol */
+            symbol: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Commentary */
+            commentary: string;
+            /** Confidence */
+            confidence: number;
+            /** Sources */
+            sources?: components["schemas"]["CommentarySourceSchema"][];
+        };
+        /**
          * AlertEvaluationResponse
          * @description POST /holdings/alerts/{id}/evaluate body.
          */
@@ -3139,6 +3185,22 @@ export interface components {
         CheckoutResponse: {
             /** Checkout Url */
             checkout_url: string;
+        };
+        /**
+         * CommentarySourceSchema
+         * @description A single factual source surfaced for transparency.
+         */
+        CommentarySourceSchema: {
+            /**
+             * Kind
+             * @description Source kind, e.g. price/rsi/macd/bb/sector/patterns
+             */
+            kind: string;
+            /**
+             * Detail
+             * @description Human-readable summary of the underlying number
+             */
+            detail: string;
         };
         /** CompositeBacktestRequest */
         CompositeBacktestRequest: {
@@ -6511,6 +6573,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StockSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ai_commentary_api_v1_stocks__symbol__ai_commentary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiCommentaryResponse"];
                 };
             };
             /** @description Validation Error */

@@ -129,9 +129,15 @@ def test_rsi_bands() -> None:
 
 def test_macd_directions() -> None:
     base = CommentaryContext(symbol="X", close=100.0, prev_close=99.0)
-    bull = CommentaryContext(**{**base.__dict__, "macd": 2.0, "macd_signal": 1.0, "macd_histogram": 1.0})
-    bear = CommentaryContext(**{**base.__dict__, "macd": -1.0, "macd_signal": 0.5, "macd_histogram": -1.5})
-    mixed = CommentaryContext(**{**base.__dict__, "macd": 1.0, "macd_signal": 1.0, "macd_histogram": 0.0})
+    bull = CommentaryContext(
+        **{**base.__dict__, "macd": 2.0, "macd_signal": 1.0, "macd_histogram": 1.0}
+    )
+    bear = CommentaryContext(
+        **{**base.__dict__, "macd": -1.0, "macd_signal": 0.5, "macd_histogram": -1.5}
+    )
+    mixed = CommentaryContext(
+        **{**base.__dict__, "macd": 1.0, "macd_signal": 1.0, "macd_histogram": 0.0}
+    )
 
     assert "動能偏多" in compose_commentary(bull)[0]
     assert "動能偏空" in compose_commentary(bear)[0]
@@ -141,10 +147,18 @@ def test_macd_directions() -> None:
 def test_bollinger_bands() -> None:
     base = CommentaryContext(symbol="X", close=100.0, prev_close=99.0)
 
-    upper_touch = CommentaryContext(**{**base.__dict__, "close": 120.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0})
-    lower_touch = CommentaryContext(**{**base.__dict__, "close": 80.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0})
-    upper_half = CommentaryContext(**{**base.__dict__, "close": 110.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0})
-    lower_half = CommentaryContext(**{**base.__dict__, "close": 90.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0})
+    upper_touch = CommentaryContext(
+        **{**base.__dict__, "close": 120.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0}
+    )
+    lower_touch = CommentaryContext(
+        **{**base.__dict__, "close": 80.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0}
+    )
+    upper_half = CommentaryContext(
+        **{**base.__dict__, "close": 110.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0}
+    )
+    lower_half = CommentaryContext(
+        **{**base.__dict__, "close": 90.0, "bb_upper": 120.0, "bb_lower": 80.0, "bb_middle": 100.0}
+    )
 
     assert "過熱風險" in compose_commentary(upper_touch)[0]
     assert "跌深可能" in compose_commentary(lower_touch)[0]
@@ -153,9 +167,7 @@ def test_bollinger_bands() -> None:
 
 
 def test_sector_only_when_top3() -> None:
-    base = CommentaryContext(
-        symbol="2330.TW", close=900.0, prev_close=890.0, industry="半導體業"
-    )
+    base = CommentaryContext(symbol="2330.TW", close=900.0, prev_close=890.0, industry="半導體業")
     not_hot = CommentaryContext(**{**base.__dict__, "sector_is_hot_top3": False})
     is_hot = CommentaryContext(
         **{
