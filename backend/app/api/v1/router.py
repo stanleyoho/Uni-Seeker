@@ -15,6 +15,7 @@ from app.api.v1.indicators import router as indicators_router
 from app.api.v1.institutional import router as institutional_router
 from app.api.v1.journal import router as journal_router
 from app.api.v1.low_base import router as low_base_router
+from app.api.v1.macro import router as macro_router
 from app.api.v1.margin import router as margin_router
 from app.api.v1.market import router as market_router
 from app.api.v1.me_audit import router as me_audit_router
@@ -59,6 +60,7 @@ v1_router.include_router(low_base_router)
 v1_router.include_router(margin_router)
 v1_router.include_router(company_router)
 v1_router.include_router(market_router)
+v1_router.include_router(macro_router)
 v1_router.include_router(heatmap_router)
 v1_router.include_router(institutional_router)
 v1_router.include_router(journal_router)

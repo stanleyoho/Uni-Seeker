@@ -154,6 +154,41 @@ export type MarketIndex = Schemas["MarketIndex"];
 export type MarketMover = Schemas["MarketMover"];
 export type MarketMoversResponse = Schemas["MarketMoversResponse"];
 
+// --- Macro (Buffett Indicator + Market Temperature) ---
+//
+// Handwritten because the generated schema lags behind these two new
+// endpoints until the next `npm run gen:api-types` run. Shape mirrors
+// `app/schemas/macro.py` exactly — when the gate regen lands these can
+// migrate to `Schemas["BuffettIndicatorResponse"]` / `Schemas["MarketTemperatureResponse"]`.
+
+export type BuffettLabel =
+  | "極度低估"
+  | "低估"
+  | "合理"
+  | "高估"
+  | "極度高估";
+
+export interface BuffettIndicatorResponse {
+  /** Ratio in percent, e.g. "294.12" (Decimal-as-string). */
+  ratio: string;
+  label: BuffettLabel;
+  historical_extreme: boolean;
+  source_date: string;
+  gdp_source: string;
+  market_cap_source: string;
+}
+
+export type TemperatureLabel = "冷" | "正常" | "熱";
+
+export interface MarketTemperatureResponse {
+  /** 0-100 score (Decimal-as-string). */
+  score: string;
+  label: TemperatureLabel;
+  average_change_percent: string;
+  source_date: string;
+  index_count: number;
+}
+
 // --- Revenue --- (E2E-1 W7)
 
 export type RevenueRecord = Schemas["RevenueRecordResponse"];
@@ -439,6 +474,27 @@ export async function fetchMarketMovers(marketFilter?: string, limit = 10): Prom
     return await apiFetch<MarketMoversResponse>(`${API_BASE}/market/movers?${params}`);
   } catch {
     return { gainers: [], losers: [], most_active: [], date: null };
+  }
+}
+
+// --- Macro ---
+//
+// `null` return signals "endpoint unavailable" so the home tile can render
+// a graceful skeleton (same convention as fetchCompanyInfo, fetchMarginData).
+
+export async function fetchBuffettIndicator(): Promise<BuffettIndicatorResponse | null> {
+  try {
+    return await apiFetch<BuffettIndicatorResponse>(`${API_BASE}/macro/buffett-indicator`);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMarketTemperature(): Promise<MarketTemperatureResponse | null> {
+  try {
+    return await apiFetch<MarketTemperatureResponse>(`${API_BASE}/macro/market-temperature`);
+  } catch {
+    return null;
   }
 }
 

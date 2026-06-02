@@ -890,6 +890,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/macro/buffett-indicator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Buffett Indicator
+         * @description 台股總市值 / 台灣 GDP × 100%.
+         *
+         *     v1: live market-cap sum when possible (joins ``stocks.shares_outstanding``
+         *     × ``stock_prices.close`` on the latest trading day for TW markets);
+         *     fallback to a hardcoded estimate otherwise. GDP is a hardcoded snapshot
+         *     (see module-level constants).
+         */
+        get: operations["get_buffett_indicator_api_v1_macro_buffett_indicator_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/macro/market-temperature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Market Temperature
+         * @description Average change_percent across the index basket → cold/normal/hot bucket.
+         *
+         *     v1 derivation only uses *today's* change for each index proxy (the same
+         *     set the KPI row picks from). v2 will blend RSI + advance/decline +
+         *     volume vs 20-day MA — reserved for when the price history sync is
+         *     locked-in across both TW and US markets.
+         */
+        get: operations["get_market_temperature_api_v1_macro_market_temperature_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/heatmap/sectors": {
         parameters: {
             query?: never;
@@ -3176,6 +3226,24 @@ export interface components {
             /** Brokers */
             brokers: components["schemas"]["BrokerInfo"][];
         };
+        /** BuffettIndicatorResponse */
+        BuffettIndicatorResponse: {
+            /** Ratio */
+            ratio: string;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "極度低估" | "低估" | "合理" | "高估" | "極度高估";
+            /** Historical Extreme */
+            historical_extreme: boolean;
+            /** Source Date */
+            source_date: string;
+            /** Gdp Source */
+            gdp_source: string;
+            /** Market Cap Source */
+            market_cap_source: string;
+        };
         /** CheckoutRequest */
         CheckoutRequest: {
             /** Tier */
@@ -4424,6 +4492,22 @@ export interface components {
             most_active: components["schemas"]["MarketMover"][];
             /** Date */
             date: string | null;
+        };
+        /** MarketTemperatureResponse */
+        MarketTemperatureResponse: {
+            /** Score */
+            score: string;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "冷" | "正常" | "熱";
+            /** Average Change Percent */
+            average_change_percent: string;
+            /** Source Date */
+            source_date: string;
+            /** Index Count */
+            index_count: number;
         };
         /**
          * MeNotificationPreferencesResponse
@@ -7162,6 +7246,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketIndicesResponse"];
+                };
+            };
+        };
+    };
+    get_buffett_indicator_api_v1_macro_buffett_indicator_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuffettIndicatorResponse"];
+                };
+            };
+        };
+    };
+    get_market_temperature_api_v1_macro_market_temperature_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketTemperatureResponse"];
                 };
             };
         };
