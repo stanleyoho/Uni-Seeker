@@ -530,6 +530,100 @@ export async function fetchLowBaseScore(symbol: string): Promise<LowBaseScore> {
   return apiFetch<LowBaseScore>(`${API_BASE}/low-base/${symbol}`);
 }
 
+// --- ETF Arbitrage (premium / discount monitor) ---
+// Hand-declared because schema.d.ts is regenerated in a separate
+// follow-up PR. When that lands these types switch to
+// Schemas["ETFArbitrage*"]. The hand-typed shape MUST stay
+// byte-identical to backend `app.schemas.etf_arbitrage`.
+
+export type ETFArbitrageSentiment =
+  | "過熱"
+  | "溢價"
+  | "平價"
+  | "折價"
+  | "深折";
+
+export type ETFArbitrageType = "股票型" | "主動式" | "債券型" | "槓桿反向";
+
+export interface ETFArbitrageRow {
+  symbol: string;
+  name: string;
+  type: ETFArbitrageType;
+  estimated_nav: string;
+  market_price: string;
+  change: string;
+  change_percent: string;
+  premium_percent: string;
+  sentiment_level: ETFArbitrageSentiment;
+  volume_lots: number;
+  trend: string | null;
+}
+
+export interface ETFArbitrageKpi {
+  symbol: string;
+  name: string;
+  percent: string;
+}
+
+export interface ETFArbitrageStats {
+  total_monitored: number;
+  premium_count: number;
+  discount_count: number;
+  max_premium_etf: ETFArbitrageKpi | null;
+  max_discount_etf: ETFArbitrageKpi | null;
+  market_sentiment: string;
+  buffett_indicator: string;
+  data_source: string;
+}
+
+export interface ETFArbitrageListResponse {
+  data: ETFArbitrageRow[];
+  stats: ETFArbitrageStats;
+  message: string | null;
+}
+
+export interface ETFArbitrageQuery {
+  market?: "TW";
+  type?: "all" | ETFArbitrageType;
+  direction?: "all" | "premium" | "discount";
+  limit?: number;
+}
+
+export async function fetchETFArbitrage(
+  query: ETFArbitrageQuery = {},
+): Promise<ETFArbitrageListResponse> {
+  const params = new URLSearchParams();
+  if (query.market) params.set("market", query.market);
+  if (query.type && query.type !== "all") params.set("type", query.type);
+  if (query.direction && query.direction !== "all") {
+    params.set("direction", query.direction);
+  }
+  if (query.limit) params.set("limit", String(query.limit));
+  const qs = params.toString();
+  const url = `${API_BASE}/etf-arbitrage/list${qs ? `?${qs}` : ""}`;
+  try {
+    return await apiFetch<ETFArbitrageListResponse>(url);
+  } catch {
+    // Defensive fallback — endpoint may be unavailable in offline /
+    // pre-deploy environments. Returning a typed empty shape keeps
+    // the page rendering instead of throwing a runtime crash.
+    return {
+      data: [],
+      stats: {
+        total_monitored: 0,
+        premium_count: 0,
+        discount_count: 0,
+        max_premium_etf: null,
+        max_discount_etf: null,
+        market_sentiment: "—",
+        buffett_indicator: "—",
+        data_source: "—",
+      },
+      message: "ETF arbitrage endpoint unavailable.",
+    };
+  }
+}
+
 // --- Institutional Investors ---
 
 export async function fetchInstitutional(

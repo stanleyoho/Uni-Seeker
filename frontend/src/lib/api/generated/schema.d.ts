@@ -2681,6 +2681,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/etf-arbitrage/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Etf Arbitrage
+         * @description Return ETF premium/discount rows + market-wide stats.
+         *
+         *     Empty `data` with a populated `message` indicates the FinMind NAV
+         *     dataset is unavailable for the current account tier or trading
+         *     session. The frontend renders a labelled empty state in that case
+         *     instead of zero-filling. **We never fabricate NAV numbers.**
+         */
+        get: operations["list_etf_arbitrage_api_v1_etf_arbitrage_list_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -3495,6 +3520,92 @@ export interface components {
             ex_dividend_date?: string | null;
             /** Currency */
             currency?: string | null;
+        };
+        /** ETFArbitrageKpiSchema */
+        ETFArbitrageKpiSchema: {
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Percent */
+            percent: string;
+        };
+        /** ETFArbitrageListResponse */
+        ETFArbitrageListResponse: {
+            /** Data */
+            data: components["schemas"]["ETFArbitrageRowSchema"][];
+            stats: components["schemas"]["ETFArbitrageStatsSchema"];
+            /**
+             * Message
+             * @description Non-null when NAV data is unavailable (FinMind tier limit, pre-market). UI should render an explanatory empty state.
+             */
+            message?: string | null;
+        };
+        /** ETFArbitrageRowSchema */
+        ETFArbitrageRowSchema: {
+            /**
+             * Symbol
+             * @description ETF symbol without market suffix, e.g. '00830'
+             */
+            symbol: string;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @description 股票型 / 主動式 / 債券型 / 槓桿反向
+             */
+            type: string;
+            /**
+             * Estimated Nav
+             * @description 預估淨值 (Decimal as string)
+             */
+            estimated_nav: string;
+            /** Market Price */
+            market_price: string;
+            /**
+             * Change
+             * @description Signed Decimal string, e.g. '+0.50'
+             */
+            change: string;
+            /** Change Percent */
+            change_percent: string;
+            /**
+             * Premium Percent
+             * @description (market_price - nav) / nav * 100, signed, e.g. '+1.41'
+             */
+            premium_percent: string;
+            /**
+             * Sentiment Level
+             * @description One of: 過熱 / 溢價 / 平價 / 折價 / 深折
+             */
+            sentiment_level: string;
+            /**
+             * Volume Lots
+             * @description Trading volume in lots (千股)
+             */
+            volume_lots: number;
+            /**
+             * Trend
+             * @description Reserved for ▲▲▲ trend rendering
+             */
+            trend?: string | null;
+        };
+        /** ETFArbitrageStatsSchema */
+        ETFArbitrageStatsSchema: {
+            /** Total Monitored */
+            total_monitored: number;
+            /** Premium Count */
+            premium_count: number;
+            /** Discount Count */
+            discount_count: number;
+            max_premium_etf?: components["schemas"]["ETFArbitrageKpiSchema"] | null;
+            max_discount_etf?: components["schemas"]["ETFArbitrageKpiSchema"] | null;
+            /** Market Sentiment */
+            market_sentiment: string;
+            /** Buffett Indicator */
+            buffett_indicator: string;
+            /** Data Source */
+            data_source: string;
         };
         /**
          * ExecutedTrade
@@ -10080,6 +10191,43 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_etf_arbitrage_api_v1_etf_arbitrage_list_get: {
+        parameters: {
+            query?: {
+                /** @description TW only for v1 */
+                market?: string;
+                /** @description ETF type filter */
+                type?: "all" | "股票型" | "主動式" | "債券型" | "槓桿反向";
+                /** @description premium / discount / all */
+                direction?: "all" | "premium" | "discount";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ETFArbitrageListResponse"];
                 };
             };
             /** @description Validation Error */
