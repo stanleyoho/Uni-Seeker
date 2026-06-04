@@ -145,14 +145,44 @@ class AutoSyncScheduler:
 
     async def _catchup_sync(self) -> None:
         """Catch-up sync -- runs all tasks to handle rate-limit interrupted runs."""
+        import time
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
         logger.info("auto_sync_catchup_start")
         from app.database import async_session
 
+        started_at = time.monotonic()
         async with async_session() as db:
             results = await self._sync.run_all(db, batch_size=100)
-            total = sum(r.records_synced for r in results)
-            if total > 0:
-                await self._sync._notify(f"\U0001f504 補同步完成: {total} 筆資料")
+        elapsed_s = time.monotonic() - started_at
+
+        total = sum(r.records_synced for r in results)
+        if total == 0:
+            return
+
+        # Per-dataset breakdown, sorted by records desc; mark rate-limit / error.
+        ts = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%H:%M")
+        lines: list[str] = [f"\U0001f504 補同步完成 ({ts}, {elapsed_s:.0f}s)"]
+        sorted_results = sorted(results, key=lambda r: r.records_synced, reverse=True)
+        for r in sorted_results:
+            if r.records_synced == 0 and r.stopped_reason in (None, "completed"):
+                continue  # skip silent no-op tasks
+            mark = {"rate_limit": " ⚠️", "error": " ❌"}.get(r.stopped_reason or "", "")
+            lines.append(
+                f"  · {r.dataset}: {r.records_synced} 筆 / {r.stocks_processed} 檔{mark}"
+            )
+            # Surface per-task breakdown when present
+            if r.details:
+                non_zero = [(k, v) for k, v in r.details.items() if v]
+                if non_zero:
+                    body = " · ".join(f"{k} {v}" for k, v in non_zero)
+                    lines.append(f"      {body}")
+            for label, examples in r.extras.items():
+                if examples:
+                    lines.append(f"      {label}: {', '.join(examples)}")
+        lines.append(f"\U0001f4c8 合計: {total} 筆 across {len(results)} 任務")
+        await self._sync._notify("\n".join(lines))
 
     async def _etf_nav_sync(self) -> None:
         """Refresh ETF estimated NAV for the premium/discount monitor.

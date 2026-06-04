@@ -20,6 +20,15 @@ class SyncResult:
     errors: int = 0
     stopped_reason: str | None = None  # "completed", "rate_limit", "error"
     error_details: list[str] = field(default_factory=list)
+    # Per-task domain-specific counters surfaced in TG notification — keys
+    # are short labels (e.g. "新增", "改名", "換產業", "未變動"). Empty dict
+    # means the task has no extra detail to report.
+    details: dict[str, int] = field(default_factory=dict)
+    # Optional free-form examples / snippets for the TG notifier to surface
+    # (e.g. up to 3 actual rename examples). Keys are short labels, values
+    # are lists of human-readable strings. Kept separate from ``details``
+    # so the counter type stays clean.
+    extras: dict[str, list[str]] = field(default_factory=dict)
 
 
 class SyncTask(ABC):

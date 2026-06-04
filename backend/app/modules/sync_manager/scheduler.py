@@ -239,6 +239,15 @@ class SyncScheduler:
             lines.append(
                 f"{icon} <b>{r.dataset}</b>: {r.records_synced} 筆 ({r.stocks_processed} 支)"
             )
+            # Surface per-task breakdown (e.g. stock_info: 新增 N · 改名 M · 換產業 K).
+            if r.details:
+                non_zero = [(k, v) for k, v in r.details.items() if v]
+                if non_zero:
+                    body = " · ".join(f"{k} {v}" for k, v in non_zero)
+                    lines.append(f"   \u2514 {body}")
+            for label, examples in r.extras.items():
+                if examples:
+                    lines.append(f"   \u2514 {label}: {', '.join(examples)}")
             if r.errors > 0:
                 lines.append(f"   \u2514 {r.errors} 錯誤")
             total_records += r.records_synced

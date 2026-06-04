@@ -56,6 +56,29 @@ class StockInfoSyncTask(SyncTask):
         # -- build industry lookup ----------------------------------------
         industry_result = await db.execute(select(Industry))
         industry_map: dict[str, int] = {ind.name: ind.id for ind in industry_result.scalars().all()}
+        industry_added = 0
+
+        # -- snapshot existing stocks so we can diff per-row --------------
+        existing_stocks_result = await db.execute(
+            select(Stock.symbol, Stock.name, Stock.industry_id, Stock.market)
+        )
+        # symbol -> (name, industry_id, market_value)
+        existing_map: dict[str, tuple[str, int | None, str]] = {
+            row.symbol: (
+                row.name,
+                row.industry_id,
+                row.market.value if hasattr(row.market, "value") else row.market,
+            )
+            for row in existing_stocks_result
+        }
+
+        # Per-bucket counters; surfaced in SyncResult.details for TG.
+        added = 0
+        renamed_examples: list[str] = []  # 收前 3 個改名範例
+        renamed = 0
+        industry_changed = 0
+        market_changed = 0
+        unchanged = 0
 
         # -- process records ----------------------------------------------
         for record in raw:
@@ -78,10 +101,33 @@ class StockInfoSyncTask(SyncTask):
                     db.add(new_ind)
                     await db.flush()
                     industry_map[industry_name] = new_ind.id
+                    industry_added += 1
                 industry_id = industry_map[industry_name]
 
-            # Upsert stock
             symbol = f"{stock_id_str}.TW"
+
+            # Diff against the pre-loop snapshot to classify this row.
+            prior = existing_map.get(symbol)
+            if prior is None:
+                added += 1
+            else:
+                prior_name, prior_industry_id, prior_market = prior
+                changed_anything = False
+                if prior_name != stock_name:
+                    renamed += 1
+                    if len(renamed_examples) < 3:
+                        renamed_examples.append(f"{stock_id_str} {prior_name}→{stock_name}")
+                    changed_anything = True
+                if prior_industry_id != industry_id:
+                    industry_changed += 1
+                    changed_anything = True
+                if prior_market != market.value:
+                    market_changed += 1
+                    changed_anything = True
+                if not changed_anything:
+                    unchanged += 1
+
+            # Upsert stock
             stmt = pg_insert(Stock).values(
                 symbol=symbol,
                 name=stock_name,
@@ -100,6 +146,18 @@ class StockInfoSyncTask(SyncTask):
             result.records_synced += 1
 
         result.stocks_processed = result.records_synced
+
+        # Surface the diff breakdown for the TG notification.
+        result.details = {
+            "新增": added,
+            "改名": renamed,
+            "換產業": industry_changed,
+            "上下市": market_changed,
+            "未變動": unchanged,
+            "新增產業類別": industry_added,
+        }
+        if renamed_examples:
+            result.extras["改名範例"] = renamed_examples
 
         # -- update sync state (global row, stock_id IS NULL) ---------------
         now = datetime.now(UTC)
