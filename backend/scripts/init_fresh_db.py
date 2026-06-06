@@ -26,7 +26,15 @@ Why this exists:
         2. Calling `alembic stamp head` so future delta migrations apply
            against the right starting point.
 
-    This script wraps that two-step pattern so it's reproducible.
+    This script wraps that two-step pattern so it's reproducible. K3a
+    (2026-06-06) made the bootstrap actually runnable end-to-end:
+        - the alembic DAG previously had TWO heads (UNI_PERF_001 and
+          UNI_SIGFIRE_001), so `stamp head` aborted with "Multiple head
+          revisions are present"; revision `3bcd5668fe84` merges them into a
+          single head.
+        - the `stamp head` step now runs via the alembic CLI in a subprocess
+          (env.py drives the online path with `asyncio.run`, which collided
+          with this script's own running loop — see `_stamp_alembic_head`).
 
 Usage:
     cd backend
@@ -104,16 +112,38 @@ def _detect_existing_state_sync(connection) -> dict[str, bool]:  # type: ignore[
     }
 
 
-def _stamp_alembic_head_sync(connection) -> None:  # type: ignore[no-untyped-def]
-    """Mark the latest revision as applied so future `alembic upgrade` is clean."""
-    # Late import: alembic only needed here (dev dep).
-    from alembic.config import Config
+def _stamp_alembic_head(database_url: str) -> None:
+    """Mark the latest revision as applied so future `alembic upgrade` is clean.
 
-    from alembic import command
+    Run via the alembic CLI in a *subprocess* rather than the in-process
+    ``alembic.command.stamp``. The project's ``alembic/env.py`` drives the
+    online path with ``asyncio.run(run_migrations_online())``; calling it from
+    inside this script's own ``asyncio.run(_bootstrap(...))`` loop raises
+    ``RuntimeError: asyncio.run() cannot be called from a running event loop``.
+    A subprocess gives env.py a clean event loop of its own, which is exactly
+    how a human running ``alembic stamp head`` on the CLI invokes it.
 
-    cfg = Config(str(_BACKEND_ROOT / "alembic.ini"))
-    cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
-    command.stamp(cfg, "head")
+    ``UNI_DATABASE_URL`` is forwarded so the stamp targets the same DB this
+    script just built (alembic.ini's default URL is the dev DB).
+    """
+    import os
+    import subprocess
+
+    env = {**os.environ, "UNI_DATABASE_URL": database_url}
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "alembic",
+            "-c",
+            str(_BACKEND_ROOT / "alembic.ini"),
+            "stamp",
+            "head",
+        ],
+        cwd=str(_BACKEND_ROOT),
+        env=env,
+        check=True,
+    )
 
 
 async def _bootstrap(database_url: str, *, dry_run: bool, force: bool) -> None:
@@ -123,6 +153,10 @@ async def _bootstrap(database_url: str, *, dry_run: bool, force: bool) -> None:
 
     engine = create_async_engine(database_url)
     try:
+        # Schema creation runs in its own committed transaction. The alembic
+        # stamp must happen AFTER this block (and after the engine is disposed)
+        # because it shells out to a subprocess that opens its own connection
+        # and event loop — see _stamp_alembic_head.
         async with engine.begin() as conn:
             state = await conn.run_sync(_detect_existing_state_sync)
             print(f"State: {state}")
@@ -151,13 +185,16 @@ async def _bootstrap(database_url: str, *, dry_run: bool, force: bool) -> None:
 
             print("→ Running Base.metadata.create_all ...")
             await conn.run_sync(Base.metadata.create_all)
-
-            print("→ Stamping alembic to head ...")
-            await conn.run_sync(_stamp_alembic_head_sync)
-
-            print("✅ Bootstrap complete.")
     finally:
         await engine.dispose()
+
+    if dry_run:
+        return
+
+    print("→ Stamping alembic to head ...")
+    _stamp_alembic_head(database_url)
+
+    print("✅ Bootstrap complete.")
 
 
 def main() -> None:

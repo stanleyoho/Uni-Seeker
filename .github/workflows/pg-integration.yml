@@ -67,22 +67,50 @@ jobs:
           pip install uv
           uv pip install --system -e ".[dev]"
 
-      # NOTE: Originally `alembic upgrade head` ran here as a sanity gate.
-      # E2E-2's first run on PG caught a latent bug — the first revision
-      # `0ef449ae0f1a` only creates the `monthly_revenues` table, and the
-      # next revision `b3a1c9d2e4f5` (3NF normalize) assumes pre-existing
-      # `stocks`/`users`/etc. tables that never got their own migration.
-      # The chain has been working in dev/prod because Base.metadata.create_all
-      # was the bootstrap step and only delta migrations applied after.
-      # On a fresh empty PG (E2E-2's whole point), the chain blows up at
-      # `UndefinedTableError: relation "stocks" does not exist`.
+      # Fresh-DB bootstrap gate (K3a). Validates the *supported* way to stand
+      # up an empty Postgres: `scripts/init_fresh_db.py` (Base.metadata.create_all
+      # + `alembic stamp head`). This proves on real empty PG that:
+      #   - the schema materialises cleanly (enums + 45 tables),
+      #   - the alembic DAG resolves to a SINGLE head (the 3bcd5668fe84 merge
+      #     revision unified the previous two heads UNI_PERF_001 /
+      #     UNI_SIGFIRE_001 — without it `stamp head` aborts with
+      #     "Multiple head revisions are present"),
+      #   - the DB ends stamped at head so subsequent delta migrations apply
+      #     cleanly via `alembic upgrade head`.
       #
-      # Until a proper baseline backfill migration lands, this workflow
-      # skips the alembic step and the conftest fixture uses
-      # Base.metadata.create_all to build schema (same as sqlite path).
-      # PG-specific FK/JSONB/ENUM/UPSERT semantics are still exercised by
-      # the marked tests — only migration-chain validation is deferred.
-      # Carry-over: "alembic baseline backfill migration".
+      # KNOWN GAP (intentionally NOT closed here): a true from-empty
+      # `alembic upgrade head` is still impossible. Revision `b3a1c9d2e4f5`
+      # (3NF normalize) ALTERs pre-existing `stocks`/`users`/`stock_prices`/…
+      # tables whose ORIGINAL pre-normalization shape no actual migration ever
+      # created — those tables only ever came from create_all, and the
+      # pre-normalization model definitions are not recoverable from git
+      # history (the earliest committed models are already post-normalization).
+      # Hand-writing that baseline would be a guess that could corrupt prod, so
+      # the create_all+stamp bootstrap remains the official path. See
+      # `scripts/init_fresh_db.py` docstring and the PR description.
+      - name: Fresh-DB bootstrap + single-head stamp (K3a gate)
+        working-directory: backend
+        env:
+          PGPASSWORD: postgres
+          UNI_JWT_SECRET_KEY: ci-test-secret-do-not-use-in-prod
+        run: |
+          psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS uni_seeker_bootstrap;"
+          psql -h localhost -U postgres -c "CREATE DATABASE uni_seeker_bootstrap;"
+          UNI_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_bootstrap \
+            python scripts/init_fresh_db.py
+          # Assert the DB is stamped at exactly one head and upgrade is a no-op.
+          UNI_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_bootstrap \
+            alembic -c alembic.ini current | grep -q "(head)"
+          UNI_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker_bootstrap \
+            alembic -c alembic.ini upgrade head
+
+      # NOTE: the pg_integration test fixture still builds schema via
+      # Base.metadata.create_all (+ manual enum creation) rather than
+      # `alembic upgrade head`, because — per the KNOWN GAP above — a
+      # from-empty upgrade cannot run. The bootstrap gate above is what now
+      # validates the migration DAG (single head, stampable) on real PG; the
+      # marked tests below still exercise PG-specific FK/JSONB/ENUM/UPSERT
+      # semantics that sqlite tolerates silently.
       - name: Test (pg_integration only)
         working-directory: backend
         env:
