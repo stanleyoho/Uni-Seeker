@@ -243,6 +243,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/screener/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Dsl Fields
+         * @description Field metadata for the Query DSL filter builder.
+         *
+         *     Returns the allowlisted fields (the dropdown source for the UI) plus
+         *     the supported comparators. This is the *only* set of field names the
+         *     ``POST /screener/dsl`` endpoint will accept — anything else is rejected
+         *     with a 422.
+         */
+        get: operations["list_dsl_fields_api_v1_screener_fields_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/screener/dsl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Screen Dsl
+         * @description Screen using a composable AND/OR Query DSL filter.
+         *
+         *     The DSL describes an arbitrarily-nested boolean tree of
+         *     field/comparator/value clauses (e.g.
+         *     ``(RSI < 30) AND ((KD_K < 20) OR (BIAS < -5))``). It compiles onto the
+         *     same ``ScreenerEngine`` the legacy ``/screen`` endpoint uses — no
+         *     duplicate evaluation logic. Invalid fields/comparators are rejected
+         *     with a 422 before any price data is fetched.
+         */
+        post: operations["screen_dsl_api_v1_screener_dsl_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/screener/presets": {
         parameters: {
             query?: never;
@@ -3708,6 +3760,49 @@ export interface components {
             /** Currency */
             currency?: string | null;
         };
+        /** DslClauseSchema */
+        DslClauseSchema: {
+            /**
+             * Field
+             * @description Allowlisted screener field, e.g. 'RSI', 'KD_K'.
+             */
+            field: string;
+            /**
+             * Cmp
+             * @enum {string}
+             */
+            cmp: "lt" | "lte" | "gt" | "gte" | "eq" | "between";
+            /** Value */
+            value: number | number[];
+        };
+        /** DslGroupSchema */
+        DslGroupSchema: {
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "and" | "or";
+            /** Clauses */
+            clauses: (components["schemas"]["DslClauseSchema"] | components["schemas"]["DslGroupSchema"])[];
+        };
+        /** DslScreenRequest */
+        DslScreenRequest: {
+            /** Market */
+            market?: string | null;
+            filter: components["schemas"]["DslGroupSchema"];
+            /** Sort By */
+            sort_by?: string | null;
+            /**
+             * Sort Order
+             * @default asc
+             */
+            sort_order: string;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
+        };
         /** ETFArbitrageKpiSchema */
         ETFArbitrageKpiSchema: {
             /** Symbol */
@@ -4321,6 +4416,24 @@ export interface components {
             message: string;
             /** Account Id */
             account_id?: number | null;
+        };
+        /** FieldMetaItem */
+        FieldMetaItem: {
+            /** Key */
+            key: string;
+            /** Indicator */
+            indicator: string;
+            /** Label */
+            label: string;
+            /** Unit */
+            unit?: string | null;
+        };
+        /** FieldMetaResponse */
+        FieldMetaResponse: {
+            /** Fields */
+            fields: components["schemas"]["FieldMetaItem"][];
+            /** Comparators */
+            comparators: string[];
         };
         /** FinancialDataResponse */
         FinancialDataResponse: {
@@ -6685,6 +6798,59 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ScreenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_dsl_fields_api_v1_screener_fields_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldMetaResponse"];
+                };
+            };
+        };
+    };
+    screen_dsl_api_v1_screener_dsl_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DslScreenRequest"];
             };
         };
         responses: {

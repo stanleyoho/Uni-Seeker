@@ -11,8 +11,21 @@ from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.modules.indicators.registry import IndicatorRegistry
 from app.modules.screener.conditions import Condition, ConditionGroup
+from app.modules.screener.dsl import (
+    ALLOWED_CMP,
+    DslClause,
+    DslCompileError,
+    DslGroup,
+    compile_group,
+)
 from app.modules.screener.engine import ScreenerEngine
+from app.modules.screener.fields import FIELD_SPECS
 from app.schemas.screener import (
+    DslClauseSchema,
+    DslGroupSchema,
+    DslScreenRequest,
+    FieldMetaItem,
+    FieldMetaResponse,
     ScreenRequest,
     ScreenResponse,
     ScreenResultItem,
@@ -93,6 +106,100 @@ async def screen_stocks(
         ],
         total=len(results),
     )
+
+
+# --- Composable Query DSL (A2) --------------------------------------------
+
+
+def _schema_to_dsl(node: DslGroupSchema | DslClauseSchema) -> DslGroup | DslClause:
+    """Convert the validated Pydantic DSL tree to the domain dataclasses.
+
+    Pure structural translation — all semantic validation (field
+    allowlist, cmp/value pairing, nesting depth) happens in the domain
+    compiler so there is one place that owns the rules.
+    """
+    if isinstance(node, DslGroupSchema):
+        return DslGroup(
+            op=node.op,
+            clauses=[_schema_to_dsl(member) for member in node.clauses],
+        )
+    return DslClause(field=node.field, cmp=node.cmp, value=node.value)
+
+
+@router.get("/fields", response_model=FieldMetaResponse)
+def list_dsl_fields() -> FieldMetaResponse:
+    """Field metadata for the Query DSL filter builder.
+
+    Returns the allowlisted fields (the dropdown source for the UI) plus
+    the supported comparators. This is the *only* set of field names the
+    ``POST /screener/dsl`` endpoint will accept — anything else is rejected
+    with a 422.
+    """
+    return FieldMetaResponse(
+        fields=[
+            FieldMetaItem(
+                key=spec.key,
+                indicator=spec.indicator,
+                label=spec.label,
+                unit=spec.unit,
+            )
+            for spec in FIELD_SPECS.values()
+        ],
+        comparators=sorted(ALLOWED_CMP),
+    )
+
+
+@router.post("/dsl", response_model=ScreenResponse)
+async def screen_dsl(
+    req: DslScreenRequest,
+    db: AsyncSession = Depends(get_db),
+    registry: IndicatorRegistry = Depends(get_indicator_registry),
+) -> ScreenResponse:
+    """Screen using a composable AND/OR Query DSL filter.
+
+    The DSL describes an arbitrarily-nested boolean tree of
+    field/comparator/value clauses (e.g.
+    ``(RSI < 30) AND ((KD_K < 20) OR (BIAS < -5))``). It compiles onto the
+    same ``ScreenerEngine`` the legacy ``/screen`` endpoint uses — no
+    duplicate evaluation logic. Invalid fields/comparators are rejected
+    with a 422 before any price data is fetched.
+    """
+    try:
+        group = compile_group(_to_group(_schema_to_dsl(req.filter)))
+    except DslCompileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    stocks_prices = await _fetch_prices_grouped(db, market_filter=req.market)
+
+    engine = ScreenerEngine(registry=registry)
+    results = engine.screen_dsl(
+        stocks_prices,
+        group,
+        sort_by=req.sort_by,
+        sort_order=req.sort_order,
+    )
+    limited = results[: req.limit]
+
+    return ScreenResponse(
+        results=[
+            ScreenResultItem(symbol=r.symbol, indicator_values=r.indicator_values) for r in limited
+        ],
+        total=len(results),
+    )
+
+
+def _to_group(node: DslGroup | DslClause) -> DslGroup:
+    """Narrow the top-level DSL node to a group.
+
+    ``DslScreenRequest.filter`` is typed as a ``DslGroupSchema`` so the
+    root is always a group, but ``_schema_to_dsl`` returns the union;
+    this keeps mypy happy without an ``isinstance`` at every call site.
+    """
+    if isinstance(node, DslGroup):
+        return node
+    # Unreachable given the request schema, but fail loud rather than
+    # silently wrapping a bare clause.
+    raise DslCompileError("Top-level filter must be a group, not a clause.")
 
 
 @router.get("/presets")

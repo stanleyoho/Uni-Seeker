@@ -124,6 +124,14 @@ export type ScreenCondition = Schemas["ConditionSchema"];
 export type ScreenResult = Schemas["ScreenResultItem"];
 export type ScreenResponse = Schemas["ScreenResponse"];
 
+// --- Screener Query DSL (A2) ---
+
+export type DslClause = Schemas["DslClauseSchema"];
+export type DslGroup = Schemas["DslGroupSchema"];
+export type DslScreenRequest = Schemas["DslScreenRequest"];
+export type DslFieldMeta = Schemas["FieldMetaItem"];
+export type DslFieldMetaResponse = Schemas["FieldMetaResponse"];
+
 // --- Notifications ---
 
 export type NotificationRule = Schemas["NotificationRuleResponse"];
@@ -386,6 +394,31 @@ export async function screenStocks(
   return apiFetch<ScreenResponse>(`${API_BASE}/screener/screen`, {
     method: "POST",
     body: JSON.stringify({ conditions, operator, sort_by: sortBy, limit }),
+  });
+}
+
+// --- Screener Query DSL (A2) ---
+
+/** Field metadata for the DSL filter builder (dropdown source + comparators). */
+export async function fetchDslFields(): Promise<DslFieldMetaResponse> {
+  return apiFetch<DslFieldMetaResponse>(`${API_BASE}/screener/fields`);
+}
+
+/** Run a composable AND/OR Query DSL filter against the screener engine. */
+export async function screenDsl(
+  filter: DslGroup,
+  options: { sortBy?: string; sortOrder?: string; limit?: number; market?: string } = {},
+): Promise<ScreenResponse> {
+  const body: DslScreenRequest = {
+    filter,
+    market: options.market ?? null,
+    sort_by: options.sortBy ?? null,
+    sort_order: options.sortOrder ?? "asc",
+    limit: options.limit ?? 50,
+  };
+  return apiFetch<ScreenResponse>(`${API_BASE}/screener/dsl`, {
+    method: "POST",
+    body: JSON.stringify(body),
   });
 }
 

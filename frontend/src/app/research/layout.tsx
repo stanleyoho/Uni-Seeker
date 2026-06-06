@@ -38,6 +38,14 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
       label: "四大買賣點",
       activeQuery: { key: "tab", value: "best-four-point" },
     },
+    // Composable Query DSL filter builder (A2) — arbitrarily-nested
+    // AND/OR groups of field/comparator/value conditions, compiled onto
+    // the screener engine. Hosted as a `?tab=` query-multiplex view.
+    {
+      href: "/research?tab=dsl",
+      label: "進階篩選",
+      activeQuery: { key: "tab", value: "dsl" },
+    },
     // ETF premium/discount monitor (twetf.com-inspired). Hard-coded
     // label until the i18n bundle gains an `etfArbitrage` key —
     // keeping it inline keeps this PR self-contained.

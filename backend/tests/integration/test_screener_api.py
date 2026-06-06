@@ -167,3 +167,89 @@ async def test_screen_with_market_filter(app_with_screener_data) -> None:
     data = resp.json()
     # All seeded stocks are TW_TWSE so should pass the filter
     assert data["total"] >= 1
+
+
+# ── Query DSL: GET /fields + POST /dsl ────────────────────────────────────
+
+
+async def test_dsl_fields_metadata(app_with_screener_data) -> None:
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/screener/fields")
+    assert resp.status_code == 200
+    data = resp.json()
+    keys = {f["key"] for f in data["fields"]}
+    assert "RSI" in keys
+    assert "KD_K" in keys
+    assert "lt" in data["comparators"]
+    assert "between" in data["comparators"]
+
+
+async def test_dsl_flat_filter_finds_oversold(app_with_screener_data) -> None:
+    """A flat AND DSL filter compiles onto the engine and matches FALL.TW."""
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/screener/dsl",
+            json={"filter": {"op": "and", "clauses": [{"field": "RSI", "cmp": "lt", "value": 30}]}},
+        )
+    assert resp.status_code == 200
+    symbols = [r["symbol"] for r in resp.json()["results"]]
+    assert "FALL.TW" in symbols
+    assert "RISE.TW" not in symbols
+
+
+async def test_dsl_nested_or_group(app_with_screener_data) -> None:
+    """(RSI < 30) AND ((RSI < 5) OR (RSI < 50)) — nested OR widens the match."""
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/screener/dsl",
+            json={
+                "filter": {
+                    "op": "and",
+                    "clauses": [
+                        {"field": "RSI", "cmp": "lt", "value": 30},
+                        {
+                            "op": "or",
+                            "clauses": [
+                                {"field": "RSI", "cmp": "lt", "value": 5},
+                                {"field": "RSI", "cmp": "lt", "value": 50},
+                            ],
+                        },
+                    ],
+                }
+            },
+        )
+    assert resp.status_code == 200
+    symbols = [r["symbol"] for r in resp.json()["results"]]
+    assert "FALL.TW" in symbols
+
+
+async def test_dsl_invalid_field_rejected_422(app_with_screener_data) -> None:
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/screener/dsl",
+            json={
+                "filter": {
+                    "op": "and",
+                    "clauses": [{"field": "totally_made_up", "cmp": "lt", "value": 1}],
+                }
+            },
+        )
+    assert resp.status_code == 422
+
+
+async def test_dsl_extra_field_rejected_422(app_with_screener_data) -> None:
+    """StrictModel rejects a typo'd/unknown key in the request body."""
+    transport = ASGITransport(app=app_with_screener_data)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/screener/dsl",
+            json={
+                "filter": {"op": "and", "clauses": [{"field": "RSI", "cmp": "lt", "value": 30}]},
+                "limti": 5,  # typo
+            },
+        )
+    assert resp.status_code == 422
