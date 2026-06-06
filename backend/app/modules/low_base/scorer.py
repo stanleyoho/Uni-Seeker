@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 
 from app.modules.low_base.indicators import (
@@ -8,6 +9,7 @@ from app.modules.low_base.indicators import (
     calculate_pe_percentile,
     calculate_peg,
 )
+from app.obs.metrics import SCORER_SECONDS
 
 
 @dataclass
@@ -113,8 +115,60 @@ def calculate_low_base_score(
     # Enhanced: technical signal score (0-100)
     technical_score: float | None = None,
 ) -> LowBaseScore:
-    """Calculate composite low-base score."""
+    """Calculate composite low-base score.
 
+    Timing wrapper (B6b): records wall-clock latency in the
+    ``uni_scorer_seconds`` histogram. The scanner calls this once per stock
+    across the whole universe, so it is the hot path the audit flagged — a
+    regression here is visible as a p95 shift, not just a slower scan.
+    """
+    started = time.monotonic()
+    try:
+        return _calculate_low_base_score_impl(
+            symbol=symbol,
+            name=name,
+            closes=closes,
+            pe=pe,
+            pb=pb,
+            dividend_yield=dividend_yield,
+            pe_history=pe_history,
+            industry_avg_pe=industry_avg_pe,
+            roe=roe,
+            debt_ratio=debt_ratio,
+            revenue_yoy_growth=revenue_yoy_growth,
+            eps=eps,
+            health_score=health_score,
+            rsi=rsi,
+            foreign_net_buy_5d=foreign_net_buy_5d,
+            trust_net_buy_5d=trust_net_buy_5d,
+            dealer_net_buy_5d=dealer_net_buy_5d,
+            technical_score=technical_score,
+        )
+    finally:
+        SCORER_SECONDS.labels(scorer="low_base").observe(time.monotonic() - started)
+
+
+def _calculate_low_base_score_impl(
+    symbol: str,
+    name: str,
+    *,
+    closes: list[float],
+    pe: float | None = None,
+    pb: float | None = None,
+    dividend_yield: float | None = None,
+    pe_history: list[float] | None = None,
+    industry_avg_pe: float | None = None,
+    roe: float | None = None,
+    debt_ratio: float | None = None,
+    revenue_yoy_growth: float | None = None,
+    eps: float | None = None,
+    health_score: float | None = None,
+    rsi: float | None = None,
+    foreign_net_buy_5d: float | None = None,
+    trust_net_buy_5d: float | None = None,
+    dealer_net_buy_5d: float | None = None,
+    technical_score: float | None = None,
+) -> LowBaseScore:
     # === Disqualification checks ===
     if eps is not None and eps <= 0:
         return LowBaseScore(

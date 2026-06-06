@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
 import structlog
+
+from app.obs.metrics import FINMIND_FETCH_SECONDS
 
 logger = structlog.get_logger()
 
@@ -105,32 +108,46 @@ class FinMindClient:
             end_date=end_date,
         )
 
-        async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
+        # Time the full network round-trip + parse so an upstream slowdown or
+        # rate-limit backoff shows up as a p95 latency shift, not just a
+        # counter bump. ``outcome`` is recorded in ``finally`` so error/
+        # timeout paths are measured too. Latency is keyed by ``dataset`` —
+        # the dimension operators slice by when one FinMind dataset degrades.
+        started = time.monotonic()
+        outcome = "error"
+        try:
+            async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT) as client:
+                response = await client.get(url, params=params, headers=headers)
 
-        # ----- error handling -----
-        if response.status_code == 402:
-            logger.warning("finmind_rate_limit", dataset=dataset, data_id=data_id)
-            raise FinMindRateLimitError()
+            # ----- error handling -----
+            if response.status_code == 402:
+                outcome = "rate_limit"
+                logger.warning("finmind_rate_limit", dataset=dataset, data_id=data_id)
+                raise FinMindRateLimitError()
 
-        if response.status_code == 404:
-            logger.warning("finmind_not_found", dataset=dataset, data_id=data_id)
-            raise FinMindAPIError(status_code=404, message="Resource not found")
+            if response.status_code == 404:
+                logger.warning("finmind_not_found", dataset=dataset, data_id=data_id)
+                raise FinMindAPIError(status_code=404, message="Resource not found")
 
-        response.raise_for_status()
+            response.raise_for_status()
 
-        body: dict[str, Any] = response.json()
+            body: dict[str, Any] = response.json()
 
-        if body.get("msg") != "success":
-            msg = body.get("msg", "unknown error")
-            logger.error("finmind_api_error", msg=msg, dataset=dataset)
-            raise FinMindAPIError(status_code=response.status_code, message=msg)
+            if body.get("msg") != "success":
+                msg = body.get("msg", "unknown error")
+                logger.error("finmind_api_error", msg=msg, dataset=dataset)
+                raise FinMindAPIError(status_code=response.status_code, message=msg)
 
-        data: list[dict[str, Any]] = body.get("data", [])
-        logger.info(
-            "finmind_response",
-            dataset=dataset,
-            data_id=data_id,
-            record_count=len(data),
-        )
-        return data
+            data: list[dict[str, Any]] = body.get("data", [])
+            outcome = "ok"
+            logger.info(
+                "finmind_response",
+                dataset=dataset,
+                data_id=data_id,
+                record_count=len(data),
+            )
+            return data
+        finally:
+            FINMIND_FETCH_SECONDS.labels(dataset=dataset, outcome=outcome).observe(
+                time.monotonic() - started
+            )
