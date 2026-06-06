@@ -59,13 +59,8 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
 
-      # TA-Lib C library required for `import talib` at runtime; mirrors
-      # backend-ci.yml — see that file for the why.
-      - name: Install TA-Lib system library
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libta-lib0-dev
-
+      # ta-lib>=0.6.0 ships a self-contained manylinux wheel (bundles the C
+      # lib) — no apt step needed; see backend-ci.yml for context.
       - name: Install dependencies
         working-directory: backend
         run: |

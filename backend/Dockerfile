@@ -16,19 +16,18 @@ FROM python:3.12-slim
 # do on host.
 WORKDIR /workspace
 
-# System deps:
-#  - `git`: needed at install time because pyproject.toml pins
-#    observability-core to a git+https source. PR #87's Dockerfile sed
-#    rewrite covers backtesting_core and prediction-engine (path source
-#    from the COPYed AAE packages), but obs-core has no copied checkout
-#    inside the image — uv has to clone it, which needs git.
-#  - `libta-lib0-dev`: TA-Lib C library + headers. The `ta-lib` Python
-#    wheel imported by app.modules.indicators / app.modules.scanner.patterns
-#    binds against the C lib at runtime; without this the container fails
-#    with `ImportError: libta_lib.so.0: cannot open shared object file`.
-# The Debian `python:3.12-slim` base has neither by default.
+# `git` is needed at install time because pyproject.toml pins
+# observability-core to a git+https source. PR #87's Dockerfile sed
+# rewrite covers backtesting_core and prediction-engine (path source
+# from the COPYed AAE packages), but obs-core has no copied checkout
+# inside the image — uv has to clone it, which needs git. The Debian
+# `python:3.12-slim` base has no git binary by default.
+#
+# NOTE: TA-Lib needs NO apt package here. ta-lib>=0.6.0 ships a manylinux
+# wheel that bundles the C library; it imports cleanly on the Debian-glibc
+# slim base. (`libta-lib0-dev` is not in Debian's default repos anyway.)
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git libta-lib0-dev \
+ && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv

@@ -16,7 +16,7 @@ TA-Lib's ``OBV`` follows the same recurrence; parity verified by
 from typing import Any
 
 import numpy as np
-import talib  # type: ignore[import-not-found]
+import talib
 
 from app.modules.indicators.base import IndicatorResult
 

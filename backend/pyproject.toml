@@ -28,10 +28,13 @@ dependencies = [
     # app/modules/strategy/builtin.py, and powers candlestick pattern
     # detection in app/modules/scanner/patterns.py (CDLDOJI, CDLENGULFING,
     # CDLHAMMER, CDLMORNINGSTAR, CDLEVENINGSTAR, CDLSHOOTINGSTAR).
-    # The Python wheel binds against the TA-Lib **C library** — must be
-    # installed at the system level (`brew install ta-lib` on macOS,
-    # `apt-get install libta-lib0-dev` on Ubuntu CI). See CI workflows.
-    "ta-lib>=0.4.32",
+    # Pin >=0.6.0: from 0.6.0 onward `ta-lib` publishes manylinux wheels that
+    # BUNDLE the TA-Lib C library, so `pip/uv install` is self-contained on
+    # Linux CI — NO `apt-get install libta-lib0-dev` is needed (that package
+    # does not exist on ubuntu-latest and broke the original PR #114, where
+    # the pin was the wheel-less 0.4.x line). macOS dev installs the same
+    # self-contained wheel. See .github/workflows/*.yml.
+    "ta-lib>=0.6.0",
     # FinanceDatabase: open dataset (~300k symbols) with sector/industry/
     # country taxonomy. Powers app/services/symbol_taxonomy/financedb_service.py
     # and scripts/backfill_us_sector_taxonomy.py — populates US sectors so

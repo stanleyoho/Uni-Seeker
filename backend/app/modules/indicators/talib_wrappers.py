@@ -36,7 +36,14 @@ from __future__ import annotations
 import math
 
 import numpy as np
-import talib  # type: ignore[import-not-found]
+import talib
+
+# ``MA_Type`` is the moving-average-kind enum TA-Lib's BBANDS / STOCH expect
+# for their ``matype`` params. The wheel re-exports it at ``talib.MA_Type``
+# at runtime, but the bundled type stubs only declare it in the private
+# ``talib._ta_lib`` module (there is no ``talib/__init__.pyi`` re-export), so
+# import it from there to keep mypy strict-clean. ``MA_Type.SMA == 0``.
+from talib._ta_lib import MA_Type
 
 
 def _to_list(arr: np.ndarray) -> list[float | None]:
@@ -147,7 +154,7 @@ def bbands(
         timeperiod=period,
         nbdevup=num_std,
         nbdevdn=num_std,
-        matype=0,  # 0 = SMA, which is what hand-rolled uses
+        matype=MA_Type.SMA,  # SMA (==0), which is what hand-rolled uses
     )
     return _to_list(upper), _to_list(middle), _to_list(lower)
 
@@ -180,9 +187,9 @@ def stoch(
         _as_np(closes),
         fastk_period=k_period,
         slowk_period=k_smooth,
-        slowk_matype=0,
+        slowk_matype=MA_Type.SMA,
         slowd_period=d_smooth,
-        slowd_matype=0,
+        slowd_matype=MA_Type.SMA,
     )
     return _to_list(k_arr), _to_list(d_arr)
 
