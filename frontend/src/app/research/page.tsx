@@ -10,6 +10,7 @@ import { SignalTable } from "@/app/scanner/components/signal-table";
 import { downloadCSV } from "@/lib/csv-export";
 import { CompareTabPanel } from "./components/compare-panel";
 import { BestFourPointCard } from "./components/best-four-point-card";
+import { DslTabPanel } from "./components/dsl-tab-panel";
 
 import {
   TEMPLATES,
@@ -199,6 +200,8 @@ export default function UnifiedResearchPage() {
           <CompareTabPanel />
         ) : activeTab === "best-four-point" ? (
           <BestFourPointCard />
+        ) : activeTab === "dsl" ? (
+          <DslTabPanel />
         ) : (
         <>
         {/* ---- Template picker row ---- */}
