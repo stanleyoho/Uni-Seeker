@@ -3340,6 +3340,7 @@ export interface components {
             equity_curve: string[];
             /** Trades */
             trades: components["schemas"]["TradeRecord"][];
+            bootstrap?: components["schemas"]["BootstrapResponse"] | null;
         };
         /**
          * BestFourPointResponse
@@ -3390,6 +3391,26 @@ export interface components {
             stripe_subscription_id: string | null;
             /** Subscription Expires At */
             subscription_expires_at: string | null;
+        };
+        /**
+         * BootstrapResponse
+         * @description Bootstrap confidence intervals for the backtest's key metrics.
+         *
+         *     Produced by resampling the realised returns / trades with replacement
+         *     ``samples`` times under a fixed ``seed`` (see
+         *     ``app.modules.backtester.bootstrap``). A per-metric field is ``null``
+         *     when its underlying sample was too small to bootstrap (e.g. a single
+         *     trade, or fewer than two return observations).
+         */
+        BootstrapResponse: {
+            /** Samples */
+            samples: number;
+            /** Seed */
+            seed: number;
+            annualized_return?: components["schemas"]["MetricCIResponse"] | null;
+            sharpe_ratio?: components["schemas"]["MetricCIResponse"] | null;
+            max_drawdown?: components["schemas"]["MetricCIResponse"] | null;
+            win_rate?: components["schemas"]["MetricCIResponse"] | null;
         };
         /**
          * BrokerInfo
@@ -4892,6 +4913,22 @@ export interface components {
              * @description Opt into Email notifications via the user's primary ``email`` address. Omit the field to leave the current value unchanged; ``false`` to opt out.
              */
             notify_via_email?: boolean | null;
+        };
+        /**
+         * MetricCIResponse
+         * @description Bootstrap confidence interval for a single metric.
+         *
+         *     ``median`` is the central (50th-percentile) estimate; ``ci_low`` /
+         *     ``ci_high`` are the 5th / 95th percentiles (a 90% CI). Decimal-as-string
+         *     like every other metric field — the frontend coerces with ``Number()``.
+         */
+        MetricCIResponse: {
+            /** Median */
+            median: string;
+            /** Ci Low */
+            ci_low: string;
+            /** Ci High */
+            ci_high: string;
         };
         /** MetricsResponse */
         MetricsResponse: {
