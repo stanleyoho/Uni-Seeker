@@ -64,6 +64,7 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.13.0",
     "aiosqlite>=0.20.0",
+    "import-linter>=2.0",
 ]
 
 [build-system]
@@ -124,6 +125,66 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["alembic/"]
+
+[tool.importlinter]
+# B6d — enforce the app's intended layering. Run with `lint-imports`
+# (added to backend-ci's Lint step). Contracts encode the *invariants that
+# hold today* on the real codebase, not an aspirational layering: each one
+# below passes on `main` at the time it was added. Two known reverse-import
+# edges are deliberately NOT enforced here (they are documented tech-debt,
+# not silently ignored):
+#   1. app.services.alerts.scheduled_alert_evaluator -> app.api.v1.holdings._deps
+#      (APScheduler wiring entrypoint reaching into an api dependency helper)
+#   2. app.modules.sync_manager.tasks.f13_filings -> app.services.institutional
+# Tightening to a single full-stack layered contract would require
+# refactoring those two call sites first; that is out of scope for this PR.
+root_packages = ["app"]
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+# Foundation purity: the data layer must never import upward. `models`,
+# `repositories`, and `db` are the lowest layers — nothing application-level
+# may leak into them.
+name = "Data layer is foundational (no upward imports)"
+type = "forbidden"
+source_modules = [
+    "app.models",
+    "app.repositories",
+    "app.db",
+]
+forbidden_modules = [
+    "app.api",
+    "app.services",
+    "app.modules",
+]
+
+[[tool.importlinter.contracts]]
+# Domain modules must not depend on the HTTP layer. `app.modules` is the
+# business-logic core; reaching back into `app.api` would invert the
+# dependency and couple domain logic to FastAPI request plumbing.
+# `allow_indirect_imports` scopes this to *direct* imports: a transitive
+# chain through `app.auth` (which imports `app.api.deps` for its
+# `Depends(get_db)` security helpers) exists today and is separate debt —
+# the invariant we enforce here is that no `app.modules.*` file itself
+# `import`s `app.api`.
+name = "Domain modules must not directly import the API layer"
+type = "forbidden"
+source_modules = ["app.modules"]
+forbidden_modules = ["app.api"]
+allow_indirect_imports = "true"
+
+[[tool.importlinter.contracts]]
+# Config / models must stay independent of each other's *upward* siblings.
+# `app.config` is leaf settings — it must not pull in api/services/modules.
+name = "Config is a leaf module"
+type = "forbidden"
+source_modules = ["app.config"]
+forbidden_modules = [
+    "app.api",
+    "app.services",
+    "app.modules",
+    "app.repositories",
+]
 
 [[tool.mypy.overrides]]
 module = [
