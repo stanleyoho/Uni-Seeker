@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import sentry_sdk
 from observability_core.sentry import init_sentry as _core_init_sentry
 
 from app.obs._sentry_filters import ExpectedDriftAlertError
@@ -54,7 +55,7 @@ def init_sentry(
 
     Returns True if init succeeded, False if skipped (no DSN, or ENV=test).
     """
-    return bool(
+    ok = bool(
         _core_init_sentry(
             service=service,
             environment=environment,
@@ -66,3 +67,25 @@ def init_sentry(
             full_sample_paths=_FULL_SAMPLE_PATHS,
         )
     )
+    if ok:
+        # observability-core already tags `service` and passes
+        # environment/release into ``sentry_sdk.init`` (Sentry surfaces both
+        # as searchable facets). Add the repo-specific `component` tag so
+        # backend events are filterable apart from any future worker/cron
+        # process that shares the same DSN.
+        sentry_sdk.set_tag("component", "backend")
+    return ok
+
+
+def set_task_tags(**tags: str) -> None:
+    """Set per-task Sentry tags on the current scope (fail-soft).
+
+    Used by background tasks (e.g. the sync scheduler) to attach the dataset /
+    task name to the active scope so an exception captured during that task is
+    searchable by ``task`` / ``dataset`` in Sentry. When Sentry is not
+    initialised (tests, no DSN) ``sentry_sdk.set_tag`` is a cheap no-op, so
+    callers need no guard. Kept deliberately thin — no scope push/pop — because
+    the sync scheduler runs one task at a time per worker.
+    """
+    for key, value in tags.items():
+        sentry_sdk.set_tag(key, value)

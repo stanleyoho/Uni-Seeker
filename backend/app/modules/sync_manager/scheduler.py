@@ -108,6 +108,12 @@ class SyncScheduler:
         """
         task = self._tasks[task_name]
 
+        # Tag the Sentry scope so any exception captured during this run is
+        # searchable by task/dataset (fail-soft when Sentry isn't initialised).
+        from app.obs.sentry import set_task_tags
+
+        set_task_tags(task=task_name, dataset=task_name)
+
         # Mark running
         await self._set_global_status(db, task_name, "running")
 
