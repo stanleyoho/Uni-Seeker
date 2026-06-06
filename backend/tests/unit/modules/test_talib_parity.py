@@ -197,6 +197,36 @@ def test_rsi_parity(closes: list[float]) -> None:
     _close_lists(ref, got)
 
 
+def _last_non_none(values: list[float | None]) -> float | None:
+    for v in reversed(values):
+        if v is not None:
+            return v
+    return None
+
+
+def test_rsi_last_parity(closes: list[float]) -> None:
+    """``rsi_last`` (A2 scan hot path) must equal the last non-None of the
+    full ``rsi`` wrapper — same value, no full-list materialization."""
+    from app.modules.indicators.talib_wrappers import rsi as full_rsi
+    from app.modules.indicators.talib_wrappers import rsi_last
+
+    assert rsi_last(closes, period=14) == _last_non_none(full_rsi(closes, period=14))
+
+
+def test_rsi_last_parity_random_lengths() -> None:
+    """Across many random series of varying length (incl. lengths <= period
+    where the result is None), ``rsi_last`` matches the wrapper exactly."""
+    from app.modules.indicators.talib_wrappers import rsi as full_rsi
+    from app.modules.indicators.talib_wrappers import rsi_last
+
+    rng = random.Random(2026)
+    for _ in range(500):
+        length = rng.choice([5, 14, 15, 20, 60, 240, 300])
+        base = rng.uniform(5, 500)
+        series = [max(0.0, base + rng.gauss(0, base * 0.04)) for _ in range(length)]
+        assert rsi_last(series, period=14) == _last_non_none(full_rsi(series, period=14))
+
+
 def test_macd_parity(closes: list[float]) -> None:
     # Re-implement old MACD inline for the reference (the recurrence is
     # complex enough that inlining keeps the test self-explanatory).

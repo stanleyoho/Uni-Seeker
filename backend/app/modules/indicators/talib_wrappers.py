@@ -110,6 +110,31 @@ def rsi(closes: list[float], period: int = 14) -> list[float | None]:
     return _to_list(talib.RSI(_as_np(closes), timeperiod=period))
 
 
+def rsi_last(closes: list[float], period: int = 14) -> float | None:
+    """Latest RSI value only — the cross-symbol scan hot path (A2).
+
+    Identical in value to ``rsi(closes, period)[-1]`` (the last non-None
+    entry), but WITHOUT materializing the full ``list[float | None]`` and
+    its per-element ``math.isnan`` + ``round`` Python loop over every bar.
+    The cross-symbol low-base scan only needs the most recent RSI per
+    symbol; for a ~1500-symbol TW universe the full-list build was the
+    dominant cost (profiled ~155 ms of a ~240 ms compute loop), all of it
+    thrown away except the last element.
+
+    Parity: ``round(float(last), 4)`` mirrors ``_to_list``'s rounding, and
+    the ``len <= period`` / NaN guards mirror ``rsi`` exactly. Asserted
+    against ``rsi`` over random fixtures in
+    ``tests/unit/modules/test_talib_parity.py``.
+    """
+    if len(closes) <= period:
+        return None
+    out = talib.RSI(_as_np(closes), timeperiod=period)
+    v = out[-1]
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return None
+    return round(float(v), 4)
+
+
 def macd(
     closes: list[float],
     fast: int = 12,

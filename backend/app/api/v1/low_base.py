@@ -14,6 +14,8 @@ from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
 from app.modules.indicators.rsi import RSIIndicator
+from app.modules.indicators.talib_wrappers import rsi_last
+from app.modules.low_base.batch import compute_low_base_batch
 from app.modules.low_base.scorer import calculate_low_base_score
 from app.modules.scanner.engine import SignalScanner
 from app.modules.strategy import create_default_registry as create_strategy_registry
@@ -126,27 +128,80 @@ async def scan_low_base(
         for price in batched_prices.scalars().all():
             prices_by_stock[price.stock_id].append(price)
 
-    for stock_id, symbol, name, sector, _count in stock_rows:
-        prices = prices_by_stock.get(stock_id, [])
+    # Resolve sector per symbol once, so both scan paths share the lookup.
+    sector_by_symbol: dict[str, str | None] = {
+        symbol: sector for _sid, symbol, _name, sector, _cnt in stock_rows
+    }
 
-        if not prices:
-            continue
+    if not enhanced:
+        # ── Vectorized non-enhanced scan (A2) ────────────────────────────
+        # The non-enhanced path is pure CPU: RSI(last) + price-position MA
+        # math, no per-symbol I/O. We collect (symbol, name, closes, rsi)
+        # for the whole universe and score it in ONE vectorized numpy pass
+        # via ``compute_low_base_batch`` instead of a per-symbol Python
+        # loop. Output is byte-identical to ``calculate_low_base_score``
+        # (asserted in tests/unit/modules/test_low_base_batch.py); this is
+        # a perf refactor, not a behavioural change.
+        #
+        # RSI uses ``rsi_last`` (last value only) rather than the full
+        # ``RSIIndicator.calculate`` list build — the scan only reads the
+        # latest RSI, and the full-list materialization was the dominant
+        # cost in the old loop.
+        batch_rows: list[tuple[str, str, list[float], float | None]] = []
+        for stock_id, symbol, name, _sector, _count in stock_rows:
+            prices = prices_by_stock.get(stock_id, [])
+            if not prices:
+                continue
+            closes = [float(p.close) for p in prices]
+            batch_rows.append((symbol, name or symbol, closes, rsi_last(closes, period=14)))
 
-        closes = [float(p.close) for p in prices]
-        display_name = name or symbol
+        for b in compute_low_base_batch(batch_rows):
+            # Non-enhanced scoring never disqualifies (no eps supplied), so
+            # every batch row surfaces — mirrors the scalar path where
+            # ``score.disqualified`` is always False on this path.
+            scores.append(
+                LowBaseScoreResponse(
+                    symbol=b.symbol,
+                    name=b.name,
+                    sector=sector_by_symbol.get(b.symbol),
+                    total_score=b.total_score,
+                    valuation_score=b.valuation_score,
+                    price_position_score=b.price_position_score,
+                    quality_score=b.quality_score,
+                    institutional_technical_score=None,
+                    pe_percentile=b.details.get("pe_percentile"),
+                    ma240_deviation=b.details.get("ma240_deviation"),
+                    peg=b.details.get("peg"),
+                    details=b.details,
+                )
+            )
+    else:
+        # ── Enhanced scan: per-symbol I/O-bound path (unchanged) ─────────
+        # Each symbol fetches institutional flow (async I/O) and runs the
+        # signal scanner; it is I/O-bound, not a CPU-vectorization target,
+        # so the per-symbol loop stays.
+        assert institutional_provider is not None
+        assert scanner is not None
+        for stock_id, symbol, name, sector, _count in stock_rows:
+            prices = prices_by_stock.get(stock_id, [])
 
-        # Calculate RSI
-        rsi_result = rsi_calc.calculate(closes, period=14)
-        rsi_values = rsi_result.values["RSI"]
-        current_rsi = None
-        for v in reversed(rsi_values):
-            if v is not None:
-                current_rsi = v
-                break
+            if not prices:
+                continue
 
-        # Enhanced-mode: fetch institutional + technical data
-        extra_kwargs: dict[str, float | None] = {}
-        if enhanced and institutional_provider is not None and scanner is not None:
+            closes = [float(p.close) for p in prices]
+            display_name = name or symbol
+
+            # Calculate RSI
+            rsi_result = rsi_calc.calculate(closes, period=14)
+            rsi_values = rsi_result.values["RSI"]
+            current_rsi = None
+            for v in reversed(rsi_values):
+                if v is not None:
+                    current_rsi = v
+                    break
+
+            # Enhanced-mode: fetch institutional + technical data
+            extra_kwargs: dict[str, float | None] = {}
             # --- Institutional flow ---
             try:
                 raw_symbol = symbol.replace(".TW", "").replace(".TWO", "")
@@ -185,32 +240,32 @@ async def scan_low_base(
                     exc_info=True,
                 )
 
-        # Calculate score
-        score = calculate_low_base_score(
-            symbol=symbol,
-            name=display_name,
-            closes=closes,
-            rsi=current_rsi,
-            **extra_kwargs,  # type: ignore[arg-type]
-        )
-
-        if not score.disqualified:
-            scores.append(
-                LowBaseScoreResponse(
-                    symbol=score.symbol,
-                    name=score.name,
-                    sector=sector,
-                    total_score=score.total_score,
-                    valuation_score=score.valuation_score,
-                    price_position_score=score.price_position_score,
-                    quality_score=score.quality_score,
-                    institutional_technical_score=score.institutional_technical_score,
-                    pe_percentile=score.details.get("pe_percentile"),
-                    ma240_deviation=score.details.get("ma240_deviation"),
-                    peg=score.details.get("peg"),
-                    details=score.details,
-                )
+            # Calculate score
+            score = calculate_low_base_score(
+                symbol=symbol,
+                name=display_name,
+                closes=closes,
+                rsi=current_rsi,
+                **extra_kwargs,  # type: ignore[arg-type]
             )
+
+            if not score.disqualified:
+                scores.append(
+                    LowBaseScoreResponse(
+                        symbol=score.symbol,
+                        name=score.name,
+                        sector=sector,
+                        total_score=score.total_score,
+                        valuation_score=score.valuation_score,
+                        price_position_score=score.price_position_score,
+                        quality_score=score.quality_score,
+                        institutional_technical_score=score.institutional_technical_score,
+                        pe_percentile=score.details.get("pe_percentile"),
+                        ma240_deviation=score.details.get("ma240_deviation"),
+                        peg=score.details.get("peg"),
+                        details=score.details,
+                    )
+                )
 
     # Sort by total_score descending
     scores.sort(key=lambda s: s.total_score, reverse=True)
