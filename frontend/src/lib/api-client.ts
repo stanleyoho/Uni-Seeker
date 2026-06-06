@@ -1075,6 +1075,13 @@ export type MultiCurrencyHoldingSummary = Schemas["MultiCurrencySummaryResponse"
 export type HoldingDividend = Schemas["DividendResponse"];
 export type HoldingDividendCreateRequest = Schemas["DividendCreateRequest"];
 export type HoldingDividendUpdateRequest = Schemas["DividendUpdateRequest"];
+/**
+ * 本月股息收入 widget payload (K4 婆媽). `gross_amount` / `net_amount`
+ * are Decimal-as-string and count CASH dividends only; `stock_count` is
+ * the 配股 row count for an optional badge. "本月" = cash-received month
+ * (pay_date → fallback ex_dividend_date).
+ */
+export type MonthlyDividendSummary = Schemas["MonthlyDividendSummaryResponse"];
 
 // ── CSV Import (Phase 4) ──────────────────────────────────────────────────
 
@@ -1301,6 +1308,17 @@ export async function deleteHoldingDividend(id: number): Promise<void> {
   await apiFetch<void>(`${API_BASE}/holdings/dividends/${id}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * Current-month dividend income for the 本月股息收入 widget. CASH-only
+ * money total keyed on the cash-received date; ungated (same as
+ * `/holdings/summary`).
+ */
+export async function getMonthlyDividendSummary(): Promise<MonthlyDividendSummary> {
+  return apiFetch<MonthlyDividendSummary>(
+    `${API_BASE}/holdings/dividends/monthly-summary`,
+  );
 }
 
 // ── CSV Import (Phase 4) ──────────────────────────────────────────────────

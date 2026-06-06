@@ -45,6 +45,16 @@
       "position_count": "持股檔數",
       "by_currency": "幣別分布"
     },
+    "popo": {
+      "today_pnl_title": "今日盈虧",
+      "today_pnl_hint": "今日持倉市值變動",
+      "monthly_dividend_title": "本月股息收入",
+      "monthly_dividend_hint": "本月實收現金股利（淨額）",
+      "monthly_dividend_gross": "毛額 {amount}",
+      "monthly_dividend_cash_count": "{count} 筆現金股利",
+      "monthly_dividend_stock_count": "另有配股 {count} 筆",
+      "empty_value": "—"
+    },
     "actions": {
       "add_account": "新增帳戶",
       "add_trade": "記錄交易",

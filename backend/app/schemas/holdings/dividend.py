@@ -155,11 +155,41 @@ class DividendResponse(BaseModel):
         return self.total_amount - Decimal(self.withholding_tax)
 
 
+class MonthlyDividendSummaryResponse(BaseModel):
+    """GET /holdings/dividends/monthly-summary body — 本月股息收入 widget.
+
+    Money figures (`gross_amount` / `net_amount`) count CASH dividends
+    ONLY. STOCK 配股 `amount_per_share` is a ratio, not cash, so it is
+    excluded from the income total; `stock_count` is surfaced separately
+    for an optional "本月配股 N 筆" badge.
+
+    "本月" basis is the cash-received date: `pay_date` when set, falling
+    back to `ex_dividend_date` when NULL.
+
+    BaseModel + Decimal-as-string (not StrictModel — that is request-only
+    in this codebase). `gross_amount` / `net_amount` ship as exact
+    strings per the Decimal-as-string wire contract (CLAUDE.md line 35).
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    month: str  # "YYYY-MM" of the queried window.
+    gross_amount: Decimal
+    net_amount: Decimal
+    cash_count: int
+    stock_count: int
+
+    @field_serializer("gross_amount", "net_amount", when_used="json")
+    def _serialize_decimal(self, value: Decimal) -> str:
+        return str(value)
+
+
 __all__ = [
     "DividendCreateRequest",
     "DividendResponse",
     "DividendType",
     "DividendUpdateRequest",
+    "MonthlyDividendSummaryResponse",
 ]
 
 

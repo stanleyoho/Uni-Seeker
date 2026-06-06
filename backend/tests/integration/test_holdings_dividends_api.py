@@ -155,6 +155,81 @@ async def test_create_cash_dividend_pro_user_201(
     assert Decimal(body["net_amount"]) == Decimal("450")
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+# GET /holdings/dividends/monthly-summary  (K4 婆媽 widget)
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_monthly_summary_route_resolves_before_id_param(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """`monthly-summary` must hit the dedicated handler, NOT be parsed as
+    an int `dividend_id` (which would 422). Empty portfolio → zeros."""
+    user = await _mk_user(db_session, "div_ms1@x.tw")
+    r = await client.get("/api/v1/holdings/dividends/monthly-summary", headers=_auth(user))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert set(body) >= {
+        "month",
+        "gross_amount",
+        "net_amount",
+        "cash_count",
+        "stock_count",
+    }
+    # Decimal-as-string contract on the money fields.
+    assert isinstance(body["gross_amount"], str)
+    assert isinstance(body["net_amount"], str)
+    assert Decimal(body["gross_amount"]) == Decimal("0")
+    assert body["cash_count"] == 0
+    assert body["stock_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_monthly_summary_counts_cash_excludes_stock_money(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """End-to-end: a CASH + a STOCK dividend recorded this month — money
+    reflects CASH only, stock_count reflects the 配股 row."""
+    import datetime as _dt
+
+    today = _dt.date.today()
+    user = await _mk_user(db_session, "div_ms2@x.tw")
+    aid = await _create_account_via_api(client, user)
+    await _seed_buy(client, user, aid)
+    # CASH this month, pay_date today → 5×100 = 500 gross, 50 tax → 450 net
+    rc = await client.post(
+        "/api/v1/holdings/dividends",
+        json=_cash_body(
+            aid,
+            ex_dividend_date=today.isoformat(),
+            pay_date=today.isoformat(),
+        ),
+        headers=_auth(user),
+    )
+    assert rc.status_code == 201, rc.text
+    # STOCK this month → must NOT add to money, only stock_count.
+    rs = await client.post(
+        "/api/v1/holdings/dividends",
+        json=_stock_body(
+            aid,
+            ex_dividend_date=today.isoformat(),
+            pay_date=today.isoformat(),
+        ),
+        headers=_auth(user),
+    )
+    assert rs.status_code == 201, rs.text
+
+    r = await client.get("/api/v1/holdings/dividends/monthly-summary", headers=_auth(user))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert Decimal(body["gross_amount"]) == Decimal("500")
+    assert Decimal(body["net_amount"]) == Decimal("450")
+    assert body["cash_count"] == 1
+    assert body["stock_count"] == 1
+    assert body["month"] == today.strftime("%Y-%m")
+
+
 @pytest.mark.asyncio
 async def test_create_stock_dividend_pro_user_201(
     client: AsyncClient, db_session: AsyncSession

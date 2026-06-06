@@ -43,6 +43,7 @@ from app.schemas.holdings.dividend import (
     DividendCreateRequest,
     DividendResponse,
     DividendUpdateRequest,
+    MonthlyDividendSummaryResponse,
 )
 from app.services.portfolio import PortfolioDividendService
 from app.services.portfolio.dividend_service import PortfolioDividendNotFoundError
@@ -158,6 +159,29 @@ async def list_dividends(
     # can push limit/offset into the repo if profiling demands it.
     sliced = rows[offset : offset + limit]
     return [DividendResponse.model_validate(r) for r in sliced]
+
+
+@router.get(
+    "/dividends/monthly-summary",
+    response_model=MonthlyDividendSummaryResponse,
+)
+async def get_monthly_dividend_summary(
+    db: DbDep,
+    user: UserDep,
+) -> MonthlyDividendSummaryResponse:
+    """Current-month dividend income (本月股息收入 widget).
+
+    Registered BEFORE ``/dividends/{dividend_id}`` so the literal path
+    ``monthly-summary`` is not swallowed by the int path param.
+
+    Money figures count CASH dividends ONLY (STOCK 配股 is a ratio, not
+    cash); the "本月" window is keyed on the cash-received date
+    (``pay_date`` → fallback ``ex_dividend_date``). Ungated like
+    ``/summary`` — a read of the user's own already-owned data.
+    """
+    service = PortfolioDividendService(db, user)  # type: ignore[arg-type]
+    summary = await service.get_monthly_dividend_summary()
+    return MonthlyDividendSummaryResponse.model_validate(summary)
 
 
 @router.get(

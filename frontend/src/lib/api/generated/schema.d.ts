@@ -1676,6 +1676,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/holdings/dividends/monthly-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Monthly Dividend Summary
+         * @description Current-month dividend income (本月股息收入 widget).
+         *
+         *     Registered BEFORE ``/dividends/{dividend_id}`` so the literal path
+         *     ``monthly-summary`` is not swallowed by the int path param.
+         *
+         *     Money figures count CASH dividends ONLY (STOCK 配股 is a ratio, not
+         *     cash); the "本月" window is keyed on the cash-received date
+         *     (``pay_date`` → fallback ``ex_dividend_date``). Ungated like
+         *     ``/summary`` — a read of the user's own already-owned data.
+         */
+        get: operations["get_monthly_dividend_summary_api_v1_holdings_dividends_monthly_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/holdings/dividends/{dividend_id}": {
         parameters: {
             query?: never;
@@ -4756,6 +4784,34 @@ export interface components {
             total_trades: number;
             /** Profit Factor */
             profit_factor: string;
+        };
+        /**
+         * MonthlyDividendSummaryResponse
+         * @description GET /holdings/dividends/monthly-summary body — 本月股息收入 widget.
+         *
+         *     Money figures (`gross_amount` / `net_amount`) count CASH dividends
+         *     ONLY. STOCK 配股 `amount_per_share` is a ratio, not cash, so it is
+         *     excluded from the income total; `stock_count` is surfaced separately
+         *     for an optional "本月配股 N 筆" badge.
+         *
+         *     "本月" basis is the cash-received date: `pay_date` when set, falling
+         *     back to `ex_dividend_date` when NULL.
+         *
+         *     BaseModel + Decimal-as-string (not StrictModel — that is request-only
+         *     in this codebase). `gross_amount` / `net_amount` ship as exact
+         *     strings per the Decimal-as-string wire contract (CLAUDE.md line 35).
+         */
+        MonthlyDividendSummaryResponse: {
+            /** Month */
+            month: string;
+            /** Gross Amount */
+            gross_amount: string;
+            /** Net Amount */
+            net_amount: string;
+            /** Cash Count */
+            cash_count: number;
+            /** Stock Count */
+            stock_count: number;
         };
         /**
          * MultiCurrencySummaryResponse
@@ -8766,6 +8822,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_monthly_dividend_summary_api_v1_holdings_dividends_monthly_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthlyDividendSummaryResponse"];
                 };
             };
         };

@@ -45,6 +45,16 @@
       "position_count": "Positions",
       "by_currency": "Currency Mix"
     },
+    "popo": {
+      "today_pnl_title": "Today's P&L",
+      "today_pnl_hint": "Change in holdings value today",
+      "monthly_dividend_title": "Dividends This Month",
+      "monthly_dividend_hint": "Cash dividends received this month (net)",
+      "monthly_dividend_gross": "Gross {amount}",
+      "monthly_dividend_cash_count": "{count} cash payouts",
+      "monthly_dividend_stock_count": "+{count} stock dividends",
+      "empty_value": "—"
+    },
     "actions": {
       "add_account": "New Account",
       "add_trade": "Log Trade",
