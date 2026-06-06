@@ -2365,6 +2365,10 @@ export interface paths {
         /**
          * Scan Stocks
          * @description Run the signal scanner across multiple stocks.
+         *
+         *     Each result row now also carries ``candlestick_patterns: list[str]``
+         *     — TA-Lib candlestick patterns firing on the latest bar. See
+         *     ``app.modules.scanner.patterns.SUPPORTED_PATTERNS`` for the list.
          */
         post: operations["scan_stocks_api_v1_scanner_scan_post"];
         delete?: never;
@@ -2382,7 +2386,8 @@ export interface paths {
         };
         /**
          * Get Stock Signals
-         * @description Get signals for a single stock.
+         * @description Get signals for a single stock, including any candlestick
+         *     patterns firing on the latest bar.
          */
         get: operations["get_stock_signals_api_v1_scanner__symbol__get"];
         put?: never;
@@ -5400,6 +5405,8 @@ export interface components {
             score: number;
             /** Signals */
             signals: components["schemas"]["SignalDetail"][];
+            /** Candlestick Patterns */
+            candlestick_patterns?: string[];
         };
         /** StrategyInfo */
         StrategyInfo: {
