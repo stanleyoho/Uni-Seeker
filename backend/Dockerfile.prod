@@ -15,6 +15,8 @@
 FROM python:3.12-slim AS builder
 
 # git + openssh-client are required to resolve `git+ssh://` deps via uv.
+# TA-Lib needs NO apt package: ta-lib>=0.6.0 ships a manylinux wheel that
+# bundles the C library, so the install is self-contained on this base.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git openssh-client \
     && rm -rf /var/lib/apt/lists/*
@@ -45,6 +47,10 @@ RUN --mount=type=ssh uv pip install --system "."
 
 FROM python:3.12-slim
 WORKDIR /app
+# No TA-Lib apt package needed at runtime: the ta-lib>=0.6.0 wheel bundles
+# `libta_lib.so` inside the installed site-packages, which is copied over
+# from the builder stage below — so `import talib` resolves with no system
+# shared object.
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY Uni-Seeker/backend /app

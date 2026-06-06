@@ -60,6 +60,11 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
 
+      # NOTE: ta-lib>=0.6.0 ships manylinux wheels that bundle the TA-Lib C
+      # library, so NO `apt-get install libta-lib0-dev` step is needed on
+      # ubuntu-latest (that apt package does not exist there and broke the
+      # original PR #114). `uv pip install` below pulls the self-contained
+      # wheel. See backend/pyproject.toml for the version pin rationale.
       - name: Install dependencies
         working-directory: backend
         run: |

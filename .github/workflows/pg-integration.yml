@@ -59,6 +59,8 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.AAE_DEPLOY_KEY }}
 
+      # ta-lib>=0.6.0 ships a self-contained manylinux wheel (bundles the C
+      # lib) — no apt step needed; see backend-ci.yml for context.
       - name: Install dependencies
         working-directory: backend
         run: |

@@ -16,6 +16,7 @@ from app.models.price import StockPrice
 from app.models.signal_fire import SignalFire
 from app.models.stock import Stock
 from app.modules.scanner.engine import SignalScanner, StockSignal
+from app.modules.scanner.patterns import detect_patterns, pattern_names
 from app.modules.strategy import create_default_registry
 from app.modules.strategy.registry import StrategyRegistry
 from app.schemas.scanner import (
@@ -49,7 +50,10 @@ def _get_strategy_registry() -> StrategyRegistry:
     return create_default_registry()
 
 
-def _stock_signal_to_response(s: StockSignal) -> StockSignalResponse:
+def _stock_signal_to_response(
+    s: StockSignal,
+    candlestick_patterns: list[str] | None = None,
+) -> StockSignalResponse:
     return StockSignalResponse(
         symbol=s.symbol,
         name=s.name,
@@ -64,18 +68,23 @@ def _stock_signal_to_response(s: StockSignal) -> StockSignalResponse:
             )
             for sig in s.signals
         ],
+        candlestick_patterns=candlestick_patterns or [],
     )
 
 
-async def _fetch_stocks_closes(
+async def _fetch_stocks_ohlc(
     db: AsyncSession,
     symbols: list[str] | None = None,
     lookback: int = PRICE_LOOKBACK,
     max_stocks: int = DEFAULT_SCAN_MAX_STOCKS,
 ) -> list[dict[str, object]]:
-    """Fetch latest closing prices for stocks, grouped by symbol.
+    """Fetch latest OHLC prices for stocks, grouped by symbol.
 
-    Returns a list of dicts with keys ``symbol``, ``name``, ``closes``.
+    Returns a list of dicts with keys ``symbol``, ``name``, ``closes``,
+    ``opens``, ``highs``, ``lows``. The strategy scanner only needs
+    ``closes``; the candlestick pattern detector needs all four OHLC
+    series (TA-Lib pattern functions take ``open / high / low / close``).
+    Fetching all four columns is cheaper than calling twice.
 
     When ``symbols`` is omitted the query is bounded to the most
     recently-updated ``max_stocks`` active rows so a bare scan request
@@ -104,34 +113,71 @@ async def _fetch_stocks_closes(
 
     # Pull every price row for the candidate set in ONE query. The
     # composite index ``ix_stock_prices_stock_id_date`` services both the
-    # IN-filter and the ORDER BY without a sort step.
+    # IN-filter and the ORDER BY without a sort step. All four OHLC columns
+    # are fetched because the candlestick pattern detector needs them
+    # (TA-Lib pattern functions take open / high / low / close); fetching
+    # them here is cheaper than a second round-trip.
     query = (
-        select(StockPrice.stock_id, StockPrice.close, StockPrice.date)
+        select(
+            StockPrice.stock_id,
+            StockPrice.open,
+            StockPrice.high,
+            StockPrice.low,
+            StockPrice.close,
+            StockPrice.date,
+        )
         .where(StockPrice.stock_id.in_(list(id_to_meta.keys())))
         .order_by(StockPrice.stock_id, StockPrice.date.asc())
     )
     result = await db.execute(query)
     raw_rows = result.all()
-    # Re-shape into the legacy (symbol, name, close, date) row tuples so
-    # the grouping block below stays unchanged.
+    # Re-shape into (symbol, name, open, high, low, close, date) row tuples
+    # so the grouping block below stays unchanged.
     rows = [
-        (id_to_meta[stock_id][0], id_to_meta[stock_id][1], close_price, _date)
-        for stock_id, close_price, _date in raw_rows
+        (
+            id_to_meta[stock_id][0],
+            id_to_meta[stock_id][1],
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            _date,
+        )
+        for stock_id, open_price, high_price, low_price, close_price, _date in raw_rows
         if stock_id in id_to_meta
     ]
 
-    # Group by symbol, keeping only last `lookback` prices per stock.
+    # Group by symbol, keeping all OHLC series. Trim to lookback at the
+    # end so each stock contributes 4 lists of equal length.
     grouped: dict[str, dict[str, object]] = {}
-    for symbol, name, close_price, _date in rows:
-        entry = grouped.setdefault(symbol, {"symbol": symbol, "name": name, "closes": []})
+    for symbol, name, open_p, high_p, low_p, close_p, _date in rows:
+        entry = grouped.setdefault(
+            symbol,
+            {
+                "symbol": symbol,
+                "name": name,
+                "opens": [],
+                "highs": [],
+                "lows": [],
+                "closes": [],
+            },
+        )
+        # Ignore type-checker about list[float] assignments — dict[str,
+        # object] forces casts that don't add safety here.
+        opens_list: list[float] = entry["opens"]  # type: ignore[assignment]
+        highs_list: list[float] = entry["highs"]  # type: ignore[assignment]
+        lows_list: list[float] = entry["lows"]  # type: ignore[assignment]
         closes_list: list[float] = entry["closes"]  # type: ignore[assignment]
-        closes_list.append(float(close_price))
+        opens_list.append(float(open_p))
+        highs_list.append(float(high_p))
+        lows_list.append(float(low_p))
+        closes_list.append(float(close_p))
 
-    # Trim to last `lookback` entries (data is already date-ascending).
     stocks_data: list[dict[str, object]] = []
     for entry in grouped.values():
-        closes_list = entry["closes"]  # type: ignore[assignment]
-        entry["closes"] = closes_list[-lookback:]
+        for key in ("opens", "highs", "lows", "closes"):
+            series: list[float] = entry[key]  # type: ignore[assignment]
+            entry[key] = series[-lookback:]
         stocks_data.append(entry)
 
     return stocks_data
@@ -143,8 +189,13 @@ async def scan_stocks(
     db: AsyncSession = Depends(get_db),
     registry: StrategyRegistry = Depends(_get_strategy_registry),
 ) -> ScanResponse:
-    """Run the signal scanner across multiple stocks."""
-    stocks_data = await _fetch_stocks_closes(db, symbols=req.symbols)
+    """Run the signal scanner across multiple stocks.
+
+    Each result row now also carries ``candlestick_patterns: list[str]``
+    — TA-Lib candlestick patterns firing on the latest bar. See
+    ``app.modules.scanner.patterns.SUPPORTED_PATTERNS`` for the list.
+    """
+    stocks_data = await _fetch_stocks_ohlc(db, symbols=req.symbols)
 
     if not stocks_data:
         raise HTTPException(status_code=404, detail="No stocks found for the given symbols")
@@ -162,8 +213,24 @@ async def scan_stocks(
                 f"Available: {', '.join(available_keys)}",
             )
 
-    results = scanner.scan_many(stocks_data, strategy_keys=req.strategy_keys)
+    # Scanner only needs closes — build a compatible list of dicts.
+    scanner_input: list[dict[str, object]] = [
+        {"symbol": s["symbol"], "name": s["name"], "closes": s["closes"]} for s in stocks_data
+    ]
+    results = scanner.scan_many(scanner_input, strategy_keys=req.strategy_keys)
     limited = results[: req.limit]
+
+    # Build a lookup: symbol -> candlestick pattern names firing on
+    # latest bar. Precomputed once so the response serializer is O(1).
+    pattern_by_symbol: dict[str, list[str]] = {}
+    for s in stocks_data:
+        symbol: str = s["symbol"]  # type: ignore[assignment]
+        opens: list[float] = s["opens"]  # type: ignore[assignment]
+        highs: list[float] = s["highs"]  # type: ignore[assignment]
+        lows: list[float] = s["lows"]  # type: ignore[assignment]
+        closes: list[float] = s["closes"]  # type: ignore[assignment]
+        hits = detect_patterns(opens, highs, lows, closes)
+        pattern_by_symbol[symbol] = pattern_names(hits)
 
     strategies_used = req.strategy_keys or available_keys
 
@@ -177,7 +244,9 @@ async def scan_stocks(
         logger.warning("signal_fire_persist_failed", error=str(exc))
 
     return ScanResponse(
-        results=[_stock_signal_to_response(r) for r in limited],
+        results=[
+            _stock_signal_to_response(r, pattern_by_symbol.get(r.symbol, [])) for r in limited
+        ],
         scan_date=datetime.now(tz=ZoneInfo("Asia/Taipei")).date().isoformat(),
         total_scanned=len(stocks_data),
         strategies_used=strategies_used,
@@ -245,16 +314,20 @@ async def get_stock_signals(
     registry: StrategyRegistry = Depends(_get_strategy_registry),
     strategy_keys: list[str] | None = Query(default=None),
 ) -> StockSignalResponse:
-    """Get signals for a single stock."""
+    """Get signals for a single stock, including any candlestick
+    patterns firing on the latest bar."""
     stock = await get_stock_or_404(db, symbol)
 
-    stocks_data = await _fetch_stocks_closes(db, symbols=[symbol])
+    stocks_data = await _fetch_stocks_ohlc(db, symbols=[symbol])
 
     if not stocks_data:
         raise HTTPException(status_code=404, detail=f"No price data found for '{symbol}'")
 
     entry = stocks_data[0]
     closes: list[float] = entry["closes"]  # type: ignore[assignment]
+    opens: list[float] = entry["opens"]  # type: ignore[assignment]
+    highs: list[float] = entry["highs"]  # type: ignore[assignment]
+    lows: list[float] = entry["lows"]  # type: ignore[assignment]
 
     if len(closes) < 2:
         raise HTTPException(status_code=400, detail=f"Insufficient price data for '{symbol}'")
@@ -278,4 +351,5 @@ async def get_stock_signals(
         strategy_keys=strategy_keys,
     )
 
-    return _stock_signal_to_response(result)
+    hits = detect_patterns(opens, highs, lows, closes)
+    return _stock_signal_to_response(result, pattern_names(hits))

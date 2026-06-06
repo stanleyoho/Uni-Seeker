@@ -22,6 +22,10 @@ WORKDIR /workspace
 # from the COPYed AAE packages), but obs-core has no copied checkout
 # inside the image — uv has to clone it, which needs git. The Debian
 # `python:3.12-slim` base has no git binary by default.
+#
+# NOTE: TA-Lib needs NO apt package here. ta-lib>=0.6.0 ships a manylinux
+# wheel that bundles the C library; it imports cleanly on the Debian-glibc
+# slim base. (`libta-lib0-dev` is not in Debian's default repos anyway.)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/*
