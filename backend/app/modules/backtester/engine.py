@@ -2,6 +2,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.models.price import StockPrice
+from app.modules.backtester.bootstrap import (
+    DEFAULT_BOOTSTRAP_SAMPLES,
+    DEFAULT_BOOTSTRAP_SEED,
+    BootstrapMetrics,
+    bootstrap_metrics,
+)
 from app.modules.backtester.metrics import BacktestMetrics, calculate_metrics
 from app.modules.backtester.portfolio import Portfolio
 from app.modules.strategy.base import Strategy
@@ -23,6 +29,12 @@ class BacktestConfig:
     position_size: float = DEFAULT_POSITION_SIZE  # 每次投入資金比例 (10%)
     stop_loss: float | None = None  # percentage, e.g. 10.0 = sell if -10%
     take_profit: float | None = None  # percentage, e.g. 30.0 = sell if +30%
+    # Bootstrap confidence intervals: resample returns/trades K times to
+    # report median + 5th/95th percentile CIs on key metrics. See
+    # ``app.modules.backtester.bootstrap``. Set ``bootstrap_samples=0`` to
+    # skip the computation (the result's ``bootstrap`` field stays ``None``).
+    bootstrap_samples: int = DEFAULT_BOOTSTRAP_SAMPLES
+    bootstrap_seed: int = DEFAULT_BOOTSTRAP_SEED
 
 
 @dataclass
@@ -32,6 +44,7 @@ class BacktestResult:
     portfolio: Portfolio
     equity_curve: list[float] = field(default_factory=list)
     trade_log: list[dict[str, object]] = field(default_factory=list)
+    bootstrap: BootstrapMetrics | None = None
 
 
 class BacktestEngine:
@@ -146,6 +159,16 @@ class BacktestEngine:
 
             portfolio.record_equity({symbol: close})
 
+        bootstrap = (
+            bootstrap_metrics(
+                portfolio,
+                samples=self._config.bootstrap_samples,
+                seed=self._config.bootstrap_seed,
+            )
+            if self._config.bootstrap_samples > 0
+            else None
+        )
+
         return BacktestResult(
             config=self._config,
             metrics=calculate_metrics(portfolio),
@@ -161,4 +184,5 @@ class BacktestEngine:
                 }
                 for t in portfolio.trades
             ],
+            bootstrap=bootstrap,
         )

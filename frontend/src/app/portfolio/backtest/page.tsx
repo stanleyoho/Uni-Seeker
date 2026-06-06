@@ -41,6 +41,26 @@ const labelCls =
 /*  BacktestResults — reused from original (manual mode)               */
 /* ------------------------------------------------------------------ */
 
+/* CI for a single metric (backend Decimal-as-string -> Number). */
+type MetricCI = { median: string; ci_low: string; ci_high: string };
+
+/**
+ * Render a "[low, high]" 90% confidence-interval caption for a KPI's `delta`
+ * slot. `digits` matches the metric's own precision; `suffix` appends a unit
+ * (e.g. "%"). Falls back to a plain label when no CI was estimated (small
+ * samples -> backend sends null).
+ */
+function ciCaption(
+  ci: MetricCI | null | undefined,
+  digits: number,
+  suffix = "",
+): string {
+  if (!ci) return "Performance Metric";
+  const low = Number(ci.ci_low).toFixed(digits);
+  const high = Number(ci.ci_high).toFixed(digits);
+  return `90% CI [${low}${suffix}, ${high}${suffix}]`;
+}
+
 function BacktestResults({ results }: { results: BacktestResult }) {
   const m = results.metrics;
   if (!m) return null;
@@ -52,29 +72,41 @@ function BacktestResults({ results }: { results: BacktestResult }) {
   const winRate = Number(m.win_rate);
   const profitFactor = Number(m.profit_factor);
 
+  // Bootstrap confidence intervals (null when sample too small to estimate).
+  const bs = results.bootstrap;
+
   const kpiData: {
     label: string;
     value: string;
+    delta: string;
     direction: "up" | "down" | "flat";
   }[] = [
     {
       label: "Total Return",
       value: `${totalReturn.toFixed(2)}%`,
+      // CI is on annualized return (CAGR), the bootstrappable analogue of
+      // the total return shown above.
+      delta: bs?.annualized_return
+        ? `CAGR 90% CI [${Number(bs.annualized_return.ci_low).toFixed(2)}%, ${Number(bs.annualized_return.ci_high).toFixed(2)}%]`
+        : "Performance Metric",
       direction: totalReturn > 0 ? "up" : "down",
     },
     {
       label: "Max Drawdown",
       value: `${maxDrawdown.toFixed(2)}%`,
+      delta: ciCaption(bs?.max_drawdown, 2, "%"),
       direction: "down",
     },
     {
       label: "Sharpe Ratio",
       value: sharpe.toFixed(2),
+      delta: ciCaption(bs?.sharpe_ratio, 2),
       direction: sharpe > 1 ? "up" : "flat",
     },
     {
       label: "Win Rate",
       value: `${winRate.toFixed(1)}%`,
+      delta: ciCaption(bs?.win_rate, 1, "%"),
       direction: winRate > 50 ? "up" : "down",
     },
   ];
@@ -88,7 +120,7 @@ function BacktestResults({ results }: { results: BacktestResult }) {
     <GlassPanel title="BACKTESTING SIMULATION RESULTS">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {kpiData.map((kpi) => (
-          <KpiCard key={kpi.label} {...kpi} delta="Performance Metric" />
+          <KpiCard key={kpi.label} {...kpi} />
         ))}
       </div>
 

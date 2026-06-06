@@ -12,6 +12,7 @@ from app.middleware.tier_guard import require_tier
 from app.models.enums import UserTier
 from app.models.price import StockPrice
 from app.modules.backtester.auto_discovery import AutoDiscoveryConfig, AutoDiscoveryEngine
+from app.modules.backtester.bootstrap import BootstrapMetrics, MetricCI
 from app.modules.backtester.engine import MIN_DATA_POINTS, BacktestConfig, BacktestEngine
 from app.modules.finmind.client import FinMindClient
 from app.modules.finmind.institutional_provider import FinMindInstitutionalProvider
@@ -21,7 +22,9 @@ from app.schemas.backtest import (
     AutoDiscoveryRequest,
     BacktestRequest,
     BacktestResponse,
+    BootstrapResponse,
     CompositeBacktestRequest,
+    MetricCIResponse,
     MetricsResponse,
     TradeRecord,
 )
@@ -93,6 +96,25 @@ async def _fetch_prices(
     return prices
 
 
+def _ci_to_response(ci: MetricCI | None) -> MetricCIResponse | None:
+    if ci is None:
+        return None
+    return MetricCIResponse(median=ci.median, ci_low=ci.ci_low, ci_high=ci.ci_high)
+
+
+def _bootstrap_to_response(bs: BootstrapMetrics | None) -> BootstrapResponse | None:
+    if bs is None:
+        return None
+    return BootstrapResponse(
+        samples=bs.samples,
+        seed=bs.seed,
+        annualized_return=_ci_to_response(bs.annualized_return),
+        sharpe_ratio=_ci_to_response(bs.sharpe_ratio),
+        max_drawdown=_ci_to_response(bs.max_drawdown),
+        win_rate=_ci_to_response(bs.win_rate),
+    )
+
+
 def _build_response(symbol: str, strategy_name: str, bt_result: Any) -> BacktestResponse:
     return BacktestResponse(
         symbol=symbol,
@@ -117,6 +139,7 @@ def _build_response(symbol: str, strategy_name: str, bt_result: Any) -> Backtest
             )
             for t in bt_result.trade_log
         ],
+        bootstrap=_bootstrap_to_response(getattr(bt_result, "bootstrap", None)),
     )
 
 

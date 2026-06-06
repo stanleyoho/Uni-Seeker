@@ -105,6 +105,38 @@ async def test_run_backtest(app_with_prices) -> None:
         assert len(data["equity_curve"]) == 60
 
 
+async def test_run_backtest_includes_bootstrap_cis(app_with_prices) -> None:
+    """The /run response surfaces bootstrap CIs for the key metrics."""
+    app, headers = app_with_prices
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/backtest/run",
+            json={
+                "symbol": "TEST.TW",
+                "strategy": "rsi_oversold",
+                "initial_capital": 1000000,
+                "position_size": 0.3,
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 200, resp.json()
+        data = resp.json()
+        assert "bootstrap" in data
+        bs = data["bootstrap"]
+        assert bs is not None
+        assert bs["samples"] > 0
+        assert "seed" in bs
+        # Return-distribution CIs are present for a 60-point equity curve.
+        sharpe_ci = bs["sharpe_ratio"]
+        assert sharpe_ci is not None
+        # Decimal-as-string; coerce and check CI ordering.
+        low = float(sharpe_ci["ci_low"])
+        median = float(sharpe_ci["median"])
+        high = float(sharpe_ci["ci_high"])
+        assert low <= median <= high
+
+
 async def test_unknown_strategy(app_with_prices) -> None:
     app, headers = app_with_prices
     transport = ASGITransport(app=app)
