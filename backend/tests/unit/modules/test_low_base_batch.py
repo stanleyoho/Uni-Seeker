@@ -21,7 +21,9 @@ from app.modules.low_base.batch import (
 from app.modules.low_base.scorer import calculate_low_base_score
 
 
-def _scalar_row(symbol: str, name: str, closes: list[float], rsi: float | None) -> dict[str, object]:
+def _scalar_row(
+    symbol: str, name: str, closes: list[float], rsi: float | None
+) -> dict[str, object]:
     """Run the existing per-symbol scorer (the old path) for one symbol.
 
     Returns the comparable fields as a plain dict so the parity assertion
@@ -54,8 +56,7 @@ def _assert_parity(batch: BatchScore, scalar: dict[str, object]) -> None:
     assert batch.quality_score == scalar["quality_score"]
     # Detail keys + values must match exactly (the API serializes these).
     assert batch.details == scalar["details"], (
-        f"details mismatch for {batch.symbol}: "
-        f"batch={batch.details} scalar={scalar['details']}"
+        f"details mismatch for {batch.symbol}: batch={batch.details} scalar={scalar['details']}"
     )
 
 
