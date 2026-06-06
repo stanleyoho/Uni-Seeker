@@ -71,3 +71,71 @@ async def test_metrics_endpoint_returns_prometheus_text(monkeypatch):
     assert "text/plain" in r.headers.get("content-type", "")
     body = r.text
     assert "uni_tier_upgrade_total" in body  # custom counter exposed
+
+
+# ── B6b: latency histograms ──────────────────────────────────────────────────
+
+
+def test_module_exports_expected_histograms():
+    """B6b latency histograms are exposed at module level."""
+    from prometheus_client import Histogram
+
+    from app.obs import metrics
+
+    assert isinstance(metrics.YFINANCE_FETCH_SECONDS, Histogram)
+    assert isinstance(metrics.FINMIND_FETCH_SECONDS, Histogram)
+    assert isinstance(metrics.SCORER_SECONDS, Histogram)
+
+
+def test_scorer_histogram_observes():
+    """Observing a sample bumps the histogram's _count for that label set."""
+    from app.obs.metrics import SCORER_SECONDS
+
+    sample = SCORER_SECONDS.labels(scorer="unit_test")
+    before = sample._sum.get()
+    sample.observe(0.012)
+    after = sample._sum.get()
+    assert after == pytest.approx(before + 0.012)
+
+
+def test_finmind_histogram_has_outcome_label():
+    """FinMind histogram is keyed by dataset + outcome so a degrading
+    dataset is sliceable."""
+    from app.obs.metrics import FINMIND_FETCH_SECONDS
+
+    # Should not raise — both label names must exist.
+    FINMIND_FETCH_SECONDS.labels(dataset="TaiwanStockPrice", outcome="ok").observe(0.5)
+
+
+def test_calculate_health_score_records_latency():
+    """The scorer timing wrapper must observe into uni_scorer_seconds."""
+    from app.modules.financial_analysis.ratios import FinancialRatios
+    from app.modules.financial_analysis.scorer import calculate_health_score
+    from app.obs.metrics import SCORER_SECONDS
+
+    def _count(scorer: str) -> float:
+        # Histogram children expose no public _count; per-bucket counters are
+        # non-cumulative, so total observations = their sum.
+        child = SCORER_SECONDS.labels(scorer=scorer)
+        return sum(b.get() for b in child._buckets)
+
+    before = _count("financial_health")
+    ratios = FinancialRatios(symbol="2330", period="2024Q4")
+    calculate_health_score(ratios)
+    after = _count("financial_health")
+    assert after == before + 1
+
+
+def test_calculate_low_base_score_records_latency():
+    """The low-base scorer timing wrapper must observe into uni_scorer_seconds."""
+    from app.modules.low_base.scorer import calculate_low_base_score
+    from app.obs.metrics import SCORER_SECONDS
+
+    def _count(scorer: str) -> float:
+        child = SCORER_SECONDS.labels(scorer=scorer)
+        return sum(b.get() for b in child._buckets)
+
+    before = _count("low_base")
+    calculate_low_base_score(symbol="2330", name="台積電", closes=[100.0] * 60, pe=15.0)
+    after = _count("low_base")
+    assert after == before + 1

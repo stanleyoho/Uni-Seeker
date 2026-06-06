@@ -58,6 +58,52 @@ def test_init_sentry_passes_environment_release_sample_rate(monkeypatch):
     assert kwargs["send_default_pii"] is False
 
 
+def test_init_sentry_sets_component_tag(monkeypatch):
+    """B6c: a successful init tags the scope with component=backend."""
+    monkeypatch.setenv("SENTRY_DSN", "https://fakekey@sentry.io/123")
+    monkeypatch.setenv("ENV", "prod")
+    with (
+        patch("observability_core.sentry.sentry_sdk.init"),
+        patch("observability_core.sentry.sentry_sdk.set_tag"),
+        patch("app.obs.sentry.sentry_sdk.set_tag") as wrapper_set_tag,
+    ):
+        from app.obs.sentry import init_sentry
+
+        ok = init_sentry(service="uni-seeker-backend")
+    assert ok is True
+    wrapper_set_tag.assert_any_call("component", "backend")
+
+
+def test_init_sentry_does_not_tag_when_skipped(monkeypatch):
+    """B6c: when init is skipped (no DSN) the component tag is NOT set."""
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    monkeypatch.setenv("ENV", "prod")
+    with patch("app.obs.sentry.sentry_sdk.set_tag") as wrapper_set_tag:
+        from app.obs.sentry import init_sentry
+
+        ok = init_sentry(service="uni-seeker-backend")
+    assert ok is False
+    wrapper_set_tag.assert_not_called()
+
+
+def test_set_task_tags_forwards_to_sentry_sdk():
+    """B6c: set_task_tags forwards each kwarg to sentry_sdk.set_tag."""
+    with patch("app.obs.sentry.sentry_sdk.set_tag") as set_tag:
+        from app.obs.sentry import set_task_tags
+
+        set_task_tags(task="prices", dataset="prices")
+    set_tag.assert_any_call("task", "prices")
+    set_tag.assert_any_call("dataset", "prices")
+
+
+def test_set_task_tags_is_fail_soft_without_init():
+    """set_task_tags must not raise when Sentry was never initialised."""
+    from app.obs.sentry import set_task_tags
+
+    # No DSN configured in this test → sentry_sdk.set_tag is a no-op, not an error.
+    set_task_tags(task="margin", dataset="margin")
+
+
 def test_init_sentry_skipped_in_test_env(monkeypatch):
     """ENV=test must short-circuit even if DSN is set."""
     monkeypatch.setenv("ENV", "test")

@@ -77,6 +77,13 @@ jobs:
           ruff check app/ tests/
           ruff format --check app/ tests/
 
+      # B6d: enforce the app's intended layering (contracts in
+      # backend/pyproject.toml [tool.importlinter]). Fails the build on a
+      # reverse-layer import (e.g. a domain module importing the API layer).
+      - name: Import layering (import-linter)
+        working-directory: backend
+        run: lint-imports
+
       - name: Type check (mypy)
         working-directory: backend
         run: mypy app/

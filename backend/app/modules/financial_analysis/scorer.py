@@ -1,6 +1,8 @@
+import time
 from dataclasses import dataclass
 
 from app.modules.financial_analysis.ratios import FinancialRatios
+from app.obs.metrics import SCORER_SECONDS
 
 
 @dataclass
@@ -34,7 +36,22 @@ def _score_range(value: float | None, bad: float, good: float, max_score: float 
 
 
 def calculate_health_score(ratios: FinancialRatios) -> HealthScore:
-    """Calculate composite health score (0-100) from financial ratios."""
+    """Calculate composite health score (0-100) from financial ratios.
+
+    Timing wrapper (B6b): the actual computation lives in
+    ``_calculate_health_score_impl``; this wrapper records wall-clock latency
+    in the ``uni_scorer_seconds`` histogram so a regression in the per-stock
+    scoring hot path (called once per stock in the financials view) is visible
+    as a p95 shift.
+    """
+    started = time.monotonic()
+    try:
+        return _calculate_health_score_impl(ratios)
+    finally:
+        SCORER_SECONDS.labels(scorer="financial_health").observe(time.monotonic() - started)
+
+
+def _calculate_health_score_impl(ratios: FinancialRatios) -> HealthScore:
     details: dict[str, str] = {}
 
     # Profitability (0-25)

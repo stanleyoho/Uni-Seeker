@@ -1,4 +1,5 @@
 import asyncio
+import time
 from decimal import Decimal
 from functools import partial
 
@@ -6,6 +7,7 @@ import structlog
 import yfinance as yf
 
 from app.modules.price_updater.base import StockPriceData
+from app.obs.metrics import YFINANCE_FETCH_SECONDS
 
 logger = structlog.get_logger()
 
@@ -34,6 +36,18 @@ class YFinanceProvider:
         return await loop.run_in_executor(None, partial(self._fetch_sync, symbol))
 
     def _fetch_history_sync(self, symbol: str, period: str = "1y") -> list[StockPriceData]:
+        started = time.monotonic()
+        outcome = "error"
+        try:
+            result = self._do_fetch_history_sync(symbol, period)
+            outcome = "ok" if result else "empty"
+            return result
+        finally:
+            YFINANCE_FETCH_SECONDS.labels(method="fetch_history", outcome=outcome).observe(
+                time.monotonic() - started
+            )
+
+    def _do_fetch_history_sync(self, symbol: str, period: str = "1y") -> list[StockPriceData]:
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period=period)
         if hist.empty:
@@ -64,6 +78,18 @@ class YFinanceProvider:
         return await loop.run_in_executor(None, partial(self._fetch_history_sync, symbol, period))
 
     def _fetch_sync(self, symbol: str) -> list[StockPriceData]:
+        started = time.monotonic()
+        outcome = "error"
+        try:
+            result = self._do_fetch_sync(symbol)
+            outcome = "ok" if result else "empty"
+            return result
+        finally:
+            YFINANCE_FETCH_SECONDS.labels(method="fetch_daily", outcome=outcome).observe(
+                time.monotonic() - started
+            )
+
+    def _do_fetch_sync(self, symbol: str) -> list[StockPriceData]:
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period="5d")
         if hist.empty:

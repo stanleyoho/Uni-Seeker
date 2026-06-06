@@ -6,7 +6,7 @@ import and `.inc()` / `.set()` without managing registry state.
 
 from __future__ import annotations
 
-from prometheus_client import REGISTRY, Counter, Gauge
+from prometheus_client import REGISTRY, Counter, Gauge, Histogram
 
 
 def _safe_counter(name: str, documentation: str, labelnames: tuple[str, ...]) -> Counter:
@@ -25,6 +25,28 @@ def _safe_counter(name: str, documentation: str, labelnames: tuple[str, ...]) ->
         existing = REGISTRY._names_to_collectors.get(name)
         if existing is None:
             existing = REGISTRY._names_to_collectors.get(f"{name}_total")
+        if existing is None:
+            raise
+        return existing  # type: ignore[return-value]
+
+
+def _safe_histogram(
+    name: str,
+    documentation: str,
+    labelnames: tuple[str, ...],
+    buckets: tuple[float, ...],
+) -> Histogram:
+    """Register a Histogram idempotently (duplicate-safe for pytest re-imports).
+
+    Mirrors ``_safe_counter``. On duplicate registration we recover the
+    existing collector from the REGISTRY internals. A Histogram registers its
+    sample timeseries under the *base* name (the public ``_bucket`` / ``_sum``
+    / ``_count`` suffixes are derived), so the base name is the lookup key.
+    """
+    try:
+        return Histogram(name, documentation, labelnames=labelnames, buckets=buckets)
+    except ValueError:
+        existing = REGISTRY._names_to_collectors.get(name)
         if existing is None:
             raise
         return existing  # type: ignore[return-value]
@@ -96,4 +118,42 @@ SYNC_TASK_FAILURES_TOTAL: Counter = _safe_counter(
     "uni_sync_task_failures_total",
     "Sync task exceptions caught by SyncScheduler.run_task by task and error class",
     labelnames=("task", "error_type"),
+)
+
+# ── latency-sensitive call-path histograms (B6b) ─────────────────────────────
+# Audit (2026-06-01) flagged three hot paths with no latency visibility:
+# upstream price/financial fetches (network-bound, the dominant tail in the
+# nightly sync) and the in-process scorer (CPU-bound, called per-stock in the
+# scanner). Counters tell us *how often*; these histograms tell us *how slow*,
+# so a degrading upstream or a scorer regression is observable as a p95 shift
+# rather than only as a timeout count.
+#
+# Bucket choices reflect each path's expected scale:
+# - network fetches: sub-second to multi-second, with a long tail when an
+#   upstream is throttling — so buckets run out to 30s.
+# - scorer: in-memory arithmetic over already-fetched ratios, expected to be
+#   well under a second — so buckets are fine-grained in the millisecond range.
+
+_NETWORK_FETCH_BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0)
+_SCORER_BUCKETS = (0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0)
+
+YFINANCE_FETCH_SECONDS: Histogram = _safe_histogram(
+    "uni_yfinance_fetch_seconds",
+    "Wall-clock latency of a yfinance Ticker.history() fetch by method and outcome",
+    labelnames=("method", "outcome"),
+    buckets=_NETWORK_FETCH_BUCKETS,
+)
+
+FINMIND_FETCH_SECONDS: Histogram = _safe_histogram(
+    "uni_finmind_fetch_seconds",
+    "Wall-clock latency of a FinMind API fetch by dataset and outcome",
+    labelnames=("dataset", "outcome"),
+    buckets=_NETWORK_FETCH_BUCKETS,
+)
+
+SCORER_SECONDS: Histogram = _safe_histogram(
+    "uni_scorer_seconds",
+    "Wall-clock latency of a scorer computation by scorer name",
+    labelnames=("scorer",),
+    buckets=_SCORER_BUCKETS,
 )
