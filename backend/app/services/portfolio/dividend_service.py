@@ -57,6 +57,7 @@ from app.repositories.portfolio import (
     PortfolioLotRepo,
     PortfolioPositionRepo,
 )
+from app.repositories.portfolio.dividend_repo import MonthlyDividendSummary
 from app.services.audit import log_audit_event
 from app.services.portfolio.exceptions import (
     PortfolioAccountNotFound,
@@ -226,6 +227,18 @@ class PortfolioDividendService:
     async def get_dividend(self, dividend_id: int) -> PortfolioDividend:
         """Fetch one owned dividend or raise `PortfolioDividendNotFoundError`."""
         return await self._require_owned_dividend(dividend_id)
+
+    async def get_monthly_dividend_summary(self) -> MonthlyDividendSummary:
+        """Current-month dividend income across the user's accounts.
+
+        Thin pass-through to `PortfolioDividendRepo.get_monthly_dividend_summary`
+        — the aggregation (CASH-only money sum keyed on
+        ``COALESCE(pay_date, ex_dividend_date)``, STOCK count) lives in the
+        repo's single grouped query. No tier gate: viewing one's own
+        income total is a read of already-owned data, consistent with the
+        `/summary` endpoint which is also ungated.
+        """
+        return await self._dividend_repo.get_monthly_dividend_summary(self._user.id)
 
     async def update_dividend(self, dividend_id: int, **fields: Any) -> PortfolioDividend:
         """PATCH a dividend; only `note` / `pay_date` / `withholding_tax`

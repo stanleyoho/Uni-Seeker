@@ -10,16 +10,37 @@ business logic (cost-basis effect, tier check) lives here.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any, NamedTuple
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import case, delete, func, select, update
 
 from app.db.models.portfolio.account import PortfolioAccount
 from app.db.models.portfolio.dividend import PortfolioDividend
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class MonthlyDividendSummary(NamedTuple):
+    """Aggregated dividend income for one calendar month.
+
+    Money figures (`gross_amount` / `net_amount`) count CASH dividends
+    ONLY — STOCK 配股 `amount_per_share` is a ratio, not cash, so it is
+    excluded from the income total (婆媽 widget shows "本月股息收入" =
+    cash actually received). `stock_count` is surfaced separately so the
+    UI can optionally show "本月配股 N 筆" without polluting the cash sum.
+
+    The "本月" basis is the date cash is *received*: `pay_date` when set,
+    falling back to `ex_dividend_date` when `pay_date` is NULL.
+    """
+
+    month: str  # "YYYY-MM" of the queried window, for display / sanity.
+    gross_amount: Decimal  # Σ amount_per_share × quantity_at_record (CASH).
+    net_amount: Decimal  # gross − withholding_tax (CASH).
+    cash_count: int  # number of CASH dividend rows in the window.
+    stock_count: int  # number of STOCK 配股 rows in the window (badge only).
 
 
 class PortfolioDividendRepo:
@@ -174,3 +195,77 @@ class PortfolioDividendRepo:
             )
         )
         return int(result.scalar() or 0)
+
+    async def get_monthly_dividend_summary(
+        self, user_id: int, *, today: date | None = None
+    ) -> MonthlyDividendSummary:
+        """Aggregate the user's dividend income for the current calendar
+        month (本月股息收入 widget).
+
+        "本月" basis = the date cash is received: ``pay_date`` when set,
+        falling back to ``ex_dividend_date`` when ``pay_date`` is NULL
+        (``COALESCE(pay_date, ex_dividend_date)``). The window is
+        ``[month_start, next_month_start)`` of `today` (defaults to the
+        current UTC date; injectable for deterministic tests).
+
+        Money figures count CASH dividends ONLY — STOCK 配股 stores a
+        ratio in ``amount_per_share`` (not cash), so summing it would be
+        meaningless. STOCK rows are counted separately into
+        ``stock_count`` for an optional badge.
+
+        Performed as a single grouped query (no per-row Python) so the
+        I/O cost is one round trip regardless of dividend volume.
+        """
+        now_date = today or datetime.now(UTC).date()
+        month_start = now_date.replace(day=1)
+        # First day of next month, handling the December → January roll.
+        if month_start.month == 12:
+            next_month_start = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            next_month_start = month_start.replace(month=month_start.month + 1)
+
+        received_date = func.coalesce(
+            PortfolioDividend.pay_date, PortfolioDividend.ex_dividend_date
+        )
+        gross_expr = PortfolioDividend.amount_per_share * PortfolioDividend.quantity_at_record
+        is_cash = PortfolioDividend.dividend_type == "CASH"
+
+        result = await self.db.execute(
+            select(
+                func.coalesce(
+                    func.sum(case((is_cash, gross_expr), else_=0)),
+                    0,
+                ).label("gross"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (is_cash, gross_expr - PortfolioDividend.withholding_tax),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("net"),
+                func.coalesce(func.sum(case((is_cash, 1), else_=0)), 0).label("cash_count"),
+                func.coalesce(
+                    func.sum(case((PortfolioDividend.dividend_type == "STOCK", 1), else_=0)),
+                    0,
+                ).label("stock_count"),
+            )
+            .join(
+                PortfolioAccount,
+                PortfolioAccount.id == PortfolioDividend.account_id,
+            )
+            .where(
+                PortfolioAccount.user_id == user_id,
+                received_date >= month_start,
+                received_date < next_month_start,
+            )
+        )
+        row = result.one()
+        return MonthlyDividendSummary(
+            month=month_start.strftime("%Y-%m"),
+            gross_amount=Decimal(str(row.gross)),
+            net_amount=Decimal(str(row.net)),
+            cash_count=int(row.cash_count),
+            stock_count=int(row.stock_count),
+        )

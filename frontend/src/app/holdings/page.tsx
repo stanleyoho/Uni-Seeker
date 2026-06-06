@@ -32,6 +32,7 @@ import {
   CurrencySwitcher,
   HoldingsKpiRow,
   HoldingsTableResponsive,
+  PopoSummaryWidgets,
   PositionsEmptyState,
   PullToRefreshWrapper,
 } from "@/components/holdings";
@@ -274,6 +275,19 @@ export default function HoldingsPage() {
             {holdingsTitle}
           </h1>
         </div>
+
+        {/* K4 婆媽 portfolio widgets — 今日盈虧 + 本月股息收入.
+            Pinned to the top so non-technical users see the two numbers
+            that matter most before any chrome. 今日盈虧 reuses the
+            summary's total_daily_change (no new backend); 本月股息收入
+            has its own monthly-summary hook. */}
+        <section data-tour="holdings-popo">
+          <PopoSummaryWidgets
+            summary={summary}
+            summaryLoading={summaryLoading}
+            displayCurrency={selectedCurrency}
+          />
+        </section>
 
         {/* Currency switcher (Round 10 Z1) */}
         <section data-tour="holdings-currency">

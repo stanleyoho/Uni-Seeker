@@ -23,6 +23,11 @@ export {
 } from "./holdings-kpi-row";
 
 export {
+  PopoSummaryWidgets,
+  type PopoSummaryWidgetsProps,
+} from "./popo-summary-widgets";
+
+export {
   HoldingsTable,
   type HoldingsTableProps,
 } from "./holdings-table";

@@ -14,6 +14,7 @@ import {
   getHoldingDividend,
   getHoldingPosition,
   getHoldingTrade,
+  getMonthlyDividendSummary,
   getUserHoldingSummary,
   importHoldingsCsv,
   listHoldingAccounts,
@@ -261,6 +262,19 @@ export function useHoldingDividends(
     queryFn: () => listHoldingDividends(accountId, limit, offset),
     staleTime: 30 * 1000,
     placeholderData: (): HoldingDividend[] => [],
+  });
+}
+
+/**
+ * 本月股息收入 widget data (K4 婆媽). CASH-only money total for the
+ * current calendar month (cash-received basis). Same 30s staleTime as
+ * the sibling holdings queries.
+ */
+export function useMonthlyDividendSummary() {
+  return useQuery({
+    queryKey: queryKeys.holdings.dividends.monthlySummary(),
+    queryFn: () => getMonthlyDividendSummary(),
+    staleTime: 30 * 1000,
   });
 }
 

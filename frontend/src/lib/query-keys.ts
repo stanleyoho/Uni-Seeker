@@ -215,6 +215,8 @@ export const queryKeys = {
       list: (accountId?: number, limit?: number, offset?: number) =>
         ["holdings", "dividends", "list", accountId, limit, offset] as const,
       detail: (id: number) => ["holdings", "dividends", id] as const,
+      monthlySummary: () =>
+        ["holdings", "dividends", "monthly-summary"] as const,
     },
     alerts: {
       all: ["holdings", "alerts"] as const,
