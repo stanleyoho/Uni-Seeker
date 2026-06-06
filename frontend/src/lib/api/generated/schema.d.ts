@@ -2700,6 +2700,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/watchlist/indicators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Watchlist Live Indicators
+         * @description Live price + key indicators for a batch of watched symbols (A2 v1).
+         *
+         *     The frontend watchlist panel polls this on an interval with the user's
+         *     current watchlist symbols. For each requested symbol we return the live
+         *     price (via the shared portfolio live-price fetcher, with its DB-backed
+         *     daily-close fallback) plus RSI(14), short/long SMA, the MA-cross state,
+         *     and the price's percent distance from the long MA — all computed by the
+         *     existing TA-Lib wrappers (no duplicate math).
+         *
+         *     Auth-only (any tier): the panel is a read-only convenience surface; we do
+         *     not gate it behind a paid tier. Symbols are normalised (strip + upper)
+         *     server-side so the wire shape is forgiving.
+         *
+         *     Every requested symbol gets an entry in the response (in request order),
+         *     even when it has no price feed or no history — those fields come back
+         *     ``None`` so the panel can render a stable row per symbol.
+         */
+        post: operations["watchlist_live_indicators_api_v1_watchlist_indicators_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/watchlist/": {
         parameters: {
             query?: never;
@@ -6231,6 +6266,30 @@ export interface components {
             /** Errors */
             errors: components["schemas"]["WatchlistBulkAddError"][];
         };
+        /**
+         * WatchlistIndicatorRequest
+         * @description Batch request for the live watchlist panel.
+         *
+         *     ``symbols`` is bounded (1..50) so a single poll can't fan out into an
+         *     unbounded number of price-feed + DB lookups. The frontend only ever
+         *     sends the symbols currently on the user's watchlist, which is itself
+         *     tier-capped well below this ceiling.
+         */
+        WatchlistIndicatorRequest: {
+            /** Symbols */
+            symbols: string[];
+        };
+        /**
+         * WatchlistIndicatorResponse
+         * @description Envelope: one entry per requested symbol, in request order.
+         *
+         *     Symbols with no data still appear (with ``None`` fields) so the frontend
+         *     can render a stable row per watched symbol rather than dropping rows.
+         */
+        WatchlistIndicatorResponse: {
+            /** Items */
+            items: components["schemas"]["WatchlistLiveIndicator"][];
+        };
         /** WatchlistItemResponse */
         WatchlistItemResponse: {
             /** Id */
@@ -6241,6 +6300,45 @@ export interface components {
             stock_name?: string | null;
             /** Created At */
             created_at: string;
+        };
+        /**
+         * WatchlistLiveIndicator
+         * @description One symbol's live snapshot for the panel.
+         *
+         *     Field contract (all numerics are Decimal-as-string or ``None``):
+         *       - ``last_price`` / ``prev_close`` — from the live-price fetcher; ``None``
+         *         when no feed/data is available for the symbol.
+         *       - ``change`` / ``change_percent`` — derived from last vs prev close;
+         *         ``None`` when either side is missing.
+         *       - ``rsi`` — latest RSI(14) value, ``None`` during the warmup window or
+         *         when there is no price history.
+         *       - ``ma_short`` / ``ma_long`` — latest short/long SMA values.
+         *       - ``ma_cross`` — ``"golden"`` (short > long), ``"death"`` (short < long),
+         *         ``"flat"`` (equal), or ``None`` when either MA is unavailable.
+         *       - ``pct_from_ma_long`` — percent distance of last price from the long MA;
+         *         positive = price above MA. ``None`` when inputs are missing.
+         */
+        WatchlistLiveIndicator: {
+            /** Symbol */
+            symbol: string;
+            /** Last Price */
+            last_price?: string | null;
+            /** Prev Close */
+            prev_close?: string | null;
+            /** Change */
+            change?: string | null;
+            /** Change Percent */
+            change_percent?: string | null;
+            /** Rsi */
+            rsi?: string | null;
+            /** Ma Short */
+            ma_short?: string | null;
+            /** Ma Long */
+            ma_long?: string | null;
+            /** Ma Cross */
+            ma_cross?: string | null;
+            /** Pct From Ma Long */
+            pct_from_ma_long?: string | null;
         };
         /**
          * AccountResponse
@@ -10582,6 +10680,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillingStatusResponse"];
+                };
+            };
+        };
+    };
+    watchlist_live_indicators_api_v1_watchlist_indicators_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistIndicatorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistIndicatorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

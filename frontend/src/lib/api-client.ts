@@ -1016,6 +1016,33 @@ export async function removeFromWatchlist(symbol: string): Promise<void> {
   );
 }
 
+// --- Live watchlist indicators (A2 v1, POST /watchlist/indicators) ----------
+//
+// Batch live price + computed indicators for the watchlist panel. Polled on
+// an interval by `useWatchlistIndicators`. Decimal-as-string contract: every
+// numeric field is a string | null — call Number() before arithmetic, and
+// render null as an em-dash.
+
+export type WatchlistLiveIndicator = Schemas["WatchlistLiveIndicator"];
+export type WatchlistIndicatorResponse = Schemas["WatchlistIndicatorResponse"];
+
+export async function fetchWatchlistIndicators(
+  symbols: string[],
+): Promise<WatchlistLiveIndicator[]> {
+  // Empty input would 422 server-side (min_length=1); short-circuit so the
+  // polling hook can call this unconditionally with whatever the watchlist
+  // currently holds.
+  if (symbols.length === 0) return [];
+  const res = await apiFetch<WatchlistIndicatorResponse>(
+    `${API_BASE}/watchlist/indicators`,
+    {
+      method: "POST",
+      body: JSON.stringify({ symbols }),
+    },
+  );
+  return res.items;
+}
+
 // ---------------------------------------------------------------------------
 // Holdings — Types (Phase 3, /holdings/* endpoints)
 //

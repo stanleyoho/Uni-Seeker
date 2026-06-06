@@ -42,6 +42,7 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { GlassPanel, ClippedButton } from "@/components/stratos/primitives";
 import { Sparkline } from "@/components/stratos/charts";
+import { WatchlistLivePanel } from "@/components/watchlist/WatchlistLivePanel";
 
 import { AmbientBackground } from "@/components/stratos/ambient";
 
@@ -123,6 +124,15 @@ export default function WatchlistPage() {
   const symbolsKey = useMemo(
     () => watchlistItems.map((i) => i.symbol).sort().join(","),
     [watchlistItems],
+  );
+
+  // Stable symbol array for the live indicator panel. Derived from
+  // `symbolsKey` (not `watchlistItems`) so it only changes when the actual
+  // set of symbols changes, keeping the poll query key stable across the
+  // fresh-array refetches TanStack Query hands back.
+  const liveSymbols = useMemo(
+    () => (symbolsKey ? symbolsKey.split(",") : []),
+    [symbolsKey],
   );
 
   const loadPrices = useCallback(async () => {
@@ -506,6 +516,13 @@ export default function WatchlistPage() {
               <option value="volume">Volume</option>
             </select>
           </div>
+        )}
+
+        {/* Live indicator panel (A2) — auto-refreshing price + RSI / MA cross
+            / % from MA for the whole watchlist. Sits above the detail table
+            as an at-a-glance live strip. */}
+        {itemCount > 0 && (
+          <WatchlistLivePanel symbols={liveSymbols} className="mb-4" />
         )}
 
         {/* List Content */}
