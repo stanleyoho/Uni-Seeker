@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   addToWatchlist,
+  fetchWatchlistIndicators,
   listWatchlist,
   removeFromWatchlist,
 } from "@/lib/api-client";
@@ -207,6 +208,56 @@ describe("apiFetch POST body forwarding (via addToWatchlist)", () => {
       status: 409,
       message: "already on watchlist",
     });
+  });
+});
+
+describe("fetchWatchlistIndicators (POST /watchlist/indicators)", () => {
+  it("short-circuits to [] without calling fetch when symbols is empty", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchWatchlistIndicators([])).resolves.toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("POSTs the symbols and unwraps the items array", async () => {
+    const items = [
+      {
+        symbol: "2330.TW",
+        last_price: "150.0000",
+        prev_close: "140.0000",
+        change: "10.0000",
+        change_percent: "7.1400",
+        rsi: "72.5000",
+        ma_short: "148.0000",
+        ma_long: "140.0000",
+        ma_cross: "golden",
+        pct_from_ma_long: "5.2000",
+      },
+    ];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { items }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchWatchlistIndicators(["2330.TW"]);
+    expect(result).toEqual(items);
+
+    // Verify the request shape: POST with a JSON { symbols } body.
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/watchlist\/indicators$/);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ symbols: ["2330.TW"] });
+  });
+
+  it("propagates an ApiError on a 4xx/5xx response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(422, { detail: "bad" })),
+    );
+    await expect(
+      fetchWatchlistIndicators(["2330.TW"]),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 });
 

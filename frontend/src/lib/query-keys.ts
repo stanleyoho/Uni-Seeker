@@ -121,6 +121,11 @@ export const queryKeys = {
   watchlist: {
     all: ["watchlist"] as const,
     list: () => ["watchlist", "list"] as const,
+    // Live price + indicators for a specific set of symbols (A2 panel).
+    // Keyed on the sorted symbol list so the cache entry is stable across
+    // re-renders that pass the same watchlist in a different order.
+    indicators: (symbols: string[]) =>
+      ["watchlist", "indicators", [...symbols].sort()] as const,
   },
   institutional: {
     all: ["institutional"] as const,

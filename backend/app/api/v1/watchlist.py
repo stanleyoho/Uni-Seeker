@@ -21,6 +21,7 @@ Round 6 changes:
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,12 +30,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.api.v1.holdings._deps import get_live_price_fetcher
 from app.auth import require_auth
 from app.config import settings
 from app.models.enums import UserTier
+from app.models.price import StockPrice
 from app.models.stock import Stock
 from app.models.user import User
 from app.models.watchlist_item import WatchlistItem
+from app.modules.portfolio.live_price_fetcher import LivePriceFetcher, PriceQuote
+from app.modules.watchlist import LiveIndicatorSnapshot, compute_live_indicators
 from app.obs.logging import get_logger
 from app.schemas.watchlist import (
     WatchlistAddRequest,
@@ -43,6 +48,11 @@ from app.schemas.watchlist import (
     WatchlistBulkAddResponse,
     WatchlistItemResponse,
 )
+from app.schemas.watchlist_live import (
+    WatchlistIndicatorRequest,
+    WatchlistIndicatorResponse,
+    WatchlistLiveIndicator,
+)
 from app.services.audit import log_audit_event
 
 logger = get_logger(component="watchlist")
@@ -50,6 +60,17 @@ router = APIRouter(prefix="/watchlist", tags=["watchlist"])
 
 FREE_TIER_LIMIT = 10
 BULK_MAX_PER_CALL = 20
+
+# How many trailing daily-close rows to load per symbol for the live panel.
+# 60 comfortably covers the longest default window (SMA 20) plus the RSI(14)
+# warmup, while keeping each per-symbol read tiny. The panel only needs the
+# *latest* indicator value, not the full series.
+LIVE_INDICATOR_LOOKBACK = 60
+
+# Decimal places for the panel's serialised numbers — matches the 4-dp
+# rounding the TA-Lib wrappers already apply, so indicator values are stable
+# and price/percent fields read cleanly in the UI.
+_DECIMAL_PLACES = Decimal("0.0001")
 
 
 async def _get_stock_by_symbol(db: AsyncSession, symbol: str) -> Stock:
@@ -73,6 +94,120 @@ def _normalize_symbol(raw: str) -> str | None:
     if not s or len(s) > 20:
         return None
     return s
+
+
+def _round(value: Decimal | None) -> str | None:
+    """Quantise a Decimal to 4 dp and stringify (Decimal-as-string wire form)."""
+    if value is None:
+        return None
+    return str(value.quantize(_DECIMAL_PLACES))
+
+
+def _snapshot_to_response(symbol: str, snap: LiveIndicatorSnapshot) -> WatchlistLiveIndicator:
+    """Map the pure-compute snapshot onto the wire schema (all 4-dp strings)."""
+    return WatchlistLiveIndicator(
+        symbol=symbol,
+        last_price=_round(snap.last_price),
+        prev_close=_round(snap.prev_close),
+        change=_round(snap.change),
+        change_percent=_round(snap.change_percent),
+        rsi=_round(snap.rsi),
+        ma_short=_round(snap.ma_short),
+        ma_long=_round(snap.ma_long),
+        ma_cross=snap.ma_cross,
+        pct_from_ma_long=_round(snap.pct_from_ma_long),
+    )
+
+
+async def _load_closes_by_symbol(db: AsyncSession, symbols: list[str]) -> dict[str, list[float]]:
+    """Load trailing daily-close history for each known symbol.
+
+    One JOIN'd query fetches the most-recent ``LIVE_INDICATOR_LOOKBACK`` rows
+    per symbol (ordered ascending oldest→newest, the shape the indicator
+    wrappers expect). Symbols not present in the ``stocks`` table simply don't
+    appear in the result — the caller renders them with ``None`` fields.
+
+    The query reads from the same ``stock_prices`` table the /indicators
+    endpoints use, so there is no second source of price truth.
+    """
+    if not symbols:
+        return {}
+
+    # Pull the lookback window per symbol. We over-fetch (lookback rows for
+    # every requested symbol) in one round-trip rather than N queries; the
+    # window is tiny so this stays cheap even for a full watchlist.
+    rows = (
+        await db.execute(
+            select(Stock.symbol, StockPrice.date, StockPrice.close)
+            .join(StockPrice, StockPrice.stock_id == Stock.id)
+            .where(Stock.symbol.in_(symbols))
+            .order_by(Stock.symbol.asc(), StockPrice.date.asc())
+        )
+    ).all()
+
+    by_symbol: dict[str, list[float]] = {}
+    for sym, _date, close in rows:
+        by_symbol.setdefault(sym, []).append(float(close))
+
+    # Keep only the trailing window (the series is already ascending by date).
+    return {sym: closes[-LIVE_INDICATOR_LOOKBACK:] for sym, closes in by_symbol.items()}
+
+
+@router.post("/indicators", response_model=WatchlistIndicatorResponse)
+async def watchlist_live_indicators(
+    req: WatchlistIndicatorRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_auth)],
+    price_fetcher: Annotated[LivePriceFetcher, Depends(get_live_price_fetcher)],
+) -> WatchlistIndicatorResponse:
+    """Live price + key indicators for a batch of watched symbols (A2 v1).
+
+    The frontend watchlist panel polls this on an interval with the user's
+    current watchlist symbols. For each requested symbol we return the live
+    price (via the shared portfolio live-price fetcher, with its DB-backed
+    daily-close fallback) plus RSI(14), short/long SMA, the MA-cross state,
+    and the price's percent distance from the long MA — all computed by the
+    existing TA-Lib wrappers (no duplicate math).
+
+    Auth-only (any tier): the panel is a read-only convenience surface; we do
+    not gate it behind a paid tier. Symbols are normalised (strip + upper)
+    server-side so the wire shape is forgiving.
+
+    Every requested symbol gets an entry in the response (in request order),
+    even when it has no price feed or no history — those fields come back
+    ``None`` so the panel can render a stable row per symbol.
+    """
+    # Normalise + dedupe while preserving first-seen order so the response
+    # mirrors what the caller asked for.
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for raw in req.symbols:
+        norm = _normalize_symbol(raw)
+        if norm is None or norm in seen:
+            continue
+        seen.add(norm)
+        ordered.append(norm)
+
+    if not ordered:
+        return WatchlistIndicatorResponse(items=[])
+
+    # I/O: daily-close history (DB) + live quotes (price feed). The price
+    # fetcher tolerates partial results — symbols it can't price are simply
+    # absent from the dict.
+    closes_by_symbol = await _load_closes_by_symbol(db, ordered)
+    quotes: dict[str, PriceQuote] = await price_fetcher.fetch_quotes(ordered)
+
+    items: list[WatchlistLiveIndicator] = []
+    for sym in ordered:
+        quote = quotes.get(sym)
+        snap = compute_live_indicators(
+            closes_by_symbol.get(sym, []),
+            last_price=quote.last_price if quote else None,
+            prev_close=quote.prev_close if quote else None,
+        )
+        items.append(_snapshot_to_response(sym, snap))
+
+    return WatchlistIndicatorResponse(items=items)
 
 
 @router.get("/", response_model=list[WatchlistItemResponse])
