@@ -9,6 +9,7 @@ import { useRunScan, type SignalAction, type ScanResult } from "@/hooks/use-scan
 import { SignalTable } from "@/app/scanner/components/signal-table";
 import { downloadCSV } from "@/lib/csv-export";
 import { CompareTabPanel } from "./components/compare-panel";
+import { BestFourPointCard } from "./components/best-four-point-card";
 
 import {
   TEMPLATES,
@@ -196,6 +197,8 @@ export default function UnifiedResearchPage() {
             backdrop identical across tabs. */}
         {activeTab === "compare" ? (
           <CompareTabPanel />
+        ) : activeTab === "best-four-point" ? (
+          <BestFourPointCard />
         ) : (
         <>
         {/* ---- Template picker row ---- */}

@@ -2377,6 +2377,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/scanner/best-four-point": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Best Four Point
+         * @description Return today's cached 四大買賣點 (Best Four Buy/Sell Points) scan.
+         *
+         *     Reads ONLY the cached results persisted by the daily scheduled scan
+         *     (``best_four_point_scan`` — runs post-close over the full TW universe).
+         *     The endpoint never computes the universe live: 1500+ symbols × MA/volume
+         *     math per request would be far too heavy for an interactive call. When no
+         *     scan has run yet (fresh deploy) it returns an empty result with
+         *     ``scan_date=None`` so the frontend can render an empty state.
+         *
+         *     Routing note: this static path is declared BEFORE the ``/{symbol}``
+         *     catch-all so ``best-four-point`` is never swallowed as a stock symbol.
+         */
+        get: operations["get_best_four_point_api_v1_scanner_best_four_point_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/scanner/{symbol}": {
         parameters: {
             query?: never;
@@ -3219,6 +3249,46 @@ export interface components {
             equity_curve: string[];
             /** Trades */
             trades: components["schemas"]["TradeRecord"][];
+        };
+        /**
+         * BestFourPointResponse
+         * @description Cached daily 四大買賣點 scan result (TW universe).
+         */
+        BestFourPointResponse: {
+            /** Scan Date */
+            scan_date?: string | null;
+            /** Buy Signals */
+            buy_signals?: components["schemas"]["BestFourPointRow"][];
+            /** Sell Signals */
+            sell_signals?: components["schemas"]["BestFourPointRow"][];
+            /**
+             * Total Scanned
+             * @default 0
+             */
+            total_scanned: number;
+        };
+        /**
+         * BestFourPointRow
+         * @description One symbol's 四大買賣點 outcome for the scan date.
+         */
+        BestFourPointRow: {
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Verdict */
+            verdict: string;
+            /** Buy Points */
+            buy_points?: string[];
+            /** Sell Points */
+            sell_points?: string[];
+            /**
+             * Net Score
+             * @default 0
+             */
+            net_score: number;
+            /** Last Close */
+            last_close?: string | null;
         };
         /** BillingStatusResponse */
         BillingStatusResponse: {
@@ -9748,6 +9818,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_best_four_point_api_v1_scanner_best_four_point_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BestFourPointResponse"];
                 };
             };
         };
