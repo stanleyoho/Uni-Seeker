@@ -322,6 +322,10 @@ export type SignalDetail = Schemas["SignalDetail"];
 export type ApiStockSignal = Schemas["StockSignalResponse"];
 export type ScanResponse = Schemas["ScanResponse"];
 
+// --- 四大買賣點 (Best Four Buy/Sell Points) — TW-only cached daily scan ---
+export type BestFourPointRow = Schemas["BestFourPointRow"];
+export type BestFourPointResponse = Schemas["BestFourPointResponse"];
+
 // --- Valuation --- (E2E-1 W7)
 
 export type PriceEstimate = Schemas["PriceEstimateBase"];
@@ -811,6 +815,15 @@ export async function runSignalScan(req?: {
 
 export async function fetchStockSignals(symbol: string): Promise<ApiStockSignal> {
   return apiFetch<ApiStockSignal>(`${API_BASE}/scanner/${encodeURIComponent(symbol)}`);
+}
+
+/**
+ * Fetch today's cached 四大買賣點 (Best Four Buy/Sell Points) scan. Reads the
+ * snapshot the daily scheduled job persisted across the full TW universe; the
+ * backend never computes live. Returns `scan_date: null` when no scan has run.
+ */
+export async function fetchBestFourPoint(): Promise<BestFourPointResponse> {
+  return apiFetch<BestFourPointResponse>(`${API_BASE}/scanner/best-four-point`);
 }
 
 // --- Valuation ---

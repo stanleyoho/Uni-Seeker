@@ -60,6 +60,7 @@ export const queryKeys = {
       [...queryKeys.scanner.all, "scan", keys] as const,
     stock: (symbol: string) =>
       [...queryKeys.scanner.all, "stock", symbol] as const,
+    bestFourPoint: () => [...queryKeys.scanner.all, "best-four-point"] as const,
   },
   lowBase: {
     all: ["low-base"] as const,

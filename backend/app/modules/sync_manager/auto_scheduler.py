@@ -94,6 +94,23 @@ class AutoSyncScheduler:
             coalesce=True,
         )
 
+        # 四大買賣點 (Best Four Buy/Sell Points) daily scan at 17:40 Taipei —
+        # runs 10 min after the main daily sync so the day's TW prices have
+        # landed before we compute MA3/MA6 + volume points across the whole
+        # TW universe and persist today's snapshot into ``signal_scans``.
+        # ``max_instances=1`` so a slow universe scan never stacks; the scan
+        # is idempotent per scan_date (delete-then-insert) so ``coalesce``
+        # collapsing a missed fire into one catch-up run is safe.
+        self._scheduler.add_job(
+            self._best_four_point_scan,
+            CronTrigger(hour=17, minute=40, timezone="Asia/Taipei"),
+            id="best_four_point_scan",
+            name="四大買賣點掃描",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
         self._scheduler.start()
         self._running = True
         logger.info("auto_scheduler_started", jobs=self.get_jobs())
@@ -242,3 +259,23 @@ class AutoSyncScheduler:
             if raw:
                 ok += 1
         logger.info("auto_sync_etf_nav_done", refreshed=ok, total=len(etfs))
+
+    async def _best_four_point_scan(self) -> None:
+        """Daily 四大買賣點 universe scan — persists today's snapshot.
+
+        Owns its own session + commit boundary (the service commits once at
+        the end). Best-effort: a failure logs and returns instead of
+        propagating to the APScheduler executor, so a bad scan night never
+        re-schedules itself into a tight retry loop.
+        """
+        logger.info("auto_best_four_point_scan_start")
+        from app.database import async_session
+        from app.services.best_four_point import run_best_four_point_scan
+
+        async with async_session() as db:
+            try:
+                summary = await run_best_four_point_scan(db)
+                logger.info("auto_best_four_point_scan_finished", **summary)
+            except Exception as exc:  # pragma: no cover - defensive
+                await db.rollback()
+                logger.error("auto_best_four_point_scan_exception", error=str(exc))

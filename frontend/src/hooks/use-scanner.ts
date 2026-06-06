@@ -4,7 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   runSignalScan as apiRunSignalScan,
   fetchStockSignals as apiFetchStockSignals,
+  fetchBestFourPoint as apiFetchBestFourPoint,
   type ApiStockSignal,
+  type BestFourPointResponse,
   type ScanResponse,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -93,6 +95,24 @@ export function useStockSignals(symbol: string) {
     },
     staleTime: 5 * 60 * 1000,
     enabled: !!symbol,
+  });
+}
+
+/**
+ * Read today's cached 四大買賣點 (Best Four Buy/Sell Points) scan.
+ *
+ * This is a TW-only, read-only view of the daily scheduled scan — no manual
+ * trigger (unlike `useSignalScan`), because the universe scan runs server-side
+ * post-close. Returns an empty result (scan_date: null) when no scan has run.
+ */
+export function useBestFourPoint() {
+  return useQuery({
+    queryKey: queryKeys.scanner.bestFourPoint(),
+    queryFn: async (): Promise<BestFourPointResponse> => {
+      return apiFetchBestFourPoint();
+    },
+    // Cached daily server-side; refetch sparingly.
+    staleTime: 10 * 60 * 1000,
   });
 }
 

@@ -19,12 +19,14 @@ from app.modules.scanner.engine import SignalScanner, StockSignal
 from app.modules.scanner.patterns import detect_patterns, pattern_names
 from app.modules.strategy import create_default_registry
 from app.modules.strategy.registry import StrategyRegistry
+from app.schemas.best_four_point import BestFourPointResponse, BestFourPointRow
 from app.schemas.scanner import (
     ScanResponse,
     SignalDetail,
     SignalScanRequest,
     StockSignalResponse,
 )
+from app.services.best_four_point import read_cached_scan
 
 logger = structlog.get_logger()
 
@@ -305,6 +307,56 @@ async def _persist_buy_fires(
     if new_rows:
         db.add_all(new_rows)
         await db.commit()
+
+
+@router.get("/best-four-point", response_model=BestFourPointResponse)
+async def get_best_four_point(
+    db: AsyncSession = Depends(get_db),
+) -> BestFourPointResponse:
+    """Return today's cached 四大買賣點 (Best Four Buy/Sell Points) scan.
+
+    Reads ONLY the cached results persisted by the daily scheduled scan
+    (``best_four_point_scan`` — runs post-close over the full TW universe).
+    The endpoint never computes the universe live: 1500+ symbols × MA/volume
+    math per request would be far too heavy for an interactive call. When no
+    scan has run yet (fresh deploy) it returns an empty result with
+    ``scan_date=None`` so the frontend can render an empty state.
+
+    Routing note: this static path is declared BEFORE the ``/{symbol}``
+    catch-all so ``best-four-point`` is never swallowed as a stock symbol.
+    """
+    scan_date, rows = await read_cached_scan(db)
+
+    buy: list[BestFourPointRow] = []
+    sell: list[BestFourPointRow] = []
+    for row in rows:
+        model = BestFourPointRow(
+            symbol=str(row.get("symbol", "")),
+            name=str(row.get("name", "") or row.get("symbol", "")),
+            verdict=str(row.get("verdict", "觀望")),
+            buy_points=list(row.get("buy_points", []) or []),
+            sell_points=list(row.get("sell_points", []) or []),
+            net_score=int(row.get("net_score", 0) or 0),
+            last_close=row.get("last_close"),
+        )
+        # A symbol surfaces on the buy board when it has gated buy points,
+        # on the sell board when it has gated sell points. 觀望 / no-signal
+        # rows are persisted (for audit) but not surfaced on either board.
+        if model.buy_points:
+            buy.append(model)
+        elif model.sell_points:
+            sell.append(model)
+
+    # Buy: strongest net first. Sell: most-negative net first.
+    buy.sort(key=lambda r: r.net_score, reverse=True)
+    sell.sort(key=lambda r: r.net_score)
+
+    return BestFourPointResponse(
+        scan_date=scan_date.isoformat() if scan_date is not None else None,
+        buy_signals=buy,
+        sell_signals=sell,
+        total_scanned=len(rows),
+    )
 
 
 @router.get("/{symbol}", response_model=StockSignalResponse)

@@ -30,6 +30,14 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
       label: t.nav.compare,
       activeQuery: { key: "tab", value: "compare" },
     },
+    // 四大買賣點 — TW-only daily Best-Four-Point board, hosted as a
+    // `?tab=` query-multiplex view on `/research` (same pattern as
+    // Compare). Hard-coded label until the i18n bundle gains a key.
+    {
+      href: "/research?tab=best-four-point",
+      label: "四大買賣點",
+      activeQuery: { key: "tab", value: "best-four-point" },
+    },
     // ETF premium/discount monitor (twetf.com-inspired). Hard-coded
     // label until the i18n bundle gains an `etfArbitrage` key —
     // keeping it inline keeps this PR self-contained.

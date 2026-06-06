@@ -19,6 +19,7 @@ _EXPECTED_JOB_IDS = {
     "tw_institutional_postclose",
     "catchup_sync",
     "etf_nav_sync",
+    "best_four_point_scan",
 }
 
 
