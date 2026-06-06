@@ -2769,6 +2769,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/factors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Factors
+         * @description List every available factor with its formula (living documentation).
+         */
+        get: operations["list_factors_api_v1_factors__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/factors/compute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute Factors
+         * @description Compute the Alpha158-style factor vector for one symbol.
+         */
+        post: operations["compute_factors_api_v1_factors_compute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/factors/compute/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute Factors Batch
+         * @description Compute factor vectors for a batch of symbols.
+         *
+         *     Unknown symbols 404 the whole request (fail loud) — the same contract as
+         *     the single-symbol endpoint, applied per symbol.
+         */
+        post: operations["compute_factors_batch_api_v1_factors_compute_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -4147,6 +4210,68 @@ export interface components {
             subscribed_at: string;
             /** Notify On New Filing */
             notify_on_new_filing: boolean;
+        };
+        /**
+         * FactorBatchRequest
+         * @description Request factor vectors for several symbols at once.
+         */
+        FactorBatchRequest: {
+            /** Symbols */
+            symbols: string[];
+        };
+        /**
+         * FactorBatchResponse
+         * @description Factor vectors for a batch of symbols.
+         */
+        FactorBatchResponse: {
+            /** Results */
+            results: components["schemas"]["FactorVectorResponse"][];
+        };
+        /**
+         * FactorCatalogEntry
+         * @description One factor's name and human-readable formula (living documentation).
+         */
+        FactorCatalogEntry: {
+            /** Name */
+            name: string;
+            /** Formula */
+            formula: string;
+        };
+        /**
+         * FactorCatalogResponse
+         * @description The catalog of every available factor and its formula.
+         */
+        FactorCatalogResponse: {
+            /** Factors */
+            factors: components["schemas"]["FactorCatalogEntry"][];
+        };
+        /**
+         * FactorVectorRequest
+         * @description Request a single symbol's factor vector.
+         */
+        FactorVectorRequest: {
+            /** Symbol */
+            symbol: string;
+        };
+        /**
+         * FactorVectorResponse
+         * @description Computed factor vector for one symbol.
+         *
+         *     ``factors`` maps factor name -> value, where ``None`` marks a factor
+         *     whose lookback window is unmet (insufficient bars) or whose inputs were
+         *     degenerate. ``bar_count`` lets the client reason about warmup.
+         */
+        FactorVectorResponse: {
+            /** Symbol */
+            symbol: string;
+            /** Bar Count */
+            bar_count: number;
+            /** Factors */
+            factors: {
+                [key: string]: number | null;
+            };
+            /** Composite Momentum */
+            composite_momentum: number | null;
         };
         /**
          * FailedTrade
@@ -10401,6 +10526,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ETFArbitrageListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_factors_api_v1_factors__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactorCatalogResponse"];
+                };
+            };
+        };
+    };
+    compute_factors_api_v1_factors_compute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FactorVectorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactorVectorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compute_factors_batch_api_v1_factors_compute_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FactorBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactorBatchResponse"];
                 };
             };
             /** @description Validation Error */

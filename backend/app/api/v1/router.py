@@ -8,6 +8,7 @@ from app.api.v1.backtest_jobs import router as backtest_jobs_router
 from app.api.v1.billing import router as billing_router
 from app.api.v1.company import router as company_router
 from app.api.v1.etf_arbitrage import router as etf_arbitrage_router
+from app.api.v1.factors import router as factors_router
 from app.api.v1.financial_metrics import router as financial_metrics_router
 from app.api.v1.financials import router as financials_router
 from app.api.v1.heatmap import router as heatmap_router
@@ -77,4 +78,5 @@ v1_router.include_router(predictions_router)
 v1_router.include_router(billing_router)
 v1_router.include_router(watchlist_router)
 v1_router.include_router(etf_arbitrage_router)
+v1_router.include_router(factors_router)
 v1_router.include_router(ws_router)
