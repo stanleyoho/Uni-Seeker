@@ -88,8 +88,7 @@ def _compile_clause(clause: DslClause) -> Condition:
         )
     if clause.cmp not in ALLOWED_CMP:
         raise DslCompileError(
-            f"Unknown comparator '{clause.cmp}'. Allowed: "
-            f"{', '.join(sorted(ALLOWED_CMP))}."
+            f"Unknown comparator '{clause.cmp}'. Allowed: {', '.join(sorted(ALLOWED_CMP))}."
         )
 
     op = CMP_TO_OP[clause.cmp]
@@ -97,17 +96,14 @@ def _compile_clause(clause: DslClause) -> Condition:
 
     if op == "between":
         if not (isinstance(value, (list, tuple)) and len(value) == 2):
-            raise DslCompileError(
-                "'between' requires a 2-element [low, high] value."
-            )
+            raise DslCompileError("'between' requires a 2-element [low, high] value.")
         low, high = value
         if not _is_number(low) or not _is_number(high):
             raise DslCompileError("'between' bounds must be numbers.")
     else:
         if not _is_number(value):
             raise DslCompileError(
-                f"Comparator '{clause.cmp}' requires a numeric value, "
-                f"got {type(value).__name__}."
+                f"Comparator '{clause.cmp}' requires a numeric value, got {type(value).__name__}."
             )
 
     spec = get_field_spec(clause.field)
@@ -141,9 +137,7 @@ def compile_group(
 
     op = group.op.lower()
     if op not in ALLOWED_GROUP_OPS:
-        raise DslCompileError(
-            f"Unknown group operator '{group.op}'. Allowed: and, or."
-        )
+        raise DslCompileError(f"Unknown group operator '{group.op}'. Allowed: and, or.")
     if not group.clauses:
         raise DslCompileError("A group must contain at least one clause.")
 

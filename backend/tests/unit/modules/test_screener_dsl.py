@@ -101,9 +101,7 @@ def test_between_comparator() -> None:
 
 def test_invalid_field_rejected() -> None:
     with pytest.raises(DslCompileError, match="Unknown field"):
-        compile_group(
-            DslGroup(op="and", clauses=[DslClause(field="__proto__", cmp="lt", value=1)])
-        )
+        compile_group(DslGroup(op="and", clauses=[DslClause(field="__proto__", cmp="lt", value=1)]))
 
 
 def test_arbitrary_field_injection_rejected() -> None:
@@ -119,16 +117,12 @@ def test_arbitrary_field_injection_rejected() -> None:
 
 def test_invalid_comparator_rejected() -> None:
     with pytest.raises(DslCompileError, match="Unknown comparator"):
-        compile_group(
-            DslGroup(op="and", clauses=[DslClause(field="RSI", cmp="approx", value=1)])
-        )
+        compile_group(DslGroup(op="and", clauses=[DslClause(field="RSI", cmp="approx", value=1)]))
 
 
 def test_between_requires_pair() -> None:
     with pytest.raises(DslCompileError, match="between"):
-        compile_group(
-            DslGroup(op="and", clauses=[DslClause(field="RSI", cmp="between", value=30)])
-        )
+        compile_group(DslGroup(op="and", clauses=[DslClause(field="RSI", cmp="between", value=30)]))
 
 
 def test_non_numeric_value_rejected() -> None:
