@@ -29,7 +29,18 @@ class AutoSyncScheduler:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
-        """Register jobs and start the APScheduler loop."""
+        """Register jobs and start the APScheduler loop.
+
+        Every job is registered with ``max_instances=1`` and
+        ``coalesce=True``. A full sync can run for many minutes (rate-limited
+        FinMind pulls across thousands of symbols); without ``max_instances=1``
+        APScheduler's default of 1 still applies, but we set it *explicitly*
+        so a slow run is guaranteed never to stack a second concurrent
+        invocation of the same job on top of itself (which would double the
+        upstream rate-budget consumption and race on ``sync_states`` rows).
+        ``coalesce=True`` collapses multiple missed fire-times — e.g. after a
+        deploy/restart window — into a single catch-up run instead of a burst.
+        """
         # Daily full sync at 17:30 Taipei time (after market close)
         self._scheduler.add_job(
             self._daily_sync,
@@ -37,6 +48,8 @@ class AutoSyncScheduler:
             id="daily_sync",
             name="每日資料同步",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         # TW 三大法人 dedicated post-close pull at 17:35 — TWSE publishes
@@ -52,6 +65,8 @@ class AutoSyncScheduler:
             id="tw_institutional_postclose",
             name="三大法人盤後同步",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         # Catch-up sync every 2 hours (handles rate-limit interrupted runs)
@@ -61,6 +76,8 @@ class AutoSyncScheduler:
             id="catchup_sync",
             name="補同步",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         # ETF estimated NAV refresh at 17:35 Taipei — runs 5 min after
@@ -73,6 +90,8 @@ class AutoSyncScheduler:
             id="etf_nav_sync",
             name="ETF 預估淨值同步",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         self._scheduler.start()
