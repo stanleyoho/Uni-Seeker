@@ -169,9 +169,7 @@ class AutoSyncScheduler:
             if r.records_synced == 0 and r.stopped_reason in (None, "completed"):
                 continue  # skip silent no-op tasks
             mark = {"rate_limit": " ⚠️", "error": " ❌"}.get(r.stopped_reason or "", "")
-            lines.append(
-                f"  · {r.dataset}: {r.records_synced} 筆 / {r.stocks_processed} 檔{mark}"
-            )
+            lines.append(f"  · {r.dataset}: {r.records_synced} 筆 / {r.stocks_processed} 檔{mark}")
             # Surface per-task breakdown when present
             if r.details:
                 non_zero = [(k, v) for k, v in r.details.items() if v]
