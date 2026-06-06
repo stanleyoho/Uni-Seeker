@@ -48,3 +48,6 @@ progress.md
 *.duckdb
 *.sqlite
 *.sqlite3
+
+# planning docs — belong in primary workspace, not product repo
+daily-task/
