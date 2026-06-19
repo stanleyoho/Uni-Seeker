@@ -59,14 +59,27 @@ _PE_ENGINE = None
 
 
 def _get_sync_engine() -> Any:
-    """Return (and lazily build) a sync SQLAlchemy engine for prediction_engine."""
+    """Return (and lazily build) a sync SQLAlchemy engine for prediction_engine.
+
+    The DB file lives at a FIXED absolute path (``settings.prediction_db``,
+    overridable via ``UNI_PREDICTION_DB``). Resolving an absolute path here —
+    rather than the old relative ``sqlite:///prediction_engine.db`` — keeps
+    every process pointed at the same file regardless of its cwd, instead of
+    forking a per-cwd copy.
+    """
     global _PE_ENGINE
     if _PE_ENGINE is None:
+        from pathlib import Path
+
         from prediction_engine.models import Base
         from sqlalchemy import create_engine
 
+        from app.config import settings
+
+        db_path = Path(settings.prediction_db).expanduser().resolve()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
         _PE_ENGINE = create_engine(
-            "sqlite:///prediction_engine.db",
+            f"sqlite:///{db_path}",
             connect_args={"check_same_thread": False},
         )
         Base.metadata.create_all(_PE_ENGINE)

@@ -1,10 +1,31 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Backend package root — ``backend/`` (this file lives at
+# ``backend/app/config.py``). Anchors filesystem defaults to a FIXED
+# location regardless of the process cwd, so we never fork a per-cwd
+# copy of a sqlite file.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/uni_seeker"
     database_echo: bool = False
+
+    # prediction_engine SQLite store.
+    #
+    # Historically opened via the RELATIVE URL ``sqlite:///prediction_engine.db``,
+    # which resolves against the *current working directory*. Every process /
+    # agent-worktree with a different cwd therefore forked its own copy of the
+    # DB (an audit found 7 stray copies, 5 of them under .claude/worktrees/*).
+    #
+    # Pin it to a FIXED absolute path under the backend root instead. Override
+    # with the ``UNI_PREDICTION_DB`` env var (env_prefix ``UNI_`` + field name).
+    # The value is a plain filesystem path; predictions.py wraps it in the
+    # ``sqlite:///`` URL scheme.
+    prediction_db: str = str(_BACKEND_ROOT / "prediction_engine.db")
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
