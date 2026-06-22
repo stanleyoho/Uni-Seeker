@@ -79,6 +79,13 @@ class StockInfoSyncTask(SyncTask):
         industry_changed = 0
         market_changed = 0
         unchanged = 0
+        # Rows actually written to the DB (new + genuinely-changed). Kept
+        # separate from ``stocks_processed`` (total records seen) so we can
+        # report write churn honestly and skip no-op upserts.
+        rows_written = 0
+        # Total valid records seen (after the id/name guard). Surfaced as
+        # ``stocks_processed``; not inflated by skipped no-op upserts.
+        stocks_processed = 0
 
         # -- process records ----------------------------------------------
         for record in raw:
@@ -104,15 +111,28 @@ class StockInfoSyncTask(SyncTask):
                     industry_added += 1
                 industry_id = industry_map[industry_name]
 
-            symbol = f"{stock_id_str}.TW"
+            # OTC (上櫃) securities use the ``.TWO`` suffix; listed (上市)
+            # securities use ``.TW``. This mirrors the price-provider
+            # convention (tpex.py → ``.TWO`` vs twse.py → ``.TW``). Using a
+            # hardcoded ``.TW`` for OTC rows would collide an OTC stock_id
+            # onto the unrelated TWSE row of the same numeric id (e.g.
+            # 5450 寶聯通-OTC vs 5450 南良-TWSE), producing a phantom rename
+            # on every run and upserting the wrong row.
+            suffix = ".TWO" if market_raw == "OTC" else ".TW"
+            symbol = f"{stock_id_str}{suffix}"
 
             # Diff against the pre-loop snapshot to classify this row.
+            # ``is_new`` and ``changed_anything`` together decide whether we
+            # actually issue a write — unchanged existing rows are skipped so
+            # we don't bump ``updated_at`` (onupdate=func.now()) on ~4264 rows
+            # every run.
             prior = existing_map.get(symbol)
-            if prior is None:
+            is_new = prior is None
+            changed_anything = False
+            if is_new:
                 added += 1
             else:
                 prior_name, prior_industry_id, prior_market = prior
-                changed_anything = False
                 if prior_name != stock_name:
                     renamed += 1
                     if len(renamed_examples) < 3:
@@ -127,25 +147,35 @@ class StockInfoSyncTask(SyncTask):
                 if not changed_anything:
                     unchanged += 1
 
-            # Upsert stock
-            stmt = pg_insert(Stock).values(
-                symbol=symbol,
-                name=stock_name,
-                market=market,
-                industry_id=industry_id,
-            )
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["symbol"],
-                set_={
-                    "name": stmt.excluded.name,
-                    "market": stmt.excluded.market,
-                    "industry_id": stmt.excluded.industry_id,
-                },
-            )
-            await db.execute(stmt)
-            result.records_synced += 1
+            # Only write when the row is genuinely new or has changed. This
+            # avoids needless write churn (and updated_at bumps) on the bulk
+            # of unchanged rows every run.
+            if is_new or changed_anything:
+                stmt = pg_insert(Stock).values(
+                    symbol=symbol,
+                    name=stock_name,
+                    market=market,
+                    industry_id=industry_id,
+                )
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["symbol"],
+                    set_={
+                        "name": stmt.excluded.name,
+                        "market": stmt.excluded.market,
+                        "industry_id": stmt.excluded.industry_id,
+                    },
+                )
+                await db.execute(stmt)
+                rows_written += 1
 
-        result.stocks_processed = result.records_synced
+            stocks_processed += 1
+
+        # ``records_synced`` = rows actually written to the DB (new +
+        # changed). ``stocks_processed`` = total valid records seen. Keeping
+        # these distinct lets the TG report distinguish write churn from
+        # universe size and stops a no-op run from looking like a 4264-row write.
+        result.records_synced = rows_written
+        result.stocks_processed = stocks_processed
 
         # Surface the diff breakdown for the TG notification.
         result.details = {
