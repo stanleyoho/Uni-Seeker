@@ -21,6 +21,31 @@ from app.modules.sync_manager.tasks.base import SyncResult, SyncTask
 logger = structlog.get_logger()
 
 
+# FinMind TaiwanStockInfo ``type`` field → (Market, symbol suffix).
+# Confirmed live values: "twse", "tpex", "emerging".
+#   - "twse"     上市  → TW_TWSE, suffix ".TW"
+#   - "tpex"     上櫃  → TW_TPEX, suffix ".TWO"
+#   - "emerging" 興櫃  → NOT representable in the Market enum (no value for
+#                        興櫃/pre-IPO). Returns None so the caller SKIPS the
+#                        record rather than mislabelling it as TWSE.
+# NB: the old code keyed off "OTC", which the feed never emits — that branch
+# was dead, so every stock was mis-classified as TW_TWSE with a ".TW" suffix.
+_TYPE_TO_MARKET: dict[str, tuple[Market, str]] = {
+    "twse": (Market.TW_TWSE, ".TW"),
+    "tpex": (Market.TW_TPEX, ".TWO"),
+}
+
+
+def _market_and_suffix(type_str: str) -> tuple[Market, str] | None:
+    """Map a FinMind ``type`` value to (Market, symbol suffix).
+
+    Returns ``None`` for values with no safe Market mapping (currently
+    ``"emerging"`` 興櫃 and any unknown/blank value), signalling the caller
+    to skip the record instead of guessing a market.
+    """
+    return _TYPE_TO_MARKET.get((type_str or "").strip().lower())
+
+
 class StockInfoSyncTask(SyncTask):
     """Synchronise the stocks table from FinMind TaiwanStockInfo.
 
@@ -79,19 +104,52 @@ class StockInfoSyncTask(SyncTask):
         industry_changed = 0
         market_changed = 0
         unchanged = 0
+        skipped_emerging = 0  # 興櫃: no Market enum value, skipped on purpose
 
-        # -- process records ----------------------------------------------
+        # -- de-duplicate the feed by stock_id, newest ``date`` wins -------
+        # The FinMind feed contains DUPLICATE stock_ids (155+ ids with >1
+        # entry). Examples confirmed live:
+        #   5450 → 寶聯通 (2020-06-03, stale/delisted) + 南良 (2026-06-21)
+        #   6438 → tpex (old) + twse (new, uplisted)
+        # Each duplicate maps to the same symbol, so without dedup the
+        # upsert collides intra-run (last-writer-wins, order-dependent) and
+        # the per-row diff flags a phantom "改名" on every run. Collapsing
+        # to ONE record per stock_id (newest ISO date — string compare is
+        # safe for YYYY-MM-DD) means one stock_id → one current listing →
+        # one symbol → no collision → idempotent across runs.
+        #
+        # Dedup is by stock_id ALONE (not (stock_id, market)): a stock_id is
+        # a single security whose current listing is its newest-dated entry,
+        # even if it has uplisted from tpex to twse.
+        deduped: dict[str, dict] = {}
         for record in raw:
-            stock_id_str: str = record.get("stock_id", "")
-            stock_name: str = record.get("stock_name", "")
+            stock_id_str = (record.get("stock_id", "") or "").strip()
+            stock_name = (record.get("stock_name", "") or "").strip()
+            if not stock_id_str or not stock_name:
+                continue
+            rec_date = record.get("date", "") or ""
+            prior = deduped.get(stock_id_str)
+            # Keep the record with the newest date. ">=" is deliberate so a
+            # later record with an equal/blank date does not silently lose;
+            # for genuinely distinct dates the strictly-newest one wins.
+            if prior is None or rec_date >= (prior.get("date", "") or ""):
+                deduped[stock_id_str] = record
+
+        # -- process the deduped records ----------------------------------
+        # After dedup there is exactly one record per stock_id, so each
+        # symbol is written at most once per run: the upsert cannot collide.
+        for stock_id_str, record in deduped.items():
+            stock_name = (record.get("stock_name", "") or "").strip()
             industry_name: str = record.get("industry_category", "") or ""
             market_raw: str = record.get("type", "")
 
-            if not stock_id_str or not stock_name:
+            mapping = _market_and_suffix(market_raw)
+            if mapping is None:
+                # 興櫃 / unknown type — no safe Market value, skip rather than
+                # mislabel. Counted so the human reconciliation has a number.
+                skipped_emerging += 1
                 continue
-
-            # Determine market
-            market = Market.TW_TPEX if market_raw == "OTC" else Market.TW_TWSE
+            market, suffix = mapping
 
             # Ensure industry exists
             industry_id: int | None = None
@@ -104,9 +162,14 @@ class StockInfoSyncTask(SyncTask):
                     industry_added += 1
                 industry_id = industry_map[industry_name]
 
-            symbol = f"{stock_id_str}.TW"
+            symbol = f"{stock_id_str}{suffix}"
 
-            # Diff against the pre-loop snapshot to classify this row.
+            # Diff against the snapshot of existing DB rows to classify this
+            # row. Because each symbol is unique in the deduped set, the
+            # snapshot is consistent for the whole run (no intra-run write
+            # ever invalidates another row's comparison), so reading from a
+            # pre-loop snapshot is correct here — unlike the reverted fix,
+            # which diffed duplicate rows that shared a symbol.
             prior = existing_map.get(symbol)
             if prior is None:
                 added += 1
@@ -155,6 +218,7 @@ class StockInfoSyncTask(SyncTask):
             "上下市": market_changed,
             "未變動": unchanged,
             "新增產業類別": industry_added,
+            "略過興櫃": skipped_emerging,
         }
         if renamed_examples:
             result.extras["改名範例"] = renamed_examples
